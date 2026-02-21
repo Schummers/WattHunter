@@ -8,6 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@iconify-json/solar": "^1.2.5",
+    "@iconify/react": "^6.0.2",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",
     "class-variance-authority": "^0.7.1",
