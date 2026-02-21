@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js
+apps/web/.next/
+apps/web/out/
+
+# Environment variables (NEVER commit)
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Supabase
+supabase/.temp/
+
+# Python
+services/pcs-sync/__pycache__/
+services/pcs-sync/*.pyc
+services/pcs-sync/.venv/
+services/pcs-sync/venv/
+services/pcs-sync/.env
+
+# Turbo
+.turbo/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
