@@ -1,7 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+
+const createLeagueSchema = z.object({
+  name: z.string().min(2, "Le nom de la ligue doit contenir au moins 2 caracteres.").max(50),
+});
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -16,11 +21,15 @@ export async function createLeague(
   _prevState: { error: string } | null,
   formData: FormData
 ) {
-  const name = formData.get("name") as string;
+  const parsed = createLeagueSchema.safeParse({
+    name: formData.get("name"),
+  });
 
-  if (!name || name.trim().length < 2) {
-    return { error: "Le nom de la ligue doit contenir au moins 2 caracteres." };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
   }
+
+  const { name } = parsed.data;
 
   const supabase = await createClient();
   const {
@@ -59,7 +68,7 @@ export async function createLeague(
     return { error: "Erreur lors de la creation de la ligue." };
   }
 
-  const { data: team } = await supabase
+  const { data: team, error: teamError } = await supabase
     .from("teams")
     .insert({
       user_id: user.id,
@@ -69,11 +78,19 @@ export async function createLeague(
     .select("id")
     .single();
 
-  await supabase.from("league_members").insert({
+  if (teamError || !team) {
+    return { error: "Erreur lors de la creation de l'equipe." };
+  }
+
+  const { error: memberError } = await supabase.from("league_members").insert({
     league_id: league.id,
     user_id: user.id,
-    team_id: team?.id ?? null,
+    team_id: team.id,
   });
+
+  if (memberError) {
+    return { error: "Erreur lors de l'inscription a la ligue." };
+  }
 
   redirect(`/league/${league.id}`);
 }

@@ -1,17 +1,29 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+
+const joinLeagueSchema = z.object({
+  code: z
+    .string()
+    .length(6, "Le code doit contenir exactement 6 caracteres.")
+    .regex(/^[A-Z2-9]+$/, "Code invalide."),
+});
 
 export async function joinLeague(
   _prevState: { error: string } | null,
   formData: FormData
 ) {
-  const code = (formData.get("code") as string)?.toUpperCase().trim();
+  const raw = (formData.get("code") as string)?.toUpperCase().trim();
 
-  if (!code || code.length !== 6) {
-    return { error: "Le code doit contenir exactement 6 caracteres." };
+  const parsed = joinLeagueSchema.safeParse({ code: raw });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
   }
+
+  const { code } = parsed.data;
 
   const supabase = await createClient();
   const {
@@ -56,7 +68,7 @@ export async function joinLeague(
     return { error: "Cette ligue est pleine." };
   }
 
-  const { data: team } = await supabase
+  const { data: team, error: teamError } = await supabase
     .from("teams")
     .insert({
       user_id: user.id,
@@ -66,10 +78,14 @@ export async function joinLeague(
     .select("id")
     .single();
 
+  if (teamError || !team) {
+    return { error: "Erreur lors de la creation de l'equipe." };
+  }
+
   const { error: joinError } = await supabase.from("league_members").insert({
     league_id: league.id,
     user_id: user.id,
-    team_id: team?.id ?? null,
+    team_id: team.id,
   });
 
   if (joinError) {
