@@ -32,7 +32,7 @@ export function LobbyView({
   const [copied, setCopied] = useState(false);
   const [launching, setLaunching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const canLaunch = memberCount >= 4;
+  const canLaunch = memberCount >= 1;
 
   const handleCopyCode = async () => {
     await navigator.clipboard.writeText(league.invite_code);
@@ -137,11 +137,7 @@ export function LobbyView({
               disabled={!canLaunch || launching}
               onClick={handleLaunch}
             >
-              {launching
-                ? "Lancement..."
-                : canLaunch
-                  ? "Lancer la premiere enchere"
-                  : `En attente (${memberCount}/4 joueurs minimum)`}
+              {launching ? "Lancement..." : "Lancer la premiere enchere"}
             </Button>
           </div>
         </>
