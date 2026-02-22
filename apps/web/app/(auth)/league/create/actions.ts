@@ -17,13 +17,9 @@ export async function createLeague(
   formData: FormData
 ) {
   const name = formData.get("name") as string;
-  const maxPlayers = Number(formData.get("maxPlayers"));
 
   if (!name || name.trim().length < 2) {
     return { error: "Le nom de la ligue doit contenir au moins 2 caracteres." };
-  }
-  if (maxPlayers < 6 || maxPlayers > 12) {
-    return { error: "Le nombre de joueurs doit etre entre 6 et 12." };
   }
 
   const supabase = await createClient();
@@ -54,7 +50,7 @@ export async function createLeague(
       name: name.trim(),
       invite_code: inviteCode,
       commissioner_id: user.id,
-      max_players: maxPlayers,
+      max_players: 20,
     })
     .select("id")
     .single();

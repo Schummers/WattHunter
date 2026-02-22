@@ -34,27 +34,6 @@ export default function CreateLeaguePage() {
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="maxPlayers"
-            className="text-sm font-medium text-foreground"
-          >
-            Nombre de joueurs
-          </label>
-          <select
-            id="maxPlayers"
-            name="maxPlayers"
-            defaultValue="8"
-            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            {[6, 7, 8, 9, 10, 11, 12].map((n) => (
-              <option key={n} value={n}>
-                {n} joueurs
-              </option>
-            ))}
-          </select>
-        </div>
-
         {state?.error && (
           <p className="text-sm text-destructive">{state.error}</p>
         )}

@@ -27,15 +27,6 @@ export async function launchFirstAuction(leagueId: string) {
     return { error: "La ligue a deja demarre." };
   }
 
-  const { count } = await supabase
-    .from("league_members")
-    .select("id", { count: "exact", head: true })
-    .eq("league_id", leagueId);
-
-  if (count === null || count < 4) {
-    return { error: "Il faut au moins 4 joueurs pour lancer la ligue." };
-  }
-
   const now = new Date();
   const closesAt = new Date(now.getTime() + 72 * 60 * 60 * 1000);
 
