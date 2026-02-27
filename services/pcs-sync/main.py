@@ -2,18 +2,26 @@
 WattHunter — PCS Sync Microservice
 FastAPI service for syncing procyclingstats data to Supabase.
 """
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Request
 from fastapi.responses import JSONResponse
 import os
 from dotenv import load_dotenv
 
 from sync import sync_all_riders, sync_rider_daily, sync_rider_history
 
+from supabase import create_client
+
 load_dotenv()
 
 app = FastAPI(title="WattHunter PCS Sync", version="0.1.0")
 
 API_SECRET = os.getenv("SYNC_API_SECRET", "")
+
+# Supabase client (service role — never exposed to browser)
+_supabase = create_client(
+    os.getenv("SUPABASE_URL", ""),
+    os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""),
+)
 
 
 def _check_auth(x_api_secret: str | None) -> None:
@@ -65,4 +73,21 @@ async def sync_rider_history_endpoint(
     """
     _check_auth(x_api_secret)
     result = await sync_rider_history(rider_pcs_slug)
+    return JSONResponse(content=result)
+
+
+@app.post("/jobs/sync-riders")
+async def job_sync_riders(
+    request: Request,
+    x_api_secret: str | None = Header(default=None),
+):
+    """
+    Full rider catalogue sync using Playwright to bypass Cloudflare.
+    Iterates PROTEAM_SLUGS, fetches each team roster via real browser,
+    then fetches each rider page and upserts into the riders table.
+    Runtime estimate: ~62 min with 4 s delay (configurable via PCS_RATE_LIMIT_DELAY_MS).
+    """
+    _check_auth(x_api_secret)
+    rate_limit = int(os.getenv("PCS_RATE_LIMIT_DELAY_MS", "4000"))
+    result = await sync_all_riders(_supabase, rate_limit)
     return JSONResponse(content=result)
