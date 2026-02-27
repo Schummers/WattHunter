@@ -1,0 +1,31 @@
+# .github/workflows/daily-pipeline.yml
+name: Daily Pipeline (Sync + Scoring)
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # 08:00 UTC every day
+  workflow_dispatch:        # Allow manual trigger
+
+jobs:
+  daily-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync riders from PCS
+        run: |
+          response=$(curl -sf -w "%{http_code}" -o /tmp/sync.json \
+            -X POST "${{ secrets.FASTAPI_URL }}/jobs/sync-riders" \
+            -H "X-API-Secret: ${{ secrets.FASTAPI_SECRET }}" \
+            --max-time 1200)
+          echo "Status: $response"
+          cat /tmp/sync.json
+          [ "$response" = "200" ] || exit 1
+
+      - name: Calculate daily scores
+        run: |
+          response=$(curl -sf -w "%{http_code}" -o /tmp/scoring.json \
+            -X POST "${{ secrets.FASTAPI_URL }}/jobs/daily-scoring" \
+            -H "X-API-Secret: ${{ secrets.FASTAPI_SECRET }}" \
+            --max-time 120)
+          echo "Status: $response"
+          cat /tmp/scoring.json
+          [ "$response" = "200" ] || exit 1

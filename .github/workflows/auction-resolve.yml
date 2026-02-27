@@ -1,0 +1,22 @@
+# .github/workflows/auction-resolve.yml
+name: Auction Resolution (Midnight)
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 00:00 UTC every day
+  workflow_dispatch:
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve auction round
+        run: |
+          response=$(curl -sf -w "%{http_code}" -o /tmp/resolve.json \
+            -X POST "${{ secrets.FASTAPI_URL }}/jobs/resolve-auction" \
+            -H "X-API-Secret: ${{ secrets.FASTAPI_SECRET }}" \
+            --max-time 120)
+          echo "Status: $response"
+          cat /tmp/resolve.json
+          # OK even if no auctions open (returns 200 with no_open_auctions)
+          [ "$response" = "200" ] || exit 1
