@@ -8,5 +8,7 @@ tests/
 requirements-test.txt
 resolve_now.py
 seed_riders.py
+run_daily_pipeline.py
+run_auction_resolve.py
 test_playwright_pcs.py
 test_pcs_validation.py

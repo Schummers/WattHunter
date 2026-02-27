@@ -9,23 +9,28 @@ on:
 jobs:
   daily-pipeline:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/pcs-sync
     steps:
-      - name: Sync riders from PCS
-        run: |
-          response=$(curl -sf -w "%{http_code}" -o /tmp/sync.json \
-            -X POST "${{ secrets.FASTAPI_URL }}/jobs/sync-riders" \
-            -H "X-API-Secret: ${{ secrets.FASTAPI_SECRET }}" \
-            --max-time 1200)
-          echo "Status: $response"
-          cat /tmp/sync.json
-          [ "$response" = "200" ] || exit 1
+      - uses: actions/checkout@v4
 
-      - name: Calculate daily scores
-        run: |
-          response=$(curl -sf -w "%{http_code}" -o /tmp/scoring.json \
-            -X POST "${{ secrets.FASTAPI_URL }}/jobs/daily-scoring" \
-            -H "X-API-Secret: ${{ secrets.FASTAPI_SECRET }}" \
-            --max-time 120)
-          echo "Status: $response"
-          cat /tmp/scoring.json
-          [ "$response" = "200" ] || exit 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: services/pcs-sync/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright Chromium
+        run: playwright install chromium --with-deps
+
+      - name: Run daily pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CONVERSION_RATE_EUR_PER_PCS: ${{ secrets.CONVERSION_RATE_EUR_PER_PCS }}
+          PCS_RATE_LIMIT_DELAY_MS: ${{ secrets.PCS_RATE_LIMIT_DELAY_MS }}
+        run: python run_daily_pipeline.py

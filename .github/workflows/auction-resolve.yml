@@ -9,14 +9,28 @@ on:
 jobs:
   resolve:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/pcs-sync
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: services/pcs-sync/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright Chromium
+        run: playwright install chromium --with-deps
+
       - name: Resolve auction round
-        run: |
-          response=$(curl -sf -w "%{http_code}" -o /tmp/resolve.json \
-            -X POST "${{ secrets.FASTAPI_URL }}/jobs/resolve-auction" \
-            -H "X-API-Secret: ${{ secrets.FASTAPI_SECRET }}" \
-            --max-time 120)
-          echo "Status: $response"
-          cat /tmp/resolve.json
-          # OK even if no auctions open (returns 200 with no_open_auctions)
-          [ "$response" = "200" ] || exit 1
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CONVERSION_RATE_EUR_PER_PCS: ${{ secrets.CONVERSION_RATE_EUR_PER_PCS }}
+        run: python run_auction_resolve.py
+        # Returns {"status": "no_open_auctions"} if nothing to resolve — this is OK
