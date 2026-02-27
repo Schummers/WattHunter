@@ -19,8 +19,10 @@ interface Rider {
   specialty: string;
   nationality: string;
   pcs_points_1yr: number;
+  pcs_rank: number | null;
   monthly_salary: number;
   photo_url: string | null;
+  age: number | null;
   is_contracted: boolean;
 }
 
