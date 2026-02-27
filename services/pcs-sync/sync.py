@@ -30,9 +30,10 @@ PROTEAM_SLUGS = [
 
 SPECIALTY_MAP = {
     "climber": "climber",
-    "sprinter": "sprinter",
-    "one day races": "puncheur",
-    "time trial": "time_trialist",
+    "sprint": "sprinter",
+    "one_day_races": "puncheur",
+    "hills": "puncheur",
+    "time_trial": "time_trialist",
     "gc": "all_rounder",
 }
 
@@ -98,12 +99,10 @@ async def sync_team_roster(supabase: Client, page, team_slug: str, rate_limit_s:
             specialty = "all_rounder"
             try:
                 specs = rider.points_per_speciality()
-                if specs:
-                    # Find highest scoring specialty
-                    best = max(specs, key=lambda s: s.get("points", 0)) if isinstance(specs, list) else None
-                    if best:
-                        spec_name = best.get("specialty", "").lower()
-                        specialty = SPECIALTY_MAP.get(spec_name, "all_rounder")
+                # PCS returns a dict {specialty_key: points}, e.g. {"climber": 5583, "gc": 2977}
+                if specs and isinstance(specs, dict):
+                    best_key = max(specs, key=lambda k: specs[k])
+                    specialty = SPECIALTY_MAP.get(best_key, "all_rounder")
             except Exception:
                 pass
 

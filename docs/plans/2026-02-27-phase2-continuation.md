@@ -40,7 +40,7 @@ Bugs corriges (session 2026-02-28) :
 
 ---
 
-## Etape 3 : Tests automatises 🔲 A FAIRE (prochaine session)
+## Etape 3 : Tests automatises ✅ TERMINE (2026-02-28)
 
 ### 3.1 — Tests Python (services/pcs-sync/)
 Fichier : `services/pcs-sync/tests/`
@@ -64,16 +64,15 @@ cd services/pcs-sync && pytest  # doit passer
 
 ---
 
-## Etape 4 : Push + PR 🔲 A FAIRE (prochaine session)
+## Etape 4 : Push + PR ✅ TERMINE (2026-02-28)
 
-Une fois tous les tests OK :
 ```bash
-git push -u origin main
+git push -u origin main  # commit 5a1c621
 ```
 
 ---
 
-## Etape 5 : Deploiement Railway 🔲 PROCHAINE PRIORITE
+## Etape 5 : Deploiement Railway ✅ TERMINE (2026-02-28)
 
 **Etat :** Code Python pret, Dockerfile a mettre a jour.
 
