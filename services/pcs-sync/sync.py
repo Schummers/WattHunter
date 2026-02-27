@@ -5,7 +5,7 @@ Uses Playwright to bypass Cloudflare bot-protection on procyclingstats.com.
 import asyncio
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from procyclingstats import Team, Rider
 from supabase import create_client, Client
 
@@ -189,15 +189,109 @@ async def sync_all_riders(supabase: Client | None = None, rate_limit_ms: int | N
     }
 
 
+async def sync_race_results(supabase: Client, rate_limit_ms: int | None = None) -> dict:
+    """
+    Fetch today's race results for all contracted riders.
+
+    Uses Playwright to bypass Cloudflare, then calls .season_results() to get
+    this season's results and filters for today's date to compute points_delta.
+    Upserts into rider_pcs_history (rider_id, date, pcs_points, points_delta).
+    """
+    from playwright.async_api import async_playwright
+
+    if rate_limit_ms is None:
+        rate_limit_ms = RATE_LIMIT_MS
+
+    rate_limit_s = rate_limit_ms / 1000
+    today = date.today().isoformat()
+
+    # Get all riders with active/notice contracts and their PCS slug
+    response = supabase.table("contracts").select(
+        "rider_id, riders(pcs_slug, pcs_points_1yr)"
+    ).in_("status", ["active", "notice"]).execute()
+
+    contracted = response.data or []
+
+    if not contracted:
+        return {"status": "completed", "synced": 0, "errors": [], "message": "No contracted riders"}
+
+    synced = 0
+    errors = []
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            )
+        )
+        page = await context.new_page()
+
+        for contract in contracted:
+            try:
+                rider_info = contract.get("riders") or {}
+                pcs_slug = rider_info.get("pcs_slug")
+                if not pcs_slug:
+                    continue
+
+                rider_html = await fetch_html(page, pcs_slug, delay=rate_limit_s)
+                rider = Rider(pcs_slug, html=rider_html, update_html=False)
+
+                # .season_results() returns list of dicts with race results for current season
+                try:
+                    results = rider.season_results()
+                except Exception as e:
+                    logger.warning(f"season_results() failed for {pcs_slug}: {e}")
+                    results = []
+
+                # Sum points earned today
+                today_points = 0
+                for result in results:
+                    result_date = result.get("date", "")
+                    # PCS dates may be "YYYY-MM-DD" or "DD-MM" — normalise as needed
+                    if result_date == today:
+                        today_points += int(result.get("points", 0) or 0)
+
+                if today_points > 0:
+                    current_cumulative = int(rider_info.get("pcs_points_1yr", 0) or 0)
+
+                    supabase.table("rider_pcs_history").upsert({
+                        "rider_id": contract["rider_id"],
+                        "date": today,
+                        "pcs_points": current_cumulative,
+                        "points_delta": today_points,
+                    }, on_conflict="rider_id,date").execute()
+
+                    synced += 1
+
+            except Exception as e:
+                logger.error(f"Failed to sync race results for contract {contract}: {e}")
+                errors.append(str(e))
+
+        await browser.close()
+
+    return {"status": "completed", "synced": synced, "errors": errors}
+
+
+async def purge_old_history(supabase: Client, keep_days: int = 7) -> dict:
+    """Delete rider_pcs_history entries older than keep_days."""
+    cutoff = (date.today() - timedelta(days=keep_days)).isoformat()
+    supabase.table("rider_pcs_history").delete().lt("date", cutoff).execute()
+    return {"status": "purged", "cutoff": cutoff}
+
+
 async def sync_rider_daily(pcs_slug: str) -> dict:
     """
     Sync today's PCS points for a single rider.
-    TODO: implement with procyclingstats.
+    Kept for legacy endpoint compatibility — race results are now synced in bulk
+    via sync_race_results() as part of the /jobs/sync-riders pipeline.
     """
     return {
-        "status": "not_implemented",
+        "status": "deprecated",
         "pcs_slug": pcs_slug,
-        "message": "Daily sync not yet implemented.",
+        "message": "Use /jobs/sync-riders which calls sync_race_results() for all contracted riders.",
     }
 
 
