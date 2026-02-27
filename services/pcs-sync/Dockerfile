@@ -1,15 +1,15 @@
-# Official Playwright Python image — Chromium + all system deps pre-installed.
-# Version must match playwright==1.49.0 in requirements.txt.
-FROM mcr.microsoft.com/playwright/python:v1.49.0-focal
+# Python slim + Playwright Chromium installed at build time.
+# Avoids dependency on mcr.microsoft.com/playwright/python which is unreliable on Railway.
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install Python dependencies.
-# PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 prevents a redundant browser download
-# since browsers are already baked into the base image at /ms-playwright.
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+# Install Python dependencies first (layer cache)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Chromium + all system dependencies via Playwright CLI
+RUN playwright install chromium --with-deps
 
 # Copy application code (see .dockerignore for exclusions)
 COPY . .
