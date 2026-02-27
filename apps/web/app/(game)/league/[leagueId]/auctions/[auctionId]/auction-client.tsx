@@ -1,11 +1,40 @@
 "use client";
 
+import { useState } from "react";
 import { RiderTable } from "./rider-table";
+import { RiderDialog } from "./rider-dialog";
+import { Button } from "@/components/ui/button";
+import { cancelBid } from "./actions";
+
+interface Rider {
+  id: string;
+  full_name: string;
+  real_team: string;
+  specialty: string;
+  nationality: string;
+  pcs_points_1yr: number;
+  pcs_rank: number | null;
+  monthly_salary: number;
+  photo_url: string | null;
+  age: number | null;
+  is_contracted: boolean;
+}
+
+interface Bid {
+  id: string;
+  rider_id: string;
+  amount: number;
+}
+
+interface Team {
+  id: string;
+  treasury: number;
+}
 
 interface AuctionClientProps {
-  riders: any[];
-  myBids: any[];
-  team: any;
+  riders: Rider[];
+  myBids: Bid[];
+  team: Team;
   auctionId: string;
   currentRound: number;
 }
@@ -17,16 +46,79 @@ export function AuctionClient({
   auctionId,
   currentRound,
 }: AuctionClientProps) {
-  const myBidRiderIds = new Set(myBids.map((b: any) => b.rider_id));
+  const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
+
+  const myBidRiderIds = new Set(myBids.map((b) => b.rider_id));
+  const activeBidsTotal = myBids.reduce((s, b) => s + b.amount, 0);
+
+  const existingBid = selectedRider
+    ? (myBids.find((b) => b.rider_id === selectedRider.id) ?? null)
+    : null;
 
   return (
-    <RiderTable
-      riders={riders}
-      myBidRiderIds={myBidRiderIds}
-      onRiderClick={(rider) => {
-        // TODO: Task 10 will add the rider dialog here
-        console.log("Rider clicked:", rider.full_name);
-      }}
-    />
+    <>
+      {myBids.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium uppercase text-muted-foreground">
+            Mes mises ({myBids.length})
+          </span>
+          {myBids.map((bid) => {
+            const rider = riders.find((r) => r.id === bid.rider_id);
+            return (
+              <div
+                key={bid.id}
+                className="flex items-center justify-between border-b border-border py-2 last:border-0"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-foreground">
+                    {rider?.full_name ?? "—"}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {rider?.real_team}
+                  </span>
+                  <span className="text-sm font-semibold text-accent">
+                    {bid.amount.toLocaleString("fr-FR")} EUR
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => rider && setSelectedRider(rider)}
+                  >
+                    Modifier
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => cancelBid(bid.id)}
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+          <div className="my-2 border-b border-border" />
+        </div>
+      )}
+
+      <RiderTable
+        riders={riders}
+        myBidRiderIds={myBidRiderIds}
+        onRiderClick={setSelectedRider}
+      />
+
+      <RiderDialog
+        rider={selectedRider}
+        existingBid={existingBid}
+        treasury={team.treasury}
+        activeBidsTotal={activeBidsTotal}
+        auctionId={auctionId}
+        currentRound={currentRound}
+        onClose={() => setSelectedRider(null)}
+      />
+    </>
   );
 }
