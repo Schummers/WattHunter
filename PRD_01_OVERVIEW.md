@@ -150,7 +150,6 @@ Repeat until season end → Highest XP wins the league
 - **US-09** — View full rider profile: photo, age, nationality, real team, specialty, PCS points 1yr, estimated salary
 - **US-10** — Place a bid with real-time budget validation
 - **US-11** — Modify a bid before auction closes
-- **US-12** — Get email notification if outbid (within 5 min)
 - **US-13** — See my treasury balance and total exposure (sum of all active bids)
 
 ### Team Manager

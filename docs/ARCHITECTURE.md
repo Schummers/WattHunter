@@ -64,7 +64,7 @@ watthunter/
 │   ├── sync.py                  # Playwright + procyclingstats parser
 │   ├── auction.py               # Resolution 3-round sealed-bid
 │   ├── scoring.py               # XP quotidien
-│   ├── email_notify.py          # Resend integration
+│   ├── run_daily_pipeline.py    # CI entry point (GitHub Actions)
 │   ├── seed_riders.py           # Script de seed dev (30 coureurs fake)
 │   ├── resolve_now.py           # Script de resolution manuelle (dev)
 │   └── test_playwright_pcs.py   # Validation pipeline Playwright + PCS
@@ -339,7 +339,7 @@ Librairie : `procyclingstats` v0.2.7 (Python) + Playwright (Cloudflare bypass).
 - [x] Page resultats : tabs Round 1/2/3, coureurs attribues par tous les joueurs
 - [x] Resolution 3-round sealed-bid (auction.py) — valide manuellement
 - [x] Moteur XP quotidien (scoring.py)
-- [x] Notifications email recap (email_notify.py via Resend)
+- [x] Runners CI : run_daily_pipeline.py + run_auction_resolve.py (GitHub Actions)
 - [x] Pipeline PCS : Playwright + procyclingstats v0.2.7 — valide (Tudor, Alaphilippe)
 - [x] Seed dev 30 coureurs fake (seed_riders.py)
 - [x] Script resolution manuelle (resolve_now.py)

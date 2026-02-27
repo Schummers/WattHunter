@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Next.js Web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "web", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "FastAPI PCS Sync",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd services/pcs-sync && uvicorn main:app --reload --port 8000"],
+      "port": 8000
+    }
+  ]
+}

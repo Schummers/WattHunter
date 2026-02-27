@@ -394,7 +394,7 @@ When the auction window closes, resolution runs automatically:
    - Remaining won riders go to the next-highest bidder
 4. **Winning bid amount = purchase price** (one-time deduction from treasury)
 5. **Contract salary = rider's current market salary** (locked for the duration of employment)
-6. All players receive a recap email within 5 minutes of resolution
+6. Résultats visibles immédiatement dans l'interface (pas d'email)
 
 ### 7.4 Auction History
 
@@ -428,7 +428,7 @@ When a player wins a rider at auction, a **contract** is created:
 Triggered at start of Month 2 of negative treasury (see §2.4):
 - Riders released: most expensive salary first, until remaining roster's monthly salary ≤ projected treasury
 - No notice period for auto-release — immediate
-- Player notified by email with list of released riders
+- Banner d'alerte in-app avec liste des coureurs libérés
 
 ---
 

@@ -40,7 +40,7 @@
 - [ ] Simulation Excel : calibrer taux de conversion (€/point PCS)
 - [ ] Valider la tolérance au rate limit de procyclingstats (risque IP ban)
 - [ ] Valider l'exactitude des données PCS pour le calcul des salaires
-- [ ] Choisir le provider email (Supabase built-in vs Postmark)
+- [ ] Définir la stratégie de notifications in-app (pas d'emails)
 - [ ] Définir la charte graphique / branding
 
 ## Références PRD

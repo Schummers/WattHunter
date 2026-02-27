@@ -328,7 +328,7 @@ CREATE TABLE team_sponsors (
 4. Recalculate `min_salary_monthly` using formula (see PRD_02 §2.2)
 5. Update `pcs_rank` → used to determine rider access tier per player level
 6. **Retry:** 3 attempts per rider on failure. After 3 failures, log error and skip.
-7. **Alert:** Send admin email if >5% of riders fail sync.
+7. **Alert:** Log error to GitHub Actions if >5% of riders fail sync.
 
 **Rate limiting:** 4 seconds between requests (configurable via env). Estimated run time: ~923 riders × 4s = ~62 minutes. Runs daily at 08:00 UTC.
 
@@ -410,7 +410,7 @@ For each team with active contracts:
 - AC: Commissioner can launch only when ≥4 players have joined
 - AC: Launch creates first `auctions` row with `opens_at = now()`, `closes_at = now() + 72h`
 - AC: League `status` changes to `'active'`
-- AC: All league members receive email notification "Auction is open!"
+- AC: All league members see "Auction is open!" banner in-app on next visit
 
 ---
 
@@ -443,11 +443,6 @@ For each team with active contracts:
 - AC: Bid upserted (one active bid per player/rider pair per auction)
 - AC: Bid timestamp recorded (used for tie-breaking)
 
-**REQ-009 — Outbid notification (email)**
-- AC: When player A's bid is beaten by player B, player A receives email within 5 minutes
-- AC: Email contains: rider name, your previous bid, new highest bid, link to auction
-- AC: Email sends only if player A is not currently the highest bidder (no spam for own bids)
-
 **REQ-010 — Auction timer display**
 - AC: Countdown visible on all auction screens: "Closes in 47h 23m 14s"
 - AC: Timer updates every second while auction is open
@@ -459,7 +454,7 @@ For each team with active contracts:
 - AC: Budget cascade check (see PRD_02 §7.3). Mark `is_winning=true` on winning bids.
 - AC: For each winning bid: deduct `amount` from team treasury. Insert `treasury_log`. Create `contracts` row. Set `is_active_in_game=true` on rider. Trigger on-demand detail fetch.
 - AC: Auction status set to `'closed'`
-- AC: Recap email sent to all league members within 5 min: list of won riders per team, amounts paid
+- AC: Resolution results immediately visible in auction history screen
 
 **REQ-012 — Auction history**
 - AC: Past auctions browsable from league screen
@@ -482,7 +477,7 @@ For each team with active contracts:
 **REQ-015 — Salary deduction (automated, 1st of month)**
 - AC: All salaries deducted at 00:01 UTC on 1st
 - AC: Each deduction logged in `treasury_log` (type='salary', description="Salary: [rider name]")
-- AC: Player notified by email of total salary deduction
+- AC: Treasury deduction visible in treasury log screen
 
 **REQ-016 — Rider profitability revenue (automated, daily)**
 - AC: After XP job completes (09:00 UTC), compute revenue per rider: `points_delta × CONVERSION_RATE`
@@ -499,7 +494,7 @@ For each team with active contracts:
 - AC: When `teams.is_bankrupt = true`: banner "⚠️ BANKRUPT — Pay your riders or lose them" displayed
 - AC: Player blocked from placing auction bids while bankrupt
 - AC: If still bankrupt at next month start: auto-release most expensive rider(s) until budget projects positive
-- AC: Auto-release logged in `treasury_log`, player notified by email
+- AC: Auto-release logged in `treasury_log`, banner in-app displayed
 
 ---
 
@@ -555,7 +550,7 @@ For each team with active contracts:
 **REQ-025 — Level progression display**
 - AC: Progress bar: "Level 5 — 35,521 XP / 54,728 XP"
 - AC: Preview of next unlock shown: "Level 6 unlocks: 2 active policies, Tier 2 sponsors"
-- AC: Level up triggers celebration animation + push/email notification
+- AC: Level up triggers celebration animation in-app
 
 ---
 
@@ -591,7 +586,6 @@ For each team with active contracts:
 | Auction bid submission | < 1 second response |
 | Auction resolution | < 2 minutes for full resolution after close |
 | Daily sync completion | Before 09:00 UTC (data ready for XP job) |
-| Outbid email | < 5 minutes after bid beaten |
 | Data consistency | Treasury balance must match sum of `treasury_log`. Check via daily reconciliation job. |
 | Offline handling | App shows cached data if offline; blocks writes; shows "You're offline" banner |
 | Security | RLS enforced on all tables. Users cannot read other teams' bid amounts during live auction. |

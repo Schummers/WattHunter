@@ -1,6 +1,6 @@
 """Tests for auction.py — resolve_current_round.
 
-All Supabase I/O and email sends are mocked.  date.today() is patched to a
+All Supabase I/O is mocked.  date.today() is patched to a
 fixed value (2026-02-28) so round computation is deterministic.
 """
 from datetime import date as real_date
@@ -96,7 +96,7 @@ async def test_no_active_bids_round1():
         # 2. auction_bids → empty
         [],
     )
-    with _patch_date(), patch("auction._send_round_recap_emails"):
+    with _patch_date():
         result = await auction.resolve_current_round(sb)
 
     assert result["status"] == "completed"
@@ -123,8 +123,7 @@ async def test_no_active_bids_round3_closes_auction():
         # 3. _close_auction: auctions.update().eq().execute() → don't care
         [],
     )
-    with _patch_date(), patch("auction._send_round_recap_emails"), \
-         patch("auction._close_auction") as mock_close:
+    with _patch_date(), patch("auction._close_auction") as mock_close:
         result = await auction.resolve_current_round(sb)
 
     mock_close.assert_called_once_with(sb, AUCTION_ID)
@@ -196,7 +195,7 @@ async def test_nominal_resolution():
         [],
     )
 
-    with _patch_date(), patch("auction._send_round_recap_emails"):
+    with _patch_date():
         result = await auction.resolve_current_round(sb)
 
     assert result["status"] == "completed"
@@ -240,8 +239,7 @@ async def test_round3_closes_auction_after_resolution():
         [],
     )
 
-    with _patch_date(), patch("auction._send_round_recap_emails"), \
-         patch("auction._close_auction") as mock_close:
+    with _patch_date(), patch("auction._close_auction") as mock_close:
         result = await auction.resolve_current_round(sb)
 
     mock_close.assert_called_once_with(sb, AUCTION_ID)
