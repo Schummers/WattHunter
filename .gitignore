@@ -29,6 +29,9 @@ services/pcs-sync/.env
 .DS_Store
 Thumbs.db
 
+# Worktrees
+.worktrees/
+
 # Editor
 .vscode/
 .idea/
