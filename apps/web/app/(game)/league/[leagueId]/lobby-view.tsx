@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Icon } from "@iconify/react";
 import { launchFirstAuction } from "./actions";
@@ -29,15 +30,24 @@ export function LobbyView({
   memberCount,
   isCommissioner,
 }: LobbyViewProps) {
-  const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   const [launching, setLaunching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canLaunch = memberCount >= 1;
 
+  const inviteUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/league/join?code=${league.invite_code}`;
+
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(inviteUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   const handleCopyCode = async () => {
     await navigator.clipboard.writeText(league.invite_code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   const handleLaunch = async () => {
@@ -66,20 +76,44 @@ export function LobbyView({
 
       <div className="my-6 border-b border-border" />
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-medium text-foreground">
+          Inviter des joueurs
+        </p>
+        <div className="flex items-center gap-2">
+          <Input
+            readOnly
+            value={inviteUrl}
+            className="flex-1 truncate text-sm text-muted-foreground"
+            onClick={(e) => (e.target as HTMLInputElement).select()}
+          />
+          <Button variant="outline" size="icon" className="shrink-0" onClick={handleCopyLink}>
+            <Icon
+              icon={copiedLink ? "solar:check-circle-linear" : "solar:copy-linear"}
+              className="size-4"
+            />
+          </Button>
+        </div>
+      </div>
+
+      <div className="my-4 border-b border-border" />
+
+      <div className="flex flex-col gap-3">
         <p className="text-sm font-medium text-foreground">
           Code d&apos;invitation
         </p>
-        <div className="flex items-center gap-3">
-          <code className="rounded-md bg-muted px-4 py-2 text-lg font-semibold tracking-widest text-foreground">
-            {league.invite_code}
-          </code>
-          <Button variant="ghost" size="sm" onClick={handleCopyCode}>
+        <div className="flex items-center gap-2">
+          <Input
+            readOnly
+            value={league.invite_code}
+            className="flex-1 text-center text-lg font-semibold tracking-widest"
+            onClick={(e) => (e.target as HTMLInputElement).select()}
+          />
+          <Button variant="outline" size="icon" className="shrink-0" onClick={handleCopyCode}>
             <Icon
-              icon={copied ? "solar:check-circle-linear" : "solar:copy-linear"}
+              icon={copiedCode ? "solar:check-circle-linear" : "solar:copy-linear"}
               className="size-4"
             />
-            {copied ? "Copie" : "Copier"}
           </Button>
         </div>
       </div>

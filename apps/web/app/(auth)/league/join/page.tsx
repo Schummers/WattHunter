@@ -1,11 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { joinLeague } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export default function JoinLeaguePage() {
+  const searchParams = useSearchParams();
+  const prefillCode = searchParams.get("code") ?? "";
   const [state, formAction, pending] = useActionState(joinLeague, null);
 
   return (
@@ -30,6 +33,7 @@ export default function JoinLeaguePage() {
             placeholder="Ex: A3K7WN"
             required
             maxLength={6}
+            defaultValue={prefillCode}
             className="text-center text-lg tracking-widest uppercase"
           />
         </div>

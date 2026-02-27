@@ -29,7 +29,7 @@ const steps = [
 export default function OnboardingPage() {
   const router = useRouter();
 
-  const handleContinue = async () => {
+  const markOnboarded = async () => {
     const supabase = createClient();
     const {
       data: { user },
@@ -40,7 +40,6 @@ export default function OnboardingPage() {
         .update({ has_onboarded: true })
         .eq("id", user.id);
     }
-    router.push("/league/create");
   };
 
   return (
@@ -76,15 +75,25 @@ export default function OnboardingPage() {
       </div>
 
       <div className="flex w-full flex-col gap-3">
-        <Button variant="brand" className="w-full" onClick={handleContinue}>
-          Creer ou rejoindre une ligue
+        <Button
+          variant="brand"
+          className="w-full"
+          onClick={async () => {
+            await markOnboarded();
+            router.push("/league/join");
+          }}
+        >
+          Rejoindre une ligue
         </Button>
         <Button
           variant="ghost"
           className="w-full text-muted-foreground"
-          onClick={() => router.push("/league/join")}
+          onClick={async () => {
+            await markOnboarded();
+            router.push("/league/create");
+          }}
         >
-          J&apos;ai un code d&apos;invitation
+          Creer une ligue
         </Button>
       </div>
     </div>

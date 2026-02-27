@@ -19,11 +19,11 @@ CONVERSION_RATE = int(os.getenv("CONVERSION_RATE_EUR_PER_PCS", "500"))
 SALARY_FLOOR = 5_000    # €/month
 SALARY_CAP   = 300_000  # €/month
 
-# ProTeam PCS slugs for alpha
+# ProTeam PCS slugs for alpha (validated 2026-02-27 via Playwright)
 PROTEAM_SLUGS = [
-    "team/tudor-pro-cycling-2026",
+    "team/tudor-pro-cycling-team-2026",
     "team/cofidis-2026",
-    "team/q36-5-pro-cycling-team-2026",
+    "team/pinarello-q365-pro-cycling-team-2026",
     "team/totalenergies-2026",
     "team/caja-rural-seguros-rga-2026",
 ]

@@ -68,17 +68,29 @@ export async function joinLeague(
     return { error: "Cette ligue est pleine." };
   }
 
+  // Ensure public.users row exists (trigger handles this normally,
+  // but belt-and-suspenders for edge cases like auto-confirm)
+  const displayName =
+    user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "Joueur";
+  await supabase
+    .from("users")
+    .upsert(
+      { id: user.id, display_name: displayName, avatar_url: user.user_metadata?.avatar_url ?? null },
+      { onConflict: "id" }
+    );
+
   const { data: team, error: teamError } = await supabase
     .from("teams")
     .insert({
       user_id: user.id,
       league_id: league.id,
-      name: `Equipe de ${user.user_metadata?.full_name ?? "Joueur"}`,
+      name: `Equipe de ${displayName}`,
     })
     .select("id")
     .single();
 
   if (teamError || !team) {
+    console.error("Team creation failed:", teamError);
     return { error: "Erreur lors de la creation de l'equipe." };
   }
 

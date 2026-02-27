@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { TreasuryWidget } from "./treasury-widget";
@@ -65,10 +66,17 @@ export default async function AuctionDetailPage({
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-foreground">{auction.name}</h1>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <span>Round {currentRound}/3</span>
           <span>·</span>
           <span>Résolution à minuit</span>
+          <span>·</span>
+          <Link
+            href={`/league/${leagueId}/auctions/${auctionId}/results`}
+            className="text-accent hover:underline"
+          >
+            Voir résultats
+          </Link>
         </div>
       </div>
 

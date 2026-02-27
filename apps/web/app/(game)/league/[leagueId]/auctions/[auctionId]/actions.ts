@@ -43,24 +43,45 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
     return { error: `Mise minimum: ${rider.monthly_salary} EUR` };
   }
 
-  // Budget check: sum of active bids + this bid <= treasury
+  // Check if there's already an active bid for this rider/round (to update vs insert)
+  const { data: existingBid } = await supabase
+    .from("auction_bids")
+    .select("id, amount")
+    .eq("team_id", team.id)
+    .eq("auction_id", parsed.data.auctionId)
+    .eq("rider_id", parsed.data.riderId)
+    .eq("round", parsed.data.round)
+    .eq("status", "active")
+    .maybeSingle();
+
+  // Budget check: sum of OTHER active bids + this new amount <= treasury
   // NEVER authorize a bid if treasury < total active bids (CLAUDE.md rule)
   const { data: activeBids } = await supabase
     .from("auction_bids")
-    .select("amount")
+    .select("id, amount")
     .eq("team_id", team.id)
     .eq("auction_id", parsed.data.auctionId)
     .eq("round", parsed.data.round)
     .eq("status", "active");
 
-  const currentTotal = (activeBids ?? []).reduce((s, b) => s + b.amount, 0);
-  if (currentTotal + parsed.data.amount > team.treasury) {
+  const otherBidsTotal = (activeBids ?? [])
+    .filter((b) => b.id !== existingBid?.id)
+    .reduce((s, b) => s + b.amount, 0);
+
+  if (otherBidsTotal + parsed.data.amount > team.treasury) {
     return { error: "Budget insuffisant" };
   }
 
-  // Upsert bid (insert or update if already exists for this rider/round)
-  const { error } = await supabase.from("auction_bids").upsert(
-    {
+  let error;
+  if (existingBid) {
+    // Update existing active bid
+    ({ error } = await supabase
+      .from("auction_bids")
+      .update({ amount: parsed.data.amount, placed_at: new Date().toISOString() })
+      .eq("id", existingBid.id));
+  } else {
+    // Insert new bid
+    ({ error } = await supabase.from("auction_bids").insert({
       auction_id: parsed.data.auctionId,
       rider_id: parsed.data.riderId,
       team_id: team.id,
@@ -68,9 +89,8 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
       round: parsed.data.round,
       status: "active",
       placed_at: new Date().toISOString(),
-    },
-    { onConflict: "auction_id,rider_id,team_id,round" }
-  );
+    }));
+  }
 
   if (error) return { error: error.message };
 
