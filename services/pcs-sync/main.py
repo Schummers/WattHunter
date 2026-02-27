@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 
 from sync import sync_all_riders, sync_rider_daily, sync_rider_history, sync_race_results, purge_old_history
+from scoring import calculate_daily_scores
 
 from supabase import create_client
 
@@ -110,3 +111,27 @@ async def job_sync_riders(
         "race_results": results_result,
         "purge": purge_result,
     })
+
+
+@app.post("/jobs/daily-scoring")
+async def job_daily_scoring(
+    request: Request,
+    x_api_secret: str | None = Header(default=None),
+):
+    """
+    Calculate daily XP and treasury revenue for all teams with contracted riders
+    who earned PCS points today.
+
+    For each team:
+      - Sums points_delta from rider_pcs_history (today, > 0)
+      - Applies active policy XP bonus multipliers
+      - Upserts into rider_xp_daily
+      - Updates teams.cumulative_xp and teams.treasury
+      - Inserts one treasury_log entry of type 'rider_revenue' (deduped per day)
+
+    Triggered after /jobs/sync-riders completes (GitHub Actions: daily pipeline).
+    CONVERSION_RATE is read from env (CONVERSION_RATE_EUR_PER_PCS) — never hardcoded.
+    """
+    _check_auth(x_api_secret)
+    result = await calculate_daily_scores(_supabase)
+    return JSONResponse(content=result)
