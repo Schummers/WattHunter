@@ -17,6 +17,8 @@ import logging
 from datetime import date, datetime
 from supabase import Client
 
+from email_notify import send_round_recap
+
 logger = logging.getLogger(__name__)
 
 
@@ -102,12 +104,25 @@ async def resolve_current_round(supabase: Client) -> dict:
 
             resolved_count = 0
 
+            # Per-team email data: team_id -> {won: [...], lost: [...]}
+            team_email_data: dict[str, dict] = {}
+
             for rider_id, rbids in rider_bids.items():
                 try:
                     # Sort: highest amount first; tiebreak: earliest placed_at
                     rbids.sort(key=lambda b: (-int(b["amount"]), b["placed_at"]))
                     winner = rbids[0]
                     losers = rbids[1:]
+
+                    # Fetch rider name for email recap
+                    rider_name_resp = supabase.table("riders").select(
+                        "full_name, monthly_salary"
+                    ).eq("id", rider_id).single().execute()
+                    rider_full_name = (
+                        rider_name_resp.data.get("full_name", rider_id)
+                        if rider_name_resp.data
+                        else rider_id
+                    )
 
                     # Mark winner
                     supabase.table("auction_bids").update(
@@ -120,14 +135,9 @@ async def resolve_current_round(supabase: Client) -> dict:
                             {"status": "outbid"}
                         ).eq("id", loser["id"]).execute()
 
-                    # Fetch rider's current monthly_salary for the contract
-                    rider_resp = supabase.table("riders").select(
-                        "monthly_salary"
-                    ).eq("id", rider_id).single().execute()
-
                     locked_salary = (
-                        rider_resp.data["monthly_salary"]
-                        if rider_resp.data
+                        rider_name_resp.data["monthly_salary"]
+                        if rider_name_resp.data
                         else 5_000  # SALARY_FLOOR fallback
                     )
 
@@ -142,11 +152,14 @@ async def resolve_current_round(supabase: Client) -> dict:
 
                     # Deduct treasury — fetch current value first to avoid race condition
                     team_resp = supabase.table("teams").select(
-                        "treasury"
+                        "treasury, name"
                     ).eq("id", winner["team_id"]).single().execute()
 
+                    new_treasury = 0
+                    winner_team_name = winner["team_id"]
                     if team_resp.data:
                         new_treasury = team_resp.data["treasury"] - int(winner["amount"])
+                        winner_team_name = team_resp.data.get("name", winner["team_id"])
                         supabase.table("teams").update(
                             {"treasury": new_treasury}
                         ).eq("id", winner["team_id"]).execute()
@@ -165,12 +178,45 @@ async def resolve_current_round(supabase: Client) -> dict:
                         {"is_active_in_game": True}
                     ).eq("id", rider_id).execute()
 
+                    # Accumulate winner email data
+                    wdata = team_email_data.setdefault(
+                        winner["team_id"],
+                        {"won": [], "lost": [], "treasury": new_treasury, "team_name": winner_team_name},
+                    )
+                    wdata["won"].append({
+                        "rider_name": rider_full_name,
+                        "team": winner_team_name,
+                        "amount": int(winner["amount"]),
+                    })
+                    wdata["treasury"] = new_treasury  # update after each deduction
+
+                    # Accumulate loser email data
+                    for loser in losers:
+                        ldata = team_email_data.setdefault(
+                            loser["team_id"],
+                            {"won": [], "lost": [], "treasury": 0, "team_name": loser["team_id"]},
+                        )
+                        ldata["lost"].append({
+                            "rider_name": rider_full_name,
+                            "team": winner_team_name,
+                            "my_amount": int(loser["amount"]),
+                            "winning_amount": int(winner["amount"]),
+                        })
+
                     resolved_count += 1
 
                 except Exception as e:
                     logger.error(
                         f"Auction {auction_id} round {current_round} rider {rider_id}: {e}"
                     )
+
+            # --- Send round recap emails ---
+            _send_round_recap_emails(
+                supabase=supabase,
+                auction_name=auction.get("name", auction_id),
+                current_round=current_round,
+                team_email_data=team_email_data,
+            )
 
             # Close auction after final round
             if current_round == 3:
@@ -199,3 +245,72 @@ def _close_auction(supabase: Client, auction_id: str) -> None:
         "resolved_at": datetime.utcnow().isoformat(),
     }).eq("id", auction_id).execute()
     logger.info(f"Auction {auction_id} closed.")
+
+
+def _send_round_recap_emails(
+    supabase: Client,
+    auction_name: str,
+    current_round: int,
+    team_email_data: dict[str, dict],
+) -> None:
+    """
+    Fetch player emails for all teams involved in this round and send recap emails.
+
+    Looks up each team's user_id, then fetches the corresponding auth user email
+    via the admin API.  Failures are logged and swallowed so resolution continues.
+    """
+    if not team_email_data:
+        return
+
+    team_ids = list(team_email_data.keys())
+
+    try:
+        teams_resp = supabase.table("teams").select(
+            "id, name, user_id"
+        ).in_("id", team_ids).execute()
+    except Exception as e:
+        logger.error("Failed to fetch team user_ids for email: %s", e)
+        return
+
+    for team in (teams_resp.data or []):
+        team_id = team["id"]
+        user_id = team.get("user_id")
+        team_name = team.get("name", team_id)
+
+        if not user_id:
+            continue
+
+        # Fetch auth user email via Supabase admin API
+        try:
+            user_resp = supabase.auth.admin.get_user_by_id(user_id)
+            to_email = user_resp.user.email if user_resp and user_resp.user else None
+            player_name = (
+                (user_resp.user.user_metadata or {}).get("full_name")
+                or to_email
+                or team_name
+            ) if user_resp and user_resp.user else team_name
+        except Exception as e:
+            logger.warning("Could not fetch email for user %s: %s", user_id, e)
+            continue
+
+        if not to_email:
+            logger.warning("No email found for user %s (team %s)", user_id, team_id)
+            continue
+
+        edata = team_email_data.get(team_id, {})
+        # Patch team_name into email data if it was not set during resolution
+        if not edata.get("team_name"):
+            edata["team_name"] = team_name
+
+        try:
+            send_round_recap(
+                to_email=to_email,
+                player_name=str(player_name),
+                auction_name=auction_name,
+                current_round=current_round,
+                won=edata.get("won", []),
+                lost=edata.get("lost", []),
+                treasury=edata.get("treasury", 0),
+            )
+        except Exception as e:
+            logger.error("send_round_recap failed for %s: %s", to_email, e)
