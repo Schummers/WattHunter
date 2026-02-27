@@ -2,7 +2,7 @@
 
 > **Document vivant** — Reference pour toute creation UI.
 > Toute nouvelle page ou composant doit respecter ces regles.
-> Derniere mise a jour : 2026-02-22
+> Derniere mise a jour : 2026-02-28
 
 ---
 
@@ -215,6 +215,17 @@ Tailles : `xs`, `sm`, `default`, `lg`, `icon`, `icon-xs`, `icon-sm`, `icon-lg`.
 - Border : `border-input` (Zinc 200/800)
 - Focus : ring accent `ring-ring/50`
 
+**Pattern read-only display :** L'`<Input>` peut servir de champ d'affichage non-editable (ex. lobby invitation). Utiliser `readOnly` + `onClick={(e) => e.currentTarget.select()}` pour selection auto au clic. Pour les codes mono, ajouter `text-center font-semibold tracking-widest`.
+
+```tsx
+{/* URL d'invitation */}
+<Input readOnly value={inviteUrl} onClick={(e) => e.currentTarget.select()} />
+
+{/* Code court */}
+<Input readOnly value={league.invite_code}
+  className="text-center text-lg font-semibold tracking-widest" />
+```
+
 ### Progress
 
 ```tsx
@@ -328,6 +339,21 @@ Tailles : `xs`, `sm`, `default`, `lg`, `icon`, `icon-xs`, `icon-sm`, `icon-lg`.
   </div>
 </div>
 ```
+
+### Tabs
+
+```tsx
+<Tabs defaultValue="tab1">
+  <TabsList variant="line">
+    <TabsTrigger value="tab1">Onglet 1</TabsTrigger>
+    <TabsTrigger value="tab2">Onglet 2</TabsTrigger>
+  </TabsList>
+  <TabsContent value="tab1">...</TabsContent>
+</Tabs>
+```
+
+- `variant="line"` : style souligné (pas de fond pill). Utilise pour les onglets de contenu (calendrier encheres, rounds resultats)
+- `variant="default"` : style pill standard (auth, filtres)
 
 ### Listes avec avatar
 

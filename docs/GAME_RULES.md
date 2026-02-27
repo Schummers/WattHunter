@@ -2,7 +2,7 @@
 
 > **Document vivant** — Mis a jour a chaque changement de regle.
 > Source de verite pour les mecaniques de jeu implementees et prevues.
-> Derniere mise a jour : 2026-02-22
+> Derniere mise a jour : 2026-02-28
 
 ## Vue d'ensemble
 
@@ -126,19 +126,27 @@ Profit mensuel = Revenue mensuel − Salaire du contrat
 
 | Regle | Valeur | Statut |
 |-------|--------|--------|
-| Duree | 72 heures | Implemente (structure DB) |
-| Mise minimum | Salaire mensuel du coureur | Non implemente |
-| Increment minimum | +100 € | Non implemente |
+| Duree | 72 heures (3 rounds de 24h) | Implemente |
+| Mise minimum | Salaire mensuel du coureur | Implemente |
+| Increment minimum | +100 € | Implemente |
+| Format | Sealed-bid 3 rounds | Implemente |
 | Calendrier | Aligne sur les Grands Tours | Non implemente |
 
-**Resolution :**
+**Resolution (auction.py) :**
 1. Plus haute mise gagne
-2. Egalite : timestamp le plus ancien gagne
-3. Verification en cascade du budget
-4. Mise gagnante = prix d'achat (deduction unique)
-5. Email recap a tous les joueurs (< 5 min)
+2. Egalite : timestamp le plus ancien gagne (placed_at)
+3. Verification en cascade du budget (coureurs tries par montant decroissant)
+4. Mise gagnante = prix d'achat deduit de la tresorerie
+5. Bids perdants → status `outbid`, bids annules → status `cancelled`
+6. Contrat cree (`contracts` table) avec `purchase_price` + `contract_salary` verrouille
+7. Email recap a tous les joueurs via Resend (< 5 min)
 
-**Validation du budget :** `somme(mises actives) > tresorerie` → mise rejetee
+**Validation du budget :** `somme(mises actives autres) + nouvelle mise > tresorerie` → mise rejetee
+
+**Visibilite des mises :**
+- Pendant l'enchere : mises `won`/`outbid` visibles par tous les membres de la ligue
+- Mises `active` (prochain round) : secretes, visibles uniquement par leur equipe
+- Enchere terminee : toutes les mises visibles
 
 ---
 

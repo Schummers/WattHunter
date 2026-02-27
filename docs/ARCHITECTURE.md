@@ -1,7 +1,7 @@
 # WattHunter — Architecture
 
 > **Document vivant** — Mis a jour a chaque decision d'architecture.
-> Derniere mise a jour : 2026-02-22
+> Derniere mise a jour : 2026-02-28
 
 ---
 
@@ -31,13 +31,24 @@ watthunter/
 │   │   ├── (auth)/              # Routes sans sidebar
 │   │   │   ├── login/           # Connexion (Google + email)
 │   │   │   ├── signup/          # Creation de compte (email)
-│   │   │   ├── onboarding/      # Ecran unique avec 3 cartes
+│   │   │   ├── onboarding/      # Ecran unique — Rejoindre (primary) / Creer (secondary)
 │   │   │   └── league/
 │   │   │       ├── create/      # Creer une ligue
-│   │   │       └── join/        # Rejoindre avec code
+│   │   │       └── join/        # Rejoindre avec code ou URL ?code=XXXXXX
 │   │   ├── (game)/              # Routes avec sidebar + topbar
 │   │   │   └── league/[leagueId]/
-│   │   │       └── page.tsx     # Lobby (pending) ou Dashboard (active)
+│   │   │       ├── page.tsx     # Lobby (pending) ou Dashboard (active)
+│   │   │       ├── lobby-view.tsx  # Lien d'invitation + code + liste membres
+│   │   │       └── auctions/
+│   │   │           ├── page.tsx           # Calendrier encheres (Active/A venir/Terminees)
+│   │   │           └── [auctionId]/
+│   │   │               ├── page.tsx       # Detail enchere (treasury widget + rider table)
+│   │   │               ├── auction-client.tsx  # Filtres, tri, recherche coureurs
+│   │   │               ├── rider-dialog.tsx    # Dialog mise (bidding)
+│   │   │               ├── treasury-widget.tsx # Barre sticky tresorerie
+│   │   │               ├── actions.ts          # placeBid, cancelBid
+│   │   │               └── results/
+│   │   │                   └── page.tsx   # Resultats Round 1/2/3
 │   │   ├── auth/callback/       # OAuth + email confirmation callback
 │   │   └── page.tsx             # Smart redirect
 │   ├── components/
@@ -49,12 +60,22 @@ watthunter/
 │       ├── server.ts            # Client cote serveur (cookies)
 │       └── middleware.ts        # Refresh session + protection routes
 ├── services/pcs-sync/           # FastAPI Python
+│   ├── main.py                  # FastAPI app + endpoints
+│   ├── sync.py                  # Playwright + procyclingstats parser
+│   ├── auction.py               # Resolution 3-round sealed-bid
+│   ├── scoring.py               # XP quotidien
+│   ├── email_notify.py          # Resend integration
+│   ├── seed_riders.py           # Script de seed dev (30 coureurs fake)
+│   ├── resolve_now.py           # Script de resolution manuelle (dev)
+│   └── test_playwright_pcs.py   # Validation pipeline Playwright + PCS
 ├── supabase/
-│   ├── migrations/              # 7 fichiers SQL
+│   ├── migrations/              # 15 fichiers SQL appliques
 │   └── functions/               # Edge Functions (a venir)
 ├── docs/
 │   ├── plans/                   # Design docs + plans d'implementation
+│   ├── research/                # Notes de recherche technique
 │   ├── GAME_RULES.md            # Regles du jeu (document vivant)
+│   ├── DESIGN_SYSTEM.md         # Reference UI/UX
 │   └── ARCHITECTURE.md          # Ce fichier
 ├── CLAUDE.md                    # Conventions pour Claude Code
 └── PRD_*.md                     # PRDs d'origine (3 fichiers)
@@ -172,6 +193,11 @@ Utilisee par `league_members_select` et `teams_select_league`.
 | `20260222110000_fix_recursive_rls.sql` | `is_league_member()` SECURITY DEFINER |
 | `20260222120000_leagues_select_authenticated.sql` | Leagues lisibles par tout authentifie |
 | `20260222130000_update_max_players_and_rules.sql` | max_players: default 20, range 1-20 |
+| `20260227000000_auction_rounds_and_scoring.sql` | Tables auction_bids (round + status), rider_pcs_history, contracts |
+| `20260228000000_handle_new_user_trigger.sql` | Trigger `on_auth_user_created` → auto-cree `public.users` |
+| `20260228010000_teams_select_own_policy.sql` | Policy `teams_select_own` (fix INSERT+RETURNING chicken-and-egg) |
+| `20260228020000_auctions_insert_commissioner.sql` | Policies INSERT + UPDATE sur `auctions` pour le commissaire |
+| `20260228030000_auction_bids_select_resolved.sql` | Policy SELECT bids : bids resolved (won/outbid) visibles par tous les membres |
 
 ---
 
@@ -223,17 +249,20 @@ Utilisee par `league_members_select` et `teams_select_league`.
 
 ---
 
-## Pipeline de donnees (prevu)
+## Pipeline de donnees
 
 ```
 08:00 UTC — Sync PCS complet (~923 coureurs, ~62 min)
 08:30 UTC — Update coureurs actifs en jeu
 09:00 UTC — Calcul XP quotidien
+Minuit UTC — Resolution des rounds d'encheres ouverts
 1er du mois 00:01 UTC — Finances mensuelles (salaires, sponsors, faillites)
 ```
 
-Service : Python FastAPI (`services/pcs-sync/`) deploye sur Railway.
-Librairie : `procyclingstats` (Python, gratuite).
+Service : Python FastAPI (`services/pcs-sync/`) — a deployer sur Railway.
+Librairie : `procyclingstats` v0.2.7 (Python) + Playwright (Cloudflare bypass).
+
+**Etat du deploiement :** Code pret localement, Dockerfile a mettre a jour pour inclure Playwright + Chromium. Pas encore deploye en prod.
 
 ---
 
@@ -269,6 +298,26 @@ Librairie : `procyclingstats` (Python, gratuite).
 - **Decision :** Un seul ecran avec 3 cartes informatives + boutons create/join
 - **Raison :** Moins de friction, l'information est concise
 
+### ADR-007 : Trigger auth plutot qu'upsert dans le callback
+- **Contexte :** Si l'utilisateur rate le callback OAuth, `public.users` n'est pas cree → FK violation sur `teams`
+- **Decision :** Trigger `handle_new_user` (SECURITY DEFINER) sur `auth.users` INSERT pour auto-creer `public.users`
+- **Raison :** Belt-and-suspenders : le callback reste intact, le trigger garantit la coherence en cas d'anomalie
+
+### ADR-008 : Policy `teams_select_own` pour corriger INSERT+RETURNING
+- **Contexte :** INSERT sur `teams` + `.select().single()` (RETURNING) echouait : la seule policy SELECT existante (`teams_select_league`) requiert une appartenance a la ligue, mais l'utilisateur n'est pas encore membre au moment de la creation
+- **Decision :** Ajouter `teams_select_own` : `auth.uid() = user_id` (sans condition ligue)
+- **Raison :** Pattern PostgREST : RETURNING est soumis aux policies SELECT. Un utilisateur doit toujours pouvoir voir sa propre equipe
+
+### ADR-009 : Pas d'upsert sur `auction_bids` (contrainte partielle)
+- **Contexte :** L'index unique sur `auction_bids` est partiel (`WHERE status = 'active'`). PostgREST ne peut pas utiliser les index partiels pour ON CONFLICT
+- **Decision :** Remplacer l'upsert par un SELECT (maybeSingle) explicite puis INSERT ou UPDATE selon le resultat
+- **Raison :** Limitation connue de PostgREST. Solution standard : logique applicative plutot que upsert DB
+
+### ADR-010 : Playwright pour le scraping PCS (pas requests/httpx)
+- **Contexte :** ProCyclingStats.com utilise Cloudflare, bloque les requetes HTTP basiques
+- **Decision :** Playwright headless Chromium + Chrome user agent pour bypass Cloudflare
+- **Raison :** Valide par test : Tudor (30 coureurs), profil Alaphilippe parsed avec succes. ScrapFly reste en fallback
+
 ---
 
 ## Etat d'avancement
@@ -278,24 +327,35 @@ Librairie : `procyclingstats` (Python, gratuite).
 - [x] Auth (Google OAuth + email/password)
 - [x] Onboarding (ecran unique 3 cartes)
 - [x] Create league (nom uniquement, max 20)
-- [x] Join league (code 6 caracteres)
-- [x] Lobby (liste membres, copie code, lancement par commissaire)
+- [x] Join league (code 6 caracteres + URL pre-remplie ?code=)
+- [x] Lobby (URL + code d'invitation avec copie, liste membres, lancement par commissaire)
 - [x] 15 tables DB + RLS + seed
 
-### A implementer (Phase 2+)
-- [ ] Catalogue de coureurs + recherche/filtres
-- [ ] Systeme d'encheres complet
+### Implemente (Phase 2 — PCS Pipeline & Auctions)
+- [x] Calendrier d'encheres (Active / A venir / Terminees)
+- [x] Detail enchere : treasury widget, rider table, filtres/tri/recherche
+- [x] Dialog de mise (bidding) : photo, infos coureur, budget preview temps reel
+- [x] Server actions : placeBid (validate Zod, budget check, update vs insert), cancelBid
+- [x] Page resultats : tabs Round 1/2/3, coureurs attribues par tous les joueurs
+- [x] Resolution 3-round sealed-bid (auction.py) — valide manuellement
+- [x] Moteur XP quotidien (scoring.py)
+- [x] Notifications email recap (email_notify.py via Resend)
+- [x] Pipeline PCS : Playwright + procyclingstats v0.2.7 — valide (Tudor, Alaphilippe)
+- [x] Seed dev 30 coureurs fake (seed_riders.py)
+- [x] Script resolution manuelle (resolve_now.py)
+- [x] GitHub Actions : daily-pipeline.yml + auction-resolve.yml
+
+### A implementer (Phase 3+)
+- [ ] Deploiement Railway : Dockerfile Playwright + Chromium
 - [ ] Gestion d'equipe (roster, liberation, faillite)
-- [ ] Tresorerie (widget, log, projections)
-- [ ] Moteur XP quotidien
+- [ ] Tresorerie (log, projections)
 - [ ] Politiques (activation, configuration)
 - [ ] Sponsors (selection, paiements)
-- [ ] Pipeline PCS (sync quotidien)
 - [ ] Classement de la ligue
-- [ ] Notifications email
+- [ ] Tests automatises (pytest + vitest)
 
 ### Blockers pre-alpha
 - [ ] Calibrer taux de conversion (simulation Excel)
-- [ ] Valider tolerance rate limit PCS
+- [ ] Valider tolerance rate limit PCS en prod (risque IP ban)
 - [ ] Calibrer seuils XP par niveau
-- [ ] Choisir provider email
+- [ ] Choisir provider email (Resend retenu en dev)
