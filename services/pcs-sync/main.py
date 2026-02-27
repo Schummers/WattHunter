@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from sync import sync_all_riders, sync_rider_daily, sync_rider_history, sync_race_results, purge_old_history
 from scoring import calculate_daily_scores
+from auction import resolve_current_round
 
 from supabase import create_client
 
@@ -134,4 +135,28 @@ async def job_daily_scoring(
     """
     _check_auth(x_api_secret)
     result = await calculate_daily_scores(_supabase)
+    return JSONResponse(content=result)
+
+
+@app.post("/jobs/resolve-auction")
+async def job_resolve_auction(
+    request: Request,
+    x_api_secret: str | None = Header(default=None),
+):
+    """
+    Resolve the current round of all open auctions (3-round sealed-bid system).
+
+    For each open auction:
+      - Computes current_round from (today - opens_at).days + 1
+      - Highest bid per rider wins (tiebreak: earliest placed_at)
+      - Winner: bid status → 'won', contract created, treasury debited
+      - Losers: bid status → 'outbid'
+      - After round 3: auction status → 'closed'
+      - All purchases logged in treasury_log (type='auction_purchase')
+
+    Triggered at midnight UTC every day (GitHub Actions: auction-resolve workflow).
+    Returns {"status": "no_open_auctions"} if nothing to resolve — this is OK.
+    """
+    _check_auth(x_api_secret)
+    result = await resolve_current_round(_supabase)
     return JSONResponse(content=result)
