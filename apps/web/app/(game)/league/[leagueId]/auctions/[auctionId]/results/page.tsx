@@ -99,7 +99,7 @@ export default async function AuctionResultsPage({
                             {bid.riders?.real_team}
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
-                            {bid.riders?.nationality}
+                            {bid.riders?.specialty}
                           </TableCell>
                           <TableCell
                             className={
