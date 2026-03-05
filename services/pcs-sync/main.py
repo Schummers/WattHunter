@@ -43,9 +43,9 @@ async def health():
 @app.post("/sync/riders")
 async def sync_riders_endpoint(x_api_secret: Optional[str] = Header(default=None)):
     """
-    Full rider catalogue sync (~144 riders from 5 ProTeams).
+    Full rider catalogue sync (~500 top riders from PCS global ranking).
     Updates pcs_points_1yr, pcs_rank, monthly_salary for all riders.
-    Runtime: ~2 min with 15s pause between teams.
+    Runtime: ~2 min with 15s pause between pages.
     """
     _check_auth(x_api_secret)
     result = await sync_all_riders()
@@ -58,10 +58,10 @@ async def job_sync_riders(
     x_api_secret: Optional[str] = Header(default=None),
 ):
     """
-    Roster sync: fetches team pages via Playwright, upserts riders.
+    Top 500 sync: fetches PCS global ranking pages via Playwright, upserts riders.
     Race results are now handled by sync_race.py (separate pipeline).
 
-    Runtime: ~2 min (only team pages fetched, 15s pause between teams).
+    Runtime: ~2 min (5 ranking pages fetched, 15s pause between pages).
     """
     _check_auth(x_api_secret)
 

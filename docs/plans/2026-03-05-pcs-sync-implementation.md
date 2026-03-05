@@ -628,7 +628,7 @@ from scoring import calculate_daily_scores
 
 
 async def cmd_init_riders() -> None:
-    """Pipeline A: roster sync (9 teams) + season rankings (3 years)."""
+    """Pipeline A: sync top 500 PCS riders + season rankings (3 years)."""
     from playwright.async_api import async_playwright
 
     supabase = get_supabase()
@@ -636,12 +636,12 @@ async def cmd_init_riders() -> None:
     print("=== Pipeline A: Init Riders ===\n")
 
     # Step 1: Roster sync
-    print("--- Step 1: Roster sync (9 ProTeams) ---")
+    print("--- Step 1: Sync top 500 PCS riders ---")
     roster = await sync_all_riders(supabase)
     print(f"  Synced: {roster['total_synced']} riders, {roster['total_errors']} errors\n")
 
     # Step 2: Season rankings
-    print("--- Step 2: Season rankings (2024-2026) ---")
+    print("--- Step 2/2: Season rankings (2024-2026) ---")
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(
@@ -948,7 +948,7 @@ Update the "Sync PCS" section to document the 3 pipelines and new CLI:
 ```bash
 cd services/pcs-sync
 
-# Pipeline A — Init riders (1x/an) : roster 9 ProTeams + season rankings
+# Pipeline A — Init riders (1x/an) : sync top 500 PCS riders + season rankings
 python3 run_pipeline.py init-riders
 
 # Pipeline B — Post-race : résultats + ranking update + scoring
@@ -980,7 +980,7 @@ python3 run_pipeline.py init-riders
 ```
 
 Expected output:
-- ~260 riders synced from 9 ProTeams
+- ~500 riders synced from top 500 PCS ranking
 - 3 seasons of rankings imported
 - 0 errors
 

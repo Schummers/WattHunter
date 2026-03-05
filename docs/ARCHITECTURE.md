@@ -64,8 +64,7 @@ watthunter/
 │   ├── sync.py                  # Playwright + procyclingstats parser
 │   ├── auction.py               # Resolution 3-round sealed-bid
 │   ├── scoring.py               # XP quotidien
-│   ├── run_daily_pipeline.py    # CI entry point (GitHub Actions)
-│   ├── seed_riders.py           # Script de seed dev (30 coureurs fake)
+│   ├── run_pipeline.py          # CLI entry point (3 pipelines)
 │   ├── resolve_now.py           # Script de resolution manuelle (dev)
 │   └── test_playwright_pcs.py   # Validation pipeline Playwright + PCS
 ├── supabase/
@@ -252,7 +251,7 @@ Utilisee par `league_members_select` et `teams_select_league`.
 ## Pipeline de donnees
 
 ```
-08:00 UTC — Sync PCS complet (~923 coureurs, ~62 min)
+08:00 UTC — Sync PCS complet (~500 coureurs top 500 PCS global, ~2 min)
 08:30 UTC — Update coureurs actifs en jeu
 09:00 UTC — Calcul XP quotidien
 Minuit UTC — Resolution des rounds d'encheres ouverts
@@ -339,11 +338,9 @@ Librairie : `procyclingstats` v0.2.7 (Python) + Playwright (Cloudflare bypass).
 - [x] Page resultats : tabs Round 1/2/3, coureurs attribues par tous les joueurs
 - [x] Resolution 3-round sealed-bid (auction.py) — valide manuellement
 - [x] Moteur XP quotidien (scoring.py)
-- [x] Runners CI : run_daily_pipeline.py + run_auction_resolve.py (GitHub Actions)
-- [x] Pipeline PCS : Playwright + procyclingstats v0.2.7 — valide (Tudor, Alaphilippe)
-- [x] Seed dev 30 coureurs fake (seed_riders.py)
+- [x] CLI pipelines : run_pipeline.py (init-riders, post-race, startlists)
+- [x] Pipeline PCS : Playwright + procyclingstats v0.2.7 — valide (top 500 PCS global)
 - [x] Script resolution manuelle (resolve_now.py)
-- [x] GitHub Actions : daily-pipeline.yml + auction-resolve.yml
 
 ### A implementer (Phase 3+)
 - [ ] Deploiement Railway : Dockerfile Playwright + Chromium
