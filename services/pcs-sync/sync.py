@@ -104,11 +104,17 @@ async def sync_team_roster(supabase: Client, page, team_slug: str, rate_limit_s:
             if not slug:
                 continue
 
-            # Format name: "ALAPHILIPPE Julian" → "Julian Alaphilippe"
+            # Format name: "DE KLEIJN Arvid" → "Arvid De Kleijn"
+            # PCS puts ALL-CAPS lastname (possibly multi-word) first
             raw_name = rider_entry.get("rider_name", "Unknown")
-            parts = raw_name.split(" ", 1)
-            if len(parts) == 2 and parts[0] == parts[0].upper():
-                name = f"{parts[1]} {parts[0].title()}"
+            words = raw_name.split()
+            i = 0
+            while i < len(words) and words[i] == words[i].upper() and len(words[i]) > 1:
+                i += 1
+            if 0 < i < len(words):
+                first_parts = words[i:]
+                last_parts = [w.title() for w in words[:i]]
+                name = " ".join(first_parts) + " " + " ".join(last_parts)
             else:
                 name = raw_name
 
