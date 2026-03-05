@@ -21,13 +21,13 @@
 3 pipelines scraping procyclingstats.com, tous lancés manuellement via CLI.
 - **Exécution locale uniquement** (IP résidentielle requise — Cloudflare bloque les IPs datacenter)
 - Nécessite Python 3.9+, Playwright Chromium, fichier `.env` dans `services/pcs-sync/`
-- 9 ProTeams (~260 riders)
+- Top 500 PCS global ranking
 
 ### Lancer les pipelines
 ```bash
 cd services/pcs-sync
 
-# Pipeline A — Init riders (1x/an) : roster 9 ProTeams + season rankings 3 ans
+# Pipeline A — Init riders (1x/an) : sync top 500 PCS riders + season rankings 3 ans
 python3 run_pipeline.py init-riders
 
 # Pipeline B — Post-race : résultats + ranking global + scoring
@@ -40,7 +40,7 @@ python3 run_pipeline.py startlists --race "race/paris-nice/2026"
 # Pipeline D — Finances mensuelles (1x/mois, le 1er) : salaires + sponsor + bonus coureurs
 python3 run_pipeline.py monthly-finance
 ```
-- Pipeline A : ~5 min (9 teams + 3 rankings)
+- Pipeline A : ~5 min (top 500 riders + 3 rankings)
 - Pipeline B : ~30s (1 résultat + 1 ranking + scoring)
 - Pipeline C : ~15s (1 page startlist)
 - Pipeline D : ~5s (calcul mensuel toutes ligues actives)
@@ -66,6 +66,8 @@ python3 run_pipeline.py monthly-finance
 - Durée d'enchère : 72 heures
 - Slots coureurs : 6 (Niveau 1) → 12 (Niveau 10)
 - Politiques actives max : 0 (Niveau 1) → 3 (Niveau 10)
+- Pool = Top 500 PCS global (12 mois glissants), gating par rang selon niveau
+- XP Niveau 5 = 10 000 | XP Niveau 10 = 120 000
 - Contrats sponsors : 2 mois
 
 ## Blockers ouverts (résoudre avant alpha)
