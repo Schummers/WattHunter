@@ -84,7 +84,7 @@ Passionate cycling fans follow the sport all season but lack an engaging way to 
 ```
 SEASON START
     ↓
-Create team (500,000€ treasury)
+Create team (300,000€ treasury)
     ↓
 [MONTHLY AUCTION — 72h]
 Browse riders (filtered by your level)
@@ -224,14 +224,14 @@ Repeat until season end → Highest XP wins the league
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 5 fév 2026 | Initial draft |
-| 2.0 | 20 fév 2026 | Budget 500k€, salary formula, 10 levels, Policy MVP |
+| 2.0 | 20 fév 2026 | Budget 300k€, salary formula, 10 levels, Policy MVP |
 | 3.0 | 21 fév 2026 | **UCI → PCS everywhere. Policies revised (0/1/2/3 max). Sponsors system added. Auction calendar aligned to Grand Tours. Contract system added. Priority order defined.** |
 
 ---
 
 ## Open Questions (Critical — Resolve Before Dev)
 
-1. **[Jonathan — BLOCKER]** Calibrate conversion rate €/PCS point. Run Excel simulation: 500k€ start, 6 ProTeam riders, target break-even economy over 6 months. Placeholder: 500€/PCS point.
+1. **[Jonathan — BLOCKER]** Calibrate conversion rate €/PCS point. Run Excel simulation: 300k€ start, top 500 PCS riders (level-gated), target break-even economy over 6 months. Placeholder: 500€/PCS point.
 2. **[Engineering]** Does `procyclingstats` Python lib run on Supabase Edge Functions (Deno) or need external Node.js microservice?
 3. **[Jonathan]** Confirm salary floor (5,000€/mo) and cap (300,000€/mo) once PCS-based formula is tested with real data.
 4. **[Jonathan]** Confirm XP thresholds once real PCS data simulated (current thresholds estimated).
@@ -249,7 +249,7 @@ Repeat until season end → Highest XP wins the league
 | 5 fév 2026 | procyclingstats lib (not paid API) | 0€ vs 200–500€/mo, acceptable for MVP |
 | 5 fév 2026 | 72h auctions (not 2 weeks) | 2 weeks kills dynamism |
 | 5 fév 2026 | No in-app chat MVP | Low value vs effort; groups use WhatsApp |
-| 20 fév 2026 | Budget 500k€ start (not 300k€) | 300k€ too constraining for 6 ProTeam riders |
+| 20 fév 2026 | Budget 300k€ start | Calibrated for top 500 PCS rider pool with level gating |
 | 20 fév 2026 | Option B data loading (on-demand for recruited riders) | Saves 60–70% scraping, avoids PCS IP ban |
 | 21 fév 2026 | **PCS replaces UCI everywhere** | PCS is richer, more accurate for fantasy, freely accessible via lib |
 | 21 fév 2026 | **Policies: max 3 (unlock L3/L6/L10)** | Simpler to balance; more impactful per slot |

@@ -24,9 +24,7 @@ Every team has exactly two independent indicators. They do not directly affect e
 ## 1. Rider Universe
 
 ### Volume
-- **~923 professional riders** tracked (WorldTour + ProTeam 2026)
-  - **383 ProTeam riders** — 16 teams, min 20 riders/team
-  - **~540 WorldTour riders** — 18 teams, ~30 riders/team
+- **Top 500 PCS global** (by PCS individual ranking) — accessible progressively through level gating
 
 ### Per-Rider Data (stored in DB)
 
@@ -35,8 +33,7 @@ Every team has exactly two independent indicators. They do not directly affect e
 | `first_name` | string | — |
 | `last_name` | string | — |
 | `nationality` | string | ISO 3166-1 alpha-2 (FR, BE, SI, …) |
-| `real_team` | string | UCI team code + name |
-| `team_type` | enum | `ProTeam` / `WorldTour` |
+| `real_team` | string | Team name |
 | `photo_url` | string | Profile photo from PCS |
 | `age` | int | Current age in years |
 | `specialty` | enum | `climber` / `sprinter` / `rouleur` / `puncheur` / `time_trialist` / `all_rounder` |
@@ -46,22 +43,20 @@ Every team has exactly two independent indicators. They do not directly affect e
 
 ### Rider Access Tiers (by player level)
 
-The catalogue shown during auctions is filtered by player level. A ProTeam rider is **always accessible** regardless of their individual PCS rank.
+The catalogue shown during auctions is filtered by player level. Access is based solely on PCS global ranking — lower-ranked riders (higher rank number) are accessible first; top riders unlock at higher levels.
 
-| Level | Accessible Riders |
-|-------|-------------------|
-| 1 | ProTeam only (~383 riders) |
-| 2 | ProTeam + PCS rank 400 or lower (i.e., rank ≤400) |
-| 3 | ProTeam + PCS rank ≤300 |
-| 4 | ProTeam + PCS rank ≤200 |
-| 5 | ProTeam + PCS rank ≤150 |
-| 6 | ProTeam + PCS rank ≤100 |
-| 7 | ProTeam + PCS rank ≤50 |
-| 8 | ProTeam + PCS rank ≤30 |
-| 9 | ProTeam + PCS rank ≤16 |
-| 10 | ALL riders (~923) |
-
-> **ProTeam rule:** If a ProTeam rider reaches top-10 PCS ranking, they remain accessible to Level 1 players. The ProTeam flag overrides rank-based gating.
+| Level | Accessible Riders | New Riders Unlocked |
+|-------|-------------------|---------------------|
+| 1 | PCS rank #401–500 | ~100 riders |
+| 2 | PCS rank #301–500 | +100 |
+| 3 | PCS rank #201–500 | +100 |
+| 4 | PCS rank #151–500 | +50 |
+| 5 | PCS rank #101–500 | +50 |
+| 6 | PCS rank #76–500 | +25 |
+| 7 | PCS rank #51–500 | +25 |
+| 8 | PCS rank #26–500 | +25 |
+| 9 | PCS rank #11–500 | +15 |
+| 10 | PCS rank #1–500 (all) | +10 |
 
 > **Already-recruited riders:** If a rider is already owned by another player in the same league, they appear greyed out in the catalogue (not biddable).
 
@@ -71,7 +66,7 @@ The catalogue shown during auctions is filtered by player level. A ProTeam rider
 
 ### 2.1 Treasury
 
-- **Starting treasury:** **500,000€** per new team
+- **Starting treasury:** **300,000€** per new team
 - Treasury = running sum of all inflows and outflows
 - Displayed permanently in app header: `Treasury: €245,000`
 
@@ -126,7 +121,7 @@ Monthly profit per rider  = Monthly revenue − Contract salary
 
 - `PCS_points_gained_this_month` = current PCS points − PCS points 30 days ago
 - `CONVERSION_RATE` = **TBD — placeholder: 500€/PCS point** (must be calibrated via Excel simulation)
-  - Target: a rider at average ProTeam salary (~20,000€/mo) with average monthly points should generate a small positive profit, so the economy is viable over 6 months
+  - Target: a rider at average L1 salary (~20,000€/mo) with average monthly points should generate a small positive profit, so the economy is viable over 6 months
 - If monthly profit < 0 → deducted from treasury
 - Revenue is credited/debited **daily** (proportional to points gained that day)
 
@@ -195,17 +190,17 @@ Target: reach Level 10 in ~6 months of active play. Thresholds are estimates; re
 | Level | XP to Reach Level | Cumulative XP | Slots | Active Policies | Sponsor Tier |
 |-------|-------------------|---------------|-------|-----------------|--------------|
 | 1 | — (start) | 0 | 6 | 0 | None |
-| 2 | 5,000 XP | 5,000 | 6 | 0 | None |
-| 3 | 7,000 XP | 12,000 | 7 | **1** | **Tier 1** |
-| 4 | 9,800 XP | 21,800 | 7 | 1 | Tier 1 |
-| 5 | 13,720 XP | 35,520 | 8 | 1 | **Tier 2** |
-| 6 | 19,208 XP | 54,728 | 9 | **2** | Tier 2 |
-| 7 | 26,891 XP | 81,619 | 10 | 2 | **Tier 3** |
-| 8 | 37,648 XP | 119,267 | 11 | 2 | Tier 3 |
-| 9 | 52,707 XP | 171,974 | 12 | 2 | **Tier 4** |
-| 10 | 73,790 XP | 245,764 | 12 | **3** | **Tier 5** |
+| 2 | 1,000 XP | 1,000 | 6 | 0 | None |
+| 3 | 2,000 XP | 3,000 | 7 | **1** | **Tier 1** |
+| 4 | 3,000 XP | 6,000 | 7 | 1 | Tier 1 |
+| 5 | 4,000 XP | 10,000 | 8 | 1 | **Tier 2** |
+| 6 | 8,000 XP | 18,000 | 9 | **2** | Tier 2 |
+| 7 | 12,000 XP | 30,000 | 10 | 2 | **Tier 3** |
+| 8 | 20,000 XP | 50,000 | 11 | 2 | Tier 3 |
+| 9 | 30,000 XP | 80,000 | 12 | 2 | **Tier 4** |
+| 10 | 40,000 XP | 120,000 | 12 | **3** | **Tier 5** |
 
-> XP thresholds use a ×1.4 multiplier between levels. These are starting estimates — recalibrate after Excel simulation with real PCS data.
+> XP thresholds are starting estimates — recalibrate after Excel simulation with real PCS data.
 
 ### 4.2 Level Up Behaviour
 
@@ -466,7 +461,7 @@ treasury_log:
 
 | Constant | Value | Status |
 |---------|-------|--------|
-| Starting treasury | 500,000€ | Confirmed |
+| Starting treasury | 300,000€ | Confirmed |
 | Salary floor | 5,000€/mo | Confirmed |
 | Salary cap | 300,000€/mo | Confirm with real data |
 | Conversion rate (€/PCS pt) | **500€ (placeholder)** | ⚠️ Must calibrate |
@@ -478,4 +473,4 @@ treasury_log:
 | Sponsor contract duration | 2 months | Confirmed |
 | Max active sponsors | 1 | Confirmed |
 | Level count | 10 | Confirmed |
-| XP multiplier per level | ×1.4 | Calibrate with real data |
+| XP thresholds | See §4.1 table | Calibrate with real data |
