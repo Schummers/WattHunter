@@ -6,10 +6,15 @@ Implements 3-round sealed-bid auction resolution per PRD_02_MECHANICS.md.
 Rules (from PRD):
   - 3 rounds of 24 h each (open window = 72 h total)
   - Each round: highest bid per rider wins; tiebreak = earliest placed_at timestamp
-  - Winner: status → 'won', contract created, treasury debited
+  - Winner: status → 'won', contract created
   - Losers: status → 'outbid'
   - After round 3: auction.status → 'closed'
-  - Treasury deduction is logged in treasury_log (type='auction_purchase')
+
+BETA economy rules:
+  - The winning bid amount becomes the rider's locked_salary (monthly salary).
+  - There is NO one-shot treasury deduction at auction time.
+  - The monthly salary is deducted by the monthly finance job.
+  - treasury_log is still inserted with amount=0 to record the event.
   - NEVER authorize a bid if treasury < total active bids (enforced at bid time in API;
     resolution here trusts the bid was valid when placed)
 """
@@ -32,10 +37,9 @@ async def resolve_current_round(supabase: Client) -> dict:
          b. Group by rider_id.
          c. Winning bid = highest amount; tiebreak = earliest placed_at.
          d. Mark winner as 'won', losers as 'outbid'.
-         e. Create a contract for the winning team.
-         f. Deduct winner["amount"] from team treasury.
-         g. Insert treasury_log entry (type='auction_purchase', amount=-winner_amount).
-         h. Mark rider.is_active_in_game = True.
+         e. Create a contract with locked_salary = winner["amount"] (BETA: bid = monthly salary).
+         f. Insert treasury_log entry (type='auction_purchase', amount=0 — no one-shot deduction).
+         g. Mark rider.is_active_in_game = True.
       4. After round 3: close the auction (status='closed', resolved_at=now).
 
     Returns a summary dict with per-auction results.
@@ -109,9 +113,9 @@ async def resolve_current_round(supabase: Client) -> dict:
                     winner = rbids[0]
                     losers = rbids[1:]
 
-                    # Fetch rider salary (needed to lock contract salary)
+                    # Fetch rider name (for logging purposes only — salary comes from bid)
                     rider_name_resp = supabase.table("riders").select(
-                        "full_name, monthly_salary"
+                        "full_name"
                     ).eq("id", rider_id).single().execute()
 
                     # Mark winner
@@ -125,11 +129,8 @@ async def resolve_current_round(supabase: Client) -> dict:
                             {"status": "outbid"}
                         ).eq("id", loser["id"]).execute()
 
-                    locked_salary = (
-                        rider_name_resp.data["monthly_salary"]
-                        if rider_name_resp.data
-                        else 5_000  # SALARY_FLOOR fallback
-                    )
+                    # BETA: locked_salary = winning bid amount (enchère = salaire mensuel)
+                    locked_salary = int(winner["amount"])
 
                     # Create contract
                     supabase.table("contracts").insert({
@@ -140,23 +141,13 @@ async def resolve_current_round(supabase: Client) -> dict:
                         "purchased_at": datetime.utcnow().isoformat(),
                     }).execute()
 
-                    # Deduct treasury — fetch current value first to avoid race condition
-                    team_resp = supabase.table("teams").select(
-                        "treasury, name"
-                    ).eq("id", winner["team_id"]).single().execute()
-
-                    if team_resp.data:
-                        new_treasury = team_resp.data["treasury"] - int(winner["amount"])
-                        supabase.table("teams").update(
-                            {"treasury": new_treasury}
-                        ).eq("id", winner["team_id"]).execute()
-
-                    # Treasury log — amount is negative (expenditure)
+                    # BETA: No one-shot treasury deduction.
+                    # The bid = monthly salary, deducted by monthly finance job.
                     supabase.table("treasury_log").insert({
                         "team_id": winner["team_id"],
                         "type": "auction_purchase",
-                        "amount": -int(winner["amount"]),
-                        "description": f"Enchere Round {current_round} — coureur {rider_id}",
+                        "amount": 0,  # No one-shot cost in beta
+                        "description": f"Contrat Round {current_round} — {rider_id} — salaire {locked_salary} EUR/mois",
                         "rider_id": rider_id,
                     }).execute()
 

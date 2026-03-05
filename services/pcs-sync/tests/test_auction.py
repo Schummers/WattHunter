@@ -160,7 +160,8 @@ async def test_round_out_of_range_skipped():
 
 
 async def test_nominal_resolution():
-    """Highest bidder wins, loser is marked outbid, contract created, treasury debited."""
+    """Highest bidder wins, loser is marked outbid, contract created.
+    BETA: locked_salary = winning bid amount; no one-shot treasury deduction."""
     import auction
 
     bid_winner = {
@@ -177,21 +178,17 @@ async def test_nominal_resolution():
         [{"id": AUCTION_ID, "name": "Tour Test", "opens_at": OPENS_AT_ROUND1, "status": "open"}],
         # 2. auction_bids (fetch active bids for this round)
         [bid_winner, bid_loser],
-        # 3. riders (fetch winner rider info — single())
-        {"full_name": "Tadej Pogacar", "monthly_salary": 5_000},
+        # 3. riders (fetch rider name — single())
+        {"full_name": "Tadej Pogacar"},
         # 4. auction_bids update winner → status='won'
         [],
         # 5. auction_bids update loser → status='outbid'
         [],
-        # 6. contracts insert
+        # 6. contracts insert (locked_salary = 6000, the winning bid amount)
         [],
-        # 7. teams select (winner treasury)
-        {"treasury": 100_000, "name": "Team Alpha"},
-        # 8. teams update (deduct bid amount)
+        # 7. treasury_log insert (amount=0, no one-shot deduction in beta)
         [],
-        # 9. treasury_log insert
-        [],
-        # 10. riders update (is_active_in_game = True)
+        # 8. riders update (is_active_in_game = True)
         [],
     )
 
@@ -223,19 +220,15 @@ async def test_round3_closes_auction_after_resolution():
         [{"id": AUCTION_ID, "name": "Tour Final", "opens_at": OPENS_AT_ROUND3, "status": "open"}],
         # 2. auction_bids
         [bid],
-        # 3. riders single
-        {"full_name": "Jonas Vingegaard", "monthly_salary": 5_000},
+        # 3. riders single (name only — salary comes from bid in beta)
+        {"full_name": "Jonas Vingegaard"},
         # 4. auction_bids update winner
         [],
-        # 5. contracts insert
+        # 5. contracts insert (locked_salary = 5000, the winning bid amount)
         [],
-        # 6. teams select
-        {"treasury": 200_000, "name": "Team Beta"},
-        # 7. teams update
+        # 6. treasury_log insert (amount=0, no one-shot deduction in beta)
         [],
-        # 8. treasury_log insert
-        [],
-        # 9. riders update is_active
+        # 7. riders update is_active
         [],
     )
 
