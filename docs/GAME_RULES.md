@@ -2,7 +2,7 @@
 
 > **Document vivant** — Mis a jour a chaque changement de regle.
 > Source de verite pour les mecaniques de jeu implementees et prevues.
-> Derniere mise a jour : 2026-02-28
+> Derniere mise a jour : 2026-03-05
 
 ## Vue d'ensemble
 
@@ -73,17 +73,20 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 
 | Constante | Valeur |
 |-----------|--------|
-| Tresorerie initiale | 500 000 € |
+| Tresorerie initiale | 300 000 € |
+
+> **Beta :** Tresorerie reduite de 500k a 300k pour forcer des arbitrages des le debut.
 
 ### 4.2 Entrees
 - Revenue des coureurs : quotidien (points PCS × taux de conversion)
 - Paiements sponsors : mensuel le 1er du mois
+- **Sponsor par defaut :** 300 000 €/mois (flat, aucun tier en beta — automatiquement actif des le debut)
 
 ### 4.3 Sorties
 - Salaires des coureurs : mensuel le 1er du mois
 - Encheres gagnees : deduction immediate
 
-### 4.4 Formule de salaire
+### 4.4 Formule de salaire (marche de reference)
 
 ```
 Salaire annuel = (PCS_glissant_1an / 1000) × 500 000 €
@@ -96,18 +99,23 @@ Plancher : 5 000 €/mois | Plafond : 300 000 €/mois
 - 1 000 pts PCS → 500k€/an → 41 667€/mois
 - 7 200 pts PCS → 3.6M€/an → 300k€/mois → **plafonne a 300 000€**
 
-**Salaire verrouille :** A l'achat, le salaire est fige au taux du marche a la date d'enchere. Ne change plus tant que le coureur est dans l'equipe.
+> **Note :** Le salaire formule ci-dessus est une reference marche utilisee pour determiner la **mise minimum a l'enchere** (plancher). Ce n'est pas le salaire mensuel reel du contrat — le salaire reel est la mise gagnante de l'enchere (voir §5).
 
-### 4.5 Rentabilite d'un coureur
+### 4.5 Bonus mensuel d'un coureur
 
 ```
-Revenue mensuel = points_PCS_du_mois × TAUX_CONVERSION
-Profit mensuel = Revenue mensuel − Salaire du contrat
+Bonus mensuel = max(0, points_PCS_du_mois × TAUX_CONVERSION − enchère_mensuelle)
 ```
+
+Le bonus est **toujours positif ou nul** — un coureur qui performe moins que prevu ne penalise pas la tresorerie au-dela de son salaire contractuel.
 
 | Constante | Valeur | Statut |
 |-----------|--------|--------|
 | TAUX_CONVERSION | 500 €/point PCS | **PLACEHOLDER — calibration Excel requise** |
+
+**Exemples :**
+- Coureur enchere a 30 000€/mois, genere 50 000€ de revenus → bonus = 20 000€
+- Coureur enchere a 30 000€/mois, genere 10 000€ de revenus → bonus = 0€ (pas de malus)
 
 ### 4.6 Faillite
 
@@ -116,9 +124,11 @@ Profit mensuel = Revenue mensuel − Salaire du contrat
 - Bloque aux encheres, mais peut jouer
 
 **Mois 2 consecutif de tresorerie negative :**
-- Liberation automatique des coureurs (salaire le plus eleve d'abord)
+- Liberation automatique des coureurs (**meilleur scoreur d'abord** — le plus rentable en points PCS)
 - Jusqu'a ce que la tresorerie redevienne positive
 - Pas de preavis pour les auto-liberations
+
+> **Beta :** La liberation par meilleur scoreur (et non par salaire le plus eleve) cree un dilemme strategique : perdre son meilleur coureur force le joueur a reflechir avant de se retrouver en faillite.
 
 ---
 
@@ -127,19 +137,20 @@ Profit mensuel = Revenue mensuel − Salaire du contrat
 | Regle | Valeur | Statut |
 |-------|--------|--------|
 | Duree | 72 heures (3 rounds de 24h) | Implemente |
-| Mise minimum | Salaire mensuel du coureur | Implemente |
+| Mise minimum | Salaire marche du coureur (formule §4.4) | Implemente |
 | Increment minimum | +100 € | Implemente |
 | Format | Sealed-bid 3 rounds | Implemente |
 | Calendrier | Aligne sur les Grands Tours | Non implemente |
+
+> **Beta — enchere = salaire mensuel :** La mise gagnante n'est PAS un prix d'achat unique. Elle devient le **salaire mensuel recurrent** du coureur debite chaque mois. Enchérir haut = s'engager sur un salaire eleve pour toute la duree du contrat.
 
 **Resolution (auction.py) :**
 1. Plus haute mise gagne
 2. Egalite : timestamp le plus ancien gagne (placed_at)
 3. Verification en cascade du budget (coureurs tries par montant decroissant)
-4. Mise gagnante = prix d'achat deduit de la tresorerie
+4. Mise gagnante = `contract_salary` mensuel (aucune deduction immediate de la tresorerie)
 5. Bids perdants → status `outbid`, bids annules → status `cancelled`
-6. Contrat cree (`contracts` table) avec `purchase_price` + `contract_salary` verrouille
-7. Email recap a tous les joueurs via Resend (< 5 min)
+6. Contrat cree (`contracts` table) avec `contract_salary` verrouille (= mise gagnante)
 
 **Validation du budget :** `somme(mises actives autres) + nouvelle mise > tresorerie` → mise rejetee
 
@@ -153,9 +164,10 @@ Profit mensuel = Revenue mensuel − Salaire du contrat
 ## 6. Contrats
 
 **A la creation :**
-- `purchase_price` : mise gagnante (unique)
-- `contract_salary` : salaire marche a la date d'enchere (mensuel, verrouille)
+- `contract_salary` : mise gagnante de l'enchere (= salaire mensuel recurrent, verrouille)
 - `status` : active → notice → released
+
+> **Beta :** Le concept de `purchase_price` (achat unique) est supprime. L'enchere fixe uniquement le salaire mensuel — aucune somme n'est debitee a la signature du contrat.
 
 **Liberation d'un coureur :**
 - 1 mois de preavis, 1 mois de salaire supplementaire
@@ -210,6 +222,19 @@ Les bonus sont **additifs**. Exemple : National Pride (Belgique) + Specialist (S
 
 ## 9. Sponsors
 
+> **Beta — systeme de tiers desactive.** En beta, tous les joueurs beneficient d'un **sponsor par defaut unique** : 300 000 €/mois, flat, sans condition, actif des le debut de la ligue. Le systeme de tiers (Tier 1–5 lies aux niveaux) est preserve dans le code mais desactive pour simplifier l'onboarding beta.
+
+**Sponsor par defaut (beta) :**
+
+| Regle | Valeur |
+|-------|--------|
+| Montant | 300 000 €/mois |
+| Conditions | Aucune |
+| Activation | Automatique a la creation d'equipe |
+| Tier | N/A (beta flat) |
+
+**Systeme de tiers (post-beta, reference) :**
+
 1 sponsor actif a la fois. Contrat de 2 mois. Tier limite par le niveau.
 
 | Tier | Niveau | Option A (inconditionnel) | Option B (conditionnel) | Condition |
@@ -228,14 +253,18 @@ Condition non remplie au jour du paiement → montant Option A verse a la place.
 
 | Constante | Valeur | A calibrer ? |
 |-----------|--------|-------------|
-| Tresorerie depart | 500 000 € | Non |
-| Salaire plancher | 5 000 €/mois | Non |
+| Tresorerie depart | **300 000 €** (beta) | Non |
+| Sponsor par defaut | **300 000 €/mois** (beta flat) | Non |
+| Enchère = salaire mensuel | Oui — pas d'achat unique | Non |
+| Bonus coureur | max(0, pts×500 − enchère) | **OUI — simulation obligatoire** |
+| Salaire plancher (enchere min) | 5 000 €/mois | Non |
 | Salaire plafond | 300 000 €/mois | Verifier avec donnees reelles |
 | Taux de conversion | 500 €/point PCS | **OUI — simulation obligatoire** |
+| Faillite : libere en premier | Meilleur scoreur (beta) | Non |
 | Duree d'enchere | 72 heures | Non |
 | Increment d'enchere | 100 € | Non |
 | Slots max | 6 (Niv 1) → 12 (Niv 10) | Non |
 | Politiques max | 0 (Niv 1) → 3 (Niv 10) | Non |
-| Contrat sponsor | 2 mois | Non |
+| Contrat sponsor | 2 mois (post-beta) | Non |
 | Joueurs max par ligue | 20 | Non |
 | Multiplicateur XP/niveau | ×1.4 | Calibrer apres simulation |

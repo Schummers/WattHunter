@@ -36,10 +36,14 @@ python3 run_pipeline.py post-race --race "race/omloop-het-nieuwsblad/2026"
 
 # Pipeline C — Startlists : programme prévisionnel
 python3 run_pipeline.py startlists --race "race/paris-nice/2026"
+
+# Pipeline D — Finances mensuelles (1x/mois, le 1er) : salaires + sponsor + bonus coureurs
+python3 run_pipeline.py monthly-finance
 ```
 - Pipeline A : ~5 min (9 teams + 3 rankings)
 - Pipeline B : ~30s (1 résultat + 1 ranking + scoring)
 - Pipeline C : ~15s (1 page startlist)
+- Pipeline D : ~5s (calcul mensuel toutes ligues actives)
 - Calendrier WT : `services/pcs-sync/wt_calendar_2026.json`
 
 ## Règles critiques (NEVER DO)
@@ -52,8 +56,11 @@ python3 run_pipeline.py startlists --race "race/paris-nice/2026"
 - NEVER libérer un coureur sans le préavis d'1 mois (sauf auto-release faillite).
 
 ## Constantes du jeu (calibrer avant le lancement alpha)
-- Trésorerie départ : 500 000 €
-- Salaire plancher : 5 000 €/mois | plafond : 300 000 €/mois
+- Trésorerie départ : 300 000 € (beta — réduit de 500k)
+- Sponsor par défaut : 300 000 €/mois (beta flat, sans tiers)
+- Enchère = salaire mensuel récurrent (pas un achat unique)
+- Bonus coureur = max(0, pts×500 - enchère), positif uniquement
+- Salaire plancher (enchère min) : 5 000 €/mois | plafond : 300 000 €/mois
 - Taux de conversion : 500 €/point PCS (PLACEHOLDER — simulation Excel obligatoire)
 - Incrément minimum d'enchère : 100 €
 - Durée d'enchère : 72 heures
