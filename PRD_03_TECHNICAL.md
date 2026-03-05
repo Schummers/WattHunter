@@ -54,7 +54,7 @@ CREATE TABLE teams (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id          uuid NOT NULL UNIQUE REFERENCES users(id),
   name             text NOT NULL,
-  treasury         bigint NOT NULL DEFAULT 500000,  -- in euros, integer cents avoided for MVP
+  treasury         bigint NOT NULL DEFAULT 300000,  -- in euros, integer cents avoided for MVP
   xp_cumulative    bigint NOT NULL DEFAULT 0,
   level            int NOT NULL DEFAULT 1 CHECK (level BETWEEN 1 AND 10),
   is_bankrupt      boolean NOT NULL DEFAULT false,
@@ -99,7 +99,7 @@ CREATE TABLE riders (
   last_name             text NOT NULL,
   nationality           char(2) NOT NULL,              -- ISO 3166-1 alpha-2
   real_team             text NOT NULL,                  -- UCI team name
-  team_type             text NOT NULL CHECK (team_type IN ('ProTeam', 'WorldTour')),
+  team_type             text NOT NULL CHECK (team_type IN ('ProTeam', 'WorldTour')),  -- DEPRECATED for filtering: all riders are now sourced from the top 500 PCS global ranking; filter by level + pcs_rank instead
   photo_url             text,
   age                   int,
   specialty             text CHECK (specialty IN (
@@ -318,8 +318,8 @@ CREATE TABLE team_sponsors (
 
 ### 4.1 Daily Batch — All Riders (08:00 UTC via pg_cron)
 
-**Scope:** All ~923 riders in the DB.
-**Data fetched:** `first_name`, `last_name`, `nationality`, `real_team`, `team_type`, `photo_url`, `age`, `specialty`, `pcs_points_rolling_1y`, `pcs_rank`
+**Scope:** All riders in the DB — sourced from the top 500 PCS global ranking (replaces the old 9 ProTeams / WorldTour roster approach).
+**Data fetched:** `first_name`, `last_name`, `nationality`, `real_team`, `photo_url`, `age`, `specialty`, `pcs_points_rolling_1y`, `pcs_rank`
 
 **Procedure:**
 1. Fetch all rider PCS slugs from `riders` table
@@ -646,7 +646,7 @@ Follow this sequence to avoid dependency issues:
 2. **Auth** — REQ-001 (Supabase OAuth)
 3. **Onboarding** — REQ-002
 4. **League CRUD** — REQ-003, REQ-004, REQ-005
-5. **Rider seeding** — Set up procyclingstats pipeline, seed `riders` table
+5. **Rider seeding** — Set up procyclingstats pipeline, seed `riders` table from top 500 PCS global ranking
 6. **Daily PCS sync** — REQ (data pipeline §4.1 and §4.2)
 7. **Auction system** — REQ-008 through REQ-012
 8. **Team management** — REQ-013 through REQ-018
