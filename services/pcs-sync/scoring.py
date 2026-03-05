@@ -23,6 +23,15 @@ logger = logging.getLogger(__name__)
 CONVERSION_RATE = int(os.getenv("CONVERSION_RATE_EUR_PER_PCS", "500"))
 
 
+def calculate_rider_bonus(pcs_points: int, locked_salary: int, conversion_rate: int) -> int:
+    """
+    Beta economy: bonus = max(0, pts × conversion_rate - locked_salary).
+    Positive only — a rider never costs more than their salary.
+    """
+    revenue = pcs_points * conversion_rate
+    return max(0, revenue - locked_salary)
+
+
 async def calculate_daily_scores(supabase: Client) -> dict:
     """
     For each contracted rider with pcs_points > 0 in race_results today:
@@ -59,7 +68,7 @@ async def calculate_daily_scores(supabase: Client) -> dict:
 
     # --- Step 2: Get all active/notice contracts ---
     contracts = supabase.table("contracts").select(
-        "id, team_id, rider_id"
+        "id, team_id, rider_id, locked_salary"
     ).in_("status", ["active", "notice"]).execute()
 
     if not contracts.data:
@@ -100,7 +109,8 @@ async def calculate_daily_scores(supabase: Client) -> dict:
 
             bonus = team_bonus.get(team_id, 0.0)
             xp = raw_points * (1 + bonus)
-            revenue = raw_points * conversion_rate
+            contract_salary = contract.get("locked_salary", 0)
+            revenue = calculate_rider_bonus(raw_points, contract_salary, conversion_rate)
 
             # Upsert rider_xp_daily (conflict key: team_id + rider_id + date)
             try:

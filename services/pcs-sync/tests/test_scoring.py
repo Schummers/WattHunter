@@ -147,3 +147,20 @@ def test_revenue_formula():
     """Revenue = raw_points * conversion_rate."""
     assert 20 * 500 == 10_000
     assert 100 * 300 == 30_000
+
+
+def test_bonus_positive_only():
+    """Bonus = max(0, pts * 500 - locked_salary). Never negative."""
+    from scoring import calculate_rider_bonus
+
+    # Star: 340 pts, salary 150K → bonus = max(0, 170K - 150K) = 20K
+    assert calculate_rider_bonus(340, 150000, 500) == 20000
+
+    # Star bad month: 128 pts, salary 150K → bonus = 0
+    assert calculate_rider_bonus(128, 150000, 500) == 0
+
+    # Pépite: 30 pts, salary 5K → bonus = max(0, 15K - 5K) = 10K
+    assert calculate_rider_bonus(30, 5000, 500) == 10000
+
+    # Zero pts → bonus = 0
+    assert calculate_rider_bonus(0, 5000, 500) == 0
