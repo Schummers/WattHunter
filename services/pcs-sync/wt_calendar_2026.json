@@ -1,0 +1,221 @@
+[
+  {
+    "slug": "race/tour-down-under/2026",
+    "name": "Santos Tour Down Under",
+    "start_date": "2026-01-20",
+    "end_date": "2026-01-25",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/great-ocean-road-race/2026",
+    "name": "Cadel Evans Great Ocean Road Race",
+    "date": "2026-02-01",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/uae-tour/2026",
+    "name": "UAE Tour",
+    "start_date": "2026-02-16",
+    "end_date": "2026-02-22",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/omloop-het-nieuwsblad/2026",
+    "name": "Omloop Het Nieuwsblad",
+    "date": "2026-02-28",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/strade-bianche/2026",
+    "name": "Strade Bianche",
+    "date": "2026-03-07",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/paris-nice/2026",
+    "name": "Paris-Nice",
+    "start_date": "2026-03-08",
+    "end_date": "2026-03-15",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/tirreno-adriatico/2026",
+    "name": "Tirreno-Adriatico",
+    "start_date": "2026-03-09",
+    "end_date": "2026-03-15",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/milano-sanremo/2026",
+    "name": "Milano-Sanremo",
+    "date": "2026-03-21",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/volta-a-catalunya/2026",
+    "name": "Volta Ciclista a Catalunya",
+    "start_date": "2026-03-23",
+    "end_date": "2026-03-29",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/e3-harelbeke/2026",
+    "name": "E3 Saxo Classic",
+    "date": "2026-03-27",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/gent-wevelgem/2026",
+    "name": "Gent-Wevelgem",
+    "date": "2026-03-29",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/dwars-door-vlaanderen/2026",
+    "name": "Dwars door Vlaanderen",
+    "date": "2026-04-01",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/ronde-van-vlaanderen/2026",
+    "name": "Ronde van Vlaanderen",
+    "date": "2026-04-05",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/itzulia-basque-country/2026",
+    "name": "Itzulia Basque Country",
+    "start_date": "2026-04-06",
+    "end_date": "2026-04-11",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/paris-roubaix/2026",
+    "name": "Paris-Roubaix",
+    "date": "2026-04-12",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/amstel-gold-race/2026",
+    "name": "Amstel Gold Race",
+    "date": "2026-04-19",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/la-fleche-wallonne/2026",
+    "name": "La Flèche Wallonne",
+    "date": "2026-04-22",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/liege-bastogne-liege/2026",
+    "name": "Liège-Bastogne-Liège",
+    "date": "2026-04-26",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/tour-de-romandie/2026",
+    "name": "Tour de Romandie",
+    "start_date": "2026-04-28",
+    "end_date": "2026-05-03",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/eschborn-frankfurt/2026",
+    "name": "Eschborn-Frankfurt",
+    "date": "2026-05-01",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/giro-d-italia/2026",
+    "name": "Giro d'Italia",
+    "start_date": "2026-05-08",
+    "end_date": "2026-05-31",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/dauphine/2026",
+    "name": "Tour Auvergne-Rhône-Alpes (Critérium du Dauphiné)",
+    "start_date": "2026-06-07",
+    "end_date": "2026-06-14",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/tour-de-suisse/2026",
+    "name": "Tour de Suisse",
+    "start_date": "2026-06-17",
+    "end_date": "2026-06-21",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/tour-de-france/2026",
+    "name": "Tour de France",
+    "start_date": "2026-07-04",
+    "end_date": "2026-07-26",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/san-sebastian/2026",
+    "name": "Donostia San Sebastián Klasikoa",
+    "date": "2026-08-01",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/tour-de-pologne/2026",
+    "name": "Tour de Pologne",
+    "start_date": "2026-08-03",
+    "end_date": "2026-08-09",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/cyclassics-hamburg/2026",
+    "name": "Cyclassics Hamburg",
+    "date": "2026-08-16",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/renewi-tour/2026",
+    "name": "Renewi Tour",
+    "start_date": "2026-08-19",
+    "end_date": "2026-08-23",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/vuelta-a-espana/2026",
+    "name": "La Vuelta Ciclista a España",
+    "start_date": "2026-08-22",
+    "end_date": "2026-09-13",
+    "type": "stage-race"
+  },
+  {
+    "slug": "race/bretagne-classic/2026",
+    "name": "Bretagne Classic",
+    "date": "2026-08-30",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/gp-quebec/2026",
+    "name": "Grand Prix Cycliste de Québec",
+    "date": "2026-09-11",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/gp-montreal/2026",
+    "name": "Grand Prix Cycliste de Montréal",
+    "date": "2026-09-13",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/il-lombardia/2026",
+    "name": "Il Lombardia",
+    "date": "2026-10-10",
+    "type": "one-day"
+  },
+  {
+    "slug": "race/tour-of-guangxi/2026",
+    "name": "Gree-Tour of Guangxi",
+    "start_date": "2026-10-13",
+    "end_date": "2026-10-18",
+    "type": "stage-race"
+  }
+]
