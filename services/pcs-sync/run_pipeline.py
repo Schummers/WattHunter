@@ -18,6 +18,9 @@ Usage:
 
   # Pipeline C — before auctions/races open
   python3 run_pipeline.py startlists --race "race/tour-de-france/2026"
+
+  # Pipeline D — monthly finance (sponsor + salaries + bankruptcy)
+  python3 run_pipeline.py monthly-finance
 """
 from __future__ import annotations
 
@@ -268,13 +271,32 @@ async def run_startlists(race_slug: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Pipeline D — monthly-finance
+# ---------------------------------------------------------------------------
+
+async def run_monthly_finance_pipeline() -> None:
+    """Monthly finance: sponsor payment + salary deduction + bankruptcy check."""
+    from sync import get_supabase
+    from monthly_finance import run_monthly_finance
+
+    supabase = get_supabase()
+
+    print("=== Pipeline D: monthly-finance ===")
+    print()
+    result = await run_monthly_finance(supabase)
+    print(json.dumps(result, indent=2))
+    print()
+    print("Done — monthly-finance complete.")
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="run_pipeline.py",
-        description="WattHunter PCS Sync CLI — 3 pipelines for roster, race results, and startlists.",
+        description="WattHunter PCS Sync CLI — 4 pipelines for roster, race results, startlists, and monthly finance.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -308,6 +330,12 @@ def build_parser() -> argparse.ArgumentParser:
         help='PCS race slug, e.g. "race/tour-de-france/2026"',
     )
 
+    # monthly-finance
+    subparsers.add_parser(
+        "monthly-finance",
+        help="Pipeline D — monthly: sponsor payment + salary deduction + bankruptcy.",
+    )
+
     return parser
 
 
@@ -327,6 +355,8 @@ async def main() -> None:
         await run_post_race(args.race)
     elif args.command == "startlists":
         await run_startlists(args.race)
+    elif args.command == "monthly-finance":
+        await run_monthly_finance_pipeline()
     else:
         parser.print_help()
         sys.exit(1)
