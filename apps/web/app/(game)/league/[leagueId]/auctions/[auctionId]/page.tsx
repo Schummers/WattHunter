@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 import { TreasuryWidget } from "./treasury-widget";
 import { AuctionClient } from "./auction-client";
 
+function rankMaxForLevel(level: number): number {
+  const thresholds = [500, 400, 300, 200, 150, 100, 75, 50, 25, 10];
+  return thresholds[Math.min(Math.max(level, 1), 10) - 1];
+}
+
 export default async function AuctionDetailPage({
   params,
 }: {
@@ -17,24 +22,26 @@ export default async function AuctionDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // Fetch team first so we can use its level to gate the riders query
+  const { data: team } = await supabase
+    .from("teams")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("league_id", leagueId)
+    .single();
+
   const [
     { data: auction },
-    { data: team },
     { data: riders },
     { data: myBids },
     { data: contracts },
   ] = await Promise.all([
     supabase.from("auctions").select("*").eq("id", auctionId).single(),
     supabase
-      .from("teams")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("league_id", leagueId)
-      .single(),
-    supabase
       .from("riders")
       .select("*")
-      .eq("team_type", "ProTeam")
+      .eq("ever_in_top500", true)
+      .lte("pcs_rank", rankMaxForLevel(team?.level ?? 1))
       .order("pcs_points_1yr", { ascending: false }),
     supabase.from("auction_bids").select("*").eq("auction_id", auctionId),
     supabase.from("contracts").select("rider_id").in("status", ["active", "notice"]),
