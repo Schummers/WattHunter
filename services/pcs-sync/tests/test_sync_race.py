@@ -141,8 +141,20 @@ async def test_updates_matching_riders():
         [],  # riders update (matched entry)
     )
 
-    with _patch_fetch_html(), patch("sync_race.Ranking", mock_ranking):
-        result = await sync_race.update_global_ranking(sb, page=MagicMock())
+    # update_global_ranking now takes a browser and creates its own contexts
+    mock_browser = MagicMock()
+    mock_context = MagicMock()
+    mock_page = MagicMock()
+    mock_browser.new_context = AsyncMock(return_value=mock_context)
+    mock_context.new_page = AsyncMock(return_value=mock_page)
+    mock_context.close = AsyncMock()
+    mock_page.goto = AsyncMock()
+    mock_page.wait_for_timeout = AsyncMock()
+    mock_page.content = AsyncMock(return_value="<html></html>")
+
+    with patch("sync_race.Ranking", mock_ranking), \
+         patch("sync_race.asyncio.sleep", new_callable=AsyncMock):
+        result = await sync_race.update_global_ranking(sb, mock_browser, pages=1)
 
     assert result["updated"] == 1
     assert result["total_in_ranking"] == 2

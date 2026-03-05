@@ -98,16 +98,21 @@ async def import_race_results(
     }
 
 
-async def update_global_ranking(supabase: Client, page) -> Dict[str, Any]:
-    """Fetch the PCS individual 1-year ranking and update matching riders.
+async def update_global_ranking(supabase: Client, browser, *, pages: int = 3) -> Dict[str, Any]:
+    """Fetch the PCS individual ranking (top N×100) and update matching riders.
+
+    Uses fresh browser contexts per page to avoid Cloudflare.
+    Page 1 uses the clean URL; pages 2+ use rankings.php with offset & filter params
+    (simple URL offset doesn't work — PCS requires the form-style URL).
 
     Updates pcs_points_1yr, pcs_rank, and monthly_salary for each rider
     whose pcs_slug appears in our DB.
     """
-    ranking_url = "rankings/me/individual"
-    html = await fetch_html(page, ranking_url)
-    ranking = Ranking(ranking_url, html=html, update_html=False)
-    ranking_entries = ranking.individual_ranking()
+    user_agent = (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    )
 
     # Build rider lookup map
     riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
@@ -116,34 +121,71 @@ async def update_global_ranking(supabase: Client, page) -> Dict[str, Any]:
     }
 
     updated = 0
+    total_entries = 0
     errors: List[str] = []
 
-    for entry in ranking_entries:
-        rider_url = entry.get("rider_url", "")
-        if rider_url not in rider_map:
-            continue
+    for page_idx in range(pages):
+        offset = page_idx * 100
+        context = await browser.new_context(user_agent=user_agent)
+        page = await context.new_page()
 
         try:
-            rider_id = rider_map[rider_url]
-            pcs_points = entry.get("points", 0) or 0
-            pcs_rank = entry.get("rank")
-            salary = calculate_monthly_salary(pcs_points)
+            if offset == 0:
+                fetch_url = "https://www.procyclingstats.com/rankings/me/individual"
+            else:
+                fetch_url = "https://www.procyclingstats.com/rankings.php?p=me&s=individual&offset={}&filter=Filter".format(offset)
 
-            supabase.table("riders").update(
-                {
-                    "pcs_points_1yr": pcs_points,
-                    "pcs_rank": pcs_rank,
-                    "monthly_salary": salary,
-                }
-            ).eq("id", rider_id).execute()
-            updated += 1
-        except Exception as exc:
-            logger.error("Failed to update ranking for %s: %s", rider_url, exc)
-            errors.append(str(exc))
+            await asyncio.sleep(4)
+            await page.goto(fetch_url, wait_until="domcontentloaded")
+            await page.wait_for_timeout(6000)
+
+            html = await page.content()
+            if any(m in html for m in ["Just a moment", "Checking your browser"]):
+                logger.warning("Cloudflare blocked at offset=%d", offset)
+                break
+
+            ranking = Ranking("rankings/me/individual", html=html, update_html=False)
+            ranking_entries = ranking.individual_ranking()
+            total_entries += len(ranking_entries)
+
+            batch = 0
+            for entry in ranking_entries:
+                rider_url = entry.get("rider_url", "")
+                if rider_url not in rider_map:
+                    continue
+
+                try:
+                    rider_id = rider_map[rider_url]
+                    pcs_points = entry.get("points", 0) or 0
+                    if pcs_points == 0:
+                        continue
+                    pcs_rank = entry.get("rank")
+                    salary = calculate_monthly_salary(pcs_points)
+
+                    supabase.table("riders").update(
+                        {
+                            "pcs_points_1yr": pcs_points,
+                            "pcs_rank": pcs_rank,
+                            "monthly_salary": salary,
+                        }
+                    ).eq("id", rider_id).execute()
+                    updated += 1
+                    batch += 1
+                except Exception as exc:
+                    logger.error("Failed to update ranking for %s: %s", rider_url, exc)
+                    errors.append(str(exc))
+
+            logger.info("Ranking offset=%d: %d entries, %d matched", offset, len(ranking_entries), batch)
+
+        finally:
+            await context.close()
+
+        if page_idx < pages - 1:
+            await asyncio.sleep(11)
 
     return {
         "updated": updated,
-        "total_in_ranking": len(ranking_entries),
+        "total_in_ranking": total_entries,
         "errors": errors,
     }
 
