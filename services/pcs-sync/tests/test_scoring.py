@@ -26,15 +26,15 @@ CONTRACT_ID = "cccc-0000-0000-0001"
 
 
 async def test_no_race_results_today():
-    """Returns immediately when rider_pcs_history has no results today."""
+    """Returns immediately when race_results has no results today."""
     import scoring
 
-    sb = make_supabase([])  # rider_pcs_history → empty
+    sb = make_supabase([])  # race_results → empty
     result = await scoring.calculate_daily_scores(sb)
 
     assert result["processed"] == 0
     assert "No race results" in result["message"]
-    # Only one table call was made (rider_pcs_history)
+    # Only one table call was made (race_results)
     assert sb.table.call_count == 1
 
 
@@ -43,7 +43,7 @@ async def test_no_active_contracts():
     import scoring
 
     sb = make_supabase(
-        [{"rider_id": RIDER_ID, "points_delta": 50}],  # rider_pcs_history
+        [{"rider_id": RIDER_ID, "pcs_points": 50}],  # race_results
         [],  # contracts → empty
     )
     result = await scoring.calculate_daily_scores(sb)
@@ -65,8 +65,8 @@ async def test_nominal_processing():
         importlib.reload(scoring)  # pick up the patched env var
 
         sb = make_supabase(
-            # 1. rider_pcs_history
-            [{"rider_id": RIDER_ID, "points_delta": 20}],
+            # 1. race_results
+            [{"rider_id": RIDER_ID, "pcs_points": 20}],
             # 2. contracts
             [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID}],
             # 3. team_policies (none active)
@@ -98,8 +98,8 @@ async def test_nominal_processing_with_policy_bonus():
         importlib.reload(scoring)
 
         sb = make_supabase(
-            # 1. rider_pcs_history
-            [{"rider_id": RIDER_ID, "points_delta": 10}],
+            # 1. race_results
+            [{"rider_id": RIDER_ID, "pcs_points": 10}],
             # 2. contracts
             [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID}],
             # 3. team_policies — one policy with 10% XP bonus

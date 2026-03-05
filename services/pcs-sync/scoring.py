@@ -1,7 +1,7 @@
 """
 Daily scoring job — WattHunter PCS Sync Microservice.
 
-For each contracted rider with points_delta > 0 today:
+For each contracted rider with pcs_points > 0 today (from race_results):
   1. Apply team policy multipliers → XP gained
   2. Calculate revenue → add to treasury
   3. Upsert into rider_xp_daily
@@ -10,6 +10,7 @@ For each contracted rider with points_delta > 0 today:
 
 NEVER hardcode CONVERSION_RATE — always read from env (CLAUDE.md rule).
 """
+from __future__ import annotations
 import os
 import logging
 from datetime import date
@@ -24,7 +25,7 @@ CONVERSION_RATE = int(os.getenv("CONVERSION_RATE_EUR_PER_PCS", "500"))
 
 async def calculate_daily_scores(supabase: Client) -> dict:
     """
-    For each contracted rider with points_delta today:
+    For each contracted rider with pcs_points > 0 in race_results today:
       - Apply policy multipliers → XP
       - Calculate revenue → treasury
       - Upsert rider_xp_daily
@@ -41,9 +42,9 @@ async def calculate_daily_scores(supabase: Client) -> dict:
     errors = []
 
     # --- Step 1: Get today's race results (riders who scored points today) ---
-    history = supabase.table("rider_pcs_history").select(
-        "rider_id, points_delta"
-    ).eq("date", today).gt("points_delta", 0).execute()
+    history = supabase.table("race_results").select(
+        "rider_id, pcs_points"
+    ).eq("race_date", today).gt("pcs_points", 0).execute()
 
     if not history.data:
         return {
@@ -53,7 +54,7 @@ async def calculate_daily_scores(supabase: Client) -> dict:
         }
 
     rider_points: dict[str, int] = {
-        h["rider_id"]: h["points_delta"] for h in history.data
+        h["rider_id"]: h["pcs_points"] for h in history.data
     }
 
     # --- Step 2: Get all active/notice contracts ---
