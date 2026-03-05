@@ -26,6 +26,7 @@ import asyncio
 import json
 import os
 import sys
+from typing import Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
 
@@ -44,13 +45,13 @@ CALENDAR_PATH = os.path.join(os.path.dirname(__file__), "wt_calendar_2026.json")
 # Calendar helpers
 # ---------------------------------------------------------------------------
 
-def load_calendar() -> list[dict]:
+def load_calendar() -> List[Dict]:
     """Load wt_calendar_2026.json and return the race list."""
     with open(CALENDAR_PATH, encoding="utf-8") as fh:
         return json.load(fh)
 
 
-def lookup_race(slug: str) -> dict | None:
+def lookup_race(slug: str) -> Optional[Dict]:
     """Return the calendar entry whose slug matches, or None."""
     calendar = load_calendar()
     for race in calendar:
@@ -59,7 +60,7 @@ def lookup_race(slug: str) -> dict | None:
     return None
 
 
-def race_meta(slug: str) -> tuple[str, str]:
+def race_meta(slug: str) -> Tuple[str, str]:
     """Return (race_name, race_date) for the given slug.
 
     race_date is start_date for stage races, date for one-day races.
@@ -107,18 +108,29 @@ async def run_init_riders() -> None:
     roster_result = await sync_all_riders(supabase)
     print(json.dumps(roster_result, indent=2))
 
-    # Step 2: season rankings — needs a single shared browser page
+    # Step 2: season rankings — fresh context per season to avoid Cloudflare
     print()
     print("--- Step 2/2: Import season rankings (2024, 2025, 2026) ---")
+    seasons = [2024, 2025, 2026]
     async with async_playwright() as p:
-        browser, context, page = await new_browser_page(p)
+        browser = await p.chromium.launch(headless=True)
         try:
-            rankings_result = await import_season_rankings(
-                supabase, page, seasons=[2024, 2025, 2026]
-            )
-            print(json.dumps(rankings_result, indent=2))
+            for i, season in enumerate(seasons):
+                context = await browser.new_context(user_agent=USER_AGENT)
+                page = await context.new_page()
+                print(f"  Season {season}...")
+                result = await import_season_rankings(
+                    supabase, page, seasons=[season]
+                )
+                print(f"    Upserted: {result['total_upserted']}, errors: {len(result['errors'])}")
+                if result["errors"]:
+                    for err in result["errors"][:3]:
+                        print(f"    ERROR: {err}")
+                await context.close()
+                if i < len(seasons) - 1:
+                    print("    Waiting 15s before next season...")
+                    await asyncio.sleep(15)
         finally:
-            await context.close()
             await browser.close()
 
     print()
@@ -145,58 +157,65 @@ async def run_post_race(race_slug: str) -> None:
     print(f"Date : {race_date or '(not in calendar)'}")
     print()
 
-    async with async_playwright() as p:
-        browser, context, page = await new_browser_page(p)
-        try:
-            # Step 1: detect stage race vs one-day
-            print("--- Step 1: Detecting race type ---")
-            stage_urls = await get_stage_urls(page, race_slug)
+    # Determine race type from calendar (avoids extra PCS fetch)
+    race_entry = lookup_race(race_slug)
+    is_stage_race = race_entry and race_entry.get("type") == "stage-race"
 
-            if stage_urls:
-                print(f"  Stage race detected — {len(stage_urls)} stage(s) found.")
-                print()
-                # Step 2a: import each stage result
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        try:
+            if is_stage_race:
+                # Step 1: get stage URLs from race overview
+                print("--- Step 1: Getting stage list ---")
+                ctx1 = await browser.new_context(user_agent=USER_AGENT)
+                page1 = await ctx1.new_page()
+                stage_urls = await get_stage_urls(page1, race_slug)
+                await ctx1.close()
+                print(f"  Stage race — {len(stage_urls)} stage(s) found.")
+
+                # Step 2: import each stage with fresh context
                 for i, stage_entry in enumerate(stage_urls):
                     stage_url = stage_entry.get("stage_url") or stage_entry.get("url", "")
-                    print(f"--- Stage {i + 1}/{len(stage_urls)}: {stage_url} ---")
+                    print(f"\n--- Stage {i + 1}/{len(stage_urls)}: {stage_url} ---")
+                    ctx = await browser.new_context(user_agent=USER_AGENT)
+                    page = await ctx.new_page()
                     result = await import_race_results(
-                        supabase,
-                        page,
+                        supabase, page,
                         race_slug=race_slug,
                         race_name=race_name,
                         race_date=race_date,
                         stage_url=stage_url,
                     )
-                    print(json.dumps(result, indent=2))
-
+                    await ctx.close()
+                    print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
                     if i < len(stage_urls) - 1:
-                        print("  Waiting 10s before next stage...")
-                        await asyncio.sleep(10)
+                        print("  Waiting 15s before next stage...")
+                        await asyncio.sleep(15)
             else:
-                print("  One-day race detected.")
-                print()
-                # Step 2b: import single result
-                print("--- Step 2: Importing race result ---")
+                # One-day race: single fetch with fresh context
+                print("--- One-day race — importing result ---")
+                ctx = await browser.new_context(user_agent=USER_AGENT)
+                page = await ctx.new_page()
                 result = await import_race_results(
-                    supabase,
-                    page,
+                    supabase, page,
                     race_slug=race_slug,
                     race_name=race_name,
                     race_date=race_date,
-                    stage_url=None,
                 )
-                print(json.dumps(result, indent=2))
+                await ctx.close()
+                print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
 
-            # Step 3: update global ranking
-            print()
-            print("--- Waiting 15s before updating global ranking ---")
+            # Step 3: update global ranking with fresh context
+            print("\n--- Waiting 15s before updating global ranking ---")
             await asyncio.sleep(15)
             print("--- Updating global PCS ranking ---")
-            ranking_result = await update_global_ranking(supabase, page)
-            print(json.dumps(ranking_result, indent=2))
+            ctx_rank = await browser.new_context(user_agent=USER_AGENT)
+            page_rank = await ctx_rank.new_page()
+            ranking_result = await update_global_ranking(supabase, page_rank)
+            await ctx_rank.close()
+            print(f"  Updated: {ranking_result['updated']} riders")
 
         finally:
-            await context.close()
             await browser.close()
 
     # Step 4: calculate daily scores (no browser needed)

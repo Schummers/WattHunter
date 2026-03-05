@@ -195,8 +195,8 @@ async def import_season_rankings(
                         {
                             "rider_id": rider_id,
                             "season": season,
-                            "pcs_points": entry.get("points", 0) or 0,
-                            "pcs_rank": entry.get("rank"),
+                            "points": int(entry.get("points", 0) or 0),
+                            "rank": int(entry.get("rank", 0) or 0),
                         },
                         on_conflict="rider_id,season",
                     ).execute()
@@ -261,7 +261,6 @@ async def import_startlist(
                     "race_slug": race_slug,
                     "race_name": race_name,
                     "race_date": race_date,
-                    "team_name": entry.get("team_name"),
                 },
                 on_conflict="rider_id,race_slug",
             ).execute()
