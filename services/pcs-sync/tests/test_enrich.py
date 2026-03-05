@@ -74,3 +74,18 @@ def test_parse_rider_data():
     assert result["specialty"] == "GC"
     assert len(result["teams"]) == 2
     assert len(result["season_points"]) == 2
+
+
+def test_build_parser_accepts_enrich_riders():
+    """CLI parser should accept 'enrich-riders' command with --start and --end."""
+    from run_pipeline import build_parser
+    parser = build_parser()
+
+    args = parser.parse_args(["enrich-riders"])
+    assert args.command == "enrich-riders"
+    assert args.start == 1
+    assert args.end == 500
+
+    args2 = parser.parse_args(["enrich-riders", "--start", "401", "--end", "500"])
+    assert args2.start == 401
+    assert args2.end == 500

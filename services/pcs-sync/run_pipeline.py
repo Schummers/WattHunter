@@ -289,6 +289,27 @@ async def run_monthly_finance_pipeline() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Pipeline E — enrich-riders
+# ---------------------------------------------------------------------------
+
+async def run_enrich_riders(start: int, end: int) -> None:
+    """Pipeline E: enrich riders with individual PCS page data."""
+    from sync import get_supabase
+    from enrich import enrich_riders
+
+    supabase = get_supabase()
+
+    print("=== Pipeline E: enrich-riders ===")
+    print(f"Range: rank {start} to {end}")
+    print()
+    result = await enrich_riders(supabase, start_rank=start, end_rank=end)
+    print()
+    print(json.dumps(result, indent=2))
+    print()
+    print("Done — enrich-riders complete.")
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -335,6 +356,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pipeline D — monthly: sponsor payment + salary deduction + bankruptcy.",
     )
 
+    # enrich-riders
+    enrich = subparsers.add_parser(
+        "enrich-riders",
+        help="Pipeline E — enrich riders with individual PCS page data (photo, bio, specialty).",
+    )
+    enrich.add_argument(
+        "--start",
+        type=int,
+        default=1,
+        metavar="RANK",
+        help="Start PCS rank (default: 1)",
+    )
+    enrich.add_argument(
+        "--end",
+        type=int,
+        default=500,
+        metavar="RANK",
+        help="End PCS rank (default: 500)",
+    )
+
     return parser
 
 
@@ -356,6 +397,8 @@ async def main() -> None:
         await run_startlists(args.race)
     elif args.command == "monthly-finance":
         await run_monthly_finance_pipeline()
+    elif args.command == "enrich-riders":
+        await run_enrich_riders(args.start, args.end)
     else:
         parser.print_help()
         sys.exit(1)
