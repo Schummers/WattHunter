@@ -42,6 +42,27 @@ def assign_specialty(points_per_speciality: Dict[str, int]) -> str:
     return max(filtered, key=filtered.get)
 
 
+def _parse_height_cm(value: Any) -> Optional[int]:
+    """Convert PCS height to cm. PCS returns meters as float (1.76) or cm as int (176)."""
+    if value is None:
+        return None
+    try:
+        f = float(value)
+        return int(f * 100) if f < 3 else int(f)
+    except (ValueError, TypeError):
+        return None
+
+
+def _parse_weight_kg(value: Any) -> Optional[int]:
+    """Convert PCS weight to int kg."""
+    if value is None:
+        return None
+    try:
+        return int(float(value))
+    except (ValueError, TypeError):
+        return None
+
+
 def parse_rider_data(
     raw: Dict[str, Any],
     specialty_points: Dict[str, int],
@@ -53,8 +74,8 @@ def parse_rider_data(
         "photo_url": raw.get("image_url") or None,
         "birthdate": raw.get("birthdate") or None,
         "birth_place": raw.get("place_of_birth") or None,
-        "height_cm": raw.get("height") or None,
-        "weight_kg": raw.get("weight") or None,
+        "height_cm": _parse_height_cm(raw.get("height")),
+        "weight_kg": _parse_weight_kg(raw.get("weight")),
         "specialty": assign_specialty(specialty_points),
         "teams": teams,
         "season_points": season_points,

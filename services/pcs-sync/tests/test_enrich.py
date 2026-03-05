@@ -76,6 +76,23 @@ def test_parse_rider_data():
     assert len(result["season_points"]) == 2
 
 
+def test_parse_height_meters():
+    """PCS returns height as meters float (1.76) — should convert to 176 cm."""
+    from enrich import _parse_height_cm
+    assert _parse_height_cm(1.76) == 176
+    assert _parse_height_cm("1.76") == 176
+    assert _parse_height_cm(176) == 176
+    assert _parse_height_cm(None) is None
+
+
+def test_parse_weight_float():
+    """PCS may return weight as float — should convert to int."""
+    from enrich import _parse_weight_kg
+    assert _parse_weight_kg(66) == 66
+    assert _parse_weight_kg("66.5") == 66
+    assert _parse_weight_kg(None) is None
+
+
 def test_build_parser_accepts_enrich_riders():
     """CLI parser should accept 'enrich-riders' command with --start and --end."""
     from run_pipeline import build_parser
