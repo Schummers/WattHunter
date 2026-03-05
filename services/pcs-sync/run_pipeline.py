@@ -208,11 +208,11 @@ async def run_post_race(race_slug: str) -> None:
                 await ctx.close()
                 print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
 
-            # Step 3: update global ranking (top 300, 3 pages with fresh contexts)
+            # Step 3: update global ranking (top 500, 5 pages with fresh contexts)
             print("\n--- Waiting 15s before updating global ranking ---")
             await asyncio.sleep(15)
-            print("--- Updating global PCS ranking (top 300) ---")
-            ranking_result = await update_global_ranking(supabase, browser, pages=3)
+            print("--- Updating global PCS ranking (top 500) ---")
+            ranking_result = await update_global_ranking(supabase, browser, pages=5)
             print(f"  Updated: {ranking_result['updated']} riders (from {ranking_result['total_in_ranking']} ranked)")
 
         finally:
