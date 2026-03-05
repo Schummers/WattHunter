@@ -172,13 +172,15 @@ export function RiderDialog({
 
           {existingBid && (
             <p className="text-sm text-muted-foreground">
-              Mise actuelle : {existingBid.amount.toLocaleString("fr-FR")} EUR
+              Salaire proposé actuel :{" "}
+              {existingBid.amount.toLocaleString("fr-FR")} €/mois
             </p>
           )}
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-foreground">
-              Montant (min. {rider.monthly_salary.toLocaleString("fr-FR")} EUR)
+              Salaire mensuel proposé (min.{" "}
+              {rider.monthly_salary.toLocaleString("fr-FR")} €/mois)
             </label>
             <Input
               type="number"
@@ -196,7 +198,8 @@ export function RiderDialog({
               budgetAfter >= 0 ? "text-muted-foreground" : "text-destructive"
             )}
           >
-            Budget dispo apres mise : {budgetAfter.toLocaleString("fr-FR")} EUR
+            Budget dispo apres engagement salaire :{" "}
+            {budgetAfter.toLocaleString("fr-FR")} €/mois
           </p>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
