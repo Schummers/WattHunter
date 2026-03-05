@@ -77,49 +77,50 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 
 | Constante | Valeur |
 |-----------|--------|
-| Tresorerie initiale | 300 000 € |
-
-> **Beta :** Tresorerie reduite de 500k a 300k pour forcer des arbitrages des le debut.
+| Tresorerie initiale | 200 000 € |
 
 ### 4.2 Entrees
-- Revenue des coureurs : quotidien (points PCS × taux de conversion)
+- Bonus des coureurs : par course (voir §4.5)
 - Paiements sponsors : mensuel le 1er du mois
-- **Sponsor par defaut :** 300 000 €/mois (flat, aucun tier en beta — automatiquement actif des le debut)
+- **Sponsor par defaut :** 200 000 €/mois (flat, aucun tier en beta — automatiquement actif des le debut)
 
 ### 4.3 Sorties
 - Salaires des coureurs : mensuel le 1er du mois
 - Encheres gagnees : deduction immediate
 
-### 4.4 Formule de salaire (marche de reference)
+### 4.4 Formule de salaire
 
 ```
-Salaire annuel = (PCS_glissant_1an / 1000) × 500 000 €
-Salaire mensuel = Salaire annuel / 12
-Plancher : 5 000 €/mois | Plafond : 300 000 €/mois
+Salaire mensuel = points_PCS_1an × 2 000 / 12
+Plancher : 5 000 €/mois | Pas de plafond
 ```
 
 **Exemples :**
-- 100 pts PCS → 50k€/an → 4 167€/mois → **plancher a 5 000€**
-- 1 000 pts PCS → 500k€/an → 41 667€/mois
-- 7 200 pts PCS → 3.6M€/an → 300k€/mois → **plafonne a 300 000€**
+- 114 pts PCS (#500) → 228k€/an → **19 000 €/mois**
+- 400 pts PCS (#100) → 800k€/an → **66 667 €/mois**
+- 2 216 pts PCS (#5, Vingegaard) → 4.4M€/an → **369 333 €/mois**
+- 4 552 pts PCS (#1, Pogacar) → 9.1M€/an → **758 666 €/mois**
 
-> **Note :** Le salaire formule ci-dessus est une reference marche utilisee pour determiner la **mise minimum a l'enchere** (plancher). Ce n'est pas le salaire mensuel reel du contrat — le salaire reel est la mise gagnante de l'enchere (voir §5).
+> **Note :** Le salaire formule ci-dessus determine la **mise minimum a l'enchere**. Le salaire reel du contrat est la mise gagnante de l'enchere (voir §5).
 
-### 4.5 Bonus mensuel d'un coureur
+### 4.5 Bonus par course
 
 ```
-Bonus mensuel = max(0, points_PCS_du_mois × TAUX_CONVERSION − enchère_mensuelle)
+Bonus = max(0, points_course × 1 500 − salaire_mensuel)
 ```
 
-Le bonus est **toujours positif ou nul** — un coureur qui performe moins que prevu ne penalise pas la tresorerie au-dela de son salaire contractuel.
+Le bonus est calcule **individuellement par course** (pas cumule sur le mois). Il est **toujours positif ou nul** — un coureur ne penalise jamais la tresorerie au-dela de son salaire.
 
-| Constante | Valeur | Statut |
-|-----------|--------|--------|
-| TAUX_CONVERSION | 500 €/point PCS | **PLACEHOLDER — calibration Excel requise** |
+| Constante | Valeur |
+|-----------|--------|
+| Taux de conversion bonus | 1 500 €/point PCS |
+
+**Dynamique "pepite" :** Les stars (salaires eleves) ne generent quasi jamais de bonus. Les coureurs peu chers (#400-500) generent du bonus des qu'ils performent en course. C'est la mecanique strategique centrale du jeu.
 
 **Exemples :**
-- Coureur enchere a 30 000€/mois, genere 50 000€ de revenus → bonus = 20 000€
-- Coureur enchere a 30 000€/mois, genere 10 000€ de revenus → bonus = 0€ (pas de malus)
+- Rider #450 (salaire 21k), score 20 pts en course → 20 × 1500 = 30k → bonus = 9 000 €
+- Rider #100 (salaire 67k), score 30 pts en course → 30 × 1500 = 45k → bonus = 0 € (pas de malus)
+- Pogacar (salaire 759k), score 100 pts en course → 100 × 1500 = 150k → bonus = 0 €
 
 ### 4.6 Faillite
 
@@ -224,13 +225,13 @@ Les bonus sont **additifs**. Exemple : National Pride (Belgique) + Specialist (S
 
 ## 9. Sponsors
 
-> **Beta — systeme de tiers desactive.** En beta, tous les joueurs beneficient d'un **sponsor par defaut unique** : 300 000 €/mois, flat, sans condition, actif des le debut de la ligue. Le systeme de tiers (Tier 1–5 lies aux niveaux) est preserve dans le code mais desactive pour simplifier l'onboarding beta.
+> **Beta — systeme de tiers desactive.** En beta, tous les joueurs beneficient d'un **sponsor par defaut unique** : 200 000 €/mois, flat, sans condition, actif des le debut de la ligue. Le systeme de tiers (Tier 1–5 lies aux niveaux) est preserve dans le code mais desactive pour simplifier l'onboarding beta.
 
 **Sponsor par defaut (beta) :**
 
 | Regle | Valeur |
 |-------|--------|
-| Montant | 300 000 €/mois |
+| Montant | 200 000 €/mois |
 | Conditions | Aucune |
 | Activation | Automatique a la creation d'equipe |
 | Tier | N/A (beta flat) |
@@ -255,13 +256,13 @@ Condition non remplie au jour du paiement → montant Option A verse a la place.
 
 | Constante | Valeur | A calibrer ? |
 |-----------|--------|-------------|
-| Tresorerie depart | **300 000 €** (beta) | Non |
-| Sponsor par defaut | **300 000 €/mois** (beta flat) | Non |
+| Tresorerie depart | **200 000 €** | Non |
+| Sponsor par defaut | **200 000 €/mois** (beta flat) | Non |
 | Enchère = salaire mensuel | Oui — pas d'achat unique | Non |
-| Bonus coureur | max(0, pts×500 − enchère) | **OUI — simulation obligatoire** |
+| Salaire mensuel | pts_PCS × 2 000 / 12 (pas de plafond) | Non |
+| Bonus par course | max(0, pts_course × 1 500 − salaire) | Non |
 | Salaire plancher (enchere min) | 5 000 €/mois | Non |
-| Salaire plafond | 300 000 €/mois | Verifier avec donnees reelles |
-| Taux de conversion | 500 €/point PCS | **OUI — simulation obligatoire** |
+| Taux conversion bonus | 1 500 €/point PCS | Non |
 | Faillite : libere en premier | Meilleur scoreur (beta) | Non |
 | Duree d'enchere | 72 heures | Non |
 | Increment d'enchere | 100 € | Non |

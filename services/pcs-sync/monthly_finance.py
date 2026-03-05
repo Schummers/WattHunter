@@ -2,7 +2,7 @@
 Monthly finance job — WattHunter Beta Economy.
 
 Runs on the 1st of each month (or before each auction):
-  1. Pay sponsor (300K) to each team
+  1. Pay sponsor (200K) to each team
   2. Deduct salaries (sum of locked_salary from active contracts)
   3. Check bankruptcy: if treasury < 0, release best scorers until solvent
 
@@ -17,7 +17,7 @@ from supabase import Client
 
 logger = logging.getLogger(__name__)
 
-SPONSOR_AMOUNT = 300_000  # €/month — flat sponsor for beta
+SPONSOR_AMOUNT = 200_000  # €/month — flat sponsor for beta
 
 
 def calculate_monthly_salaries(contracts: list[dict]) -> int:

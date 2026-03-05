@@ -40,6 +40,16 @@ export async function createLeague(
     return { error: "Non authentifie." };
   }
 
+  // Ensure public.users row exists BEFORE league insert (FK constraint)
+  const displayName =
+    user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "Joueur";
+  await supabase
+    .from("users")
+    .upsert(
+      { id: user.id, display_name: displayName, avatar_url: user.user_metadata?.avatar_url ?? null },
+      { onConflict: "id" }
+    );
+
   let inviteCode = generateInviteCode();
   let attempts = 0;
   while (attempts < 5) {
@@ -65,18 +75,9 @@ export async function createLeague(
     .single();
 
   if (leagueError || !league) {
-    return { error: "Erreur lors de la creation de la ligue." };
+    console.error("League creation failed:", leagueError);
+    return { error: `Erreur lors de la creation de la ligue: ${leagueError?.message ?? "unknown"}` };
   }
-
-  // Ensure public.users row exists
-  const displayName =
-    user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "Joueur";
-  await supabase
-    .from("users")
-    .upsert(
-      { id: user.id, display_name: displayName, avatar_url: user.user_metadata?.avatar_url ?? null },
-      { onConflict: "id" }
-    );
 
   const { data: team, error: teamError } = await supabase
     .from("teams")

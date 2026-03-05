@@ -18,8 +18,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 RATE_LIMIT_MS = int(os.getenv("PCS_RATE_LIMIT_DELAY_MS", "4000"))
 
-SALARY_FLOOR = 5_000    # €/month
-SALARY_CAP   = 300_000  # €/month
+SALARY_FLOOR = 5_000    # €/month (no upper cap)
 
 # Level gating thresholds: level → max PCS rank accessible
 LEVEL_RANK_THRESHOLDS = [500, 400, 300, 200, 150, 100, 75, 50, 25, 10]
@@ -49,10 +48,10 @@ def get_supabase() -> Client:
 
 
 def calculate_monthly_salary(pcs_points_1yr: int) -> int:
-    """Salary formula from PRD_02: (pcs_1yr / 1000) × 500,000 / 12"""
-    annual = (pcs_points_1yr / 1000) * 500_000
+    """Salary = pcs_points × 2000 / 12. No upper cap."""
+    annual = pcs_points_1yr * 2_000
     monthly = annual / 12
-    return max(SALARY_FLOOR, min(SALARY_CAP, int(monthly)))
+    return max(SALARY_FLOOR, int(monthly))
 
 
 CLOUDFLARE_MARKERS = ["Just a moment", "Checking your browser", "cf-browser-verification"]

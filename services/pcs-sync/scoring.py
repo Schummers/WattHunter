@@ -19,8 +19,8 @@ from supabase import Client
 logger = logging.getLogger(__name__)
 
 # Read at import time so the module-level constant is set correctly.
-# The env var MUST be present in production; 500 is the placeholder from CLAUDE.md.
-CONVERSION_RATE = int(os.getenv("CONVERSION_RATE_EUR_PER_PCS", "500"))
+# 1500 €/point PCS — intentionally below salary rate (2000) to create "pépite" dynamic.
+CONVERSION_RATE = int(os.getenv("CONVERSION_RATE_EUR_PER_PCS", "1500"))
 
 
 def calculate_rider_bonus(pcs_points: int, locked_salary: int, conversion_rate: int) -> int:

@@ -3,9 +3,9 @@ import pytest
 
 
 def test_monthly_sponsor_payment():
-    """Each team gets +300K sponsor payment."""
+    """Each team gets +200K sponsor payment."""
     from monthly_finance import SPONSOR_AMOUNT
-    assert SPONSOR_AMOUNT == 300_000
+    assert SPONSOR_AMOUNT == 200_000
 
 
 def test_monthly_salary_deduction():

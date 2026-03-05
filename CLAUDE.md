@@ -56,12 +56,13 @@ python3 run_pipeline.py monthly-finance
 - NEVER libérer un coureur sans le préavis d'1 mois (sauf auto-release faillite).
 
 ## Constantes du jeu (calibrer avant le lancement alpha)
-- Trésorerie départ : 300 000 € (beta — réduit de 500k)
-- Sponsor par défaut : 300 000 €/mois (beta flat, sans tiers)
+- Trésorerie départ : 200 000 €
+- Sponsor par défaut : 200 000 €/mois (beta flat, sans tiers)
 - Enchère = salaire mensuel récurrent (pas un achat unique)
-- Bonus coureur = max(0, pts×500 - enchère), positif uniquement
-- Salaire plancher (enchère min) : 5 000 €/mois | plafond : 300 000 €/mois
-- Taux de conversion : 500 €/point PCS (PLACEHOLDER — simulation Excel obligatoire)
+- Salaire mensuel = pts_PCS × 2 000 / 12 (pas de plafond)
+- Bonus coureur par course = max(0, pts_course × 1 500 - salaire_mensuel)
+- Salaire plancher (enchère min) : 5 000 €/mois
+- Taux de conversion bonus : 1 500 €/point PCS
 - Incrément minimum d'enchère : 100 €
 - Durée d'enchère : 72 heures
 - Slots coureurs : 6 (Niveau 1) → 12 (Niveau 10)
