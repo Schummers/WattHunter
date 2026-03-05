@@ -98,7 +98,7 @@ async def import_race_results(
     }
 
 
-async def update_global_ranking(supabase: Client, browser, *, pages: int = 3) -> Dict[str, Any]:
+async def update_global_ranking(supabase: Client, browser, *, pages: int = 5) -> Dict[str, Any]:
     """Fetch the PCS individual ranking (top N×100) and update matching riders.
 
     Uses fresh browser contexts per page to avoid Cloudflare.
@@ -169,6 +169,13 @@ async def update_global_ranking(supabase: Client, browser, *, pages: int = 3) ->
                             "monthly_salary": salary,
                         }
                     ).eq("id", rider_id).execute()
+
+                    # Also mark as ever_in_top500 if ranked
+                    if pcs_rank and pcs_rank <= 500:
+                        supabase.table("riders").update(
+                            {"ever_in_top500": True}
+                        ).eq("id", rider_id).execute()
+
                     updated += 1
                     batch += 1
                 except Exception as exc:

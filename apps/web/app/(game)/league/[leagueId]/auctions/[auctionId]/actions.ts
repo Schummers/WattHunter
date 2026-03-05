@@ -4,6 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 
+function rankMaxForLevel(level: number): number {
+  const thresholds = [500, 400, 300, 200, 150, 100, 75, 50, 25, 10];
+  return thresholds[Math.min(Math.max(level, 1), 10) - 1];
+}
+
 const BidSchema = z.object({
   auctionId: z.string().uuid(),
   riderId: z.string().uuid(),
@@ -25,7 +30,7 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id, treasury")
+    .select("id, treasury, level")
     .eq("user_id", user.id)
     .single();
 
@@ -34,7 +39,7 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
   // Check rider min salary
   const { data: rider } = await supabase
     .from("riders")
-    .select("monthly_salary")
+    .select("monthly_salary, pcs_rank, ever_in_top500")
     .eq("id", parsed.data.riderId)
     .single();
 
@@ -70,6 +75,15 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
 
   if (otherBidsTotal + parsed.data.amount > team.treasury) {
     return { error: "Budget insuffisant" };
+  }
+
+  // Level gating: verify rider is accessible at team's level
+  if (!rider.ever_in_top500) {
+    return { error: "Ce coureur n'est pas dans le pool jouable" };
+  }
+
+  if (rider.pcs_rank && rider.pcs_rank > rankMaxForLevel(team.level)) {
+    return { error: "Niveau insuffisant pour ce coureur" };
   }
 
   let error;

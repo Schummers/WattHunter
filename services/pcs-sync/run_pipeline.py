@@ -10,7 +10,7 @@ Requires:
 Usage:
   cd services/pcs-sync
 
-  # Pipeline A — annual initialization (roster + season rankings)
+  # Pipeline A — sync top 500 PCS riders + season rankings
   python3 run_pipeline.py init-riders
 
   # Pipeline B — after each race/stage finishes
@@ -96,9 +96,9 @@ async def new_browser_page(p):
 # ---------------------------------------------------------------------------
 
 async def run_init_riders() -> None:
-    """Annual initialization: sync all rider rosters + import season rankings."""
+    """Annual initialization: sync top 500 PCS riders + import season rankings."""
     from playwright.async_api import async_playwright
-    from sync import sync_all_riders, get_supabase
+    from sync import get_supabase, sync_top500
     from sync_race import import_season_rankings
 
     supabase = get_supabase()
@@ -106,10 +106,10 @@ async def run_init_riders() -> None:
     print("=== Pipeline A: init-riders ===")
     print()
 
-    # Step 1: roster sync (manages its own browser internally)
-    print("--- Step 1/2: Sync rider rosters (9 ProTeams) ---")
-    roster_result = await sync_all_riders(supabase)
-    print(json.dumps(roster_result, indent=2))
+    # Step 1: sync top 500 PCS global ranking
+    print("--- Step 1/2: Sync top 500 PCS riders ---")
+    result = await sync_top500(supabase, pages=5)
+    print(json.dumps(result, indent=2))
 
     # Step 2: season rankings — fresh context per season to avoid Cloudflare
     print()
@@ -121,14 +121,16 @@ async def run_init_riders() -> None:
             for i, season in enumerate(seasons):
                 context = await browser.new_context(user_agent=USER_AGENT)
                 page = await context.new_page()
-                print(f"  Season {season}...")
+                print("  Season {}...".format(season))
                 result = await import_season_rankings(
                     supabase, page, seasons=[season]
                 )
-                print(f"    Upserted: {result['total_upserted']}, errors: {len(result['errors'])}")
+                print("    Upserted: {}, errors: {}".format(
+                    result['total_upserted'], len(result['errors'])
+                ))
                 if result["errors"]:
                     for err in result["errors"][:3]:
-                        print(f"    ERROR: {err}")
+                        print("    ERROR: {}".format(err))
                 await context.close()
                 if i < len(seasons) - 1:
                     print("    Waiting 15s before next season...")
@@ -208,11 +210,11 @@ async def run_post_race(race_slug: str) -> None:
                 await ctx.close()
                 print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
 
-            # Step 3: update global ranking (top 300, 3 pages with fresh contexts)
+            # Step 3: update global ranking (top 500, 5 pages with fresh contexts)
             print("\n--- Waiting 15s before updating global ranking ---")
             await asyncio.sleep(15)
-            print("--- Updating global PCS ranking (top 300) ---")
-            ranking_result = await update_global_ranking(supabase, browser, pages=3)
+            print("--- Updating global PCS ranking (top 500) ---")
+            ranking_result = await update_global_ranking(supabase, browser, pages=5)
             print(f"  Updated: {ranking_result['updated']} riders (from {ranking_result['total_in_ranking']} ranked)")
 
         finally:
@@ -300,7 +302,7 @@ def build_parser() -> argparse.ArgumentParser:
     # init-riders
     subparsers.add_parser(
         "init-riders",
-        help="Pipeline A — annual init: sync all rosters + import season rankings.",
+        help="Pipeline A — sync top 500 PCS riders + import season rankings.",
     )
 
     # post-race

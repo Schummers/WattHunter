@@ -47,23 +47,27 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 
 ## 3. Coureurs
 
-**Univers total :** ~923 coureurs (383 ProTeam + ~540 WorldTour)
+**Univers total :** Top 500 coureurs du ranking PCS global individuel (12 mois glissants)
 
 **Donnees par coureur :**
 - Nom, nationalite, equipe reelle UCI, type d'equipe
 - Photo, age, specialite (grimpeur/sprinteur/rouleur/puncheur/contre-la-montre/polyvalent)
 - Points PCS glissants 365 jours, classement PCS, salaire mensuel calcule
 
-**Acces par niveau :**
+**Acces par niveau (gating PCS) :**
 
-| Niveau | Acces |
-|--------|-------|
-| 1 | ProTeam uniquement (~383) |
-| 2 | ProTeam + PCS rank ≤400 |
-| 3-9 | Progressivement plus de coureurs |
-| 10 | TOUS les coureurs (~923) |
-
-*Exception ProTeam :* Les coureurs ProTeam restent accessibles au Niveau 1 meme s'ils atteignent le top-10 PCS.
+| Niveau | Rang PCS debloque |
+|--------|-------------------|
+| 1 | #401-500 |
+| 2 | #301-500 |
+| 3 | #201-500 |
+| 4 | #151-500 |
+| 5 | #101-500 |
+| 6 | #76-500 |
+| 7 | #51-500 |
+| 8 | #26-500 |
+| 9 | #11-500 |
+| 10 | #1-500 |
 
 ---
 
@@ -187,20 +191,18 @@ XP equipe = Σ XP de tous les coureurs du roster
 
 ### Progression par niveaux
 
-| Niveau | XP cumule | Slots | Politiques | Tier Sponsor |
-|--------|-----------|-------|------------|--------------|
-| 1 | 0 | 6 | 0 | — |
-| 2 | 5 000 | 6 | 0 | — |
-| 3 | 12 000 | 7 | 1 | Tier 1 |
-| 4 | 21 800 | 7 | 1 | Tier 1 |
-| 5 | 35 520 | 8 | 1 | Tier 2 |
-| 6 | 54 728 | 9 | 2 | Tier 2 |
-| 7 | 81 619 | 10 | 2 | Tier 3 |
-| 8 | 119 267 | 11 | 2 | Tier 3 |
-| 9 | 171 974 | 12 | 2 | Tier 4 |
-| 10 | 245 764 | 12 | 3 | Tier 5 |
-
-*Multiplicateur : ×1.4 par niveau. A recalibrer apres simulation Excel.*
+| Niveau | XP cumule | Slots | Politiques | Rang PCS debloque |
+|--------|-----------|-------|------------|-------------------|
+| 1 | 0 | 6 | 0 | #401-500 |
+| 2 | 1 000 | 6 | 0 | #301-500 |
+| 3 | 3 000 | 7 | 1 | #201-500 |
+| 4 | 6 000 | 7 | 1 | #151-500 |
+| 5 | 10 000 | 8 | 1 | #101-500 |
+| 6 | 18 000 | 9 | 2 | #76-500 |
+| 7 | 30 000 | 10 | 2 | #51-500 |
+| 8 | 50 000 | 10 | 2 | #26-500 |
+| 9 | 80 000 | 11 | 2 | #11-500 |
+| 10 | 120 000 | 12 | 3 | #1-500 |
 
 ---
 
@@ -265,6 +267,8 @@ Condition non remplie au jour du paiement → montant Option A verse a la place.
 | Increment d'enchere | 100 € | Non |
 | Slots max | 6 (Niv 1) → 12 (Niv 10) | Non |
 | Politiques max | 0 (Niv 1) → 3 (Niv 10) | Non |
+| Pool coureurs | Top 500 PCS global (12 mois glissants) | Non |
+| XP Niveau 5 | 10 000 | Non |
+| XP Niveau 10 | 120 000 | Non |
 | Contrat sponsor | 2 mois (post-beta) | Non |
 | Joueurs max par ligue | 20 | Non |
-| Multiplicateur XP/niveau | ×1.4 | Calibrer apres simulation |
