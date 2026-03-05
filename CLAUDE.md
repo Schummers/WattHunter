@@ -39,11 +39,16 @@ python3 run_pipeline.py startlists --race "race/paris-nice/2026"
 
 # Pipeline D — Finances mensuelles (1x/mois, le 1er) : salaires + sponsor + bonus coureurs
 python3 run_pipeline.py monthly-finance
+
+# Pipeline E — Enrichissement coureurs (1x/an) : photo, bio, spécialité, teams, résultats
+python3 run_pipeline.py enrich-riders
+python3 run_pipeline.py enrich-riders --start 401 --end 500
 ```
 - Pipeline A : ~5 min (top 500 riders + 3 rankings)
 - Pipeline B : ~30s (1 résultat + 1 ranking + scoring)
 - Pipeline C : ~15s (1 page startlist)
 - Pipeline D : ~5s (calcul mensuel toutes ligues actives)
+- Pipeline E : ~1h (100 coureurs) / ~5h (500 coureurs, batch de 5 + 1min pause)
 - Calendrier WT : `services/pcs-sync/wt_calendar_2026.json`
 
 ## Règles critiques (NEVER DO)
