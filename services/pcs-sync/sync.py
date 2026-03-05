@@ -119,8 +119,11 @@ async def sync_team_roster(supabase: Client, page, team_slug: str, rate_limit_s:
                 name = raw_name
 
             nationality = rider_entry.get("nationality", "??")[:2].upper()
-            pcs_points = rider_entry.get("ranking_points", 0) or 0
-            salary = calculate_monthly_salary(pcs_points)
+
+            # NOTE: pcs_points_1yr, pcs_rank, monthly_salary are NOT set here.
+            # Team.riders() ranking_points is unreliable for many riders.
+            # These fields are only updated by update_global_ranking() in sync_race.py
+            # which scrapes the authoritative PCS individual ranking page.
 
             rider_data = {
                 "pcs_slug": slug,
@@ -130,9 +133,6 @@ async def sync_team_roster(supabase: Client, page, team_slug: str, rate_limit_s:
                 "team_type": "ProTeam",
                 "age": rider_entry.get("age"),
                 "specialty": "all_rounder",
-                "pcs_points_1yr": pcs_points,
-                "pcs_rank": rider_entry.get("ranking_position"),
-                "monthly_salary": salary,
                 "last_synced_at": datetime.utcnow().isoformat(),
             }
 
