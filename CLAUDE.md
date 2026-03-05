@@ -17,6 +17,31 @@
 - `supabase db reset --linked` — reset + reseed (DESTRUCTIF)
 - `cd services/pcs-sync && uvicorn main:app --reload` — service Python en local
 
+## Sync PCS (données coureurs)
+3 pipelines scraping procyclingstats.com, tous lancés manuellement via CLI.
+- **Exécution locale uniquement** (IP résidentielle requise — Cloudflare bloque les IPs datacenter)
+- Nécessite Python 3.9+, Playwright Chromium, fichier `.env` dans `services/pcs-sync/`
+- 9 ProTeams (~260 riders)
+
+### Lancer les pipelines
+```bash
+cd services/pcs-sync
+
+# Pipeline A — Init riders (1x/an) : roster 9 ProTeams + season rankings 3 ans
+python3 run_pipeline.py init-riders
+
+# Pipeline B — Post-race : résultats + ranking global + scoring
+python3 run_pipeline.py post-race --race "race/paris-nice/2026/stage-3"
+python3 run_pipeline.py post-race --race "race/omloop-het-nieuwsblad/2026"
+
+# Pipeline C — Startlists : programme prévisionnel
+python3 run_pipeline.py startlists --race "race/paris-nice/2026"
+```
+- Pipeline A : ~5 min (9 teams + 3 rankings)
+- Pipeline B : ~30s (1 résultat + 1 ranking + scoring)
+- Pipeline C : ~15s (1 page startlist)
+- Calendrier WT : `services/pcs-sync/wt_calendar_2026.json`
+
 ## Règles critiques (NEVER DO)
 - NEVER bypass le RLS. L'app web utilise toujours l'anon key.
 - NEVER exposer la service_role key au browser/client.
@@ -38,7 +63,7 @@
 
 ## Blockers ouverts (résoudre avant alpha)
 - [ ] Simulation Excel : calibrer taux de conversion (€/point PCS)
-- [ ] Valider la tolérance au rate limit de procyclingstats (risque IP ban)
+- [x] Valider la tolérance au rate limit de procyclingstats → résolu : 15s pause entre équipes, fresh context par team
 - [ ] Valider l'exactitude des données PCS pour le calcul des salaires
 - [ ] Définir la stratégie de notifications in-app (pas d'emails)
 - [ ] Définir la charte graphique / branding
