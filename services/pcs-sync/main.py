@@ -2,12 +2,15 @@
 WattHunter — PCS Sync Microservice
 FastAPI service for syncing procyclingstats data to Supabase.
 """
+from __future__ import annotations
+
 from fastapi import FastAPI, HTTPException, Header, Request
 from fastapi.responses import JSONResponse
 import os
+from typing import Optional
 from dotenv import load_dotenv
 
-from sync import sync_all_riders, sync_rider_daily, sync_rider_history, sync_race_results, purge_old_history
+from sync import sync_all_riders
 from scoring import calculate_daily_scores
 from auction import resolve_current_round
 
@@ -15,7 +18,7 @@ from supabase import create_client
 
 load_dotenv()
 
-app = FastAPI(title="WattHunter PCS Sync", version="0.1.0")
+app = FastAPI(title="WattHunter PCS Sync", version="0.2.0")
 
 API_SECRET = os.getenv("SYNC_API_SECRET", "")
 
@@ -26,7 +29,7 @@ _supabase = create_client(
 )
 
 
-def _check_auth(x_api_secret: str | None) -> None:
+def _check_auth(x_api_secret: Optional[str]) -> None:
     """Simple secret-based auth for internal calls."""
     if API_SECRET and x_api_secret != API_SECRET:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -38,99 +41,44 @@ async def health():
 
 
 @app.post("/sync/riders")
-async def sync_riders_endpoint(x_api_secret: str | None = Header(default=None)):
+async def sync_riders_endpoint(x_api_secret: Optional[str] = Header(default=None)):
     """
-    Full rider catalogue sync (~923 riders).
+    Full rider catalogue sync (~144 riders from 5 ProTeams).
     Updates pcs_points_1yr, pcs_rank, monthly_salary for all riders.
-    Run: daily at 08:00 UTC via pg_cron → HTTP trigger.
-    Runtime: ~62 min with 4s delay between requests.
+    Runtime: ~2 min with 15s pause between teams.
     """
     _check_auth(x_api_secret)
     result = await sync_all_riders()
     return JSONResponse(content=result)
 
 
-@app.post("/sync/daily/{rider_pcs_slug}")
-async def sync_rider_daily_endpoint(
-    rider_pcs_slug: str,
-    x_api_secret: str | None = Header(default=None),
-):
-    """
-    Sync today's PCS points for a single active rider.
-    Called at 08:30 UTC for all is_active_in_game=true riders.
-    """
-    _check_auth(x_api_secret)
-    result = await sync_rider_daily(rider_pcs_slug)
-    return JSONResponse(content=result)
-
-
-@app.post("/sync/history/{rider_pcs_slug}")
-async def sync_rider_history_endpoint(
-    rider_pcs_slug: str,
-    x_api_secret: str | None = Header(default=None),
-):
-    """
-    Backfill 365-day PCS history for a newly contracted rider.
-    Called at auction resolution for each winning rider.
-    """
-    _check_auth(x_api_secret)
-    result = await sync_rider_history(rider_pcs_slug)
-    return JSONResponse(content=result)
-
-
 @app.post("/jobs/sync-riders")
 async def job_sync_riders(
     request: Request,
-    x_api_secret: str | None = Header(default=None),
+    x_api_secret: Optional[str] = Header(default=None),
 ):
     """
-    Full rider catalogue sync using Playwright to bypass Cloudflare.
+    Roster sync: fetches team pages via Playwright, upserts riders.
+    Race results are now handled by sync_race.py (separate pipeline).
 
-    Pipeline (runs sequentially):
-      Step A — roster sync: iterates PROTEAM_SLUGS, upserts all riders into the
-               riders table with updated pcs_points_1yr / monthly_salary.
-      Step B — race results: for all contracted riders, fetches today's race
-               results via .season_results() and upserts into rider_pcs_history.
-      Step C — history purge: deletes rider_pcs_history rows older than 7 days.
-
-    Runtime estimate: ~62 min with 4 s delay (configurable via PCS_RATE_LIMIT_DELAY_MS).
+    Runtime: ~2 min (only team pages fetched, 15s pause between teams).
     """
     _check_auth(x_api_secret)
-    rate_limit = int(os.getenv("PCS_RATE_LIMIT_DELAY_MS", "4000"))
 
-    # Step A: Rider profiles (roster sync)
-    roster_result = await sync_all_riders(_supabase, rate_limit)
+    roster_result = await sync_all_riders(_supabase)
 
-    # Step B: Race results for contracted riders
-    results_result = await sync_race_results(_supabase, rate_limit)
-
-    # Step C: Purge old history (keep last 7 days)
-    purge_result = await purge_old_history(_supabase)
-
-    return JSONResponse(content={
-        "roster": roster_result,
-        "race_results": results_result,
-        "purge": purge_result,
-    })
+    return JSONResponse(content={"roster": roster_result})
 
 
 @app.post("/jobs/daily-scoring")
 async def job_daily_scoring(
     request: Request,
-    x_api_secret: str | None = Header(default=None),
+    x_api_secret: Optional[str] = Header(default=None),
 ):
     """
     Calculate daily XP and treasury revenue for all teams with contracted riders
     who earned PCS points today.
 
-    For each team:
-      - Sums points_delta from rider_pcs_history (today, > 0)
-      - Applies active policy XP bonus multipliers
-      - Upserts into rider_xp_daily
-      - Updates teams.cumulative_xp and teams.treasury
-      - Inserts one treasury_log entry of type 'rider_revenue' (deduped per day)
-
-    Triggered after /jobs/sync-riders completes (GitHub Actions: daily pipeline).
     CONVERSION_RATE is read from env (CONVERSION_RATE_EUR_PER_PCS) — never hardcoded.
     """
     _check_auth(x_api_secret)
@@ -141,21 +89,11 @@ async def job_daily_scoring(
 @app.post("/jobs/resolve-auction")
 async def job_resolve_auction(
     request: Request,
-    x_api_secret: str | None = Header(default=None),
+    x_api_secret: Optional[str] = Header(default=None),
 ):
     """
     Resolve the current round of all open auctions (3-round sealed-bid system).
-
-    For each open auction:
-      - Computes current_round from (today - opens_at).days + 1
-      - Highest bid per rider wins (tiebreak: earliest placed_at)
-      - Winner: bid status → 'won', contract created, treasury debited
-      - Losers: bid status → 'outbid'
-      - After round 3: auction status → 'closed'
-      - All purchases logged in treasury_log (type='auction_purchase')
-
-    Triggered at midnight UTC every day (GitHub Actions: auction-resolve workflow).
-    Returns {"status": "no_open_auctions"} if nothing to resolve — this is OK.
+    Returns {"status": "no_open_auctions"} if nothing to resolve.
     """
     _check_auth(x_api_secret)
     result = await resolve_current_round(_supabase)

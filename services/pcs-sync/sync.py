@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from datetime import datetime, date, timedelta
+from datetime import datetime
 from typing import Optional
 from procyclingstats import Team
 from supabase import create_client, Client
@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 RATE_LIMIT_MS = int(os.getenv("PCS_RATE_LIMIT_DELAY_MS", "4000"))
-CONVERSION_RATE = int(os.getenv("CONVERSION_RATE_EUR_PER_PCS", "500"))
 
 SALARY_FLOOR = 5_000    # €/month
 SALARY_CAP   = 300_000  # €/month
@@ -198,73 +197,5 @@ async def sync_all_riders(supabase: Optional[Client] = None, rate_limit_ms: Opti
     }
 
 
-async def sync_race_results(supabase: Client, rate_limit_ms: Optional[int] = None) -> dict:
-    """
-    Compute today's points delta for contracted riders by comparing
-    the current pcs_points_1yr (just updated by sync_all_riders) with
-    yesterday's stored value in rider_pcs_history.
-
-    No PCS page fetches needed — works entirely from Supabase data.
-    Must run AFTER sync_all_riders() so riders.pcs_points_1yr is fresh.
-    """
-    today = date.today().isoformat()
-    yesterday = (date.today() - timedelta(days=1)).isoformat()
-
-    # Get all contracted riders with their current PCS points
-    response = supabase.table("contracts").select(
-        "rider_id, riders(id, pcs_slug, pcs_points_1yr)"
-    ).in_("status", ["active", "notice"]).execute()
-
-    contracted = response.data or []
-    if not contracted:
-        return {"status": "completed", "synced": 0, "errors": [], "message": "No contracted riders"}
-
-    synced = 0
-    errors = []
-
-    for contract in contracted:
-        try:
-            rider_info = contract.get("riders") or {}
-            rider_id = contract["rider_id"]
-            current_points = int(rider_info.get("pcs_points_1yr", 0) or 0)
-
-            if current_points == 0:
-                continue
-
-            # Get yesterday's stored points to compute delta
-            prev = supabase.table("rider_pcs_history").select(
-                "pcs_points"
-            ).eq("rider_id", rider_id).eq("date", yesterday).execute()
-
-            if prev.data:
-                previous_points = int(prev.data[0].get("pcs_points", 0) or 0)
-            else:
-                # First day tracking this rider — no delta, just record baseline
-                previous_points = current_points
-
-            points_delta = current_points - previous_points
-
-            # Always record today's snapshot; scoring only uses rows with delta > 0
-            supabase.table("rider_pcs_history").upsert({
-                "rider_id": rider_id,
-                "date": today,
-                "pcs_points": current_points,
-                "points_delta": max(0, points_delta),
-            }, on_conflict="rider_id,date").execute()
-
-            synced += 1
-
-        except Exception as e:
-            logger.error(f"Failed to compute delta for rider {contract.get('rider_id')}: {e}")
-            errors.append(str(e))
-
-    return {"status": "completed", "synced": synced, "errors": errors}
-
-
-async def purge_old_history(supabase: Client, keep_days: int = 7) -> dict:
-    """Delete rider_pcs_history entries older than keep_days."""
-    cutoff = (date.today() - timedelta(days=keep_days)).isoformat()
-    supabase.table("rider_pcs_history").delete().lt("date", cutoff).execute()
-    return {"status": "purged", "cutoff": cutoff}
 
 
