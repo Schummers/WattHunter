@@ -1,12 +1,16 @@
 """
 PCS sync logic — wraps procyclingstats and writes to Supabase.
 Uses Playwright to bypass Cloudflare bot-protection on procyclingstats.com.
+Requires residential IP (Cloudflare blocks datacenter IPs like GitHub Actions).
 """
+from __future__ import annotations
+
 import asyncio
 import logging
 import os
 from datetime import datetime, date, timedelta
-from procyclingstats import Team, Rider
+from typing import Optional
+from procyclingstats import Team
 from supabase import create_client, Client
 
 logger = logging.getLogger(__name__)
@@ -26,6 +30,10 @@ PROTEAM_SLUGS = [
     "team/pinarello-q365-pro-cycling-team-2026",
     "team/totalenergies-2026",
     "team/caja-rural-seguros-rga-2026",
+    "team/uno-x-mobility-2026",
+    "team/xds-astana-team-2026",
+    "team/lotto-intermarche-2026",
+    "team/nsn-cycling-team-2026",
 ]
 
 SPECIALTY_MAP = {
@@ -49,18 +57,28 @@ def calculate_monthly_salary(pcs_points_1yr: int) -> int:
     return max(SALARY_FLOOR, min(SALARY_CAP, int(monthly)))
 
 
+CLOUDFLARE_MARKERS = ["Just a moment", "Checking your browser", "cf-browser-verification"]
+
+
 async def fetch_html(page, url: str, delay: float = 4.0) -> str:
     """Fetch a page using Playwright to bypass Cloudflare, return HTML."""
     await asyncio.sleep(delay)
     full_url = f"https://www.procyclingstats.com/{url}"
     await page.goto(full_url, wait_until="domcontentloaded")
     # Wait for content to load past Cloudflare challenge
-    await page.wait_for_timeout(3000)
-    return await page.content()
+    await page.wait_for_timeout(5000)
+    html = await page.content()
+    if any(marker in html for marker in CLOUDFLARE_MARKERS):
+        raise RuntimeError(f"Cloudflare blocked request to {full_url}")
+    return html
 
 
 async def sync_team_roster(supabase: Client, page, team_slug: str, rate_limit_s: float) -> dict:
-    """Fetch all riders from a PCS team and upsert into riders table."""
+    """
+    Fetch all riders from a PCS team page and upsert into riders table.
+    Uses team.riders() data only (no individual rider page fetches) to avoid
+    Cloudflare rate limiting. Only fetches 1 page per team.
+    """
     try:
         html = await fetch_html(page, team_slug, delay=rate_limit_s)
         team = Team(team_slug, html=html, update_html=False)
@@ -72,53 +90,32 @@ async def sync_team_roster(supabase: Client, page, team_slug: str, rate_limit_s:
     synced = 0
     errors = []
 
+    # Derive a human-readable team name from the slug
+    # e.g. "team/tudor-pro-cycling-team-2026" → "Tudor Pro Cycling Team"
+    real_team = (
+        team_slug.split("/")[-1]      # "tudor-pro-cycling-team-2026"
+        .rsplit("-", 1)[0]             # "tudor-pro-cycling-team"
+        .replace("-", " ")             # "tudor pro cycling team"
+        .title()                       # "Tudor Pro Cycling Team"
+    )
+
     for rider_entry in roster:
         try:
             slug = rider_entry.get("rider_url", "")
             if not slug:
                 continue
 
-            rider_html = await fetch_html(page, slug, delay=rate_limit_s)
-            rider = Rider(slug, html=rider_html, update_html=False)
+            # Format name: "ALAPHILIPPE Julian" → "Julian Alaphilippe"
+            raw_name = rider_entry.get("rider_name", "Unknown")
+            parts = raw_name.split(" ", 1)
+            if len(parts) == 2 and parts[0] == parts[0].upper():
+                name = f"{parts[1]} {parts[0].title()}"
+            else:
+                name = raw_name
 
-            # Extract fields using actual PCS library methods
-            try:
-                name = rider.name()
-            except Exception:
-                name = rider_entry.get("rider_name", "Unknown")
-
-            try:
-                nationality = rider.nationality()[:2].upper()
-            except Exception:
-                nationality = rider_entry.get("nationality", "??")
-
+            nationality = rider_entry.get("nationality", "??")[:2].upper()
             pcs_points = rider_entry.get("ranking_points", 0) or 0
             salary = calculate_monthly_salary(pcs_points)
-
-            # Determine specialty from points_per_speciality
-            specialty = "all_rounder"
-            try:
-                specs = rider.points_per_speciality()
-                # PCS returns a dict {specialty_key: points}, e.g. {"climber": 5583, "gc": 2977}
-                if specs and isinstance(specs, dict):
-                    best_key = max(specs, key=lambda k: specs[k])
-                    specialty = SPECIALTY_MAP.get(best_key, "all_rounder")
-            except Exception:
-                pass
-
-            try:
-                photo_url = rider.image_url()
-            except Exception:
-                photo_url = None
-
-            # Derive a human-readable team name from the slug
-            # e.g. "team/tudor-pro-cycling-2026" → "Tudor Pro Cycling"
-            real_team = (
-                team_slug.split("/")[-1]      # "tudor-pro-cycling-2026"
-                .rsplit("-", 1)[0]             # "tudor-pro-cycling"
-                .replace("-", " ")             # "tudor pro cycling"
-                .title()                       # "Tudor Pro Cycling"
-            )
 
             rider_data = {
                 "pcs_slug": slug,
@@ -126,9 +123,8 @@ async def sync_team_roster(supabase: Client, page, team_slug: str, rate_limit_s:
                 "nationality": nationality,
                 "real_team": real_team,
                 "team_type": "ProTeam",
-                "photo_url": photo_url,
                 "age": rider_entry.get("age"),
-                "specialty": specialty,
+                "specialty": "all_rounder",
                 "pcs_points_1yr": pcs_points,
                 "pcs_rank": rider_entry.get("ranking_position"),
                 "monthly_salary": salary,
@@ -145,10 +141,13 @@ async def sync_team_roster(supabase: Client, page, team_slug: str, rate_limit_s:
     return {"team": team_slug, "synced": synced, "errors": errors}
 
 
-async def sync_all_riders(supabase: Client | None = None, rate_limit_ms: int | None = None) -> dict:
+async def sync_all_riders(supabase: Optional[Client] = None, rate_limit_ms: Optional[int] = None) -> dict:
     """
     Sync all riders from all configured ProTeams using Playwright to bypass
     Cloudflare bot-protection on procyclingstats.com.
+
+    Uses a fresh browser context per team to avoid Cloudflare session tracking,
+    with a 10-second pause between teams to stay under rate limits.
     """
     from playwright.async_api import async_playwright
 
@@ -162,19 +161,30 @@ async def sync_all_riders(supabase: Client | None = None, rate_limit_ms: int | N
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            user_agent=(
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            )
-        )
-        page = await context.new_page()
 
-        for slug in PROTEAM_SLUGS:
-            logger.info(f"Syncing team: {slug}")
+        for i, slug in enumerate(PROTEAM_SLUGS):
+            # Fresh context per team to avoid Cloudflare session fingerprinting
+            context = await browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0.0.0 Safari/537.36"
+                )
+            )
+            page = await context.new_page()
+
+            print(f"  Syncing team {i+1}/{len(PROTEAM_SLUGS)}: {slug}")
             result = await sync_team_roster(supabase, page, slug, rate_limit_s)
             results.append(result)
+            print(f"    → {result['synced']} riders synced, {len(result['errors'])} errors")
+
+            await context.close()
+
+            # Pause between teams to avoid Cloudflare rate limiting
+            if i < len(PROTEAM_SLUGS) - 1:
+                pause = 15
+                print(f"    Waiting {pause}s before next team...")
+                await asyncio.sleep(pause)
 
         await browser.close()
 
@@ -188,88 +198,65 @@ async def sync_all_riders(supabase: Client | None = None, rate_limit_ms: int | N
     }
 
 
-async def sync_race_results(supabase: Client, rate_limit_ms: int | None = None) -> dict:
+async def sync_race_results(supabase: Client, rate_limit_ms: Optional[int] = None) -> dict:
     """
-    Fetch today's race results for all contracted riders.
+    Compute today's points delta for contracted riders by comparing
+    the current pcs_points_1yr (just updated by sync_all_riders) with
+    yesterday's stored value in rider_pcs_history.
 
-    Uses Playwright to bypass Cloudflare, then calls .season_results() to get
-    this season's results and filters for today's date to compute points_delta.
-    Upserts into rider_pcs_history (rider_id, date, pcs_points, points_delta).
+    No PCS page fetches needed — works entirely from Supabase data.
+    Must run AFTER sync_all_riders() so riders.pcs_points_1yr is fresh.
     """
-    from playwright.async_api import async_playwright
-
-    if rate_limit_ms is None:
-        rate_limit_ms = RATE_LIMIT_MS
-
-    rate_limit_s = rate_limit_ms / 1000
     today = date.today().isoformat()
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
 
-    # Get all riders with active/notice contracts and their PCS slug
+    # Get all contracted riders with their current PCS points
     response = supabase.table("contracts").select(
-        "rider_id, riders(pcs_slug, pcs_points_1yr)"
+        "rider_id, riders(id, pcs_slug, pcs_points_1yr)"
     ).in_("status", ["active", "notice"]).execute()
 
     contracted = response.data or []
-
     if not contracted:
         return {"status": "completed", "synced": 0, "errors": [], "message": "No contracted riders"}
 
     synced = 0
     errors = []
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            user_agent=(
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            )
-        )
-        page = await context.new_page()
+    for contract in contracted:
+        try:
+            rider_info = contract.get("riders") or {}
+            rider_id = contract["rider_id"]
+            current_points = int(rider_info.get("pcs_points_1yr", 0) or 0)
 
-        for contract in contracted:
-            try:
-                rider_info = contract.get("riders") or {}
-                pcs_slug = rider_info.get("pcs_slug")
-                if not pcs_slug:
-                    continue
+            if current_points == 0:
+                continue
 
-                rider_html = await fetch_html(page, pcs_slug, delay=rate_limit_s)
-                rider = Rider(pcs_slug, html=rider_html, update_html=False)
+            # Get yesterday's stored points to compute delta
+            prev = supabase.table("rider_pcs_history").select(
+                "pcs_points"
+            ).eq("rider_id", rider_id).eq("date", yesterday).execute()
 
-                # .season_results() returns list of dicts with race results for current season
-                try:
-                    results = rider.season_results()
-                except Exception as e:
-                    logger.warning(f"season_results() failed for {pcs_slug}: {e}")
-                    results = []
+            if prev.data:
+                previous_points = int(prev.data[0].get("pcs_points", 0) or 0)
+            else:
+                # First day tracking this rider — no delta, just record baseline
+                previous_points = current_points
 
-                # Sum points earned today
-                today_points = 0
-                for result in results:
-                    result_date = result.get("date", "")
-                    # PCS dates may be "YYYY-MM-DD" or "DD-MM" — normalise as needed
-                    if result_date == today:
-                        today_points += int(result.get("points", 0) or 0)
+            points_delta = current_points - previous_points
 
-                if today_points > 0:
-                    current_cumulative = int(rider_info.get("pcs_points_1yr", 0) or 0)
+            # Always record today's snapshot; scoring only uses rows with delta > 0
+            supabase.table("rider_pcs_history").upsert({
+                "rider_id": rider_id,
+                "date": today,
+                "pcs_points": current_points,
+                "points_delta": max(0, points_delta),
+            }, on_conflict="rider_id,date").execute()
 
-                    supabase.table("rider_pcs_history").upsert({
-                        "rider_id": contract["rider_id"],
-                        "date": today,
-                        "pcs_points": current_cumulative,
-                        "points_delta": today_points,
-                    }, on_conflict="rider_id,date").execute()
+            synced += 1
 
-                    synced += 1
-
-            except Exception as e:
-                logger.error(f"Failed to sync race results for contract {contract}: {e}")
-                errors.append(str(e))
-
-        await browser.close()
+        except Exception as e:
+            logger.error(f"Failed to compute delta for rider {contract.get('rider_id')}: {e}")
+            errors.append(str(e))
 
     return {"status": "completed", "synced": synced, "errors": errors}
 
@@ -281,26 +268,3 @@ async def purge_old_history(supabase: Client, keep_days: int = 7) -> dict:
     return {"status": "purged", "cutoff": cutoff}
 
 
-async def sync_rider_daily(pcs_slug: str) -> dict:
-    """
-    Sync today's PCS points for a single rider.
-    Kept for legacy endpoint compatibility — race results are now synced in bulk
-    via sync_race_results() as part of the /jobs/sync-riders pipeline.
-    """
-    return {
-        "status": "deprecated",
-        "pcs_slug": pcs_slug,
-        "message": "Use /jobs/sync-riders which calls sync_race_results() for all contracted riders.",
-    }
-
-
-async def sync_rider_history(pcs_slug: str) -> dict:
-    """
-    Backfill 365 days of PCS history for a newly contracted rider.
-    TODO: implement with procyclingstats.
-    """
-    return {
-        "status": "not_implemented",
-        "pcs_slug": pcs_slug,
-        "message": "History backfill not yet implemented.",
-    }
