@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WattHunter — Secondary v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #E8681A;
+    --brand-bg: rgba(232,104,26,0.10);
+    --black: #111;
+    --g1: #333;
+    --g2: #777;
+    --g3: #AAA;
+    --g4: #DEDEDE;
+    --g5: #F4F4F4;
+    --line: #EBEBEB;
+    --white: #FFF;
+    --green: #2A7D4F;
+    --green-bg: rgba(42,125,79,0.09);
+    --red: #C0392B;
+    --red-bg: rgba(192,57,43,0.09);
+    --up: #2A7D4F;
+    --down: #C0392B;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#D4D4D4; font-family:'Inter',sans-serif; padding:36px 24px 80px; }
+
+  h1 { font-size:11px; font-weight:800; color:#555; letter-spacing:.12em; text-transform:uppercase; margin-bottom:3px; }
+  .subtitle { font-size:11px; color:#999; margin-bottom:28px; }
+
+  .sec { font-size:10px; font-weight:700; color:#777; letter-spacing:.12em; text-transform:uppercase; margin:52px 0 18px; padding-bottom:7px; border-bottom:1px solid #C0C0C0; }
+  .sec em { font-style:normal; font-weight:400; color:#AAA; letter-spacing:0; text-transform:none; margin-left:8px; font-size:10px; }
+
+  .row { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; }
+  .col { display:flex; flex-direction:column; gap:9px; }
+  .col-lbl { font-size:9px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:.07em; }
+
+  .phone { width:295px; background:var(--white); border-radius:32px; border:2px solid var(--black); overflow:hidden; box-shadow:3px 3px 0 var(--black); }
+
+  .notes { display:flex; flex-direction:column; gap:5px; max-width:255px; }
+  .note { display:flex; gap:6px; font-size:11px; color:#555; line-height:1.45; }
+  .n { min-width:16px; height:16px; background:var(--black); color:#FFF; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:800; margin-top:2px; flex-shrink:0; }
+  .note strong { color:var(--black); }
+  .oc { color:var(--brand); font-weight:700; }
+
+  /* SHARED */
+  .back-row { display:flex; align-items:center; gap:6px; padding:10px 14px 9px; border-bottom:1.5px solid var(--line); font-size:11px; font-weight:700; color:var(--black); cursor:pointer; }
+  .back-arr { font-size:15px; font-weight:400; }
+
+  .bnav { display:flex; border-top:2px solid var(--black); }
+  .bni { flex:1; padding:7px 0 6px; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:7px; font-weight:600; color:var(--g3); letter-spacing:.04em; text-transform:uppercase; border-right:1px solid var(--line); }
+  .bni:last-child { border-right:none; }
+  .bni.on { color:var(--black); }
+  .ni { width:12px; height:12px; border:1.5px solid var(--g3); border-radius:3px; }
+  .bni.on .ni { border-color:var(--black); background:var(--black); }
+
+  .divider { height:5px; background:#F2F2F2; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .thin-div { height:1px; background:var(--line); margin:0 14px; }
+
+  .sec-hdr { padding:10px 14px 5px; }
+  .sec-hdr-title { font-size:9px; font-weight:700; color:var(--g2); text-transform:uppercase; letter-spacing:.09em; }
+
+  .row-item { display:flex; align-items:center; justify-content:space-between; padding:11px 14px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .ri-left { display:flex; align-items:center; gap:10px; }
+  .ri-ico { width:30px; height:30px; border-radius:8px; background:var(--g5); border:1px solid var(--g4); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .ri-label { font-size:12px; font-weight:600; color:var(--black); }
+  .ri-sub { font-size:9px; color:var(--g2); margin-top:1px; }
+  .ri-right { display:flex; align-items:center; gap:5px; }
+  .ri-val { font-size:11px; color:var(--g2); }
+  .ri-arr { font-size:13px; color:var(--g3); }
+  .ri-label.red { color:var(--red); }
+
+  /* ════════════════════════
+     01 — SETTINGS
+  ════════════════════════ */
+  .sh-hero { padding:16px 14px 14px; border-bottom:1.5px solid var(--line); display:flex; align-items:center; gap:12px; }
+  .sh-av { width:52px; height:52px; border-radius:50%; border:2px solid var(--black); background:var(--black); color:#FFF; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; }
+  .sh-name { font-size:16px; font-weight:800; color:var(--black); }
+  .sh-email { font-size:10px; color:var(--g2); margin-top:2px; }
+  .sh-edit { font-size:10px; font-weight:600; color:var(--brand); margin-top:4px; cursor:pointer; }
+
+  /* League switcher — brand border active */
+  .league-switcher { padding:10px 14px; border-bottom:1.5px solid var(--line); }
+  .ls-label { font-size:8px; font-weight:700; color:var(--g2); text-transform:uppercase; letter-spacing:.09em; margin-bottom:7px; }
+  .ls-row { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; }
+  .ls-row::-webkit-scrollbar { display:none; }
+  .league-chip { height:28px; padding:0 11px; border-radius:100px; border:1.5px solid var(--g3); font-size:10px; font-weight:600; color:var(--black); white-space:nowrap; display:flex; align-items:center; gap:5px; flex-shrink:0; cursor:pointer; }
+  .league-chip.active { border-color:var(--brand); border-width:2px; font-weight:700; color:var(--black); }
+  .league-chip.add { color:var(--g2); }
+
+  /* Team name input */
+  .team-name-field { display:flex; align-items:center; justify-content:space-between; padding:9px 14px; border-bottom:1px solid var(--line); }
+  .tnf-label { font-size:10px; font-weight:600; color:var(--g2); text-transform:uppercase; letter-spacing:.07em; }
+  .tnf-input { height:30px; flex:1; margin-left:10px; border:1.5px solid var(--black); border-radius:7px; padding:0 10px; font-size:11px; font-weight:600; color:var(--black); display:flex; align-items:center; }
+
+  /* Doc items */
+  .doc-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .di-left { display:flex; align-items:center; gap:9px; }
+  .di-ico { font-size:13px; }
+  .di-label { font-size:12px; font-weight:600; color:var(--black); }
+  .di-sub { font-size:9px; color:var(--g2); margin-top:1px; }
+
+  /* ════════════════════════
+     02 — HISTORY (unchanged structure, no topnav/bnav)
+  ════════════════════════ */
+  .round-group-hdr { padding:8px 14px 5px; background:var(--g5); border-bottom:1px solid var(--line); border-top:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  .rgh-name { font-size:10px; font-weight:700; color:var(--black); text-transform:uppercase; letter-spacing:.07em; }
+  .rgh-meta { font-size:9px; color:var(--g2); }
+
+  .bid-entry { display:flex; align-items:center; gap:9px; padding:8px 14px; border-bottom:1px solid var(--line); }
+  .be-photo { width:32px; height:32px; border-radius:50%; background:var(--g5); border:1.5px solid var(--g4); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:var(--g2); flex-shrink:0; }
+  .be-photo.won { border-color:var(--green); }
+  .be-photo.mine { border-color:var(--brand); }
+  .be-info { flex:1; min-width:0; }
+  .be-rider { font-size:12px; font-weight:700; color:var(--black); }
+  .be-winner { font-size:9px; color:var(--g2); margin-top:2px; display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+  .be-right { text-align:right; flex-shrink:0; }
+  .be-amount { font-size:12px; font-weight:800; color:var(--black); }
+  .be-bids { font-size:8px; color:var(--g3); margin-top:1px; }
+  .tag-won { display:inline-flex; height:14px; padding:0 5px; border-radius:3px; background:var(--green-bg); color:var(--green); font-size:8px; font-weight:700; align-items:center; }
+  .tag-lost { display:inline-flex; height:14px; padding:0 5px; border-radius:3px; background:var(--g5); color:var(--g3); font-size:8px; font-weight:700; align-items:center; }
+  .tag-me { display:inline-flex; height:14px; padding:0 5px; border-radius:3px; background:var(--brand-bg); color:var(--brand); font-size:8px; font-weight:700; align-items:center; }
+
+  /* ════════════════════════
+     03 — TEAM LEVELS
+  ════════════════════════ */
+  .levels-hero { padding:14px 14px 12px; border-bottom:1.5px solid var(--line); background:var(--g5); }
+  .lh-top { display:flex; align-items:center; gap:10px; }
+  .lh-badge { width:44px; height:44px; border:2.5px solid var(--black); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; color:var(--black); flex-shrink:0; }
+  .lh-title { font-size:16px; font-weight:800; color:var(--black); }
+  .lh-name { font-size:10px; font-weight:600; color:var(--brand); margin-top:1px; }
+  .lh-sub { font-size:9px; color:var(--g2); margin-top:2px; }
+  .lh-bar-wrap { margin-top:10px; }
+  .lh-bar-labels { display:flex; justify-content:space-between; font-size:8px; color:var(--g2); margin-bottom:4px; }
+  .lh-bar { height:6px; background:var(--g4); border-radius:3px; }
+  .lh-fill { height:100%; background:var(--black); border-radius:3px; }
+
+  .lv-item { display:flex; align-items:flex-start; gap:11px; padding:10px 14px; border-bottom:1px solid var(--line); }
+  .lv-badge { width:32px; height:32px; border-radius:8px; border:2px solid var(--g4); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:var(--g3); flex-shrink:0; margin-top:1px; }
+  .lv-badge.done { border-color:var(--black); color:var(--black); background:var(--g5); }
+  .lv-badge.current { border-color:var(--black); background:var(--black); color:#FFF; }
+  .lv-badge.locked { opacity:.4; }
+  .lv-info { flex:1; }
+  .lv-num { font-size:10px; font-weight:700; color:var(--g3); text-transform:uppercase; letter-spacing:.07em; }
+  .lv-num.done { color:var(--g2); }
+  .lv-num.current { color:var(--brand); }
+  .lv-cycling-name { font-size:13px; font-weight:700; color:var(--black); margin-top:1px; }
+  .lv-cycling-name.locked { color:var(--g3); }
+  .lv-xp { font-size:9px; color:var(--g2); margin-top:1px; }
+  .lv-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  .lv-chip { height:17px; padding:0 6px; border-radius:100px; border:1px solid var(--g4); font-size:8px; font-weight:600; color:var(--g1); display:inline-flex; align-items:center; }
+  .lv-chip.active { border-color:var(--black); color:var(--black); }
+  .lv-right { flex-shrink:0; font-size:12px; margin-top:6px; }
+  .lv-progress { font-size:9px; font-weight:700; color:var(--brand); }
+
+  /* ════════════════════════
+     04 — POLICIES
+  ════════════════════════ */
+  .pol-banner { padding:8px 14px; background:#FFFBF7; border-bottom:1px solid rgba(232,104,26,0.15); }
+  .pol-banner-main { font-size:11px; font-weight:700; color:var(--black); }
+  .pol-banner-sub { font-size:9px; color:var(--g2); margin-top:2px; }
+
+  .pol-slot { margin:8px 14px; border:1.5px solid var(--line); border-radius:10px; overflow:hidden; }
+  .pol-slot.active { border-color:var(--black); }
+  .pol-slot.locked { opacity:.4; }
+
+  .ps-hdr { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; }
+  .ps-left { display:flex; align-items:center; gap:8px; }
+  .ps-num { width:20px; height:20px; border-radius:5px; border:1.5px solid var(--g4); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:var(--g2); flex-shrink:0; }
+  .ps-num.on { border-color:var(--black); background:var(--black); color:#FFF; }
+  .ps-title { font-size:11px; font-weight:700; color:var(--black); }
+  .ps-coverage { font-size:9px; color:var(--g2); margin-top:1px; }
+  .ps-toggle { width:32px; height:18px; background:var(--black); border-radius:100px; position:relative; flex-shrink:0; }
+  .ps-toggle::after { content:''; position:absolute; top:3px; right:3px; width:12px; height:12px; background:#FFF; border-radius:50%; }
+  .ps-toggle.off { background:var(--g3); }
+  .ps-toggle.off::after { left:3px; right:auto; }
+  .ps-lock { font-size:13px; }
+
+  /* Single select field */
+  .ps-body { padding:7px 12px 10px; border-top:1px solid var(--line); background:var(--g5); }
+  .ps-select { height:30px; border:1.5px solid var(--black); border-radius:7px; background:var(--white); display:flex; align-items:center; justify-content:space-between; padding:0 10px; font-size:11px; font-weight:600; color:var(--black); cursor:pointer; }
+  .ps-select-arr { font-size:10px; color:var(--g3); }
+
+  /* Sticky */
+  .pol-sticky { border-top:2px solid var(--black); padding:9px 14px; background:#FAFAFA; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .pol-left { display:flex; flex-direction:column; gap:1px; }
+  .pol-policies-count { font-size:10px; font-weight:700; color:var(--black); }
+  .pol-boost { display:flex; align-items:center; gap:5px; }
+  .pol-boost-old { font-size:11px; font-weight:700; color:var(--g3); text-decoration:line-through; }
+  .pol-boost-arr { font-size:11px; color:var(--g3); }
+  .pol-boost-new { font-size:13px; font-weight:800; color:var(--black); }
+  .pol-save { height:30px; padding:0 16px; border-radius:7px; border:2px solid var(--black); background:var(--black); font-size:11px; font-weight:700; color:#FFF; flex-shrink:0; display:flex; align-items:center; }
+
+  /* ════════════════════════
+     05 — RANKING
+  ════════════════════════ */
+
+  /* Tabs Teams / Riders */
+  .rank-tabs { display:flex; border-bottom:2px solid var(--black); }
+  .rank-tab { flex:1; padding:9px 0; text-align:center; font-size:11px; font-weight:600; color:var(--g3); border-right:1px solid var(--line); cursor:pointer; }
+  .rank-tab:last-child { border-right:none; }
+  .rank-tab.on { color:var(--black); font-weight:700; border-bottom:2.5px solid var(--black); margin-bottom:-2px; }
+
+  /* Race filter select */
+  .race-filter { padding:8px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--line); }
+  .race-select { flex:1; height:30px; border:1.5px solid var(--black); border-radius:7px; background:var(--white); display:flex; align-items:center; justify-content:space-between; padding:0 10px; font-size:10px; font-weight:600; color:var(--black); }
+  .rs-arr { font-size:10px; color:var(--g3); }
+
+  /* My position pinned */
+  .my-pin { margin:10px 14px 6px; padding:10px 12px; background:var(--black); border-radius:10px; display:flex; align-items:center; gap:10px; }
+  .mp-pos { font-size:20px; font-weight:900; color:#FFF; width:22px; text-align:center; flex-shrink:0; }
+  .mp-av { width:30px; height:30px; border-radius:50%; border:1.5px solid rgba(255,255,255,.3); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:#FFF; flex-shrink:0; }
+  .mp-info { flex:1; }
+  .mp-team { font-size:12px; font-weight:700; color:#FFF; }
+  .mp-lv { font-size:9px; color:rgba(255,255,255,.55); margin-top:1px; }
+  .mp-xp { font-size:14px; font-weight:800; color:#FFF; text-align:right; }
+  .mp-xp-lbl { font-size:7px; color:rgba(255,255,255,.4); font-weight:600; text-transform:uppercase; letter-spacing:.06em; text-align:right; }
+
+  /* Rank entry — simplified */
+  .rank-entry { display:flex; align-items:center; gap:8px; padding:9px 14px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .rank-entry.me { background:var(--brand-bg); }
+  .re-pos { font-size:12px; font-weight:800; color:var(--g3); width:16px; text-align:right; flex-shrink:0; }
+  .re-pos.top3 { color:var(--black); }
+  .re-av { width:32px; height:32px; border-radius:50%; background:var(--g5); border:1.5px solid var(--g4); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:var(--g2); flex-shrink:0; }
+  .re-av.me { border-color:var(--brand); }
+  .re-info { flex:1; min-width:0; }
+  .re-team { font-size:12px; font-weight:700; color:var(--black); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .re-lv { font-size:9px; color:var(--g2); margin-top:1px; }
+  .re-right { text-align:right; flex-shrink:0; }
+  .re-xp { font-size:12px; font-weight:800; color:var(--black); }
+  .re-xp-lbl { font-size:7px; color:var(--g3); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+  /* Movement */
+  .re-move { width:28px; text-align:right; flex-shrink:0; }
+  .up { font-size:9px; font-weight:700; color:var(--up); }
+  .down { font-size:9px; font-weight:700; color:var(--down); }
+  .flat { font-size:9px; color:var(--g3); }
+  .re-arr { font-size:12px; color:var(--g4); flex-shrink:0; }
+
+  /* Rider rank entry */
+  .rider-rank-entry { display:flex; align-items:center; gap:8px; padding:9px 14px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .rre-pos { font-size:12px; font-weight:800; color:var(--g3); width:16px; text-align:right; flex-shrink:0; }
+  .rre-pos.top3 { color:var(--black); }
+  .rre-photo-wrap { position:relative; flex-shrink:0; }
+  .rre-photo { width:32px; height:32px; border-radius:50%; background:var(--g5); border:1.5px solid var(--g4); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:var(--g2); }
+  .rre-photo.active-ring { border-color:var(--black); }
+  .rre-info { flex:1; min-width:0; }
+  .rre-name { font-size:12px; font-weight:700; color:var(--black); display:flex; align-items:center; gap:4px; }
+  .rre-owner { font-size:9px; color:var(--g2); margin-top:1px; }
+  .rre-right { text-align:right; flex-shrink:0; }
+  .rre-xp { font-size:12px; font-weight:800; color:var(--black); }
+  .rre-xp-lbl { font-size:7px; color:var(--g3); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+  .tag-active { display:inline-flex; height:13px; padding:0 5px; border-radius:3px; background:var(--g5); border:1px solid var(--g4); color:var(--g2); font-size:7px; font-weight:700; align-items:center; }
+  .tag-inactive { display:inline-flex; height:13px; padding:0 5px; border-radius:3px; background:var(--g5); border:1px solid var(--g4); color:var(--g3); font-size:7px; font-weight:700; align-items:center; font-style:italic; }
+
+  /* Team detail */
+  .opp-hero { padding:14px 14px 12px; border-bottom:1.5px solid var(--line); background:var(--g5); }
+  .oh-top { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .oh-av { width:44px; height:44px; border-radius:50%; background:var(--black); border:2px solid var(--black); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#FFF; flex-shrink:0; }
+  .oh-name { font-size:16px; font-weight:800; color:var(--black); }
+  .oh-sub { font-size:10px; color:var(--g2); margin-top:2px; }
+  .oh-stats { display:flex; gap:7px; }
+  .oh-stat { flex:1; padding:7px 8px; background:var(--white); border-radius:8px; border:1px solid var(--line); }
+  .oh-stat-val { font-size:14px; font-weight:800; color:var(--black); }
+  .oh-stat-lbl { font-size:7px; color:var(--g2); font-weight:600; text-transform:uppercase; letter-spacing:.06em; margin-top:1px; }
+
+  .roster-sec-hdr { padding:8px 14px 4px; display:flex; justify-content:space-between; }
+  .rsh-title { font-size:9px; font-weight:700; color:var(--g2); text-transform:uppercase; letter-spacing:.09em; }
+
+  .opp-rider { display:flex; align-items:center; gap:9px; padding:8px 14px; border-bottom:1px solid var(--line); }
+  .or-photo { width:32px; height:32px; border-radius:50%; background:var(--g5); border:1.5px solid var(--g4); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:var(--g2); flex-shrink:0; position:relative; }
+  .or-pcs { position:absolute; bottom:-4px; left:50%; transform:translateX(-50%); background:#E8E8E8; color:#555; font-size:6px; font-weight:700; height:12px; padding:0 3px; border-radius:100px; display:flex; align-items:center; white-space:nowrap; border:1px solid #D0D0D0; }
+  .or-photo.former { opacity:.5; border-style:dashed; }
+  .or-info { flex:1; min-width:0; }
+  .or-name { font-size:12px; font-weight:700; color:var(--black); display:flex; align-items:center; gap:4px; }
+  .or-team { font-size:9px; color:var(--g2); margin-top:1px; }
+  .or-right { text-align:right; flex-shrink:0; }
+  .or-xp { font-size:12px; font-weight:700; color:var(--black); }
+  .or-xp-lbl { font-size:7px; color:var(--g3); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+
+  /* Rider detail — Game Stats only */
+  .rd-hero { padding:14px 14px 12px; border-bottom:1.5px solid var(--line); }
+  .rdh-top { display:flex; gap:12px; align-items:flex-start; margin-bottom:10px; }
+  .rdh-photo-wrap { position:relative; flex-shrink:0; }
+  .rdh-photo { width:52px; height:52px; border-radius:50%; background:var(--black); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#FFF; border:2px solid var(--black); }
+  .rdh-pcs { position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); background:#E8E8E8; color:#555; font-size:7px; font-weight:700; height:13px; padding:0 4px; border-radius:100px; display:flex; align-items:center; white-space:nowrap; border:1px solid #D0D0D0; }
+  .rdh-info { flex:1; }
+  .rdh-name { font-size:17px; font-weight:900; color:var(--black); display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+  .rdh-team { font-size:11px; color:var(--g2); margin-top:3px; }
+  .rdh-tags { display:flex; gap:5px; flex-wrap:wrap; margin-top:5px; }
+  .tag-chip { height:18px; padding:0 7px; border-radius:100px; border:1px solid var(--g4); font-size:9px; font-weight:600; color:var(--g1); display:inline-flex; align-items:center; }
+  .rdh-metrics { display:flex; gap:7px; }
+  .metric-box { flex:1; padding:8px 9px; background:var(--g5); border-radius:9px; border:1px solid var(--line); }
+  .metric-val { font-size:15px; font-weight:800; color:var(--black); }
+  .metric-lbl { font-size:7px; color:var(--g2); font-weight:600; text-transform:uppercase; letter-spacing:.07em; margin-top:1px; }
+  .owner-banner { margin-top:9px; padding:7px 10px; background:var(--g5); border-radius:8px; display:flex; align-items:center; justify-content:space-between; }
+  .ob-label { font-size:10px; color:var(--g2); }
+  .ob-val { font-size:11px; font-weight:700; color:var(--black); }
+
+  /* Game Stats (read-only) */
+  .month-header { padding:8px 14px 3px; }
+  .month-title { font-size:10px; font-weight:700; color:var(--g2); text-transform:uppercase; letter-spacing:.08em; }
+  .result-row { display:flex; align-items:center; padding:7px 14px; border-bottom:1px solid var(--g5); }
+  .rr-date { font-size:10px; color:var(--g3); width:22px; flex-shrink:0; font-weight:600; }
+  .rr-info { flex:1; min-width:0; padding:0 7px; }
+  .rr-name { font-size:11px; font-weight:600; color:var(--black); }
+  .rr-cols { display:flex; gap:9px; align-items:center; flex-shrink:0; }
+  .rr-col { text-align:right; }
+  .rr-val { font-size:11px; font-weight:700; color:var(--black); }
+  .rr-val.green { color:var(--green); }
+  .rr-lbl { font-size:7px; color:var(--g3); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+</style>
+</head>
+<body>
+
+<h1>WattHunter — Secondary Screens v2</h1>
+<p class="subtitle">Settings · History · Team Levels · Policies · Ranking</p>
+
+<!-- ══════════════════════════
+     01 — SETTINGS
+══════════════════════════ -->
+<div class="sec">01 — Settings <em>· Pas de topnav · Bottom nav conservé · League switcher brand border</em></div>
+<div class="row">
+
+  <div class="col">
+    <div class="col-lbl">Settings</div>
+    <div class="phone">
+      <!-- Pas de topnav WattHunter -->
+      <div class="back-row"><span class="back-arr">←</span> Back</div>
+
+      <div class="sh-hero">
+        <div class="sh-av">JS</div>
+        <div>
+          <div class="sh-name">Jonathan S.</div>
+          <div class="sh-email">j.schummers@email.com</div>
+          <div class="sh-edit">Edit profile →</div>
+        </div>
+      </div>
+
+      <!-- League switcher — active = border brand -->
+      <div class="league-switcher">
+        <div class="ls-label">My leagues</div>
+        <div class="ls-row">
+          <div class="league-chip active">Les Forçats</div>
+          <div class="league-chip">Cycling Nerds</div>
+          <div class="league-chip add">+ Join / Create</div>
+        </div>
+      </div>
+
+      <!-- League contextual settings -->
+      <div class="sec-hdr" style="padding-bottom:2px;">
+        <div class="sec-hdr-title">Les Forçats · Admin · 12 players</div>
+      </div>
+
+      <div class="team-name-field">
+        <div class="tnf-label">Team name</div>
+        <div class="tnf-input">Pédaleurs du Chaos</div>
+      </div>
+
+      <div class="row-item">
+        <div class="ri-left">
+          <div class="ri-ico">🔗</div>
+          <div><div class="ri-label">Invite code</div><div class="ri-sub">WH-4F2X9</div></div>
+        </div>
+        <div class="ri-right"><span style="font-size:10px;color:var(--brand);font-weight:600;">Copy</span></div>
+      </div>
+
+      <div class="row-item">
+        <div class="ri-left">
+          <div class="ri-ico" style="background:var(--red-bg);">🚪</div>
+          <div><div class="ri-label red">Leave league</div></div>
+        </div>
+        <div class="ri-right"><span class="ri-arr">›</span></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Documentation — 4 sections in-app -->
+      <div class="sec-hdr"><div class="sec-hdr-title">Documentation</div></div>
+
+      <div class="doc-item">
+        <div class="di-left">
+          <div class="di-ico">⭐</div>
+          <div><div class="di-label">How points work</div><div class="di-sub">XP, race results & policies</div></div>
+        </div>
+        <span class="ri-arr">›</span>
+      </div>
+      <div class="doc-item">
+        <div class="di-left">
+          <div class="di-ico">💰</div>
+          <div><div class="di-label">Bonus & money</div><div class="di-sub">How you earn bonus €</div></div>
+        </div>
+        <span class="ri-arr">›</span>
+      </div>
+      <div class="doc-item">
+        <div class="di-left">
+          <div class="di-ico">🏆</div>
+          <div><div class="di-label">Team levels & unlocks</div><div class="di-sub">Rider slots, policies, progression</div></div>
+        </div>
+        <span class="ri-arr">›</span>
+      </div>
+      <div class="doc-item" style="border-bottom:none;">
+        <div class="di-left">
+          <div class="di-ico">🔁</div>
+          <div><div class="di-label">Auctions & rounds</div><div class="di-sub">How bidding & rounds work</div></div>
+        </div>
+        <span class="ri-arr">›</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row-item" style="border-bottom:none;">
+        <div class="ri-left">
+          <div class="ri-ico" style="background:var(--red-bg);">↩</div>
+          <div><div class="ri-label red">Sign out</div></div>
+        </div>
+      </div>
+
+      <div class="bnav">
+        <div class="bni"><div class="ni"></div>Home</div>
+        <div class="bni on"><div class="ni"></div>Team</div>
+        <div class="bni"><div class="ni"></div>Budget</div>
+        <div class="bni"><div class="ni"></div>Ranking</div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Pas de topnav WattHunter. Flèche ← seulement. Bottom nav conservé.</div></div>
+      <div class="note"><div class="n">2</div><div>League active = <strong class="oc">bordure brand</strong>, pas de fond noir. Les autres = outline gris.</div></div>
+      <div class="note"><div class="n">3</div><div>Team name = champ input éditable inline. Pas de league rules.</div></div>
+      <div class="note"><div class="n">4</div><div>Documentation = 4 sections in-app : points · bonus · levels · auctions.</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════
+     02 — AUCTION HISTORY
+══════════════════════════ -->
+<div class="sec">02 — Auction History <em>· Pas de topnav ni bottom nav · Page détail</em></div>
+<div class="row">
+  <div class="col">
+    <div class="col-lbl">Auction History</div>
+    <div class="phone">
+      <!-- Pas de topnav, pas de bottom nav -->
+      <div class="back-row"><span class="back-arr">←</span> Recruts</div>
+
+      <div style="padding:8px 14px 6px;">
+        <div style="height:32px;border:1.5px solid var(--black);border-radius:9px;display:flex;align-items:center;padding:0 10px;gap:7px;">
+          <div style="width:12px;height:12px;border:1.5px solid var(--g3);border-radius:50%;flex-shrink:0;"></div>
+          <span style="font-size:10px;color:var(--g3);">Search a rider…</span>
+        </div>
+      </div>
+
+      <div class="round-group-hdr">
+        <div class="rgh-name">Round 3 — Pre Tour</div>
+        <div class="rgh-meta">Jan 13 · 14 riders</div>
+      </div>
+      <div class="bid-entry">
+        <div class="be-photo won">PO</div>
+        <div class="be-info">
+          <div class="be-rider">Pogačar T. 🇸🇮</div>
+          <div class="be-winner">→ @MaxVelo <span class="tag-won">Won</span></div>
+        </div>
+        <div class="be-right"><div class="be-amount">180 000</div><div class="be-bids">4 bids</div></div>
+      </div>
+      <div class="bid-entry">
+        <div class="be-photo mine">VJ</div>
+        <div class="be-info">
+          <div class="be-rider">Vingegaard J. 🇩🇰</div>
+          <div class="be-winner">→ @MaxVelo <span class="tag-lost">Lost</span> <span class="tag-me">My bid</span></div>
+        </div>
+        <div class="be-right"><div class="be-amount">155 000</div><div class="be-bids">3 bids</div></div>
+      </div>
+      <div class="bid-entry">
+        <div class="be-photo won">WV</div>
+        <div class="be-info">
+          <div class="be-rider">Van Aert W. 🇧🇪</div>
+          <div class="be-winner">→ @JS (you) <span class="tag-won">Won</span></div>
+        </div>
+        <div class="be-right"><div class="be-amount">88 000</div><div class="be-bids">2 bids</div></div>
+      </div>
+      <div class="bid-entry">
+        <div class="be-photo">MV</div>
+        <div class="be-info">
+          <div class="be-rider">Van der Poel M. 🇧🇪</div>
+          <div class="be-winner">→ @Poulidor99</div>
+        </div>
+        <div class="be-right"><div class="be-amount">96 000</div><div class="be-bids">5 bids</div></div>
+      </div>
+
+      <div class="round-group-hdr">
+        <div class="rgh-name">Round 2 — Pre Giro</div>
+        <div class="rgh-meta">Nov 4, 2025 · 11 riders</div>
+      </div>
+      <div class="bid-entry">
+        <div class="be-photo won">AL</div>
+        <div class="be-info">
+          <div class="be-rider">Alaphilippe J. 🇫🇷</div>
+          <div class="be-winner">→ @JS (you) <span class="tag-won">Won</span></div>
+        </div>
+        <div class="be-right"><div class="be-amount">62 000</div><div class="be-bids">1 bid</div></div>
+      </div>
+      <div class="bid-entry">
+        <div class="be-photo">TG</div>
+        <div class="be-info">
+          <div class="be-rider">Girmay B. 🇪🇷</div>
+          <div class="be-winner">→ @VeloCrush</div>
+        </div>
+        <div class="be-right"><div class="be-amount">54 000</div><div class="be-bids">2 bids</div></div>
+      </div>
+      <!-- Pas de bottom nav -->
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Pas de topnav WattHunter. Pas de bottom nav. Flèche ← uniquement.</div></div>
+      <div class="note"><div class="n">2</div><div>Structure inchangée — groupé par round, scroll vertical, tags Won/Lost/My bid.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     03 — TEAM LEVELS
+══════════════════════════ -->
+<div class="sec">03 — Team Levels <em>· Noms cyclisme · 10 niveaux · Pas de topnav ni bottom nav</em></div>
+<div class="row">
+  <div class="col">
+    <div class="col-lbl">Team Levels</div>
+    <div class="phone">
+      <div class="back-row"><span class="back-arr">←</span> My Team</div>
+
+      <div class="levels-hero">
+        <div class="lh-top">
+          <div class="lh-badge">3</div>
+          <div>
+            <div class="lh-title">Level 3</div>
+            <div class="lh-name">Équipier</div>
+            <div class="lh-sub">240 / 500 XP · Season 2026</div>
+          </div>
+        </div>
+        <div class="lh-bar-wrap">
+          <div class="lh-bar-labels"><span>0</span><span>Level 4 · 500 XP</span></div>
+          <div class="lh-bar"><div class="lh-fill" style="width:48%"></div></div>
+        </div>
+      </div>
+
+      <div class="lv-item">
+        <div class="lv-badge done">1</div>
+        <div class="lv-info">
+          <div class="lv-num done">Level 1</div>
+          <div class="lv-cycling-name">Porteur de bidon</div>
+          <div class="lv-xp">0 XP</div>
+          <div class="lv-chips">
+            <span class="lv-chip active">6 rider slots</span>
+            <span class="lv-chip active">Policy: Speciality</span>
+          </div>
+        </div>
+        <div class="lv-right">✓</div>
+      </div>
+
+      <div class="lv-item">
+        <div class="lv-badge done">2</div>
+        <div class="lv-info">
+          <div class="lv-num done">Level 2</div>
+          <div class="lv-cycling-name">Domestique</div>
+          <div class="lv-xp">100 XP</div>
+          <div class="lv-chips"><span class="lv-chip active">7 rider slots</span></div>
+        </div>
+        <div class="lv-right">✓</div>
+      </div>
+
+      <div class="lv-item" style="background:rgba(232,104,26,0.04);border-left:2.5px solid var(--brand);">
+        <div class="lv-badge current">3</div>
+        <div class="lv-info">
+          <div class="lv-num current">Level 3 — Current</div>
+          <div class="lv-cycling-name">Équipier</div>
+          <div class="lv-xp">200 XP · 240 / 500 reached</div>
+          <div class="lv-chips"><span class="lv-chip active">Policy: Teams</span></div>
+        </div>
+        <div class="lv-right"><div class="lv-progress">48%</div></div>
+      </div>
+
+      <div class="lv-item">
+        <div class="lv-badge locked">4</div>
+        <div class="lv-info">
+          <div class="lv-num">Level 4</div>
+          <div class="lv-cycling-name locked">Grimpeur</div>
+          <div class="lv-xp">500 XP</div>
+          <div class="lv-chips"><span class="lv-chip">8 rider slots</span></div>
+        </div>
+        <div class="lv-right">🔒</div>
+      </div>
+
+      <div class="lv-item">
+        <div class="lv-badge locked">5</div>
+        <div class="lv-info">
+          <div class="lv-num">Level 5</div>
+          <div class="lv-cycling-name locked">Rouleur</div>
+          <div class="lv-xp">900 XP</div>
+          <div class="lv-chips"><span class="lv-chip">Policy: Nationality</span><span class="lv-chip">2 active policies</span></div>
+        </div>
+        <div class="lv-right">🔒</div>
+      </div>
+
+      <div class="lv-item">
+        <div class="lv-badge locked">6</div>
+        <div class="lv-info">
+          <div class="lv-num">Level 6</div>
+          <div class="lv-cycling-name locked">Baroudeur</div>
+          <div class="lv-xp">1 400 XP</div>
+          <div class="lv-chips"><span class="lv-chip">Policy slot 3</span></div>
+        </div>
+        <div class="lv-right">🔒</div>
+      </div>
+
+      <div class="lv-item" style="opacity:.45;">
+        <div class="lv-badge locked" style="border-style:dashed;">···</div>
+        <div class="lv-info">
+          <div class="lv-num">Levels 7 → 10</div>
+          <div class="lv-cycling-name locked">Puncheur · Sprinteur · Capitaine · Maillot Jaune</div>
+          <div class="lv-xp">TBD</div>
+        </div>
+      </div>
+      <!-- Pas de bottom nav -->
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Pas de topnav ni bottom nav — page détail.</div></div>
+      <div class="note"><div class="n">2</div><div>Noms de level cyclisme : Porteur de bidon → Domestique → Équipier → Grimpeur → Rouleur → Baroudeur → Puncheur → Sprinteur → Capitaine → Maillot Jaune.</div></div>
+      <div class="note"><div class="n">3</div><div>Levels 7→10 en placeholder condensé, un seul item.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     04 — POLICIES
+══════════════════════════ -->
+<div class="sec">04 — Policies <em>· Timing prochain round · 1 select par slot · Sticky active count</em></div>
+<div class="row">
+
+  <div class="col">
+    <div class="col-lbl">Policies — Lv.5 · 2 slots disponibles</div>
+    <div class="phone">
+      <div class="back-row"><span class="back-arr">←</span> My Team</div>
+
+      <!-- Banner timing -->
+      <div class="pol-banner">
+        <div class="pol-banner-main">Changes apply to the next round</div>
+        <div class="pol-banner-sub">Current policies are active until Feb 13</div>
+      </div>
+
+      <!-- Slot 1 — Speciality, GC -->
+      <div class="pol-slot active" style="margin-top:10px;">
+        <div class="ps-hdr">
+          <div class="ps-left">
+            <div class="ps-num on">1</div>
+            <div>
+              <div class="ps-title">Speciality boost</div>
+              <div class="ps-coverage">4 / 6 riders covered</div>
+            </div>
+          </div>
+          <div class="ps-toggle"></div>
+        </div>
+        <div class="ps-body">
+          <div class="ps-select">GC <span class="ps-select-arr">▾</span></div>
+        </div>
+      </div>
+
+      <!-- Slot 2 — Teams, Visma -->
+      <div class="pol-slot active">
+        <div class="ps-hdr">
+          <div class="ps-left">
+            <div class="ps-num on">2</div>
+            <div>
+              <div class="ps-title">Team boost</div>
+              <div class="ps-coverage">2 / 6 riders covered</div>
+            </div>
+          </div>
+          <div class="ps-toggle"></div>
+        </div>
+        <div class="ps-body">
+          <div class="ps-select">Visma-Lease a Bike <span class="ps-select-arr">▾</span></div>
+        </div>
+      </div>
+
+      <!-- Slot 3 locked -->
+      <div class="pol-slot locked">
+        <div class="ps-hdr">
+          <div class="ps-left">
+            <div class="ps-num">3</div>
+            <div><div class="ps-title" style="color:var(--g3);">Nationality boost · Unlock Lv.5</div></div>
+          </div>
+          <span class="ps-lock">🔒</span>
+        </div>
+      </div>
+
+      <!-- Slot 4 locked -->
+      <div class="pol-slot locked" style="margin-bottom:8px;">
+        <div class="ps-hdr">
+          <div class="ps-left">
+            <div class="ps-num">4</div>
+            <div><div class="ps-title" style="color:var(--g3);">Unlock Lv.6+</div></div>
+          </div>
+          <span class="ps-lock">🔒</span>
+        </div>
+      </div>
+
+      <!-- Sticky avec active count + boost -->
+      <div class="pol-sticky">
+        <div class="pol-left">
+          <div class="pol-policies-count">2 / 2 active policies</div>
+          <div class="pol-boost">
+            <span class="pol-boost-old">+5%</span>
+            <span class="pol-boost-arr">→</span>
+            <span class="pol-boost-new">+10%</span>
+          </div>
+        </div>
+        <div class="pol-save">Save</div>
+      </div>
+
+      <div class="bnav">
+        <div class="bni"><div class="ni"></div>Home</div>
+        <div class="bni on"><div class="ni"></div>Team</div>
+        <div class="bni"><div class="ni"></div>Budget</div>
+        <div class="bni"><div class="ni"></div>Ranking</div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Banner : "Changes apply to the next round. Current policies active until [date]."</div></div>
+      <div class="note"><div class="n">2</div><div><strong>1 seul select</strong> par slot — la valeur uniquement (GC, Visma…). Plus de select type redondant.</div></div>
+      <div class="note"><div class="n">3</div><div>Sticky : <strong>"X / Y active policies"</strong> + boost barré → nouveau. Compte clair des slots utilisés.</div></div>
+      <div class="note"><div class="n">4</div><div>Au Lv.1 : activer slot 2 = toggle slot 1 passe OFF automatiquement (1 min, 1 max).</div></div>
+    </div>
+  </div>
+
+  <!-- Lv.1 state -->
+  <div class="col">
+    <div class="col-lbl">Policies — Lv.1 · Toggle exclusif</div>
+    <div class="phone">
+      <div class="back-row"><span class="back-arr">←</span> My Team</div>
+      <div class="pol-banner">
+        <div class="pol-banner-main">Changes apply to the next round</div>
+        <div class="pol-banner-sub">Current policies are active until Feb 13</div>
+      </div>
+
+      <!-- Slot 1 — actif (minimum) -->
+      <div class="pol-slot active" style="margin-top:10px;">
+        <div class="ps-hdr">
+          <div class="ps-left">
+            <div class="ps-num on">1</div>
+            <div>
+              <div class="ps-title">Speciality boost</div>
+              <div class="ps-coverage">3 / 6 riders covered</div>
+            </div>
+          </div>
+          <div class="ps-toggle" style="opacity:.4; cursor:not-allowed;" title="1 policy minimum"></div>
+        </div>
+        <div class="ps-body">
+          <div class="ps-select">GC <span class="ps-select-arr">▾</span></div>
+        </div>
+      </div>
+
+      <!-- Slots 2-4 locked -->
+      <div class="pol-slot locked">
+        <div class="ps-hdr">
+          <div class="ps-left">
+            <div class="ps-num">2</div>
+            <div><div class="ps-title" style="color:var(--g3);">Team boost · Unlock Lv.3</div></div>
+          </div>
+          <span class="ps-lock">🔒</span>
+        </div>
+      </div>
+      <div class="pol-slot locked">
+        <div class="ps-hdr">
+          <div class="ps-left">
+            <div class="ps-num">3</div>
+            <div><div class="ps-title" style="color:var(--g3);">Nationality boost · Unlock Lv.5</div></div>
+          </div>
+          <span class="ps-lock">🔒</span>
+        </div>
+      </div>
+      <div class="pol-slot locked" style="margin-bottom:8px;">
+        <div class="ps-hdr">
+          <div class="ps-left">
+            <div class="ps-num">4</div>
+            <div><div class="ps-title" style="color:var(--g3);">Unlock Lv.6+</div></div>
+          </div>
+          <span class="ps-lock">🔒</span>
+        </div>
+      </div>
+
+      <div class="pol-sticky">
+        <div class="pol-left">
+          <div class="pol-policies-count">1 / 1 active policy</div>
+          <div class="pol-boost"><span class="pol-boost-new">+5% boost</span></div>
+        </div>
+        <div class="pol-save" style="opacity:.4;">Save</div>
+      </div>
+
+      <div class="bnav">
+        <div class="bni"><div class="ni"></div>Home</div>
+        <div class="bni on"><div class="ni"></div>Team</div>
+        <div class="bni"><div class="ni"></div>Budget</div>
+        <div class="bni"><div class="ni"></div>Ranking</div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Lv.1 : "1 / 1 active policy". Toggle grisé et non cliquable — 1 minimum obligatoire.</div></div>
+      <div class="note"><div class="n">2</div><div>Sticky Save grisé si aucune modification en cours.</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════
+     05 — RANKING
+══════════════════════════ -->
+<div class="sec">05 — Ranking <em>· 2 tabs Teams / Riders · Mouvement · Select course</em></div>
+<div class="row">
+
+  <!-- Teams tab -->
+  <div class="col">
+    <div class="col-lbl">Ranking — Teams tab</div>
+    <div class="phone">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:2px solid var(--black);">
+        <div style="font-size:13px;font-weight:800;color:var(--black);">Ranking</div>
+        <div style="font-size:9px;color:var(--g2);">Les Forçats · 12 teams</div>
+      </div>
+
+      <div class="rank-tabs">
+        <div class="rank-tab on">Teams</div>
+        <div class="rank-tab">Riders</div>
+      </div>
+
+      <!-- Race filter -->
+      <div class="race-filter">
+        <div class="race-select">All races <span class="rs-arr">▾</span></div>
+      </div>
+
+      <!-- Ma position épinglée -->
+      <div class="my-pin">
+        <div class="mp-pos">3</div>
+        <div class="mp-av">JS</div>
+        <div class="mp-info">
+          <div class="mp-team">Pédaleurs du Chaos</div>
+          <div class="mp-lv">Lv.3 — Équipier</div>
+        </div>
+        <div>
+          <div class="mp-xp">24 680</div>
+          <div class="mp-xp-lbl">XP</div>
+        </div>
+      </div>
+
+      <div style="height:8px;"></div>
+
+      <div class="rank-entry">
+        <div class="re-pos top3">1</div>
+        <div class="re-av">MX</div>
+        <div class="re-info">
+          <div class="re-team">Echappée Royale</div>
+          <div class="re-lv">Lv.4 — Grimpeur</div>
+        </div>
+        <div class="re-move"><span class="flat">—</span></div>
+        <div class="re-right"><div class="re-xp">31 200</div><div class="re-xp-lbl">XP</div></div>
+        <div class="re-arr">›</div>
+      </div>
+
+      <div class="rank-entry">
+        <div class="re-pos top3">2</div>
+        <div class="re-av">PC</div>
+        <div class="re-info">
+          <div class="re-team">Les Domestiques</div>
+          <div class="re-lv">Lv.3 — Équipier</div>
+        </div>
+        <div class="re-move"><span class="up">+1</span></div>
+        <div class="re-right"><div class="re-xp">27 440</div><div class="re-xp-lbl">XP</div></div>
+        <div class="re-arr">›</div>
+      </div>
+
+      <div class="rank-entry me">
+        <div class="re-pos top3">3</div>
+        <div class="re-av me">JS</div>
+        <div class="re-info">
+          <div class="re-team">Pédaleurs du Chaos</div>
+          <div class="re-lv">Lv.3 — Équipier · You</div>
+        </div>
+        <div class="re-move"><span class="down">-1</span></div>
+        <div class="re-right"><div class="re-xp">24 680</div><div class="re-xp-lbl">XP</div></div>
+        <div class="re-arr" style="opacity:0;">›</div>
+      </div>
+
+      <div class="rank-entry">
+        <div class="re-pos">4</div>
+        <div class="re-av">VC</div>
+        <div class="re-info">
+          <div class="re-team">Grimpeurs d'Élite</div>
+          <div class="re-lv">Lv.2 — Domestique</div>
+        </div>
+        <div class="re-move"><span class="up">+2</span></div>
+        <div class="re-right"><div class="re-xp">19 120</div><div class="re-xp-lbl">XP</div></div>
+        <div class="re-arr">›</div>
+      </div>
+
+      <div class="rank-entry">
+        <div class="re-pos">5</div>
+        <div class="re-av">TW</div>
+        <div class="re-info">
+          <div class="re-team">Sprint Collectif</div>
+          <div class="re-lv">Lv.2 — Domestique</div>
+        </div>
+        <div class="re-move"><span class="down">-2</span></div>
+        <div class="re-right"><div class="re-xp">15 880</div><div class="re-xp-lbl">XP</div></div>
+        <div class="re-arr">›</div>
+      </div>
+
+      <div class="bnav">
+        <div class="bni"><div class="ni"></div>Home</div>
+        <div class="bni"><div class="ni"></div>Team</div>
+        <div class="bni"><div class="ni"></div>Budget</div>
+        <div class="bni on"><div class="ni"></div>Ranking</div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Simplifié : <strong>nom équipe · niveau cyclisme · XP · mouvement</strong>. Supprimé : nb riders, motto.</div></div>
+      <div class="note"><div class="n">2</div><div>Mouvement : +N vert / -N rouge / — gris. Comparé au round précédent.</div></div>
+      <div class="note"><div class="n">3</div><div>Select "All races ▾" pour filtrer par course passée.</div></div>
+      <div class="note"><div class="n">4</div><div>Ma position épinglée en noir. Ma ligne = fond brand léger, pas de chevron.</div></div>
+    </div>
+  </div>
+
+  <!-- Riders tab -->
+  <div class="col">
+    <div class="col-lbl">Ranking — Riders tab</div>
+    <div class="phone">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:2px solid var(--black);">
+        <div style="font-size:13px;font-weight:800;color:var(--black);">Ranking</div>
+        <div style="font-size:9px;color:var(--g2);">Les Forçats</div>
+      </div>
+      <div class="rank-tabs">
+        <div class="rank-tab">Teams</div>
+        <div class="rank-tab on">Riders</div>
+      </div>
+      <div class="race-filter">
+        <div class="race-select">All races <span class="rs-arr">▾</span></div>
+      </div>
+
+      <div style="padding:6px 14px 3px;"><div style="font-size:9px;font-weight:700;color:var(--g3);text-transform:uppercase;letter-spacing:.08em;">18 riders total</div></div>
+
+      <div class="rider-rank-entry">
+        <div class="rre-pos top3">1</div>
+        <div class="rre-photo-wrap">
+          <div class="rre-photo active-ring">PO</div>
+        </div>
+        <div class="rre-info">
+          <div class="rre-name">Pogačar T. 🇸🇮 <span class="tag-active">Active</span></div>
+          <div class="rre-owner">@MaxVelo</div>
+        </div>
+        <div class="re-move"><span class="flat">—</span></div>
+        <div class="rre-right"><div class="rre-xp">6 840</div><div class="rre-xp-lbl">XP</div></div>
+        <div class="re-arr">›</div>
+      </div>
+
+      <div class="rider-rank-entry">
+        <div class="rre-pos top3">2</div>
+        <div class="rre-photo-wrap">
+          <div class="rre-photo active-ring">VJ</div>
+        </div>
+        <div class="rre-info">
+          <div class="rre-name">Vingegaard J. 🇩🇰 <span class="tag-active">Active</span></div>
+          <div class="rre-owner">@MaxVelo</div>
+        </div>
+        <div class="re-move"><span class="up">+1</span></div>
+        <div class="rre-right"><div class="rre-xp">5 210</div><div class="rre-xp-lbl">XP</div></div>
+        <div class="re-arr">›</div>
+      </div>
+
+      <div class="rider-rank-entry">
+        <div class="rre-pos top3">3</div>
+        <div class="rre-photo-wrap">
+          <div class="rre-photo active-ring" style="border-color:var(--brand);">WV</div>
+        </div>
+        <div class="rre-info">
+          <div class="rre-name">Van Aert W. 🇧🇪 <span class="tag-active">Active</span></div>
+          <div class="rre-owner">@JS (you)</div>
+        </div>
+        <div class="re-move"><span class="down">-1</span></div>
+        <div class="rre-right"><div class="rre-xp">4 210</div><div class="rre-xp-lbl">XP</div></div>
+        <div class="re-arr">›</div>
+      </div>
+
+      <div class="rider-rank-entry">
+        <div class="rre-pos">4</div>
+        <div class="rre-photo-wrap">
+          <div class="rre-photo active-ring">MV</div>
+        </div>
+        <div class="rre-info">
+          <div class="rre-name">Van der Poel M. 🇧🇪 <span class="tag-active">Active</span></div>
+          <div class="rre-owner">@Poulidor99</div>
+        </div>
+        <div class="re-move"><span class="up">+2</span></div>
+        <div class="rre-right"><div class="rre-xp">3 980</div><div class="rre-xp-lbl">XP</div></div>
+        <div class="re-arr">›</div>
+      </div>
+
+      <div class="rider-rank-entry" style="opacity:.5;">
+        <div class="rre-pos">5</div>
+        <div class="rre-photo-wrap">
+          <div class="rre-photo">PR</div>
+        </div>
+        <div class="rre-info">
+          <div class="rre-name">Roglič P. 🇸🇮 <span class="tag-inactive">Free</span></div>
+          <div class="rre-owner">Not recruited</div>
+        </div>
+        <div class="re-move"><span class="flat">—</span></div>
+        <div class="rre-right"><div class="rre-xp">3 120</div><div class="rre-xp-lbl">XP</div></div>
+        <div class="re-arr">›</div>
+      </div>
+
+      <div class="bnav">
+        <div class="bni"><div class="ni"></div>Home</div>
+        <div class="bni"><div class="ni"></div>Team</div>
+        <div class="bni"><div class="ni"></div>Budget</div>
+        <div class="bni on"><div class="ni"></div>Ranking</div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Riders recrutés dans la league uniquement. Tag <strong>Active</strong> (dans une équipe) ou <strong>Free</strong> (non recruté).</div></div>
+      <div class="note"><div class="n">2</div><div>Owner visible sous le nom. Rider de ton équipe = border brand sur l'avatar.</div></div>
+      <div class="note"><div class="n">3</div><div>Même select dropdown pour filtrer par course.</div></div>
+    </div>
+  </div>
+
+  <!-- Team detail -->
+  <div class="col">
+    <div class="col-lbl">Team detail — active + former riders</div>
+    <div class="phone">
+      <div class="back-row"><span class="back-arr">←</span> Ranking</div>
+      <div class="opp-hero">
+        <div class="oh-top">
+          <div class="oh-av">MX</div>
+          <div>
+            <div class="oh-name">Echappée Royale</div>
+            <div class="oh-sub">@MaxVelo · Lv.4 — Grimpeur</div>
+          </div>
+        </div>
+        <div class="oh-stats">
+          <div class="oh-stat"><div class="oh-stat-val">31 200</div><div class="oh-stat-lbl">Season XP</div></div>
+          <div class="oh-stat"><div class="oh-stat-val">#1</div><div class="oh-stat-lbl">Ranking</div></div>
+          <div class="oh-stat"><div class="oh-stat-val">Lv.4</div><div class="oh-stat-lbl">Level</div></div>
+        </div>
+      </div>
+
+      <div class="roster-sec-hdr"><div class="rsh-title">Active roster · 6 riders</div></div>
+      <div class="opp-rider">
+        <div class="or-photo">PO<div class="or-pcs">#1</div></div>
+        <div class="or-info"><div class="or-name">Pogačar T. 🇸🇮</div><div class="or-team">UAE Team Emirates</div></div>
+        <div class="or-right"><div class="or-xp">6 840</div><div class="or-xp-lbl">XP</div></div>
+      </div>
+      <div class="opp-rider">
+        <div class="or-photo">VJ<div class="or-pcs">#2</div></div>
+        <div class="or-info"><div class="or-name">Vingegaard J. 🇩🇰</div><div class="or-team">Visma-Lease a Bike</div></div>
+        <div class="or-right"><div class="or-xp">5 210</div><div class="or-xp-lbl">XP</div></div>
+      </div>
+      <div class="opp-rider">
+        <div class="or-photo">MV<div class="or-pcs">#4</div></div>
+        <div class="or-info"><div class="or-name">Van der Poel M. 🇧🇪</div><div class="or-team">Alpecin-Deceuninck</div></div>
+        <div class="or-right"><div class="or-xp">3 980</div><div class="or-xp-lbl">XP</div></div>
+      </div>
+
+      <div class="roster-sec-hdr" style="margin-top:4px;"><div class="rsh-title">Former riders · Season 2026</div></div>
+      <div class="opp-rider">
+        <div class="or-photo former">RE<div class="or-pcs">#3</div></div>
+        <div class="or-info">
+          <div class="or-name" style="color:var(--g2);">Evenepoel R. 🇧🇪</div>
+          <div class="or-team">Released · Jan 15</div>
+        </div>
+        <div class="or-right"><div class="or-xp" style="color:var(--g3);">1 240</div><div class="or-xp-lbl">XP</div></div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Active roster + Former riders (historique saison) séparés en 2 sections.</div></div>
+      <div class="note"><div class="n">2</div><div>XP par coureur visible. Anciens riders : avatar opacité 50% + border dashed + date release.</div></div>
+      <div class="note"><div class="n">3</div><div>Pas de bids en cours visibles — lecture seule.</div></div>
+    </div>
+  </div>
+
+  <!-- Rider detail from Ranking — Game Stats only -->
+  <div class="col">
+    <div class="col-lbl">Rider detail — Ranking (Game Stats only)</div>
+    <div class="phone">
+      <div class="back-row"><span class="back-arr">←</span> Ranking</div>
+
+      <div class="rd-hero">
+        <div class="rdh-top">
+          <div class="rdh-photo-wrap">
+            <div class="rdh-photo">WV</div>
+            <div class="rdh-pcs">#5 PCS</div>
+          </div>
+          <div class="rdh-info">
+            <div class="rdh-name">Van Aert W. 🇧🇪</div>
+            <div class="rdh-team">Visma-Lease a Bike</div>
+            <div class="rdh-tags">
+              <span class="tag-chip">Rouleur</span>
+              <span class="tag-chip">29 ans</span>
+            </div>
+          </div>
+        </div>
+        <div class="rdh-metrics">
+          <div class="metric-box"><div class="metric-val">4 210</div><div class="metric-lbl">Game XP</div></div>
+          <div class="metric-box"><div class="metric-val">+12k€</div><div class="metric-lbl">Bonus €</div></div>
+        </div>
+        <div class="owner-banner">
+          <span class="ob-label">Owned by</span>
+          <span class="ob-val">@JS (you) · Pédaleurs du Chaos</span>
+        </div>
+      </div>
+      <!-- Pas de segmented control — Game Stats uniquement, pas de bid zone -->
+      <div style="padding:8px 14px 4px;border-bottom:1px solid var(--line);"><div style="font-size:9px;font-weight:700;color:var(--g2);text-transform:uppercase;letter-spacing:.09em;">Game results</div></div>
+
+      <div class="month-header"><div class="month-title">April 2026</div></div>
+      <div class="result-row">
+        <div class="rr-date">12</div>
+        <div class="rr-info"><div class="rr-name">Paris-Roubaix</div></div>
+        <div class="rr-cols">
+          <div class="rr-col"><div class="rr-val">840</div><div class="rr-lbl">PCS</div></div>
+          <div class="rr-col"><div class="rr-val">1 050</div><div class="rr-lbl">XP</div></div>
+          <div class="rr-col"><div class="rr-val green">+3k</div><div class="rr-lbl">€</div></div>
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="rr-date">19</div>
+        <div class="rr-info"><div class="rr-name">Amstel Gold Race</div></div>
+        <div class="rr-cols">
+          <div class="rr-col"><div class="rr-val">520</div><div class="rr-lbl">PCS</div></div>
+          <div class="rr-col"><div class="rr-val">650</div><div class="rr-lbl">XP</div></div>
+          <div class="rr-col"><div class="rr-val green">+2k</div><div class="rr-lbl">€</div></div>
+        </div>
+      </div>
+      <div class="month-header"><div class="month-title">March 2026</div></div>
+      <div class="result-row">
+        <div class="rr-date">21</div>
+        <div class="rr-info"><div class="rr-name">Milan-Sanremo</div></div>
+        <div class="rr-cols">
+          <div class="rr-col"><div class="rr-val">680</div><div class="rr-lbl">PCS</div></div>
+          <div class="rr-col"><div class="rr-val">850</div><div class="rr-lbl">XP</div></div>
+          <div class="rr-col"><div class="rr-val green">+2.5k</div><div class="rr-lbl">€</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Pas de segmented control. Game Stats uniquement — pas de bid zone, pas de PCS Stats.</div></div>
+      <div class="note"><div class="n">2</div><div>"Owned by @JS · Pédaleurs du Chaos" — contextuel. Si non recruté : "Not recruited".</div></div>
+      <div class="note"><div class="n">3</div><div>Même structure transactions que Rider Detail principal.</div></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

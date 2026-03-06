@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WattHunter — v8</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #E8681A;
+    --brand-bg: rgba(232,104,26,0.11);
+    --brand-light: rgba(232,104,26,0.18);
+    --black: #111;
+    --g1: #333;
+    --g2: #777;
+    --g3: #AAA;
+    --g4: #DEDEDE;
+    --g5: #F4F4F4;
+    --line: #EBEBEB;
+    --warn: #B05000;
+    --warn-bg: rgba(176,80,0,0.09);
+    --white: #FFF;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#D8D8D8; font-family:'Inter',sans-serif; padding:36px 24px; }
+
+  h1 { font-size:11px; font-weight:800; color:#555; letter-spacing:.12em; text-transform:uppercase; margin-bottom:3px; }
+  .subtitle { font-size:11px; color:#999; margin-bottom:28px; }
+
+  .sec {
+    font-size:10px; font-weight:700; color:#777; letter-spacing:.12em; text-transform:uppercase;
+    margin:52px 0 18px; padding-bottom:7px; border-bottom:1px solid #C4C4C4;
+  }
+  .sec em { font-style:normal; font-weight:400; color:#AAA; letter-spacing:0; text-transform:none; margin-left:8px; font-size:10px; }
+
+  .row { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; }
+  .col { display:flex; flex-direction:column; gap:9px; }
+  .col-lbl { font-size:9px; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:.07em; }
+
+  /* PHONE */
+  .phone { width:295px; background:var(--white); border-radius:32px; border:2px solid var(--black); overflow:hidden; box-shadow:3px 3px 0 var(--black); }
+  .phone.tall { width:295px; }
+
+  /* NOTES */
+  .notes { display:flex; flex-direction:column; gap:5px; max-width:260px; }
+  .note { display:flex; gap:6px; font-size:11px; color:#555; line-height:1.45; }
+  .n { min-width:16px; height:16px; background:var(--black); color:#FFF; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:800; margin-top:2px; flex-shrink:0; }
+  .note strong { color:var(--black); }
+  .oc { color:var(--brand); font-weight:700; }
+
+  /* ── SHARED ── */
+  .topnav { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:2px solid var(--black); }
+  .brand-r { display:flex; align-items:center; gap:7px; }
+  .logo { width:24px; height:24px; border:1.5px solid var(--black); border-radius:6px; background:#F0F0F0; flex-shrink:0; }
+  .b-name { font-size:11px; font-weight:800; color:var(--black); }
+  .b-sub { font-size:8px; color:var(--g2); }
+  .av { width:24px; height:24px; border:1.5px solid var(--black); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:var(--black); }
+
+  .tabs { display:flex; border-bottom:2px solid var(--black); }
+  .t { flex:1; padding:8px 0; text-align:center; font-size:11px; font-weight:600; color:var(--g3); border-right:1px solid var(--line); }
+  .t:last-child { border-right:none; }
+  .t.on { color:var(--black); font-weight:700; border-bottom:2.5px solid var(--black); margin-bottom:-2px; }
+
+  .bnav { display:flex; border-top:2px solid var(--black); }
+  .bni { flex:1; padding:7px 0 6px; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:7px; font-weight:600; color:var(--g3); letter-spacing:.04em; text-transform:uppercase; border-right:1px solid var(--line); }
+  .bni:last-child { border-right:none; }
+  .bni.on { color:var(--black); }
+  .ni { width:12px; height:12px; border:1.5px solid var(--g3); border-radius:3px; }
+  .bni.on .ni { border-color:var(--black); background:var(--black); }
+
+  /* BADGES */
+  .spec-b { display:inline-flex; height:14px; padding:0 5px; border-radius:3px; font-size:8px; font-weight:700; background:var(--g5); color:var(--g1); align-items:center; }
+  .boost-b { display:inline-flex; height:14px; padding:0 5px; border-radius:3px; font-size:8px; font-weight:700; background:var(--black); color:#FFF; align-items:center; }
+  .warn-b { display:inline-flex; height:14px; padding:0 5px; border-radius:3px; font-size:8px; font-weight:700; background:var(--warn-bg); color:var(--warn); align-items:center; }
+
+  /* ════════════════════════
+     MY TEAM HEADER
+  ════════════════════════ */
+  .mt-header { padding:11px 14px 10px; border-bottom:1.5px solid var(--line); }
+
+  /* Line 1: XP + Rank */
+  .mt-line1 { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:9px; }
+  .mt-xp .lbl { font-size:8px; font-weight:700; color:var(--g2); text-transform:uppercase; letter-spacing:.08em; }
+  .mt-xp .val { font-size:24px; font-weight:900; color:var(--black); line-height:1.1; margin-top:1px; }
+  .mt-xp .sub { font-size:8px; color:var(--g3); margin-top:1px; }
+  .mt-rank { text-align:right; cursor:pointer; }
+  .mt-rank .lbl { font-size:8px; color:var(--g2); font-weight:600; text-transform:uppercase; letter-spacing:.07em; }
+  .mt-rank .val { font-size:20px; font-weight:800; color:var(--black); display:flex; align-items:center; justify-content:flex-end; gap:3px; }
+  .mt-rank .arr { font-size:13px; color:var(--g3); }
+
+  /* Line 2: boost + policies */
+  .mt-line2 { display:flex; align-items:center; justify-content:space-between; }
+  .boost-pill { display:inline-flex; align-items:center; gap:5px; height:22px; padding:0 9px; border:1.5px solid var(--black); border-radius:100px; font-size:10px; font-weight:700; color:var(--black); }
+  .boost-dot { width:6px; height:6px; border-radius:50%; background:var(--brand); }
+  .policies-btn { font-size:10px; font-weight:600; color:var(--g2); cursor:pointer; }
+
+  /* ════════════════════════
+     RIDER CARD — UNIFIED
+  ════════════════════════ */
+  .list-hdr { display:flex; justify-content:space-between; align-items:center; padding:8px 14px 5px; }
+  .lh-title { font-size:11px; font-weight:700; color:var(--black); }
+  .lh-meta { font-size:9px; color:var(--g2); }
+  .lh-meta.warn { color:var(--warn); }
+
+  /* Card */
+  .rcard { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .rcard.bid-on { background:var(--brand-bg); }
+  .rcard.outbid-on { background:var(--warn-bg); }
+
+  /* Photo + rank */
+  .photo-wrap { position:relative; flex-shrink:0; }
+  .photo { width:36px; height:36px; border-radius:50%; background:var(--g5); border:1.5px solid var(--g4); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:var(--g2); overflow:hidden; }
+  .photo.dark { background:var(--black); color:#FFF; border-color:var(--black); }
+  .photo.bid-ring { border-color:var(--brand); border-width:2px; }
+  .photo.outline { border:1.5px dashed var(--g3); background:#FAFAFA; color:var(--g3); }
+  .pcs-rank { position:absolute; bottom:-4px; left:50%; transform:translateX(-50%);
+    background:#E8E8E8; color:#555; font-size:7px; font-weight:700;
+    height:13px; padding:0 4px; border-radius:100px;
+    display:flex; align-items:center; white-space:nowrap;
+    border:1px solid #D0D0D0; /* contrast ratio ~4.6:1 */
+  }
+
+  /* Info */
+  .rc-info { flex:1; min-width:0; }
+  .rc-name { font-size:12px; font-weight:700; color:var(--black); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:4px; }
+  .rc-name.muted { color:var(--g3); }
+  .rc-team { font-size:9px; color:var(--g2); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rc-warn { font-size:8px; color:var(--warn); font-weight:700; margin-top:2px; display:flex; align-items:center; gap:3px; }
+
+  /* Right side */
+  .rc-right { flex-shrink:0; text-align:right; }
+  .rc-xp { font-size:13px; font-weight:800; color:var(--black); }
+  .rc-xp-lbl { font-size:7px; color:var(--g3); font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
+  .rc-pending { font-size:10px; color:var(--g3); font-style:italic; }
+
+  /* Bid input field — visible inline */
+  .bid-field { min-width:72px; height:28px; border:1.5px solid var(--g4); border-radius:7px; background:var(--white); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; color:var(--g2); padding:0 8px; cursor:text; }
+  .bid-field.has-val { border-color:var(--brand); color:var(--brand); font-weight:700; background:rgba(232,104,26,0.06); }
+
+  .chevron { font-size:12px; color:var(--g4); flex-shrink:0; }
+
+  .divider { height:5px; background:#F2F2F2; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+
+  /* Level section */
+  .level-sec { padding:9px 14px 11px; }
+  .level-hdr { display:flex; justify-content:space-between; margin-bottom:7px; }
+  .level-title { font-size:11px; font-weight:700; color:var(--black); }
+  .level-link { font-size:10px; color:var(--g2); font-weight:600; }
+  .level-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+  .lv-badge { width:28px; height:28px; border:2px solid var(--black); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:var(--black); flex-shrink:0; }
+  .lv-bar-wrap { flex:1; }
+  .lv-bar-labels { display:flex; justify-content:space-between; font-size:8px; color:var(--g3); margin-bottom:3px; }
+  .lv-bar { height:5px; background:var(--g5); border-radius:3px; }
+  .lv-fill { height:100%; background:var(--black); border-radius:3px; }
+  .unlock-row { display:flex; align-items:center; gap:6px; padding:6px 8px; background:var(--g5); border-radius:7px; }
+  .unlock-ico { font-size:11px; }
+  .unlock-txt { flex:1; font-size:10px; color:var(--g1); }
+  .unlock-txt strong { color:var(--black); }
+  .unlock-xp { font-size:9px; color:var(--g2); font-weight:600; }
+
+  /* ════════════════════════
+     RECRUTS
+  ════════════════════════ */
+  .round-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 14px; border-bottom:1px solid var(--line); background:#FAFAFA; }
+  .round-l { font-size:11px; font-weight:700; color:var(--black); }
+  .round-l small { font-size:9px; font-weight:400; color:var(--g2); margin-left:3px; }
+  .round-r { font-size:10px; font-weight:700; color:var(--black); }
+
+  .search-row { padding:8px 14px 6px; }
+  .search-box { height:32px; border:1.5px solid var(--black); border-radius:9px; display:flex; align-items:center; padding:0 10px; gap:7px; }
+  .si { width:12px; height:12px; border:1.5px solid var(--g3); border-radius:50%; position:relative; flex-shrink:0; }
+  .si::after { content:''; position:absolute; bottom:-4px; right:-4px; width:5px; height:1.5px; background:var(--g3); transform:rotate(45deg); }
+  .sph { font-size:10px; color:var(--g3); }
+
+  /* Pills */
+  .pills-row { display:flex; gap:5px; padding:0 14px 8px; overflow-x:auto; scrollbar-width:none; }
+  .pills-row::-webkit-scrollbar { display:none; }
+  .pill { height:24px; padding:0 10px; border:1.5px solid var(--g3); border-radius:100px; font-size:10px; font-weight:600; color:var(--g2); white-space:nowrap; display:flex; align-items:center; flex-shrink:0; cursor:pointer; }
+  .pill.on { border-color:var(--black); background:var(--black); color:#FFF; }
+
+  /* Accordion list */
+  .acc-list { }
+  .acc-group { border-bottom:1px solid var(--line); }
+  .acc-trigger { display:flex; align-items:center; justify-content:space-between; padding:9px 14px; cursor:pointer; background:var(--white); }
+  .acc-trigger-l { display:flex; align-items:center; gap:7px; }
+  .acc-trigger-name { font-size:12px; font-weight:700; color:var(--black); }
+  .acc-trigger-count { font-size:9px; color:var(--g2); }
+  .acc-arrow { font-size:10px; color:var(--g3); }
+  .acc-arrow.open { transform:rotate(180deg); }
+  .acc-open { background:var(--g5); }
+
+  .list-meta { display:flex; justify-content:space-between; padding:5px 14px 3px; }
+  .lm-count { font-size:9px; font-weight:700; color:var(--g3); text-transform:uppercase; letter-spacing:.08em; }
+  .lm-sort { font-size:9px; font-weight:600; color:var(--g3); cursor:pointer; }
+
+  /* Keyboard-up state */
+  .keyboard-bar { border-top:2px solid var(--black); background:var(--g5); padding:8px 14px; }
+  .kb-selected-rider { display:flex; align-items:center; gap:9px; }
+  .kb-photo { width:32px; height:32px; border-radius:50%; background:var(--black); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:#FFF; flex-shrink:0; }
+  .kb-info { flex:1; }
+  .kb-name { font-size:12px; font-weight:700; color:var(--black); }
+  .kb-team { font-size:9px; color:var(--g2); }
+  .kb-input-row { display:flex; align-items:center; gap:6px; margin-top:7px; }
+  .kb-minus { width:32px; height:32px; border:1.5px solid var(--black); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--black); flex-shrink:0; }
+  .kb-input { flex:1; height:38px; border:2px solid var(--brand); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800; color:var(--brand); background:rgba(232,104,26,0.06); }
+  .kb-plus { width:32px; height:32px; border:1.5px solid var(--black); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--black); flex-shrink:0; }
+  .kb-confirm { height:36px; border:2px solid var(--black); border-radius:8px; background:var(--black); color:#FFF; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:7px; }
+  .kb-budget { display:flex; justify-content:space-between; padding:5px 2px 0; }
+  .kb-budget-txt { font-size:9px; color:var(--g2); }
+  .kb-budget-val { font-size:9px; font-weight:700; color:var(--black); }
+  .keyboard-mock { background:#D0D0D0; height:58px; display:flex; align-items:center; justify-content:center; }
+  .keyboard-mock span { font-size:9px; color:#888; letter-spacing:.06em; text-transform:uppercase; }
+
+  /* Sticky bar */
+  .sticky { border-top:2px solid var(--black); padding:9px 14px; background:#FAFAFA; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .sticky-txt { font-size:11px; font-weight:700; color:var(--black); }
+  .sticky-txt span { color:var(--g2); font-weight:400; margin:0 2px; }
+  .save-btn { height:30px; padding:0 14px; border-radius:7px; border:2px solid var(--black); background:var(--black); font-size:11px; font-weight:700; color:#FFF; flex-shrink:0; display:flex; align-items:center; }
+
+  /* ════════════════════════
+     RIDER DETAIL PAGE
+  ════════════════════════ */
+  .detail-back { display:flex; align-items:center; gap:6px; padding:10px 14px 9px; border-bottom:1px solid var(--line); font-size:11px; font-weight:600; color:var(--black); cursor:pointer; }
+  .back-arr { font-size:15px; }
+
+  .detail-hero { padding:14px 14px 12px; border-bottom:1.5px solid var(--line); }
+  .dh-top { display:flex; gap:12px; align-items:flex-start; margin-bottom:12px; }
+
+  /* Large photo */
+  .detail-photo-wrap { position:relative; flex-shrink:0; }
+  .detail-photo { width:56px; height:56px; border-radius:50%; background:var(--black); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#FFF; border:2px solid var(--black); }
+  .detail-pcs-rank { position:absolute; bottom:-5px; left:50%; transform:translateX(-50%);
+    background:#E8E8E8; color:#555; font-size:7px; font-weight:700;
+    height:14px; padding:0 5px; border-radius:100px;
+    display:flex; align-items:center; white-space:nowrap;
+    border:1px solid #D0D0D0;
+  }
+
+  .dh-info { flex:1; min-width:0; }
+  .dh-name { font-size:18px; font-weight:900; color:var(--black); line-height:1.1; display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+  .dh-team { font-size:11px; color:var(--g2); margin-top:4px; }
+  .dh-tags { display:flex; gap:5px; flex-wrap:wrap; margin-top:5px; }
+  .tag-chip { height:18px; padding:0 7px; border-radius:100px; border:1px solid var(--g4); font-size:9px; font-weight:600; color:var(--g1); display:inline-flex; align-items:center; }
+
+  /* Key metrics */
+  .dh-metrics { display:flex; gap:8px; }
+  .metric-box { flex:1; padding:8px 10px; background:var(--g5); border-radius:9px; border:1px solid var(--line); }
+  .metric-val { font-size:16px; font-weight:800; color:var(--black); }
+  .metric-lbl { font-size:8px; color:var(--g2); font-weight:600; text-transform:uppercase; letter-spacing:.07em; margin-top:1px; }
+
+  /* Salary / bid zone */
+  .dh-bid-zone { margin-top:10px; padding:10px 12px; background:var(--g5); border-radius:9px; border:1px solid var(--line); }
+  .dbz-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .dbz-label { font-size:10px; color:var(--g2); font-weight:600; }
+  .dbz-val { font-size:12px; font-weight:700; color:var(--black); }
+  .dbz-input-row { display:flex; align-items:center; gap:7px; }
+  .dbz-stepper { width:32px; height:32px; border:1.5px solid var(--black); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--black); }
+  .dbz-input { flex:1; height:38px; border:2px solid var(--brand); border-radius:8px; background:rgba(232,104,26,0.06); display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; color:var(--brand); }
+  .dbz-confirm { height:38px; border:2px solid var(--black); border-radius:8px; background:var(--black); color:#FFF; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:8px; }
+
+  .remove-btn { margin-top:8px; height:32px; border:1.5px solid var(--g4); border-radius:8px; background:var(--white); display:flex; align-items:center; justify-content:center; gap:6px; font-size:11px; font-weight:600; color:var(--g2); }
+
+  /* Segmented control */
+  .seg-ctrl { display:flex; margin:10px 14px 0; border:1.5px solid var(--black); border-radius:9px; overflow:hidden; }
+  .seg-btn { flex:1; padding:7px 0; text-align:center; font-size:11px; font-weight:600; color:var(--g2); cursor:pointer; }
+  .seg-btn.on { background:var(--black); color:#FFF; font-weight:700; }
+
+  /* PCS Stats tab */
+  .pcs-section { padding:10px 14px 6px; }
+  .pcs-title { font-size:9px; font-weight:700; color:var(--g2); text-transform:uppercase; letter-spacing:.09em; margin-bottom:7px; }
+
+  .season-row { display:flex; align-items:center; gap:7px; padding:5px 0; border-bottom:1px solid var(--g5); }
+  .sr-year { font-size:10px; color:var(--g2); width:30px; flex-shrink:0; }
+  .sr-team { font-size:9px; color:var(--g2); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sr-pts { font-size:10px; font-weight:700; color:var(--black); width:38px; text-align:right; flex-shrink:0; }
+  .sr-rank { font-size:9px; color:var(--g3); width:22px; text-align:right; flex-shrink:0; }
+
+  .startlist-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--g5); }
+  .slr-left .slr-name { font-size:11px; font-weight:600; color:var(--black); }
+  .slr-left .slr-date { font-size:9px; color:var(--g2); margin-top:1px; }
+  .slr-cat { font-size:9px; font-weight:700; color:var(--g2); }
+
+  /* Game Stats tab */
+  .month-header { padding:8px 14px 3px; }
+  .month-title { font-size:10px; font-weight:700; color:var(--g2); text-transform:uppercase; letter-spacing:.08em; }
+
+  .result-row { display:flex; align-items:center; padding:7px 14px; border-bottom:1px solid var(--g5); }
+  .rr-date { font-size:10px; color:var(--g3); width:24px; flex-shrink:0; font-weight:600; }
+  .rr-info { flex:1; min-width:0; padding:0 8px; }
+  .rr-name { font-size:11px; font-weight:600; color:var(--black); }
+  .rr-stage { font-size:9px; color:var(--g2); }
+  .rr-cols { display:flex; gap:10px; align-items:center; flex-shrink:0; }
+  .rr-col { text-align:right; }
+  .rr-val { font-size:11px; font-weight:700; color:var(--black); }
+  .rr-val.green { color:#2E7D32; }
+  .rr-lbl { font-size:7px; color:var(--g3); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+</style>
+</head>
+<body>
+
+<h1>WattHunter · v8</h1>
+<p class="subtitle">My Team · Recruts · Rider Detail — Toutes décisions validées</p>
+
+<!-- ══════════════════════════════
+     01 — MY TEAM
+══════════════════════════════ -->
+<div class="sec">01 — My Team <em>· Header condensé 2 lignes · Cards unifiées</em></div>
+<div class="row">
+
+  <div class="col">
+    <div class="col-lbl">My Team</div>
+    <div class="phone">
+      <div class="topnav">
+        <div class="brand-r"><div class="logo"></div><div><div class="b-name">WattHunter</div><div class="b-sub">Les Forçats ▾</div></div></div>
+        <div class="av">JS</div>
+      </div>
+      <div class="tabs"><div class="t on">My Team</div><div class="t">Recruts</div></div>
+
+      <!-- HEADER 2 LIGNES -->
+      <div class="mt-header">
+        <div class="mt-line1">
+          <div class="mt-xp">
+            <div class="lbl">Total XP season</div>
+            <div class="val">24 680</div>
+            <div class="sub">Updated after each race</div>
+          </div>
+          <div class="mt-rank">
+            <div class="lbl">Ranking</div>
+            <div class="val">3<span style="font-size:13px;font-weight:600;">rd</span> / 12 <span class="arr">›</span></div>
+          </div>
+        </div>
+        <div class="mt-line2">
+          <div class="boost-pill"><div class="boost-dot"></div>+10% boost active</div>
+          <span class="policies-btn">Change policies →</span>
+        </div>
+      </div>
+
+      <!-- ROSTER -->
+      <div class="list-hdr"><span class="lh-title">Roster</span><span class="lh-meta">5 / 6 slots</span></div>
+
+      <div class="rcard">
+        <div class="photo-wrap">
+          <div class="photo dark">WV</div>
+          <div class="pcs-rank">#5</div>
+        </div>
+        <div class="rc-info">
+          <div class="rc-name">Van Aert W. 🇧🇪<span class="boost-b" style="margin-left:3px;">+5%</span></div>
+          <div class="rc-team">Visma-Lease a Bike</div>
+        </div>
+        <div class="rc-right"><div class="rc-xp">4 210</div><div class="rc-xp-lbl">XP</div></div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="rcard">
+        <div class="photo-wrap">
+          <div class="photo">PO</div>
+          <div class="pcs-rank">#1</div>
+        </div>
+        <div class="rc-info">
+          <div class="rc-name">Pogačar T. 🇸🇮</div>
+          <div class="rc-team">UAE Team Emirates</div>
+        </div>
+        <div class="rc-right"><div class="rc-xp">3 840</div><div class="rc-xp-lbl">XP</div></div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="rcard">
+        <div class="photo-wrap">
+          <div class="photo dark">AL</div>
+          <div class="pcs-rank">#9</div>
+        </div>
+        <div class="rc-info">
+          <div class="rc-name">Alaphilippe J. 🇫🇷<span class="boost-b" style="margin-left:3px;">+5%</span></div>
+          <div class="rc-team">Tudor Pro Cycling</div>
+        </div>
+        <div class="rc-right"><div class="rc-xp">2 190</div><div class="rc-xp-lbl">XP</div></div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="rcard">
+        <div class="photo-wrap">
+          <div class="photo">TG</div>
+          <div class="pcs-rank">#11</div>
+        </div>
+        <div class="rc-info">
+          <div class="rc-name">Girmay B. 🇪🇷</div>
+          <div class="rc-team">Intermarché-Wanty</div>
+        </div>
+        <div class="rc-right"><div class="rc-xp">1 980</div><div class="rc-xp-lbl">XP</div></div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="rcard" style="opacity:.35;">
+        <div class="photo-wrap"><div class="photo outline"></div></div>
+        <div class="rc-info"><div class="rc-name" style="color:#CCC;font-size:11px;">Open slot</div><div class="rc-team">→ Go to Recruts</div></div>
+        <div class="rc-right"><div class="rc-xp" style="color:#DDD;">—</div></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- BIDS — during active round only -->
+      <div class="list-hdr">
+        <span class="lh-title">Pending bids</span>
+        <span class="lh-meta warn">Round active · J-2</span>
+      </div>
+
+      <!-- Outbid — visible pendant round actif uniquement -->
+      <div class="rcard outbid-on">
+        <div class="photo-wrap">
+          <div class="photo outline">VJ</div>
+          <div class="pcs-rank">#2</div>
+        </div>
+        <div class="rc-info">
+          <div class="rc-name muted">Vingegaard J. 🇩🇰</div>
+          <div class="rc-team">Visma-Lease a Bike</div>
+          <div class="rc-warn">⚠ Outbid +8k by @Alex</div>
+        </div>
+        <div class="rc-right"><div class="rc-pending">155 000</div></div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="rcard">
+        <div class="photo-wrap">
+          <div class="photo outline">RE</div>
+          <div class="pcs-rank">#3</div>
+        </div>
+        <div class="rc-info">
+          <div class="rc-name muted">Evenepoel R. 🇧🇪</div>
+          <div class="rc-team">Soudal Quick-Step</div>
+        </div>
+        <div class="rc-right"><div class="rc-pending">142 000</div></div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- LEVEL -->
+      <div class="level-sec">
+        <div class="level-hdr"><span class="level-title">Team level</span><span class="level-link">See all →</span></div>
+        <div class="level-row">
+          <div class="lv-badge">3</div>
+          <div class="lv-bar-wrap">
+            <div class="lv-bar-labels"><span>240 XP</span><span>500 XP</span></div>
+            <div class="lv-bar"><div class="lv-fill" style="width:48%"></div></div>
+          </div>
+        </div>
+        <div class="unlock-row">
+          <div class="unlock-ico">🔓</div>
+          <div class="unlock-txt">Next unlock: <strong>Rider slot 6</strong></div>
+          <div class="unlock-xp">+260 XP</div>
+        </div>
+      </div>
+
+      <div class="bnav">
+        <div class="bni"><div class="ni"></div>Home</div>
+        <div class="bni on"><div class="ni"></div>Team</div>
+        <div class="bni"><div class="ni"></div>Budget</div>
+        <div class="bni"><div class="ni"></div>Ranking</div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Header 2 lignes : <strong>[XP] [Rank→]</strong> puis <strong>[boost pill] [policies→]</strong>. Métriques + actions, pas de barre ranking.</div></div>
+      <div class="note"><div class="n">2</div><div>Ranking <strong>tappable</strong> avec `›` — navigue vers Ranking page.</div></div>
+      <div class="note"><div class="n">3</div><div>Outbid visible <strong>pendant round actif uniquement</strong>. Contexte : "by @Alex", montant dépassé.</div></div>
+      <div class="note"><div class="n">4</div><div>Card unifiée : photo + #PCS badge · Nom Flag · Équipe. Boost badge inline sur le nom.</div></div>
+    </div>
+  </div>
+
+<!-- ══════════════════════════════
+     02 — RECRUTS
+══════════════════════════════ -->
+</div>
+
+<div class="sec">02 — Recruts <em>· Pills + Accordion · Input visible · Keyboard-up</em></div>
+<div class="row">
+
+  <!-- All — default -->
+  <div class="col">
+    <div class="col-lbl">All — default</div>
+    <div class="phone">
+      <div class="topnav">
+        <div class="brand-r"><div class="logo"></div><div><div class="b-name">WattHunter</div></div></div>
+        <div class="av">JS</div>
+      </div>
+      <div class="tabs"><div class="t">My Team</div><div class="t on">Recruts</div></div>
+
+      <div class="round-bar">
+        <div class="round-l">Next Round · Jan 13 <small>· J-8</small></div>
+        <div class="round-r">History →</div>
+      </div>
+
+      <div class="search-row"><div class="search-box"><div class="si"></div><span class="sph">Search a rider…</span></div></div>
+
+      <!-- Pills: All · Teams · Speciality · Nationality · Age -->
+      <div class="pills-row">
+        <div class="pill on">All</div>
+        <div class="pill">Teams</div>
+        <div class="pill">Speciality</div>
+        <div class="pill">Nationality</div>
+        <div class="pill">Age</div>
+      </div>
+
+      <div class="list-meta">
+        <span class="lm-count">186 available</span>
+        <span class="lm-sort">↕ PCS Rank</span>
+      </div>
+
+      <!-- Cards avec input visible -->
+      <div style="padding:0 14px;">
+        <div class="rcard" style="padding:9px 0;">
+          <div class="photo-wrap"><div class="photo">PO</div><div class="pcs-rank">#1</div></div>
+          <div class="rc-info"><div class="rc-name">Pogačar T. 🇸🇮</div><div class="rc-team">UAE Team Emirates</div></div>
+          <div class="bid-field">80 000</div>
+        </div>
+        <div class="rcard bid-on" style="padding:9px 0;">
+          <div class="photo-wrap"><div class="photo bid-ring">MV</div><div class="pcs-rank">#4</div></div>
+          <div class="rc-info"><div class="rc-name">Van der Poel M. 🇧🇪</div><div class="rc-team">Alpecin-Deceuninck</div></div>
+          <div class="bid-field has-val">95 000</div>
+        </div>
+        <div class="rcard" style="padding:9px 0;">
+          <div class="photo-wrap"><div class="photo">PR</div><div class="pcs-rank">#6</div></div>
+          <div class="rc-info"><div class="rc-name">Roglič P. 🇸🇮</div><div class="rc-team">Bora-Hansgrohe</div></div>
+          <div class="bid-field">65 000</div>
+        </div>
+        <div class="rcard" style="padding:9px 0;">
+          <div class="photo-wrap"><div class="photo">JA</div><div class="pcs-rank">#9</div></div>
+          <div class="rc-info"><div class="rc-name">Alaphilippe J. 🇫🇷</div><div class="rc-team">Tudor Pro Cycling</div></div>
+          <div class="bid-field">55 000</div>
+        </div>
+        <div class="rcard" style="padding:9px 0;">
+          <div class="photo-wrap"><div class="photo">TG</div><div class="pcs-rank">#11</div></div>
+          <div class="rc-info"><div class="rc-name">Girmay B. 🇪🇷</div><div class="rc-team">Intermarché-Wanty</div></div>
+          <div class="bid-field">48 000</div>
+        </div>
+      </div>
+
+      <div class="sticky">
+        <div class="sticky-txt">4/6 slots<span>·</span>57 000 €</div>
+        <div class="save-btn">Save</div>
+      </div>
+      <div class="bnav">
+        <div class="bni"><div class="ni"></div>Home</div>
+        <div class="bni on"><div class="ni"></div>Team</div>
+        <div class="bni"><div class="ni"></div>Budget</div>
+        <div class="bni"><div class="ni"></div>Ranking</div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Input <strong>visible dans la card</strong> avec le salaire minimum. Pas de pointillés.</div></div>
+      <div class="note"><div class="n">2</div><div>Tap input → clavier remonte + coureur apparaît au-dessus.</div></div>
+      <div class="note"><div class="n">3</div><div>Tap card (zone info) → page détail coureur.</div></div>
+    </div>
+  </div>
+
+  <!-- Teams pill → accordion -->
+  <div class="col">
+    <div class="col-lbl">Teams pill — accordion</div>
+    <div class="phone">
+      <div class="topnav">
+        <div class="brand-r"><div class="logo"></div><div><div class="b-name">WattHunter</div></div></div>
+        <div class="av">JS</div>
+      </div>
+      <div class="tabs"><div class="t">My Team</div><div class="t on">Recruts</div></div>
+      <div class="round-bar"><div class="round-l">Next Round · Jan 13</div><div class="round-r">History →</div></div>
+      <div class="search-row"><div class="search-box"><div class="si"></div><span class="sph">Search a rider…</span></div></div>
+
+      <div class="pills-row">
+        <div class="pill">All</div>
+        <div class="pill on">Teams</div>
+        <div class="pill">Speciality</div>
+        <div class="pill">Nationality</div>
+        <div class="pill">Age</div>
+      </div>
+
+      <!-- Accordion teams -->
+      <div class="acc-list">
+        <div class="acc-group">
+          <div class="acc-trigger">
+            <div class="acc-trigger-l"><span class="acc-trigger-name">Alpecin-Deceuninck</span></div>
+            <div style="display:flex;align-items:center;gap:6px;"><span class="acc-trigger-count">14 avail.</span><span class="acc-arrow">▾</span></div>
+          </div>
+        </div>
+        <div class="acc-group">
+          <div class="acc-trigger">
+            <div class="acc-trigger-l"><span class="acc-trigger-name">Bora-Hansgrohe</span></div>
+            <div style="display:flex;align-items:center;gap:6px;"><span class="acc-trigger-count">11 avail.</span><span class="acc-arrow">▾</span></div>
+          </div>
+        </div>
+        <!-- Visma ouvert -->
+        <div class="acc-group">
+          <div class="acc-trigger acc-open">
+            <div class="acc-trigger-l"><span class="acc-trigger-name">Visma-Lease a Bike</span></div>
+            <div style="display:flex;align-items:center;gap:6px;"><span class="acc-trigger-count">10 avail.</span><span class="acc-arrow open">▾</span></div>
+          </div>
+          <!-- Coureurs Visma -->
+          <div style="background:var(--g5); padding:4px 14px 6px;">
+            <div class="rcard" style="padding:7px 0; background:transparent;">
+              <div class="photo-wrap"><div class="photo">VJ</div><div class="pcs-rank">#2</div></div>
+              <div class="rc-info"><div class="rc-name">Vingegaard J. 🇩🇰</div><div class="rc-team">Visma</div></div>
+              <div class="bid-field">120 000</div>
+            </div>
+            <div class="rcard bid-on" style="padding:7px 0; background:var(--brand-bg); margin:0 -14px; padding-left:14px; padding-right:14px;">
+              <div class="photo-wrap"><div class="photo bid-ring">WV</div><div class="pcs-rank">#5</div></div>
+              <div class="rc-info"><div class="rc-name">Van Aert W. 🇧🇪</div><div class="rc-team">Visma</div></div>
+              <div class="bid-field has-val">88 000</div>
+            </div>
+            <div class="rcard" style="padding:7px 0; background:transparent;">
+              <div class="photo-wrap"><div class="photo">CL</div><div class="pcs-rank">#38</div></div>
+              <div class="rc-info"><div class="rc-name">Laporte C. 🇫🇷</div><div class="rc-team">Visma</div></div>
+              <div class="bid-field">32 000</div>
+            </div>
+          </div>
+        </div>
+        <div class="acc-group">
+          <div class="acc-trigger">
+            <div class="acc-trigger-l"><span class="acc-trigger-name">Soudal Quick-Step</span></div>
+            <div style="display:flex;align-items:center;gap:6px;"><span class="acc-trigger-count">9 avail.</span><span class="acc-arrow">▾</span></div>
+          </div>
+        </div>
+        <div class="acc-group">
+          <div class="acc-trigger">
+            <div class="acc-trigger-l"><span class="acc-trigger-name">UAE Team Emirates</span></div>
+            <div style="display:flex;align-items:center;gap:6px;"><span class="acc-trigger-count">8 avail.</span><span class="acc-arrow">▾</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sticky">
+        <div class="sticky-txt">4/6 slots<span>·</span>57 000 €</div>
+        <div class="save-btn">Save</div>
+      </div>
+      <div class="bnav">
+        <div class="bni"><div class="ni"></div>Home</div>
+        <div class="bni on"><div class="ni"></div>Team</div>
+        <div class="bni"><div class="ni"></div>Budget</div>
+        <div class="bni"><div class="ni"></div>Ranking</div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Pill "Teams" sélectionné → vue équipes. Chaque équipe = accordion.</div></div>
+      <div class="note"><div class="n">2</div><div>Accordion Visma ouvert → coureurs en fond légèrement grisé. Un seul ouvert à la fois.</div></div>
+      <div class="note"><div class="n">3</div><div>Card avec bid = <span class="oc">background brand</span> même dans l'accordion.</div></div>
+    </div>
+  </div>
+
+  <!-- Keyboard up state -->
+  <div class="col">
+    <div class="col-lbl">Tap input → keyboard up</div>
+    <div class="phone">
+      <div class="topnav">
+        <div class="brand-r"><div class="logo"></div><div><div class="b-name">WattHunter</div></div></div>
+        <div class="av">JS</div>
+      </div>
+      <div class="tabs"><div class="t">My Team</div><div class="t on">Recruts</div></div>
+
+      <!-- Liste grisée en BG -->
+      <div style="opacity:.25; padding:0 14px;">
+        <div class="rcard" style="padding:9px 0;">
+          <div class="photo-wrap"><div class="photo">PO</div><div class="pcs-rank">#1</div></div>
+          <div class="rc-info"><div class="rc-name">Pogačar T. 🇸🇮</div><div class="rc-team">UAE</div></div>
+          <div class="bid-field">80 000</div>
+        </div>
+        <div class="rcard" style="padding:9px 0;">
+          <div class="photo-wrap"><div class="photo">PR</div><div class="pcs-rank">#6</div></div>
+          <div class="rc-info"><div class="rc-name">Roglič P. 🇸🇮</div><div class="rc-team">Bora</div></div>
+          <div class="bid-field">65 000</div>
+        </div>
+      </div>
+
+      <!-- Coureur sélectionné au-dessus du clavier -->
+      <div class="keyboard-bar">
+        <div class="kb-selected-rider">
+          <div class="kb-photo">MV</div>
+          <div class="kb-info">
+            <div class="kb-name">Van der Poel M. 🇧🇪</div>
+            <div class="kb-team">Alpecin · Puncheur · Min. 80 000 €</div>
+          </div>
+        </div>
+        <div class="kb-input-row">
+          <div class="kb-minus">−</div>
+          <div class="kb-input">95 000</div>
+          <div class="kb-plus">+</div>
+        </div>
+        <div class="kb-budget">
+          <span class="kb-budget-txt">Budget remaining after</span>
+          <span class="kb-budget-val">5 000 €</span>
+        </div>
+        <div class="kb-confirm">Confirm bid</div>
+      </div>
+
+      <!-- Keyboard mock -->
+      <div class="keyboard-mock"><span>Native keyboard</span></div>
+
+      <div class="bnav">
+        <div class="bni"><div class="ni"></div>Home</div>
+        <div class="bni on"><div class="ni"></div>Team</div>
+        <div class="bni"><div class="ni"></div>Budget</div>
+        <div class="bni"><div class="ni"></div>Ranking</div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Tap input → clavier remonte. Le coureur sélectionné + input apparaissent <strong>au-dessus du clavier</strong>.</div></div>
+      <div class="note"><div class="n">2</div><div>+/− par 1 000. Input cliquable pour saisie libre. Budget restant mis à jour en live.</div></div>
+      <div class="note"><div class="n">3</div><div>Liste en BG grisée. Ferme en tapant ailleurs ou sur Confirm.</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════
+     03 — RIDER DETAIL
+══════════════════════════════ -->
+<div class="sec">03 — Rider Detail Page <em>· Pas de bottom nav · PCS Stats + Game Stats</em></div>
+<div class="row">
+
+  <!-- PCS Stats -->
+  <div class="col">
+    <div class="col-lbl">PCS Stats tab</div>
+    <div class="phone">
+      <!-- Pas de topnav, pas de bottom nav — full page -->
+      <div class="detail-back"><span class="back-arr">←</span> Recruts</div>
+
+      <div class="detail-hero">
+        <div class="dh-top">
+          <div class="detail-photo-wrap">
+            <div class="detail-photo">MV</div>
+            <div class="detail-pcs-rank">#4 PCS</div>
+          </div>
+          <div class="dh-info">
+            <div class="dh-name">Van der Poel M. 🇧🇪</div>
+            <div class="dh-team">Alpecin-Deceuninck</div>
+            <div class="dh-tags">
+              <span class="tag-chip">Puncheur</span>
+              <span class="tag-chip">29 ans</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics XP + Bonus -->
+        <div class="dh-metrics">
+          <div class="metric-box">
+            <div class="metric-val">—</div>
+            <div class="metric-lbl">Game XP</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val">—</div>
+            <div class="metric-lbl">Bonus €</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val">95 000</div>
+            <div class="metric-lbl">Min. salary</div>
+          </div>
+        </div>
+
+        <!-- Bid zone -->
+        <div class="dh-bid-zone" style="margin-top:10px;">
+          <div class="dbz-row">
+            <span class="dbz-label">My current bid</span>
+            <span class="dbz-val" style="color:var(--brand);">95 000 €</span>
+          </div>
+          <div class="dbz-input-row">
+            <div class="dbz-stepper">−</div>
+            <div class="dbz-input">95 000</div>
+            <div class="dbz-stepper">+</div>
+          </div>
+          <div class="dbz-confirm">Update bid</div>
+          <div class="remove-btn" style="cursor:pointer;">✕ Remove bid</div>
+        </div>
+      </div>
+
+      <!-- Segmented -->
+      <div class="seg-ctrl">
+        <div class="seg-btn on">PCS Stats</div>
+        <div class="seg-btn">Game Stats</div>
+      </div>
+
+      <!-- PCS Stats: ranking par saison -->
+      <div class="pcs-section">
+        <div class="pcs-title">PCS Ranking by season</div>
+        <div class="season-row"><span class="sr-year">2026</span><span class="sr-team">Alpecin-Deceuninck</span><span class="sr-pts">225</span><span class="sr-rank">#17</span></div>
+        <div class="season-row"><span class="sr-year">2025</span><span class="sr-team">Alpecin-Deceuninck</span><span class="sr-pts">1 840</span><span class="sr-rank">#4</span></div>
+        <div class="season-row"><span class="sr-year">2024</span><span class="sr-team">Alpecin-Deceuninck</span><span class="sr-pts">2 100</span><span class="sr-rank">#3</span></div>
+        <div class="season-row"><span class="sr-year">2023</span><span class="sr-team">Alpecin-Deceuninck</span><span class="sr-pts">1 720</span><span class="sr-rank">#6</span></div>
+        <div class="season-row"><span class="sr-year">2022</span><span class="sr-team">Alpecin-Fenix</span><span class="sr-pts">1 580</span><span class="sr-rank">#7</span></div>
+      </div>
+
+      <!-- Startlist -->
+      <div class="pcs-section" style="padding-top:4px;">
+        <div class="pcs-title">Race programme</div>
+        <div class="startlist-row">
+          <div class="slr-left"><div class="slr-name">Ronde van Vlaanderen</div><div class="slr-date">5 Apr</div></div>
+          <div class="slr-cat">WT</div>
+        </div>
+        <div class="startlist-row">
+          <div class="slr-left"><div class="slr-name">Paris-Roubaix</div><div class="slr-date">12 Apr</div></div>
+          <div class="slr-cat">WT</div>
+        </div>
+        <div class="startlist-row">
+          <div class="slr-left"><div class="slr-name">Amstel Gold Race</div><div class="slr-date">19 Apr</div></div>
+          <div class="slr-cat">WT</div>
+        </div>
+        <div class="startlist-row">
+          <div class="slr-left"><div class="slr-name">La Flèche Wallonne</div><div class="slr-date">22 Apr</div></div>
+          <div class="slr-cat">WT</div>
+        </div>
+        <div class="startlist-row">
+          <div class="slr-left"><div class="slr-name">Tour de France</div><div class="slr-date">4–26 Jul</div></div>
+          <div class="slr-cat">GT</div>
+        </div>
+      </div>
+      <!-- Pas de bottom nav sur cette page -->
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Pas de bottom nav. Flèche ← retour en haut.</div></div>
+      <div class="note"><div class="n">2</div><div>Metrics : Game XP · Bonus € · Salaire min (ou salaire payé si roster).</div></div>
+      <div class="note"><div class="n">3</div><div>Bid zone en haut — Update bid + Remove bid. Actions contextuelles.</div></div>
+      <div class="note"><div class="n">4</div><div>PCS Stats : ranking par saison avec équipe. Programme de courses (startlist prévisionnelle).</div></div>
+    </div>
+  </div>
+
+  <!-- Game Stats -->
+  <div class="col">
+    <div class="col-lbl">Game Stats tab</div>
+    <div class="phone">
+      <div class="detail-back"><span class="back-arr">←</span> My Team</div>
+
+      <div class="detail-hero">
+        <div class="dh-top">
+          <div class="detail-photo-wrap">
+            <div class="detail-photo">WV</div>
+            <div class="detail-pcs-rank">#5 PCS</div>
+          </div>
+          <div class="dh-info">
+            <div class="dh-name">Van Aert W. 🇧🇪</div>
+            <div class="dh-team">Visma-Lease a Bike</div>
+            <div class="dh-tags">
+              <span class="tag-chip">Rouleur</span>
+              <span class="tag-chip">29 ans</span>
+              <span class="boost-b">+5%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dh-metrics">
+          <div class="metric-box">
+            <div class="metric-val">4 210</div>
+            <div class="metric-lbl">Game XP</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val">+12k€</div>
+            <div class="metric-lbl">Bonus €</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val">88 000</div>
+            <div class="metric-lbl">Paid salary</div>
+          </div>
+        </div>
+
+        <!-- Dans roster → bouton libérer -->
+        <div class="remove-btn" style="margin-top:10px; cursor:pointer;">Release rider — 1 month notice</div>
+      </div>
+
+      <div class="seg-ctrl">
+        <div class="seg-btn">PCS Stats</div>
+        <div class="seg-btn on">Game Stats</div>
+      </div>
+
+      <!-- Game Stats: transactions style -->
+      <div class="month-header"><div class="month-title">April 2026</div></div>
+
+      <div class="result-row">
+        <div class="rr-date">12</div>
+        <div class="rr-info"><div class="rr-name">Paris-Roubaix</div></div>
+        <div class="rr-cols">
+          <div class="rr-col"><div class="rr-val">840</div><div class="rr-lbl">PCS</div></div>
+          <div class="rr-col"><div class="rr-val">1 050</div><div class="rr-lbl">XP</div></div>
+          <div class="rr-col"><div class="rr-val green">+3k</div><div class="rr-lbl">€</div></div>
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="rr-date">19</div>
+        <div class="rr-info"><div class="rr-name">Amstel Gold Race</div></div>
+        <div class="rr-cols">
+          <div class="rr-col"><div class="rr-val">520</div><div class="rr-lbl">PCS</div></div>
+          <div class="rr-col"><div class="rr-val">650</div><div class="rr-lbl">XP</div></div>
+          <div class="rr-col"><div class="rr-val green">+2k</div><div class="rr-lbl">€</div></div>
+        </div>
+      </div>
+
+      <div class="month-header" style="margin-top:6px;"><div class="month-title">March 2026</div></div>
+
+      <div class="result-row">
+        <div class="rr-date">21</div>
+        <div class="rr-info"><div class="rr-name">Milan-Sanremo</div></div>
+        <div class="rr-cols">
+          <div class="rr-col"><div class="rr-val">680</div><div class="rr-lbl">PCS</div></div>
+          <div class="rr-col"><div class="rr-val">850</div><div class="rr-lbl">XP</div></div>
+          <div class="rr-col"><div class="rr-val green">+2.5k</div><div class="rr-lbl">€</div></div>
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="rr-date">25</div>
+        <div class="rr-info"><div class="rr-name">E3 Saxo Bank Classic</div></div>
+        <div class="rr-cols">
+          <div class="rr-col"><div class="rr-val">420</div><div class="rr-lbl">PCS</div></div>
+          <div class="rr-col"><div class="rr-val">525</div><div class="rr-lbl">XP</div></div>
+          <div class="rr-col"><div class="rr-val green">+1.5k</div><div class="rr-lbl">€</div></div>
+        </div>
+      </div>
+
+      <div class="month-header" style="margin-top:6px;"><div class="month-title">February 2026</div></div>
+
+      <div class="result-row">
+        <div class="rr-date">8</div>
+        <div class="rr-info"><div class="rr-name">Omloop Het Nieuwsblad</div></div>
+        <div class="rr-cols">
+          <div class="rr-col"><div class="rr-val">310</div><div class="rr-lbl">PCS</div></div>
+          <div class="rr-col"><div class="rr-val">388</div><div class="rr-lbl">XP</div></div>
+          <div class="rr-col"><div class="rr-val green">+1k</div><div class="rr-lbl">€</div></div>
+        </div>
+      </div>
+
+      <!-- Pas de bottom nav -->
+    </div>
+    <div class="notes">
+      <div class="note"><div class="n">1</div><div>Coureur dans le roster → "Paid salary" + bouton "Release rider — 1 month notice".</div></div>
+      <div class="note"><div class="n">2</div><div>Game Stats = résultats style <strong>transactions bancaires</strong>. Mois → Jour · Course · PCS · XP · Bonus €.</div></div>
+      <div class="note"><div class="n">3</div><div>Pas de bottom nav. Retour ← vers My Team ou Recruts selon la provenance.</div></div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

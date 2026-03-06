@@ -192,24 +192,25 @@ XP equipe = Σ XP de tous les coureurs du roster
 
 ### Progression par niveaux
 
-| Niveau | XP cumule | Slots | Politiques | Rang PCS debloque |
-|--------|-----------|-------|------------|-------------------|
-| 1 | 0 | 6 | 0 | #401-500 |
-| 2 | 1 000 | 6 | 0 | #301-500 |
-| 3 | 3 000 | 7 | 1 | #201-500 |
-| 4 | 6 000 | 7 | 1 | #151-500 |
-| 5 | 10 000 | 8 | 1 | #101-500 |
-| 6 | 18 000 | 9 | 2 | #76-500 |
-| 7 | 30 000 | 10 | 2 | #51-500 |
-| 8 | 50 000 | 10 | 2 | #26-500 |
-| 9 | 80 000 | 11 | 2 | #11-500 |
-| 10 | 120 000 | 12 | 3 | #1-500 |
+| Niveau | XP cumule | Slots | Politiques actives | Rang PCS debloque | Policy debloquee |
+|--------|-----------|-------|--------------------|-------------------|------------------|
+| 1 | 0 | 6 | 1 | #401-500 | Speciality |
+| 2 | 100 | 7 | 1 | #301-500 | — |
+| 3 | 250 | 7 | 1 | #201-500 | Nationality |
+| 4 | 500 | 8 | 1 | #151-500 | — |
+| 5 | 900 | 9 | 2 | #101-500 | Teams |
+| 6 | 1 500 | 9 | 2 | #76-500 | — |
+| 7 | 2 500 | 10 | 2 | #51-500 | Age |
+| 8 | 4 000 | 11 | 2 | #26-500 | — |
+| 9 | 6 000 | 11 | 2 | #11-500 | — |
+| 10 | 9 000 | 12 | 2 | #1-500 | — |
 
 ---
 
 ## 8. Politiques
 
-5 types, +5% XP chacun, max 3 actives (Niveau 10).
+4 types, +5% XP chacun, max 2 actives (debloquees au Niveau 5).
+Types debloques par niveau : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7).
 
 | Politique | Bonus | Configuration |
 |-----------|-------|---------------|

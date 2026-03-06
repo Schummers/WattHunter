@@ -71,9 +71,10 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - Incrément minimum d'enchère : 100 €
 - Durée d'enchère : 72 heures
 - Slots coureurs : 6 (Niveau 1) → 12 (Niveau 10)
-- Politiques actives max : 0 (Niveau 1) → 3 (Niveau 10)
+- Politiques actives max : 1 (Niveau 1) → 2 (Niveau 5+)
+- 4 types de policies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)
 - Pool = Top 500 PCS global (12 mois glissants), gating par rang selon niveau
-- XP Niveau 5 = 10 000 | XP Niveau 10 = 120 000
+- XP Niveau 5 = 900 | XP Niveau 10 = 9 000
 - Contrats sponsors : 2 mois
 
 ## Blockers ouverts (résoudre avant alpha)
