@@ -67,8 +67,8 @@ export default function SignupPage() {
   return (
     <div className="flex w-full max-w-sm flex-col items-center gap-8">
       <div className="flex flex-col items-center gap-2">
-        <h1 className="text-2xl font-semibold text-foreground">WattHunter</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-semibold text-[var(--text-high)]">WattHunter</h1>
+        <p className="text-sm text-[var(--text-mid)]">
           Creer votre compte
         </p>
       </div>
@@ -83,9 +83,9 @@ export default function SignupPage() {
       </Button>
 
       <div className="flex w-full items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-xs text-muted-foreground">ou</span>
-        <div className="h-px flex-1 bg-border" />
+        <div className="h-px flex-1 bg-[var(--border-subtle)]" />
+        <span className="text-xs text-[var(--text-low)]">ou</span>
+        <div className="h-px flex-1 bg-[var(--border-subtle)]" />
       </div>
 
       <form onSubmit={handleSignup} className="flex w-full flex-col gap-4">
@@ -122,8 +122,8 @@ export default function SignupPage() {
           minLength={6}
         />
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        {message && <p className="text-sm text-accent">{message}</p>}
+        {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
+        {message && <p className="text-sm text-[var(--success)]">{message}</p>}
 
         <Button type="submit" variant="cta" className="w-full" disabled={loading}>
           {loading ? "Creation..." : "Creer un compte"}
@@ -132,12 +132,12 @@ export default function SignupPage() {
 
       <Link
         href="/login"
-        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        className="text-sm text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors"
       >
         Deja un compte ? Se connecter
       </Link>
 
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs text-[var(--text-low)]">
         En continuant, vous acceptez nos conditions d&apos;utilisation.
       </p>
     </div>

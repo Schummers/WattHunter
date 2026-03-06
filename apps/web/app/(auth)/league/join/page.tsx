@@ -14,17 +14,17 @@ function JoinLeagueForm() {
   return (
     <div className="flex w-full max-w-sm flex-col gap-8">
       <div className="flex flex-col gap-2 text-center">
-        <h2 className="text-xl font-semibold text-foreground">
+        <h2 className="text-xl font-semibold text-[var(--text-high)]">
           Rejoindre une ligue
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-[var(--text-mid)]">
           Entrez le code a 6 caracteres fourni par le commissaire.
         </p>
       </div>
 
       <form action={formAction} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <label htmlFor="code" className="text-sm font-medium text-foreground">
+          <label htmlFor="code" className="text-sm font-medium text-[var(--text-high)]">
             Code d&apos;invitation
           </label>
           <Input
@@ -39,7 +39,7 @@ function JoinLeagueForm() {
         </div>
 
         {state?.error && (
-          <p className="text-sm text-destructive">{state.error}</p>
+          <p className="text-sm text-[var(--danger)]">{state.error}</p>
         )}
 
         <Button type="submit" variant="cta" disabled={pending}>

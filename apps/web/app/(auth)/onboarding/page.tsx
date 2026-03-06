@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/button";
 import { Shield, Zap, Rocket, type LucideIcon } from "lucide-react";
@@ -44,31 +45,32 @@ export default function OnboardingPage() {
 
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-10">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-semibold text-foreground">
-          Bienvenue sur WattHunter
+      <div className="flex flex-col items-center gap-3 text-center">
+        <Zap size={48} className="text-[var(--accent-highlight)]" />
+        <h1 className="text-2xl font-bold text-[var(--text-high)]">
+          WattHunter
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-[var(--text-mid)]">
           Le fantasy game du cyclisme professionnel
         </p>
       </div>
 
-      <div className="flex w-full flex-col">
+      <div className="flex w-full flex-col gap-3">
         {steps.map((step, i) => (
-          <div key={i}>
-            {i > 0 && <div className="h-px bg-border" />}
-            <div className="flex gap-4 py-5">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-wh-accent-muted">
-                <step.icon className="size-5 text-accent" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <h3 className="text-sm font-medium text-foreground">
-                  {step.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {step.description}
-                </p>
-              </div>
+          <div
+            key={i}
+            className="flex gap-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)]/80 p-4 backdrop-blur"
+          >
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface)]">
+              <step.icon className="size-5 text-[var(--accent-default)]" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-sm font-semibold text-[var(--text-high)]">
+                {step.title}
+              </h3>
+              <p className="text-sm leading-relaxed text-[var(--text-mid)]">
+                {step.description}
+              </p>
             </div>
           </div>
         ))}
@@ -83,18 +85,14 @@ export default function OnboardingPage() {
             router.push("/league/join");
           }}
         >
-          Rejoindre une ligue
+          Get started
         </Button>
-        <Button
-          variant="ghost"
-          className="w-full text-muted-foreground"
-          onClick={async () => {
-            await markOnboarded();
-            router.push("/league/create");
-          }}
+        <Link
+          href="/login"
+          className="text-center text-sm text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors"
         >
-          Creer une ligue
-        </Button>
+          Already have an account? Log in
+        </Link>
       </div>
     </div>
   );
