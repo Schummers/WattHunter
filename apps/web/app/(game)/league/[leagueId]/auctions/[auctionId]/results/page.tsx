@@ -40,7 +40,7 @@ export default async function AuctionResultsPage({
 
   if (!auction) {
     return (
-      <p className="text-muted-foreground">Enchere introuvable.</p>
+      <p className="text-[var(--text-mid)]">Enchere introuvable.</p>
     );
   }
 
@@ -51,7 +51,7 @@ export default async function AuctionResultsPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-foreground">
+        <h1 className="text-xl font-semibold text-[var(--text-high)]">
           {auction.name}
         </h1>
         <Badge variant="outline">Terminee</Badge>
@@ -74,7 +74,7 @@ export default async function AuctionResultsPage({
           return (
             <TabsContent key={round} value={round.toString()}>
               {won.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
+                <p className="py-8 text-center text-sm text-[var(--text-mid)]">
                   Aucun coureur attribue pour ce round.
                 </p>
               ) : (
@@ -95,17 +95,17 @@ export default async function AuctionResultsPage({
                           <TableCell className="font-medium">
                             {bid.riders?.full_name}
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
+                          <TableCell className="text-[var(--text-mid)]">
                             {bid.riders?.real_team}
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
+                          <TableCell className="text-xs text-[var(--text-mid)]">
                             {bid.riders?.specialty}
                           </TableCell>
                           <TableCell
                             className={
                               bid.team_id === myTeamId
-                                ? "font-medium text-accent"
-                                : "text-foreground"
+                                ? "font-medium text-[var(--accent-default)]"
+                                : "text-[var(--text-high)]"
                             }
                           >
                             {bid.teams?.name}
@@ -122,27 +122,27 @@ export default async function AuctionResultsPage({
 
                   <div className="flex flex-col gap-0">
                     <div className="flex items-center justify-between border-b border-border py-2 text-sm">
-                      <span className="text-muted-foreground">
+                      <span className="text-[var(--text-mid)]">
                         Coureurs attribues
                       </span>
-                      <span className="font-medium text-foreground">
+                      <span className="font-medium text-[var(--text-high)]">
                         {won.length}
                       </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-border py-2 text-sm">
-                      <span className="text-muted-foreground">
+                      <span className="text-[var(--text-mid)]">
                         Montant total
                       </span>
-                      <span className="font-medium text-foreground">
+                      <span className="font-medium text-[var(--text-high)]">
                         {total.toLocaleString("fr-FR")} EUR
                       </span>
                     </div>
                     {won.length > 0 && (
                       <div className="flex items-center justify-between py-2 text-sm">
-                        <span className="text-muted-foreground">
+                        <span className="text-[var(--text-mid)]">
                           Mise moyenne
                         </span>
-                        <span className="font-medium text-foreground">
+                        <span className="font-medium text-[var(--text-high)]">
                           {Math.round(total / won.length).toLocaleString(
                             "fr-FR"
                           )}{" "}

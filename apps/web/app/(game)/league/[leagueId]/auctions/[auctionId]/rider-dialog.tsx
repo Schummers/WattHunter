@@ -134,13 +134,13 @@ export function RiderDialog({
                 className="size-16 rounded-md object-cover"
               />
             ) : (
-              <div className="flex size-16 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
+              <div className="flex size-16 items-center justify-center rounded-md bg-[var(--bg-subtle)] text-xs text-[var(--text-mid)]">
                 Photo
               </div>
             )}
             <div>
               <DialogTitle className="text-lg">{rider.full_name}</DialogTitle>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-[var(--text-mid)]">
                 {rider.real_team} · {rider.nationality}
                 {rider.age ? ` · ${rider.age} ans` : ""}
               </p>
@@ -158,27 +158,27 @@ export function RiderDialog({
               i < infoRows.length - 1 && "border-b border-border"
             )}
           >
-            <span className="text-muted-foreground">{row.label}</span>
-            <span className="font-medium text-foreground">{row.value}</span>
+            <span className="text-[var(--text-mid)]">{row.label}</span>
+            <span className="font-medium text-[var(--text-high)]">{row.value}</span>
           </div>
         ))}
 
         <div className="my-4 border-b border-border" />
 
         <div className="flex flex-col gap-3">
-          <span className="text-sm font-semibold text-foreground">
+          <span className="text-sm font-semibold text-[var(--text-high)]">
             {existingBid ? "Modifier la mise" : "Placer une mise"}
           </span>
 
           {existingBid && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-[var(--text-mid)]">
               Salaire proposé actuel :{" "}
               {existingBid.amount.toLocaleString("fr-FR")} €/mois
             </p>
           )}
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-sm font-medium text-[var(--text-high)]">
               Salaire mensuel proposé (min.{" "}
               {rider.monthly_salary.toLocaleString("fr-FR")} €/mois)
             </label>
@@ -195,14 +195,14 @@ export function RiderDialog({
           <p
             className={cn(
               "text-xs",
-              budgetAfter >= 0 ? "text-muted-foreground" : "text-destructive"
+              budgetAfter >= 0 ? "text-[var(--text-mid)]" : "text-[var(--status-danger)]"
             )}
           >
             Budget dispo apres engagement salaire :{" "}
             {budgetAfter.toLocaleString("fr-FR")} €/mois
           </p>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-[var(--status-danger)]">{error}</p>}
 
           <Button
             variant="cta"
@@ -220,7 +220,7 @@ export function RiderDialog({
           {existingBid && (
             <Button
               variant="ghost"
-              className="w-full text-destructive"
+              className="w-full text-[var(--status-danger)]"
               disabled={isPending}
               onClick={handleCancel}
             >

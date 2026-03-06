@@ -59,7 +59,7 @@ export function AuctionClient({
     <>
       {myBids.length > 0 && (
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium uppercase text-muted-foreground">
+          <span className="text-xs font-medium uppercase text-[var(--text-mid)]">
             Mes mises ({myBids.length})
           </span>
           {myBids.map((bid) => {
@@ -70,13 +70,13 @@ export function AuctionClient({
                 className="flex items-center justify-between border-b border-border py-2 last:border-0"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-foreground">
+                  <span className="text-sm font-medium text-[var(--text-high)]">
                     {rider?.full_name ?? "—"}
                   </span>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-[var(--text-mid)]">
                     {rider?.real_team}
                   </span>
-                  <span className="text-sm font-semibold text-accent">
+                  <span className="text-sm font-semibold text-[var(--accent-default)]">
                     {bid.amount.toLocaleString("fr-FR")} EUR
                   </span>
                 </div>
@@ -91,7 +91,7 @@ export function AuctionClient({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-destructive"
+                    className="text-[var(--status-danger)]"
                     onClick={() => cancelBid(bid.id)}
                   >
                     Annuler

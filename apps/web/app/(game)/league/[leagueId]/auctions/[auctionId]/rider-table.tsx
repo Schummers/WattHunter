@@ -74,7 +74,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
         <select
           value={teamFilter}
           onChange={(e) => setTeamFilter(e.target.value)}
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          className="h-9 rounded-md border border-input bg-[var(--bg-surface)] px-3 text-sm"
         >
           <option value="">Toutes les équipes</option>
           {teams.map((t) => (
@@ -84,7 +84,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
         <select
           value={specialtyFilter}
           onChange={(e) => setSpecialtyFilter(e.target.value)}
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          className="h-9 rounded-md border border-input bg-[var(--bg-surface)] px-3 text-sm"
         >
           <option value="">Toutes spécialités</option>
           <option value="climber">Grimpeur</option>
@@ -96,7 +96,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
         </select>
       </div>
 
-      <span className="text-xs font-medium uppercase text-muted-foreground">
+      <span className="text-xs font-medium uppercase text-[var(--text-mid)]">
         {filtered.length} coureurs
       </span>
 
@@ -119,18 +119,18 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
               className={
                 rider.is_contracted
                   ? "opacity-40 cursor-not-allowed"
-                  : "cursor-pointer hover:bg-muted"
+                  : "cursor-pointer hover:bg-[var(--bg-subtle)]"
               }
               onClick={() => !rider.is_contracted && onRiderClick(rider)}
             >
               <TableCell className="font-medium">{rider.full_name}</TableCell>
-              <TableCell className="text-muted-foreground">{rider.real_team}</TableCell>
+              <TableCell className="text-[var(--text-mid)]">{rider.real_team}</TableCell>
               <TableCell>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-[var(--text-mid)]">
                   {SPECIALTY_LABELS[rider.specialty] ?? rider.specialty}
                 </span>
               </TableCell>
-              <TableCell className="text-muted-foreground">{rider.nationality}</TableCell>
+              <TableCell className="text-[var(--text-mid)]">{rider.nationality}</TableCell>
               <TableCell className="text-right">{rider.pcs_points_1yr.toLocaleString("fr-FR")}</TableCell>
               <TableCell className="text-right">
                 {rider.monthly_salary.toLocaleString("fr-FR")} €
