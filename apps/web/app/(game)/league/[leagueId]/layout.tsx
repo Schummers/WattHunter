@@ -61,13 +61,26 @@ export default async function LeagueLayout({
     .toUpperCase()
     .slice(0, 2) || "?";
 
-  // Hardcoded for now — will add real unlock logic later
-  const unlockedTabs: ("home" | "team" | "budget" | "ranking")[] = [
-    "home",
-    "team",
-    "budget",
-    "ranking",
-  ];
+  // Determine unlocked tabs based on league state
+  const unlockedTabs: ("home" | "team" | "budget" | "ranking")[] = ["home"];
+
+  // Check if any auction round exists (means first auction was launched)
+  const { data: auctions } = await supabase
+    .from("auction_rounds")
+    .select("id, status")
+    .eq("league_id", leagueId);
+
+  if (auctions && auctions.length > 0) {
+    unlockedTabs.push("team");
+
+    // Check if any round is completed
+    const hasCompleted = auctions.some(
+      (a: { status: string }) => a.status === "completed",
+    );
+    if (hasCompleted) {
+      unlockedTabs.push("budget", "ranking");
+    }
+  }
 
   return (
     <div className="flex h-[100svh] overflow-hidden">

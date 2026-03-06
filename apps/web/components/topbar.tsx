@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 import { Zap, ChevronDown } from "lucide-react";
+import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface TopBarProps {
@@ -22,27 +22,7 @@ export function TopBar({
   settingsHref,
   onLeagueSwitch,
 }: TopBarProps) {
-  const [visible, setVisible] = useState(true);
-  const lastScrollY = useRef(0);
-
-  useEffect(() => {
-    const main = document.querySelector("main");
-    if (!main) return;
-
-    function handleScroll() {
-      if (!main) return;
-      const currentY = main.scrollTop;
-      if (currentY > lastScrollY.current && currentY > 32) {
-        setVisible(false);
-      } else {
-        setVisible(true);
-      }
-      lastScrollY.current = currentY;
-    }
-
-    main.addEventListener("scroll", handleScroll, { passive: true });
-    return () => main.removeEventListener("scroll", handleScroll);
-  }, []);
+  const visible = useScrollDirection();
 
   return (
     <header

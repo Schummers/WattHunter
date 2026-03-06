@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
 import { House, Users, BadgeEuro, Trophy, Lock, type LucideIcon } from "lucide-react";
+import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
 interface NavTab {
   key: "home" | "team" | "budget" | "ranking";
@@ -26,27 +26,7 @@ interface BottomNavProps {
 
 export function BottomNav({ leagueId, unlockedTabs }: BottomNavProps) {
   const pathname = usePathname();
-  const [visible, setVisible] = useState(true);
-  const lastScrollY = useRef(0);
-
-  useEffect(() => {
-    const main = document.querySelector("main");
-    if (!main) return;
-
-    function handleScroll() {
-      if (!main) return;
-      const currentY = main.scrollTop;
-      if (currentY > lastScrollY.current && currentY > 44) {
-        setVisible(false);
-      } else {
-        setVisible(true);
-      }
-      lastScrollY.current = currentY;
-    }
-
-    main.addEventListener("scroll", handleScroll, { passive: true });
-    return () => main.removeEventListener("scroll", handleScroll);
-  }, []);
+  const visible = useScrollDirection();
 
   return (
     <nav
