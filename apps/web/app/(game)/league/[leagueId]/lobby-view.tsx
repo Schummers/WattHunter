@@ -160,7 +160,7 @@ export function LobbyView({
           <div className="flex flex-col gap-3">
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button
-              variant="brand"
+              variant="cta"
               className="w-full"
               disabled={!canLaunch || launching}
               onClick={handleLaunch}

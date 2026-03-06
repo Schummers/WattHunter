@@ -38,7 +38,7 @@ export default function CreateLeaguePage() {
           <p className="text-sm text-destructive">{state.error}</p>
         )}
 
-        <Button type="submit" variant="brand" disabled={pending}>
+        <Button type="submit" variant="cta" disabled={pending}>
           {pending ? "Creation..." : "Creer la ligue"}
         </Button>
       </form>

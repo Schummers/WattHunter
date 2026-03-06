@@ -125,7 +125,7 @@ export default function SignupPage() {
         {error && <p className="text-sm text-destructive">{error}</p>}
         {message && <p className="text-sm text-accent">{message}</p>}
 
-        <Button type="submit" variant="brand" className="w-full" disabled={loading}>
+        <Button type="submit" variant="cta" className="w-full" disabled={loading}>
           {loading ? "Creation..." : "Creer un compte"}
         </Button>
       </form>

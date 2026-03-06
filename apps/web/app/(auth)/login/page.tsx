@@ -84,7 +84,7 @@ export default function LoginPage() {
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <Button type="submit" variant="brand" className="w-full" disabled={loading}>
+        <Button type="submit" variant="cta" className="w-full" disabled={loading}>
           {loading ? "Connexion..." : "Se connecter"}
         </Button>
       </form>

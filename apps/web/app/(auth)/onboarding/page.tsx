@@ -76,7 +76,7 @@ export default function OnboardingPage() {
 
       <div className="flex w-full flex-col gap-3">
         <Button
-          variant="brand"
+          variant="cta"
           className="w-full"
           onClick={async () => {
             await markOnboarded();

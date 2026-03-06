@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import { joinLeague } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default function JoinLeaguePage() {
+function JoinLeagueForm() {
   const searchParams = useSearchParams();
   const prefillCode = searchParams.get("code") ?? "";
   const [state, formAction, pending] = useActionState(joinLeague, null);
@@ -42,10 +42,18 @@ export default function JoinLeaguePage() {
           <p className="text-sm text-destructive">{state.error}</p>
         )}
 
-        <Button type="submit" variant="brand" disabled={pending}>
+        <Button type="submit" variant="cta" disabled={pending}>
           {pending ? "Verification..." : "Rejoindre"}
         </Button>
       </form>
     </div>
+  );
+}
+
+export default function JoinLeaguePage() {
+  return (
+    <Suspense>
+      <JoinLeagueForm />
+    </Suspense>
   );
 }

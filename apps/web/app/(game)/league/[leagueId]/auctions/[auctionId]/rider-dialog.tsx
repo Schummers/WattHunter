@@ -205,7 +205,7 @@ export function RiderDialog({
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           <Button
-            variant="brand"
+            variant="cta"
             className="w-full"
             disabled={!isValid || isPending}
             onClick={handleSubmit}
