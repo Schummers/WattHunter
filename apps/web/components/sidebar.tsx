@@ -2,24 +2,34 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Icon } from "@iconify/react";
+import {
+  House,
+  Zap,
+  Users,
+  BadgeEuro,
+  Trophy,
+  Shield,
+  Handshake,
+  Settings,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
   label: string;
   href: string;
-  icon: string;
+  icon: LucideIcon;
 }
 
 function getNavItems(leagueId: string): NavItem[] {
   return [
-    { label: "Tableau de bord", href: `/league/${leagueId}`, icon: "solar:home-2-linear" },
-    { label: "Encheres", href: `/league/${leagueId}/auctions`, icon: "solar:bolt-linear" },
-    { label: "Mon equipe", href: `/league/${leagueId}/team`, icon: "solar:users-group-rounded-linear" },
-    { label: "Tresorerie", href: `/league/${leagueId}/treasury`, icon: "solar:wallet-linear" },
-    { label: "Classement", href: `/league/${leagueId}/standings`, icon: "solar:chart-2-linear" },
-    { label: "Politiques", href: `/league/${leagueId}/policies`, icon: "solar:target-linear" },
-    { label: "Sponsors", href: `/league/${leagueId}/sponsors`, icon: "solar:handshake-linear" },
+    { label: "Tableau de bord", href: `/league/${leagueId}`, icon: House },
+    { label: "Encheres", href: `/league/${leagueId}/auctions`, icon: Zap },
+    { label: "Mon equipe", href: `/league/${leagueId}/team`, icon: Users },
+    { label: "Tresorerie", href: `/league/${leagueId}/treasury`, icon: BadgeEuro },
+    { label: "Classement", href: `/league/${leagueId}/standings`, icon: Trophy },
+    { label: "Politiques", href: `/league/${leagueId}/policies`, icon: Shield },
+    { label: "Sponsors", href: `/league/${leagueId}/sponsors`, icon: Handshake },
   ];
 }
 
@@ -53,7 +63,7 @@ export function Sidebar({ leagueId }: { leagueId: string }) {
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
-              <Icon icon={item.icon} className="size-4 shrink-0" />
+              <item.icon className="size-4 shrink-0" />
               {item.label}
             </Link>
           );
@@ -67,7 +77,7 @@ export function Sidebar({ leagueId }: { leagueId: string }) {
           href="/settings"
           className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <Icon icon="solar:settings-linear" className="size-4 shrink-0" />
+          <Settings className="size-4 shrink-0" />
           Parametres
         </Link>
       </div>

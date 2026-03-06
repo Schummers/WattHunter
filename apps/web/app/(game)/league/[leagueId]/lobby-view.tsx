@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Icon } from "@iconify/react";
+import { Copy, CheckCircle } from "lucide-react";
 import { launchFirstAuction } from "./actions";
 
 interface LobbyViewProps {
@@ -88,10 +88,7 @@ export function LobbyView({
             onClick={(e) => (e.target as HTMLInputElement).select()}
           />
           <Button variant="outline" size="icon" className="shrink-0" onClick={handleCopyLink}>
-            <Icon
-              icon={copiedLink ? "solar:check-circle-linear" : "solar:copy-linear"}
-              className="size-4"
-            />
+            {copiedLink ? <CheckCircle className="size-4" /> : <Copy className="size-4" />}
           </Button>
         </div>
       </div>
@@ -110,10 +107,7 @@ export function LobbyView({
             onClick={(e) => (e.target as HTMLInputElement).select()}
           />
           <Button variant="outline" size="icon" className="shrink-0" onClick={handleCopyCode}>
-            <Icon
-              icon={copiedCode ? "solar:check-circle-linear" : "solar:copy-linear"}
-              className="size-4"
-            />
+            {copiedCode ? <CheckCircle className="size-4" /> : <Copy className="size-4" />}
           </Button>
         </div>
       </div>

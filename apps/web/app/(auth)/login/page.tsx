@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Icon } from "@iconify/react";
+import { Mail } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -56,7 +56,7 @@ export default function LoginPage() {
         className="w-full gap-3"
         onClick={handleGoogleLogin}
       >
-        <Icon icon="solar:letter-linear" className="size-4" />
+        <Mail className="size-4" />
         Continuer avec Google
       </Button>
 

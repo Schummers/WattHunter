@@ -3,23 +3,23 @@
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/button";
-import { Icon } from "@iconify/react";
+import { Shield, Zap, Rocket, type LucideIcon } from "lucide-react";
 
-const steps = [
+const steps: Array<{ icon: LucideIcon; title: string; description: string }> = [
   {
-    icon: "solar:target-linear",
+    icon: Shield,
     title: "Hunt the hidden watts",
     description:
       "Scout undervalued riders who punch above their weight. Build the best value team in the league.",
   },
   {
-    icon: "solar:bolt-linear",
+    icon: Zap,
     title: "Real races, real rewards",
     description:
       "Your riders compete, you score XP and earn cash. Every finish line counts.",
   },
   {
-    icon: "solar:rocket-2-linear",
+    icon: Rocket,
     title: "Level up your squad",
     description:
       "Unlock better riders, new strategies, and bigger sponsors as your team grows.",
@@ -59,7 +59,7 @@ export default function OnboardingPage() {
             {i > 0 && <div className="h-px bg-border" />}
             <div className="flex gap-4 py-5">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-wh-accent-muted">
-                <Icon icon={step.icon} className="size-5 text-accent" />
+                <step.icon className="size-5 text-accent" />
               </div>
               <div className="flex flex-col gap-1">
                 <h3 className="text-sm font-medium text-foreground">
