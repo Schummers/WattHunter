@@ -92,15 +92,31 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 ## Architecture
 ```
 watthunter/
-├── apps/web/          # Next.js 16 App Router
-│   ├── app/(auth)/    # Login, onboarding
-│   ├── app/(game)/    # Ligue, enchères, équipe, classement
-│   ├── components/ui/ # Shadcn components
-│   └── lib/supabase/  # Clients Supabase (browser + server)
-├── services/pcs-sync/ # FastAPI Python — sync procyclingstats
+├── apps/web/                    # Next.js 16 App Router
+│   ├── app/(auth)/              # Login, signup, onboarding, league create/join
+│   ├── app/(game)/league/[id]/  # Main game shell (auth guard + responsive layout)
+│   │   ├── page.tsx             # Home / Lobby
+│   │   ├── team/                # My Team, Recruts, Policies, Levels, History
+│   │   ├── rider/[riderId]/     # Rider Detail (PCS + Game stats)
+│   │   ├── auctions/            # Auction calendar, detail, results
+│   │   └── settings/            # Settings page
+│   ├── components/              # App components (rider-card, bottom-nav, topbar, sidebar, etc.)
+│   ├── components/ui/           # Shadcn components (button, badge, avatar, etc.)
+│   ├── hooks/                   # Shared hooks (use-scroll-direction)
+│   └── lib/supabase/            # Clients Supabase (browser + server)
+├── services/pcs-sync/           # Python — sync procyclingstats
 ├── supabase/
-│   ├── migrations/    # 15 tables SQL
-│   ├── functions/     # Edge Functions: calcul XP, finances mensuelles
-│   └── seed/          # Politiques + sponsors
+│   ├── migrations/              # 15+ tables SQL
+│   ├── functions/               # Edge Functions
+│   └── seed/                    # Politiques + sponsors
+├── docs/plans/                  # Design docs + implementation plans
+├── docs/research/               # Design system research
 └── CLAUDE.md
 ```
+
+## Design System (2026-03-06)
+- Palette : Radix Slate Dark + Tailwind Cyan — tokens dans `apps/web/app/globals.css`
+- Font : Geist Sans + Geist Mono (package `geist`)
+- Icons : Lucide React (base) + @phosphor-icons/react (gamification)
+- Theme : next-themes, defaultTheme="dark"
+- Design doc : `docs/plans/2026-03-06-redesign-design.md`
