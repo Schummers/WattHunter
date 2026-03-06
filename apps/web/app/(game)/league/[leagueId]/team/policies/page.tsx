@@ -1,0 +1,153 @@
+import { createClient } from "@/lib/supabase/server";
+import { BackHeader } from "@/components/back-header";
+import { Lock } from "lucide-react";
+
+const POLICY_TYPES = [
+  {
+    key: "speciality",
+    name: "Speciality",
+    description: "Boost riders matching a specific specialty (GC, Sprint, TT, One Day).",
+    unlockLevel: 1,
+  },
+  {
+    key: "nationality",
+    name: "Nationality",
+    description: "Boost riders from a specific country or region.",
+    unlockLevel: 3,
+  },
+  {
+    key: "teams",
+    name: "Teams",
+    description: "Boost riders belonging to a specific pro team.",
+    unlockLevel: 5,
+  },
+  {
+    key: "age",
+    name: "Age",
+    description: "Boost riders within a specific age range.",
+    unlockLevel: 7,
+  },
+];
+
+export default async function PoliciesPage({
+  params,
+}: {
+  params: Promise<{ leagueId: string }>;
+}) {
+  const { leagueId } = await params;
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <div className="px-4 py-8">
+        <p className="text-sm text-[var(--text-mid)]">
+          Please sign in to view policies.
+        </p>
+      </div>
+    );
+  }
+
+  const { data: member } = await supabase
+    .from("league_members")
+    .select("id, level")
+    .eq("league_id", leagueId)
+    .eq("user_id", user.id)
+    .single();
+
+  const level = member?.level ?? 1;
+
+  // Max active policies: 1 for levels 1-4, 2 for levels 5+
+  const maxActive = level >= 5 ? 2 : 1;
+
+  return (
+    <div className="min-h-screen">
+      <BackHeader label="My Team" />
+
+      <div className="px-4 space-y-4">
+        {/* Banner */}
+        <div className="rounded-xl bg-[var(--bg-subtle)] px-4 py-3">
+          <p className="text-xs font-medium text-[var(--text-mid)]">
+            Changes apply to the next round. Current policies active until round
+            closes.
+          </p>
+        </div>
+
+        {/* Policy slots */}
+        <div className="space-y-0">
+          <div className="flex items-center justify-between px-1 pb-2">
+            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+              Policy slots
+            </span>
+            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+              {maxActive} max active
+            </span>
+          </div>
+
+          <div className="divide-y divide-[var(--border-subtle)]">
+            {POLICY_TYPES.map((policy) => {
+              const isUnlocked = level >= policy.unlockLevel;
+
+              return (
+                <div
+                  key={policy.key}
+                  className="flex items-center gap-3 py-4"
+                >
+                  {/* Toggle area */}
+                  <div
+                    className={`flex h-6 w-10 shrink-0 items-center rounded-full px-0.5 ${
+                      isUnlocked
+                        ? "bg-[var(--accent-default)]"
+                        : "bg-[var(--bg-surface)]"
+                    }`}
+                  >
+                    <div
+                      className={`h-5 w-5 rounded-full transition-transform ${
+                        isUnlocked
+                          ? "translate-x-4 bg-white"
+                          : "translate-x-0 bg-[var(--text-ghost)]"
+                      }`}
+                    />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-sm font-semibold ${
+                          isUnlocked
+                            ? "text-[var(--text-high)]"
+                            : "text-[var(--text-ghost)]"
+                        }`}
+                      >
+                        {policy.name}
+                      </span>
+                      {!isUnlocked && (
+                        <span className="flex items-center gap-1 text-xs text-[var(--text-ghost)]">
+                          <Lock size={12} />
+                          Unlock Lv.{policy.unlockLevel}
+                        </span>
+                      )}
+                    </div>
+                    <p
+                      className={`text-xs mt-0.5 ${
+                        isUnlocked
+                          ? "text-[var(--text-mid)]"
+                          : "text-[var(--text-ghost)]"
+                      }`}
+                    >
+                      {policy.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
