@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/topbar";
+import { BottomNav } from "@/components/bottom-nav";
 
 export default async function LeagueLayout({
   children,
@@ -21,25 +22,72 @@ export default async function LeagueLayout({
     redirect("/login");
   }
 
-  const [{ data: profile }, { data: league }] = await Promise.all([
-    supabase.from("users").select("display_name, avatar_url").eq("id", user.id).single(),
-    supabase.from("leagues").select("name").eq("id", leagueId).single(),
-  ]);
+  // Fetch league membership (with league name via join)
+  const { data: membership } = await supabase
+    .from("league_members")
+    .select("team_name, role, leagues:league_id(name)")
+    .eq("league_id", leagueId)
+    .eq("user_id", user.id)
+    .single();
 
-  if (!league) {
-    redirect("/");
+  if (!membership) {
+    redirect("/onboarding");
   }
 
+  // Extract league name from the joined data
+  const leagueName =
+    (membership.leagues as unknown as { name: string } | null)?.name ?? "League";
+
+  // Count user's leagues for hasMultipleLeagues
+  const { count: leagueCount } = await supabase
+    .from("league_members")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  const hasMultipleLeagues = (leagueCount ?? 0) > 1;
+
+  // Get user profile for avatar
+  const { data: profile } = await supabase
+    .from("users")
+    .select("display_name, avatar_url")
+    .eq("id", user.id)
+    .single();
+
+  const displayName = profile?.display_name ?? user.email ?? "";
+  const userInitials = displayName
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "?";
+
+  // Hardcoded for now — will add real unlock logic later
+  const unlockedTabs: ("home" | "team" | "budget" | "ranking")[] = [
+    "home",
+    "team",
+    "budget",
+    "ranking",
+  ];
+
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar leagueId={leagueId} />
+    <div className="flex h-[100svh] overflow-hidden">
+      <Sidebar
+        leagueId={leagueId}
+        leagueName={leagueName}
+        unlockedTabs={unlockedTabs}
+      />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar
-          title={league.name}
-          userDisplayName={profile?.display_name}
-          userAvatarUrl={profile?.avatar_url ?? undefined}
+          leagueName={leagueName}
+          hasMultipleLeagues={hasMultipleLeagues}
+          userAvatarUrl={profile?.avatar_url}
+          userInitials={userInitials}
+          settingsHref="/settings"
         />
-        <main className="flex-1 overflow-y-auto p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto px-4 pb-20 lg:mx-auto lg:max-w-2xl lg:px-8 lg:pb-8">
+          {children}
+        </main>
+        <BottomNav leagueId={leagueId} unlockedTabs={unlockedTabs} />
       </div>
     </div>
   );
