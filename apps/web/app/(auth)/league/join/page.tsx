@@ -34,7 +34,7 @@ function JoinLeagueForm() {
 
       <form action={formAction} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <label htmlFor="code" className="text-sm font-medium text-[var(--text-high)]">
+          <label htmlFor="code" className="text-sm font-medium text-[var(--text-mid)]">
             Invite code
           </label>
           <Input

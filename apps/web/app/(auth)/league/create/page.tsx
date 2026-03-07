@@ -31,7 +31,7 @@ export default function CreateLeaguePage() {
 
       <form action={formAction} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <label htmlFor="name" className="text-sm font-medium text-[var(--text-high)]">
+          <label htmlFor="name" className="text-sm font-medium text-[var(--text-mid)]">
             League name
           </label>
           <Input
