@@ -34,7 +34,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 px-5">
+      <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-6 px-4">
         {/* Logo + Title */}
         <div className="flex flex-col items-center gap-2 text-center">
           <Image

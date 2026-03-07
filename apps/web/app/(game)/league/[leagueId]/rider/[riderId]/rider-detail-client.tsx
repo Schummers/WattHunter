@@ -22,12 +22,10 @@ interface Rider {
 }
 
 interface SeasonRanking {
-  id: string;
   rider_id: string;
   season: number;
-  pcs_points: number | null;
-  pcs_rank: number | null;
-  team_name: string | null;
+  points: number | null;
+  rank: number | null;
 }
 
 interface RiderDetailClientProps {
@@ -66,14 +64,18 @@ export function RiderDetailClient({
   const age = getAge(rider.birthdate);
 
   return (
-    <div className="space-y-6 py-2">
+    <div className="space-y-6">
       <BackHeader label="Back" />
 
       {/* Hero */}
       <div className="flex flex-col items-center gap-2 px-4">
         <Avatar className="size-14">
           {rider.photo_url ? (
-            <AvatarImage src={rider.photo_url} alt={rider.full_name} />
+            <AvatarImage
+              src={rider.photo_url.startsWith("http") ? rider.photo_url : `https://www.procyclingstats.com/${rider.photo_url}`}
+              alt={rider.full_name}
+              referrerPolicy="no-referrer"
+            />
           ) : null}
           <AvatarFallback>{getInitials(rider.full_name)}</AvatarFallback>
         </Avatar>
@@ -164,24 +166,19 @@ export function RiderDetailClient({
               <div className="space-y-1">
                 {rankings.map((r) => (
                   <div
-                    key={r.id}
+                    key={r.season}
                     className="flex items-center justify-between rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2"
                   >
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-[var(--text-high)]">
                         {r.season}
                       </span>
-                      {r.team_name && (
-                        <span className="text-[11px] text-[var(--text-low)]">
-                          {r.team_name}
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center gap-4 text-right">
                       <div className="flex flex-col items-end">
                         <span className="font-mono text-sm font-bold text-[var(--text-high)]">
-                          {r.pcs_points != null
-                            ? r.pcs_points.toLocaleString()
+                          {r.points != null
+                            ? r.points.toLocaleString()
                             : "--"}
                         </span>
                         <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--text-low)]">
@@ -190,7 +187,7 @@ export function RiderDetailClient({
                       </div>
                       <div className="flex flex-col items-end">
                         <span className="font-mono text-sm font-bold text-[var(--text-mid)]">
-                          {r.pcs_rank != null ? `#${r.pcs_rank}` : "--"}
+                          {r.rank != null ? `#${r.rank}` : "--"}
                         </span>
                         <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--text-low)]">
                           rank

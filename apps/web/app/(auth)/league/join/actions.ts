@@ -83,7 +83,7 @@ export async function joinLeague(
     .insert({
       user_id: user.id,
       league_id: league.id,
-      name: `${displayName}'s Team`,
+      name: displayName,
     })
     .select("id")
     .single();

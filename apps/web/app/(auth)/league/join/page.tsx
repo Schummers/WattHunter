@@ -6,6 +6,7 @@ import Link from "next/link";
 import { joinLeague } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/form-field";
 import { ArrowLeft } from "lucide-react";
 
 function JoinLeagueForm() {
@@ -33,10 +34,7 @@ function JoinLeagueForm() {
       </div>
 
       <form action={formAction} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <label htmlFor="code" className="text-sm font-medium text-[var(--text-mid)]">
-            Invite code
-          </label>
+        <FormField label="Invite code" htmlFor="code">
           <Input
             id="code"
             name="code"
@@ -44,9 +42,9 @@ function JoinLeagueForm() {
             required
             maxLength={6}
             defaultValue={prefillCode}
-            className="text-center text-lg tracking-widest uppercase"
+            className="tracking-widest uppercase"
           />
-        </div>
+        </FormField>
 
         {state?.error && (
           <p className="text-sm text-[var(--status-danger)]">{state.error}</p>

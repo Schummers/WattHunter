@@ -51,13 +51,16 @@ export default async function LevelsPage({
 
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, level, xp")
+    .select("id, team_id, teams:team_id(level, cumulative_xp)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
 
-  const currentLevel = member?.level ?? 1;
-  const currentXp = member?.xp ?? 0;
+  const team = member?.teams
+    ? Array.isArray(member.teams) ? member.teams[0] : member.teams
+    : null;
+  const currentLevel = team?.level ?? 1;
+  const currentXp = team?.cumulative_xp ?? 0;
   const progressPct = getProgressPct(currentXp, currentLevel);
 
   // Next level XP target
@@ -68,7 +71,7 @@ export default async function LevelsPage({
     <div className="min-h-screen">
       <BackHeader label="My Team" />
 
-      <div className="px-4 space-y-6">
+      <div className="px-4 pt-4 space-y-6">
         {/* Hero */}
         <div className="flex flex-col items-center space-y-3 py-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent-highlight)]">
@@ -107,7 +110,7 @@ export default async function LevelsPage({
                 className={`flex items-start gap-3 py-4 ${
                   isCurrent
                     ? "border-l-2 border-l-[var(--accent-default)] pl-3"
-                    : "pl-[14px]"
+                    : "pl-3.5"
                 } ${
                   lvl.level < LEVELS.length
                     ? "border-b border-b-[var(--border-subtle)]"

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { BackHeader } from "@/components/back-header";
+import { Switch } from "@/components/ui/switch";
 import { Lock } from "lucide-react";
 
 const POLICY_TYPES = [
@@ -53,12 +54,15 @@ export default async function PoliciesPage({
 
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, level")
+    .select("id, team_id, teams:team_id(level)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
 
-  const level = member?.level ?? 1;
+  const team = member?.teams
+    ? Array.isArray(member.teams) ? member.teams[0] : member.teams
+    : null;
+  const level = team?.level ?? 1;
 
   // Max active policies: 1 for levels 1-4, 2 for levels 5+
   const maxActive = level >= 5 ? 2 : 1;
@@ -67,7 +71,7 @@ export default async function PoliciesPage({
     <div className="min-h-screen">
       <BackHeader label="My Team" />
 
-      <div className="px-4 space-y-4">
+      <div className="px-4 pt-4 space-y-4">
         {/* Banner */}
         <div className="rounded-xl bg-[var(--bg-subtle)] px-4 py-3">
           <p className="text-xs font-medium text-[var(--text-mid)]">
@@ -96,22 +100,8 @@ export default async function PoliciesPage({
                   key={policy.key}
                   className="flex items-center gap-3 py-4"
                 >
-                  {/* Toggle area */}
-                  <div
-                    className={`flex h-6 w-10 shrink-0 items-center rounded-full px-0.5 ${
-                      isUnlocked
-                        ? "bg-[var(--accent-default)]"
-                        : "bg-[var(--bg-surface)]"
-                    }`}
-                  >
-                    <div
-                      className={`h-5 w-5 rounded-full transition-transform ${
-                        isUnlocked
-                          ? "translate-x-4 bg-white"
-                          : "translate-x-0 bg-[var(--text-ghost)]"
-                      }`}
-                    />
-                  </div>
+                  {/* Toggle */}
+                  <Switch checked={false} disabled={!isUnlocked} className="shrink-0" />
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">

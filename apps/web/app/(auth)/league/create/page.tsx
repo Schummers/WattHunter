@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { createLeague } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/form-field";
 import { ArrowLeft } from "lucide-react";
 
 export default function CreateLeaguePage() {
@@ -30,10 +31,7 @@ export default function CreateLeaguePage() {
       </div>
 
       <form action={formAction} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <label htmlFor="name" className="text-sm font-medium text-[var(--text-mid)]">
-            League name
-          </label>
+        <FormField label="League name" htmlFor="name">
           <Input
             id="name"
             name="name"
@@ -42,7 +40,7 @@ export default function CreateLeaguePage() {
             minLength={2}
             maxLength={50}
           />
-        </div>
+        </FormField>
 
         {state?.error && (
           <p className="text-sm text-[var(--status-danger)]">{state.error}</p>

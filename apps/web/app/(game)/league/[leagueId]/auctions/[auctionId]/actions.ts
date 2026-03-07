@@ -4,9 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 
-function rankMaxForLevel(level: number): number {
-  const thresholds = [500, 400, 300, 200, 150, 100, 75, 50, 25, 10];
-  return thresholds[Math.min(Math.max(level, 1), 10) - 1];
+function minRankForLevel(level: number): number {
+  const pools: Record<number, number> = {
+    1: 401, 2: 301, 3: 201, 4: 151, 5: 101,
+    6: 76, 7: 51, 8: 26, 9: 11, 10: 1,
+  };
+  return pools[Math.min(Math.max(level, 1), 10)] ?? 401;
 }
 
 const BidSchema = z.object({
@@ -19,22 +22,32 @@ const BidSchema = z.object({
 export async function placeBid(input: z.infer<typeof BidSchema>) {
   const parsed = BidSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Donnees invalides" };
+    return { error: "Invalid data" };
   }
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Non authentifie" };
+  if (!user) return { error: "Not authenticated" };
+
+  // Get auction's league_id to scope team lookup
+  const { data: auction } = await supabase
+    .from("auctions")
+    .select("league_id")
+    .eq("id", parsed.data.auctionId)
+    .single();
+
+  if (!auction) return { error: "Auction not found" };
 
   const { data: team } = await supabase
     .from("teams")
     .select("id, treasury, level")
     .eq("user_id", user.id)
+    .eq("league_id", auction.league_id)
     .single();
 
-  if (!team) return { error: "Equipe introuvable" };
+  if (!team) return { error: "Team not found" };
 
   // Check rider min salary
   const { data: rider } = await supabase
@@ -43,9 +56,9 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
     .eq("id", parsed.data.riderId)
     .single();
 
-  if (!rider) return { error: "Coureur introuvable" };
+  if (!rider) return { error: "Rider not found" };
   if (parsed.data.amount < rider.monthly_salary) {
-    return { error: `Mise minimum: ${rider.monthly_salary} EUR` };
+    return { error: `Minimum bid: ${rider.monthly_salary} EUR` };
   }
 
   // Check if there's already an active bid for this rider/round (to update vs insert)
@@ -74,16 +87,16 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
     .reduce((s, b) => s + b.amount, 0);
 
   if (otherBidsTotal + parsed.data.amount > team.treasury) {
-    return { error: "Budget insuffisant" };
+    return { error: "Insufficient budget" };
   }
 
   // Level gating: verify rider is accessible at team's level
   if (!rider.ever_in_top500) {
-    return { error: "Ce coureur n'est pas dans le pool jouable" };
+    return { error: "This rider is not in the playable pool" };
   }
 
-  if (rider.pcs_rank && rider.pcs_rank > rankMaxForLevel(team.level)) {
-    return { error: "Niveau insuffisant pour ce coureur" };
+  if (rider.pcs_rank && rider.pcs_rank < minRankForLevel(team.level)) {
+    return { error: "Insufficient level for this rider" };
   }
 
   let error;

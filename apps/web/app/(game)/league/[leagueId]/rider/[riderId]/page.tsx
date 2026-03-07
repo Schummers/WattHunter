@@ -40,21 +40,24 @@ export default async function RiderDetailPage({
   if (user) {
     const { data: member } = await supabase
       .from("league_members")
-      .select("id")
+      .select("id, team_id")
       .eq("league_id", leagueId)
       .eq("user_id", user.id)
       .single();
 
     if (member) {
-      const { data: teamRider } = await supabase
-        .from("team_riders")
-        .select("id")
-        .eq("league_member_id", member.id)
-        .eq("rider_id", riderId)
-        .eq("status", "active")
-        .maybeSingle();
+      const teamId = member.team_id;
+      if (teamId) {
+        const { data: contract } = await supabase
+          .from("contracts")
+          .select("id")
+          .eq("team_id", teamId)
+          .eq("rider_id", riderId)
+          .in("status", ["active", "notice"])
+          .maybeSingle();
 
-      isOwned = !!teamRider;
+        isOwned = !!contract;
+      }
     }
   }
 
@@ -64,7 +67,7 @@ export default async function RiderDetailPage({
         id: rider.id,
         full_name: rider.full_name,
         nationality: rider.nationality,
-        team_name: rider.team_name,
+        team_name: rider.real_team,
         pcs_rank: rider.pcs_rank,
         pcs_points_1yr: rider.pcs_points_1yr,
         photo_url: rider.photo_url,
@@ -74,12 +77,10 @@ export default async function RiderDetailPage({
         weight_kg: rider.weight_kg,
       }}
       rankings={(rankings ?? []).map((r) => ({
-        id: r.id,
         rider_id: r.rider_id,
         season: r.season,
-        pcs_points: r.pcs_points,
-        pcs_rank: r.pcs_rank,
-        team_name: r.team_name,
+        points: r.points,
+        rank: r.rank,
       }))}
       isOwned={isOwned}
     />

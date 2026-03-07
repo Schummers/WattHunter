@@ -78,7 +78,7 @@ describe("placeBid — Zod validation", () => {
       amount: 500,
       round: 1,
     });
-    expect(result).toEqual({ error: "Donnees invalides" });
+    expect(result).toEqual({ error: "Invalid data" });
   });
 
   it("rejects a non-UUID riderId", async () => {
@@ -88,7 +88,7 @@ describe("placeBid — Zod validation", () => {
       amount: 500,
       round: 1,
     });
-    expect(result).toEqual({ error: "Donnees invalides" });
+    expect(result).toEqual({ error: "Invalid data" });
   });
 
   it("rejects amount that is not a multiple of 100", async () => {
@@ -98,7 +98,7 @@ describe("placeBid — Zod validation", () => {
       amount: 150,
       round: 1,
     });
-    expect(result).toEqual({ error: "Donnees invalides" });
+    expect(result).toEqual({ error: "Invalid data" });
   });
 
   it("rejects amount = 0 (must be positive)", async () => {
@@ -108,7 +108,7 @@ describe("placeBid — Zod validation", () => {
       amount: 0,
       round: 1,
     });
-    expect(result).toEqual({ error: "Donnees invalides" });
+    expect(result).toEqual({ error: "Invalid data" });
   });
 
   it("rejects negative amount", async () => {
@@ -118,7 +118,7 @@ describe("placeBid — Zod validation", () => {
       amount: -100,
       round: 1,
     });
-    expect(result).toEqual({ error: "Donnees invalides" });
+    expect(result).toEqual({ error: "Invalid data" });
   });
 
   it("rejects round = 0 (min is 1)", async () => {
@@ -128,7 +128,7 @@ describe("placeBid — Zod validation", () => {
       amount: 500,
       round: 0,
     });
-    expect(result).toEqual({ error: "Donnees invalides" });
+    expect(result).toEqual({ error: "Invalid data" });
   });
 
   it("rejects round = 4 (max is 3)", async () => {
@@ -138,7 +138,7 @@ describe("placeBid — Zod validation", () => {
       amount: 500,
       round: 4,
     });
-    expect(result).toEqual({ error: "Donnees invalides" });
+    expect(result).toEqual({ error: "Invalid data" });
   });
 
   it("passes validation and proceeds to auth check", async () => {
@@ -151,8 +151,8 @@ describe("placeBid — Zod validation", () => {
       amount: 500,
       round: 1,
     });
-    // Not "Donnees invalides" — Zod passed; auth returned null user
-    expect(result).toEqual({ error: "Non authentifie" });
+    // Not "Invalid data" — Zod passed; auth returned null user
+    expect(result).toEqual({ error: "Not authenticated" });
   });
 });
 
@@ -164,6 +164,7 @@ describe("placeBid — rider salary minimum", () => {
   it("returns error when bid is below rider monthly_salary", async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
     mockFrom
+      .mockReturnValueOnce(makeChain({ league_id: "league-1" }))           // auctions
       .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 500_000 })) // teams
       .mockReturnValueOnce(makeChain({ monthly_salary: 10_000 }));          // riders
 
@@ -174,7 +175,7 @@ describe("placeBid — rider salary minimum", () => {
       round: 1,
     });
 
-    expect(result).toEqual({ error: "Mise minimum: 10000 EUR" });
+    expect(result).toEqual({ error: "Minimum bid: 10000 EUR" });
   });
 });
 
@@ -187,6 +188,7 @@ describe("placeBid — budget check", () => {
     // treasury = 1_000, other active bids = 800, new bid = 300 → 1_100 > 1_000
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
     mockFrom
+      .mockReturnValueOnce(makeChain({ league_id: "league-1" }))                   // auctions
       .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000 }))          // teams
       .mockReturnValueOnce(makeChain({ monthly_salary: 100 }))                     // riders
       .mockReturnValueOnce(makeChain(null))                                         // existingBid (maybeSingle → null)
@@ -199,15 +201,16 @@ describe("placeBid — budget check", () => {
       round: 1,
     });
 
-    expect(result).toEqual({ error: "Budget insuffisant" });
+    expect(result).toEqual({ error: "Insufficient budget" });
   });
 
   it("allows bid when total exactly equals treasury", async () => {
     // treasury = 1_000, no other bids, new bid = 1_000 → 1_000 ≤ 1_000 → OK
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
     mockFrom
-      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000 })) // teams
-      .mockReturnValueOnce(makeChain({ monthly_salary: 100 }))           // riders
+      .mockReturnValueOnce(makeChain({ league_id: "league-1" }))                         // auctions
+      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 10 }))   // teams
+      .mockReturnValueOnce(makeChain({ monthly_salary: 100, pcs_rank: 5, ever_in_top500: true })) // riders
       .mockReturnValueOnce(makeChain(null))                               // existingBid
       .mockReturnValueOnce(makeChain([]))                                 // activeBids (empty)
       .mockReturnValueOnce(makeChain(null, null));                        // insert success

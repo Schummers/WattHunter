@@ -6,6 +6,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/form-field";
 import { Mail } from "lucide-react";
 
 export default function LoginPage() {
@@ -74,8 +75,7 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleEmailLogin} className="flex w-full flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="login-email" className="text-sm font-semibold text-[var(--text-mid)]">Email</label>
+        <FormField label="Email" htmlFor="login-email">
           <Input
             id="login-email"
             type="email"
@@ -84,9 +84,8 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="login-password" className="text-sm font-semibold text-[var(--text-mid)]">Password</label>
+        </FormField>
+        <FormField label="Password" htmlFor="login-password">
           <Input
             id="login-password"
             type="password"
@@ -95,7 +94,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-        </div>
+        </FormField>
 
         {error && <p className="text-xs text-[var(--status-danger)]">{error}</p>}
 

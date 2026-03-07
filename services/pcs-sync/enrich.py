@@ -27,7 +27,7 @@ SPECIALTY_MAP = {
 }
 
 BATCH_SIZE = 5
-BATCH_PAUSE_SECONDS = 60
+BATCH_PAUSE_SECONDS = 180
 
 
 def assign_specialty(points_per_speciality: Dict[str, int]) -> str:
@@ -95,11 +95,37 @@ async def enrich_single_rider(
         html = await fetch_html(page, pcs_slug)
         rider_obj = Rider(pcs_slug, html=html, update_html=False)
 
-        raw = rider_obj.parse()
-        specialty_points = rider_obj.points_per_speciality()
-        teams = rider_obj.teams_history()
-        season_points = rider_obj.points_per_season_history()
-        season_results = rider_obj.season_results()
+        # Wrap each parser call individually — some rider pages have missing
+        # sections that cause IndexError in the procyclingstats library.
+        try:
+            raw = rider_obj.parse()
+        except (IndexError, ValueError, KeyError) as e:
+            logger.warning("parse() failed for %s: %s", pcs_slug, e)
+            raw = {}
+
+        try:
+            specialty_points = rider_obj.points_per_speciality()
+        except (IndexError, ValueError, KeyError) as e:
+            logger.warning("points_per_speciality() failed for %s: %s", pcs_slug, e)
+            specialty_points = {}
+
+        try:
+            teams = rider_obj.teams_history()
+        except (IndexError, ValueError, KeyError) as e:
+            logger.warning("teams_history() failed for %s: %s", pcs_slug, e)
+            teams = []
+
+        try:
+            season_points = rider_obj.points_per_season_history()
+        except (IndexError, ValueError, KeyError) as e:
+            logger.warning("points_per_season_history() failed for %s: %s", pcs_slug, e)
+            season_points = []
+
+        try:
+            season_results = rider_obj.season_results()
+        except (IndexError, ValueError, KeyError) as e:
+            logger.warning("season_results() failed for %s: %s", pcs_slug, e)
+            season_results = []
 
         parsed = parse_rider_data(raw, specialty_points, teams, season_points)
 

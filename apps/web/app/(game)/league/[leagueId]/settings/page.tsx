@@ -5,10 +5,9 @@ import {
   Coins,
   Layers,
   Gavel,
-  LogOut,
-  Copy,
   ChevronRight,
 } from "lucide-react";
+import { CopyInviteCodeButton, SignOutButton } from "./settings-buttons";
 
 const DOC_ITEMS = [
   {
@@ -57,14 +56,14 @@ export default async function SettingsPage({
 
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, team_name, role")
+    .select("id, team_id, teams:team_id(name)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
 
   const { data: league } = await supabase
     .from("leagues")
-    .select("id, name, invite_code")
+    .select("id, name, invite_code, commissioner_id")
     .eq("id", leagueId)
     .single();
 
@@ -78,14 +77,18 @@ export default async function SettingsPage({
     .toUpperCase()
     .slice(0, 2);
 
+  const memberTeam = member?.teams
+    ? Array.isArray(member.teams) ? member.teams[0] : member.teams
+    : null;
+
   const roleName =
-    member?.role === "owner" ? "Race Director" : "Member";
+    league?.commissioner_id === user.id ? "Race Director" : "Member";
 
   return (
     <div className="min-h-screen">
       <BackHeader label="Back" />
 
-      <div className="px-4 space-y-6">
+      <div className="px-4 pt-4 space-y-6">
         {/* Profile hero */}
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--bg-surface)] text-sm font-bold text-[var(--text-mid)]">
@@ -129,7 +132,7 @@ export default async function SettingsPage({
               </label>
               <div className="flex h-9 items-center rounded-lg border border-[var(--border-default)] bg-transparent px-3">
                 <span className="text-sm text-[var(--text-high)]">
-                  {member?.team_name ?? "My Team"}
+                  {memberTeam?.name ?? "My Team"}
                 </span>
               </div>
             </div>
@@ -145,12 +148,7 @@ export default async function SettingsPage({
                     {league?.invite_code ?? "------"}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-mid)] hover:border-[var(--border-hover)]"
-                >
-                  <Copy size={16} />
-                </button>
+                <CopyInviteCodeButton code={league?.invite_code ?? ""} />
               </div>
             </div>
 
@@ -199,13 +197,7 @@ export default async function SettingsPage({
 
         {/* Sign out */}
         <div className="pb-8">
-          <button
-            type="button"
-            className="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold text-[var(--status-danger)]"
-          >
-            <LogOut size={16} />
-            Sign out
-          </button>
+          <SignOutButton />
         </div>
       </div>
     </div>

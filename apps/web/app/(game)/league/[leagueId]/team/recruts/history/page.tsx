@@ -24,13 +24,13 @@ export default async function AuctionHistoryPage({
     );
   }
 
-  // Fetch closed auction rounds
+  // Fetch closed auctions
   const { data: rounds } = await supabase
-    .from("auction_rounds")
-    .select("id, round_number, opens_at, closes_at, status")
+    .from("auctions")
+    .select("id, name, opens_at, closes_at, status")
     .eq("league_id", leagueId)
     .eq("status", "closed")
-    .order("round_number", { ascending: false });
+    .order("opens_at", { ascending: false });
 
   // Fetch bids for all closed rounds
   const roundIds = (rounds ?? []).map((r) => r.id);
@@ -48,27 +48,27 @@ export default async function AuctionHistoryPage({
 
   if (roundIds.length > 0) {
     const { data: bids } = await supabase
-      .from("bids")
+      .from("auction_bids")
       .select(
-        "id, amount, status, auction_round_id, riders(full_name), league_members(team_name)"
+        "id, amount, status, auction_id, rider_id, riders(full_name), teams:team_id(name)"
       )
-      .in("auction_round_id", roundIds)
+      .in("auction_id", roundIds)
       .order("amount", { ascending: false });
 
     for (const bid of bids ?? []) {
-      const roundId = bid.auction_round_id;
+      const roundId = bid.auction_id;
       if (!bidsByRound[roundId]) bidsByRound[roundId] = [];
       const rider = Array.isArray(bid.riders) ? bid.riders[0] : bid.riders;
-      const member = Array.isArray(bid.league_members)
-        ? bid.league_members[0]
-        : bid.league_members;
+      const team = Array.isArray(bid.teams)
+        ? bid.teams[0]
+        : bid.teams;
       bidsByRound[roundId].push({
         id: bid.id,
         amount: bid.amount,
         is_winner: bid.status === "won",
         rider_name: (rider as { full_name: string } | null)?.full_name ?? "Unknown",
-        bidder_name: (member as { team_name: string } | null)?.team_name ?? "Unknown",
-        rider_id: bid.id,
+        bidder_name: (team as { name: string } | null)?.name ?? "Unknown",
+        rider_id: bid.rider_id,
       });
     }
   }
@@ -128,7 +128,7 @@ export default async function AuctionHistoryPage({
                   {/* Round header */}
                   <div className="rounded-lg bg-[var(--bg-subtle)] px-3 py-2 mb-2">
                     <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
-                      Round {round.round_number} &middot; {closedDate} &middot;{" "}
+                      {round.name} &middot; {closedDate} &middot;{" "}
                       {riderCount} rider{riderCount !== 1 ? "s" : ""}
                     </span>
                   </div>

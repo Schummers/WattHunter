@@ -1,14 +1,17 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   House,
   Users,
   BadgeEuro,
   Trophy,
   Settings,
+  ChevronDown,
+  Check,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,14 +40,35 @@ const navItems: NavItem[] = [
   { key: "ranking", label: "Ranking", icon: Trophy, href: (id) => `/league/${id}/ranking` },
 ];
 
+interface League {
+  id: string;
+  name: string;
+}
+
 interface SidebarProps {
   leagueId: string;
   leagueName: string;
+  leagues: League[];
   unlockedTabs: ("home" | "team" | "budget" | "ranking")[];
 }
 
-export function Sidebar({ leagueId, leagueName, unlockedTabs }: SidebarProps) {
+export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const hasMultiple = leagues.length > 1;
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
 
   return (
     <aside className="hidden lg:flex lg:w-[220px] lg:flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-subtle)]">
@@ -59,8 +83,54 @@ export function Sidebar({ leagueId, leagueName, unlockedTabs }: SidebarProps) {
         />
         <span className="text-sm font-bold text-[var(--text-high)]">WattHunter</span>
       </div>
-      <div className="px-4 pb-4">
-        <span className="text-xs text-[var(--text-low)]">{leagueName}</span>
+
+      {/* League switcher */}
+      <div className="relative px-4 pb-4" ref={dropdownRef}>
+        <button
+          type="button"
+          onClick={() => hasMultiple && setOpen(!open)}
+          disabled={!hasMultiple}
+          className="flex items-center gap-1 text-xs text-[var(--text-low)] hover:text-[var(--text-mid)] transition-colors"
+        >
+          <span>{leagueName}</span>
+          {hasMultiple && (
+            <ChevronDown
+              size={10}
+              className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+            />
+          )}
+        </button>
+
+        {open && (
+          <div className="absolute left-4 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] py-1 shadow-lg">
+            {leagues.map((league) => (
+              <button
+                key={league.id}
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  if (league.id !== leagueId) {
+                    router.push(`/league/${league.id}`);
+                  }
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--bg-subtle)]"
+              >
+                <span
+                  className={
+                    league.id === leagueId
+                      ? "font-medium text-[var(--accent-default)]"
+                      : "text-[var(--text-high)]"
+                  }
+                >
+                  {league.name}
+                </span>
+                {league.id === leagueId && (
+                  <Check size={14} className="ml-auto shrink-0 text-[var(--accent-default)]" />
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Nav */}
@@ -130,7 +200,7 @@ export function Sidebar({ leagueId, leagueName, unlockedTabs }: SidebarProps) {
       {/* Settings at bottom */}
       <div className="border-t border-[var(--border-subtle)] p-2">
         <Link
-          href="/settings"
+          href={`/league/${leagueId}/settings`}
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-mid)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-high)]"
         >
           <Settings size={16} className="shrink-0" />

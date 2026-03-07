@@ -37,20 +37,23 @@ export default async function LeagueLayout({
   const leagueName =
     (membership.leagues as unknown as { name: string } | null)?.name ?? "League";
 
-  // Count user's leagues for hasMultipleLeagues
-  const { count: leagueCount } = await supabase
+  // Fetch all user leagues for switcher
+  const { data: allMemberships } = await supabase
     .from("league_members")
-    .select("id", { count: "exact", head: true })
+    .select("league_id, leagues:league_id(id, name)")
     .eq("user_id", user.id);
 
-  const hasMultipleLeagues = (leagueCount ?? 0) > 1;
+  const leagues = (allMemberships ?? []).map((m) => {
+    const league = m.leagues as unknown as { id: string; name: string };
+    return { id: league.id, name: league.name };
+  });
 
   // Determine unlocked tabs based on league state
   const unlockedTabs: ("home" | "team" | "budget" | "ranking")[] = ["home"];
 
-  // Check if any auction round exists (means first auction was launched)
+  // Check if any auction exists (means first auction was launched)
   const { data: auctions } = await supabase
-    .from("auction_rounds")
+    .from("auctions")
     .select("id, status")
     .eq("league_id", leagueId);
 
@@ -71,15 +74,17 @@ export default async function LeagueLayout({
       <Sidebar
         leagueId={leagueId}
         leagueName={leagueName}
+        leagues={leagues}
         unlockedTabs={unlockedTabs}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <TopBar
-          leagueName={leagueName}
-          hasMultipleLeagues={hasMultipleLeagues}
-          settingsHref={`/league/${leagueId}/settings`}
-        />
-        <main className="flex-1 overflow-y-auto px-4 pb-20 lg:mx-auto lg:max-w-2xl lg:px-8 lg:pb-8">
+        <main className="flex-1 overflow-y-auto pb-20 lg:mx-auto lg:max-w-2xl lg:pb-8">
+          <TopBar
+            leagueId={leagueId}
+            leagueName={leagueName}
+            leagues={leagues}
+            settingsHref={`/league/${leagueId}/settings`}
+          />
           {children}
         </main>
         <BottomNav leagueId={leagueId} unlockedTabs={unlockedTabs} />

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/form-field";
 import { Mail } from "lucide-react";
 
 export default function SignupPage() {
@@ -96,8 +97,7 @@ export default function SignupPage() {
       </div>
 
       <form onSubmit={handleSignup} className="flex w-full flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="displayName" className="text-sm font-semibold text-[var(--text-mid)]">Username</label>
+        <FormField label="Username" htmlFor="displayName">
           <Input
             id="displayName"
             type="text"
@@ -108,9 +108,8 @@ export default function SignupPage() {
             minLength={2}
             maxLength={30}
           />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="email" className="text-sm font-semibold text-[var(--text-mid)]">Email</label>
+        </FormField>
+        <FormField label="Email" htmlFor="email">
           <Input
             id="email"
             type="email"
@@ -119,9 +118,8 @@ export default function SignupPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="password" className="text-sm font-semibold text-[var(--text-mid)]">Password</label>
+        </FormField>
+        <FormField label="Password" htmlFor="password">
           <Input
             id="password"
             type="password"
@@ -131,9 +129,8 @@ export default function SignupPage() {
             required
             minLength={6}
           />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="confirmPassword" className="text-sm font-semibold text-[var(--text-mid)]">Confirm password</label>
+        </FormField>
+        <FormField label="Confirm password" htmlFor="confirmPassword">
           <Input
             id="confirmPassword"
             type="password"
@@ -143,7 +140,7 @@ export default function SignupPage() {
             required
             minLength={6}
           />
-        </div>
+        </FormField>
 
         {error && <p className="-mt-2 text-xs text-[var(--status-danger)]">{error}</p>}
         {message && <p className="-mt-2 text-xs text-[var(--status-success)]">{message}</p>}
