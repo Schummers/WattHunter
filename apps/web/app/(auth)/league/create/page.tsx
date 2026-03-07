@@ -45,7 +45,7 @@ export default function CreateLeaguePage() {
         </div>
 
         {state?.error && (
-          <p className="text-sm text-[var(--danger)]">{state.error}</p>
+          <p className="text-sm text-[var(--status-danger)]">{state.error}</p>
         )}
 
         <Button type="submit" variant="cta" disabled={pending}>

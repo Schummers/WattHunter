@@ -157,7 +157,7 @@ export default async function SettingsPage({
             {/* Leave league */}
             <button
               type="button"
-              className="text-sm font-medium text-[var(--danger)]"
+              className="text-sm font-medium text-[var(--status-danger)]"
             >
               Leave league
             </button>
@@ -201,7 +201,7 @@ export default async function SettingsPage({
         <div className="pb-8">
           <button
             type="button"
-            className="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold text-[var(--danger)]"
+            className="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold text-[var(--status-danger)]"
           >
             <LogOut size={16} />
             Sign out

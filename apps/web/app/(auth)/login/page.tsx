@@ -97,7 +97,7 @@ export default function LoginPage() {
           />
         </div>
 
-        {error && <p className="text-xs text-[var(--danger)]">{error}</p>}
+        {error && <p className="text-xs text-[var(--status-danger)]">{error}</p>}
 
         <Button type="submit" variant="cta" className="mt-4 w-full" disabled={loading}>
           {loading ? "Signing in..." : "Sign in"}

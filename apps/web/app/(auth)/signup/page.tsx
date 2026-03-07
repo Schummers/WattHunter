@@ -145,7 +145,7 @@ export default function SignupPage() {
           />
         </div>
 
-        {error && <p className="-mt-2 text-xs text-[var(--danger)]">{error}</p>}
+        {error && <p className="-mt-2 text-xs text-[var(--status-danger)]">{error}</p>}
         {message && <p className="-mt-2 text-xs text-[var(--status-success)]">{message}</p>}
 
         <Button type="submit" variant="cta" className="mt-4 w-full" disabled={loading}>
