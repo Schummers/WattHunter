@@ -120,9 +120,10 @@ watthunter/
 └── CLAUDE.md
 ```
 
-## Design System (2026-03-06)
-- Palette : Radix Slate Dark + Tailwind Cyan — tokens dans `apps/web/app/globals.css`
-- Font : Geist Sans + Geist Mono (package `geist`)
+## Design System (v1 — 2026-03-07)
+- Source of truth : `docs/watthunter-design-system-v1.md`
+- Palette : B1 Teal-Tinted Dark + Tailwind Cyan — tokens in `apps/web/app/globals.css`
+- Font : Geist Sans (UI) + Geist Mono (ALL numbers) — package `geist`
 - Icons : Lucide React (base) + @phosphor-icons/react (gamification)
-- Theme : next-themes, defaultTheme="dark"
-- Design doc : `docs/plans/2026-03-06-redesign-design.md`
+- Theme : dark-first (no .dark class needed)
+- Backlog : `docs/TODO_BACKLOG.md`

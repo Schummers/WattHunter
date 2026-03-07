@@ -1,7 +1,9 @@
+> **OBSOLETE** — Superseded by `docs/watthunter-design-system-v1.md` (March 2026)
+
 # WattHunter — Design System & Phase 1 Design
 
 **Date**: 2026-02-21
-**Status**: Approved
+**Status**: Obsolete
 **Scope**: Design system foundations + Auth + Onboarding + League CRUD (REQ-001 to REQ-005)
 
 ---
