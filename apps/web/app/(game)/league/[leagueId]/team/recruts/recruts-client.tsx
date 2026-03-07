@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Search, ChevronDown } from "lucide-react";
 import { RiderCard } from "@/components/rider-card";
 import { Pill } from "@/components/pill";
 import { StickyBar } from "@/components/sticky-bar";
+import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
 
 interface Rider {
   id: string;
   full_name: string;
   nationality: string | null;
-  team_name: string | null;
+  real_team: string | null;
   pcs_rank: number | null;
   photo_url: string | null;
   specialty: string | null;
@@ -19,9 +21,15 @@ interface Rider {
 
 interface ActiveRound {
   id: string;
-  round_number: number;
+  name: string;
   opens_at: string;
   closes_at: string;
+}
+
+interface InitialBid {
+  bid_id: string;
+  rider_id: string;
+  amount: number;
 }
 
 interface RecrutsClientProps {
@@ -30,9 +38,34 @@ interface RecrutsClientProps {
   activeRound: ActiveRound | null;
   maxSlots: number;
   currentSlots: number;
+  initialBids?: InitialBid[];
 }
 
 const FILTER_OPTIONS = ["All", "Teams", "Speciality", "Nationality", "Age"];
+
+const COUNTRY_NAMES: Record<string, string> = {
+  AF: "Afghanistan", AL: "Albania", DZ: "Algeria", AR: "Argentina", AM: "Armenia",
+  AU: "Australia", AT: "Austria", AZ: "Azerbaijan", BE: "Belgium", BA: "Bosnia",
+  BR: "Brazil", BG: "Bulgaria", CA: "Canada", CL: "Chile", CN: "China",
+  CO: "Colombia", CR: "Costa Rica", HR: "Croatia", CZ: "Czechia", DK: "Denmark",
+  EC: "Ecuador", EG: "Egypt", ER: "Eritrea", EE: "Estonia", ET: "Ethiopia",
+  FI: "Finland", FR: "France", GE: "Georgia", DE: "Germany", GB: "Great Britain",
+  GR: "Greece", HU: "Hungary", IS: "Iceland", IN: "India", ID: "Indonesia",
+  IR: "Iran", IE: "Ireland", IL: "Israel", IT: "Italy", JP: "Japan",
+  KZ: "Kazakhstan", KE: "Kenya", LV: "Latvia", LT: "Lithuania", LU: "Luxembourg",
+  MX: "Mexico", MA: "Morocco", NL: "Netherlands", NZ: "New Zealand", NO: "Norway",
+  PA: "Panama", PE: "Peru", PH: "Philippines", PL: "Poland", PT: "Portugal",
+  RO: "Romania", RU: "Russia", RW: "Rwanda", SA: "Saudi Arabia", RS: "Serbia",
+  SG: "Singapore", SK: "Slovakia", SI: "Slovenia", ZA: "South Africa", KR: "South Korea",
+  ES: "Spain", SE: "Sweden", CH: "Switzerland", TW: "Taiwan", TH: "Thailand",
+  TR: "Turkey", UA: "Ukraine", AE: "UAE", US: "United States", UY: "Uruguay",
+  UZ: "Uzbekistan", VE: "Venezuela",
+};
+
+function countryName(code: string | null): string {
+  if (!code) return "Unknown";
+  return COUNTRY_NAMES[code] ?? code;
+}
 
 function formatName(fullName: string): string {
   const parts = fullName.split(" ").filter(Boolean);
@@ -60,13 +93,38 @@ export function RecrutsClient({
   activeRound,
   maxSlots,
   currentSlots,
+  initialBids = [],
 }: RecrutsClientProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
-  const [bids, setBids] = useState<Record<string, number>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  // Initialize bids from server data
+  const [bids, setBids] = useState<Record<string, number>>(() => {
+    const map: Record<string, number> = {};
+    for (const b of initialBids) {
+      map[b.rider_id] = b.amount;
+    }
+    return map;
+  });
+  const [savedBids, setSavedBids] = useState<Record<string, number>>(() => {
+    const map: Record<string, number> = {};
+    for (const b of initialBids) {
+      map[b.rider_id] = b.amount;
+    }
+    return map;
+  });
   const [saving, setSaving] = useState(false);
 
-  const hasPendingBids = Object.keys(bids).length > 0;
+  // Check if there are unsaved changes
+  const hasPendingBids = useMemo(() => {
+    const bidKeys = Object.keys(bids);
+    const savedKeys = Object.keys(savedBids);
+    if (bidKeys.length !== savedKeys.length) return true;
+    return bidKeys.some((k) => bids[k] !== savedBids[k]);
+  }, [bids, savedBids]);
 
   const filteredRiders = useMemo(() => {
     let result = riders;
@@ -77,7 +135,7 @@ export function RecrutsClient({
       result = result.filter(
         (r) =>
           r.full_name.toLowerCase().includes(q) ||
-          (r.team_name && r.team_name.toLowerCase().includes(q)) ||
+          (r.real_team && r.real_team.toLowerCase().includes(q)) ||
           (r.nationality && r.nationality.toLowerCase().includes(q))
       );
     }
@@ -89,7 +147,7 @@ export function RecrutsClient({
       );
     } else if (activeFilter === "Teams") {
       result = [...result].sort((a, b) =>
-        (a.team_name ?? "").localeCompare(b.team_name ?? "")
+        (a.real_team ?? "").localeCompare(b.real_team ?? "")
       );
     } else if (activeFilter === "Nationality") {
       result = [...result].sort((a, b) =>
@@ -99,6 +157,56 @@ export function RecrutsClient({
 
     return result;
   }, [riders, search, activeFilter]);
+
+  const groupedRiders = useMemo(() => {
+    if (activeFilter === "All") return null;
+
+    const groups: Record<string, Rider[]> = {};
+    for (const r of filteredRiders) {
+      let key: string;
+      if (activeFilter === "Teams") {
+        key = r.real_team ?? "No team";
+      } else if (activeFilter === "Speciality") {
+        key = r.specialty ?? "Unknown";
+      } else if (activeFilter === "Nationality") {
+        key = countryName(r.nationality);
+      } else {
+        // Age filter — no birthdate available yet, group all as Unknown
+        key = "Unknown";
+      }
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(r);
+    }
+
+    // Sort group names alphabetically, fallback labels last
+    const fallbacks = new Set(["Unknown", "No team"]);
+    const sorted = Object.entries(groups).sort(([a], [b]) => {
+      if (fallbacks.has(a) && !fallbacks.has(b)) return 1;
+      if (fallbacks.has(b) && !fallbacks.has(a)) return -1;
+      return a.localeCompare(b);
+    });
+
+    return sorted;
+  }, [filteredRiders, activeFilter]);
+
+  // When filter changes, auto-expand first group
+  useEffect(() => {
+    if (groupedRiders && groupedRiders.length > 0) {
+      setExpandedGroups(new Set([groupedRiders[0][0]]));
+    }
+  }, [activeFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleGroup = useCallback((groupName: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupName)) {
+        next.delete(groupName);
+      } else {
+        next.add(groupName);
+      }
+      return next;
+    });
+  }, []);
 
   function handleBidChange(riderId: string, value: number) {
     if (value <= 0) {
@@ -113,10 +221,46 @@ export function RecrutsClient({
   }
 
   async function handleSave() {
+    if (!activeRound) return;
     setSaving(true);
-    // TODO: connect to auction server actions
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setBids({});
+    setErrors({});
+    const newErrors: Record<string, string> = {};
+
+    // Cancel bids that were removed (in savedBids but not in current bids)
+    const removedRiderIds = Object.keys(savedBids).filter((rid) => !(rid in bids));
+    if (removedRiderIds.length > 0) {
+      const bidIdsToCancel = initialBids
+        .filter((b) => removedRiderIds.includes(b.rider_id))
+        .map((b) => b.bid_id);
+      await Promise.all(bidIdsToCancel.map((id) => cancelBid(id)));
+    }
+
+    // Place or update bids
+    const bidEntries = Object.entries(bids);
+    const results = await Promise.all(
+      bidEntries.map(async ([riderId, amount]) => {
+        const result = await placeBid({
+          auctionId: activeRound.id,
+          riderId,
+          amount,
+          round: 1,
+        });
+        return { riderId, result };
+      })
+    );
+
+    for (const { riderId, result } of results) {
+      if (result.error) {
+        newErrors[riderId] = result.error;
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+    } else {
+      setSavedBids({ ...bids });
+      router.refresh();
+    }
     setSaving(false);
   }
 
@@ -128,7 +272,7 @@ export function RecrutsClient({
       {activeRound ? (
         <div className="flex items-center justify-between bg-[var(--bg-subtle)] px-4 py-2">
           <span className="text-sm font-bold text-[var(--text-high)]">
-            Round {activeRound.round_number} &middot;{" "}
+            {activeRound.name} &middot;{" "}
             {formatDate(activeRound.opens_at)} &middot;{" "}
             <span className="text-[var(--warning)]">
               J-{daysUntil(activeRound.closes_at)}
@@ -184,53 +328,157 @@ export function RecrutsClient({
 
       {/* Rider list */}
       <div>
-        {filteredRiders.map((r) => {
-          const minSalary = Math.max(
-            5000,
-            Math.round(((r.pcs_points_1yr ?? 0) * 2000) / 12)
-          );
-          const currentBid = bids[r.id];
-
-          return (
-            <RiderCard
-              key={r.id}
-              rider={{
-                id: r.id,
-                name: formatName(r.full_name),
-                nationality_flag: r.nationality ?? undefined,
-                team_name: r.team_name ?? undefined,
-                pcs_rank: r.pcs_rank ?? undefined,
-                photo_url: r.photo_url,
-              }}
-              bidState={currentBid ? "active" : "none"}
-              href={`/league/${leagueId}/rider/${r.id}`}
-              rightContent={
-                <div className="flex flex-col items-end gap-0.5">
-                  <input
-                    type="number"
-                    min={minSalary}
-                    step={100}
-                    placeholder={minSalary.toLocaleString()}
-                    value={currentBid ?? ""}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value, 10);
-                      handleBidChange(r.id, isNaN(val) ? 0 : val);
-                    }}
-                    onClick={(e) => e.preventDefault()}
-                    className={`min-w-[72px] h-7 rounded-lg px-2 text-right text-sm font-semibold outline-none ${
-                      currentBid
-                        ? "border border-[var(--accent-default)] bg-[var(--bid-active-bg)] text-[var(--accent-default)]"
-                        : "border border-[var(--border-default)] bg-transparent text-[var(--text-low)]"
-                    }`}
-                  />
-                  <span className="text-[9px] text-[var(--text-low)]">
-                    /month
+        {groupedRiders ? (
+          /* Accordion view */
+          groupedRiders.map(([groupName, groupRiders]) => {
+            const expanded = expandedGroups.has(groupName);
+            return (
+              <div key={groupName}>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(groupName)}
+                  className="flex w-full items-center justify-between px-4 py-2.5 bg-[var(--bg-subtle)] border-b border-[var(--border-subtle)]"
+                >
+                  <span className="text-sm font-bold text-[var(--text-high)]">
+                    {groupName}
                   </span>
-                </div>
-              }
-            />
-          );
-        })}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--text-low)]">
+                      {groupRiders.length}
+                    </span>
+                    <ChevronDown
+                      size={14}
+                      className={`text-[var(--text-low)] transition-transform ${
+                        expanded ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                </button>
+                {expanded &&
+                  groupRiders.map((r) => {
+                    const minSalary = Math.max(
+                      5000,
+                      Math.round(((r.pcs_points_1yr ?? 0) * 2000) / 12)
+                    );
+                    const currentBid = bids[r.id];
+                    return (
+                      <RiderCard
+                        key={r.id}
+                        rider={{
+                          id: r.id,
+                          name: formatName(r.full_name),
+                          nationality_flag: r.nationality ?? undefined,
+                          team_name: r.real_team ?? undefined,
+                          pcs_rank: r.pcs_rank ?? undefined,
+                          photo_url: r.photo_url,
+                        }}
+                        bidState={currentBid ? "active" : "none"}
+                        href={`/league/${leagueId}/rider/${r.id}`}
+                        rightContent={
+                          <div className="flex flex-col items-end gap-0.5">
+                            <div
+                              className={`flex items-center gap-0.5 rounded-lg px-2 h-7 ${
+                                currentBid
+                                  ? "border border-[var(--accent-default)] bg-[var(--bid-active-bg)]"
+                                  : "border border-[var(--border-default)] bg-transparent"
+                              }`}
+                            >
+                              <input
+                                type="number"
+                                min={minSalary}
+                                step={100}
+                                placeholder={new Intl.NumberFormat("en-US").format(minSalary)}
+                                value={currentBid ?? ""}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value, 10);
+                                  handleBidChange(r.id, isNaN(val) ? 0 : val);
+                                }}
+                                onClick={(e) => e.preventDefault()}
+                                className={`w-16 bg-transparent text-right text-sm font-semibold font-mono outline-none ${
+                                  currentBid
+                                    ? "text-[var(--accent-default)]"
+                                    : "text-[var(--text-low)]"
+                                }`}
+                              />
+                              <span className="text-[10px] text-[var(--text-ghost)] font-medium">
+                                /mo
+                              </span>
+                            </div>
+                            {errors[r.id] && (
+                              <span className="text-[9px] text-[var(--status-danger)]">
+                                {errors[r.id]}
+                              </span>
+                            )}
+                          </div>
+                        }
+                      />
+                    );
+                  })}
+              </div>
+            );
+          })
+        ) : (
+          /* Flat list view */
+          filteredRiders.map((r) => {
+            const minSalary = Math.max(
+              5000,
+              Math.round(((r.pcs_points_1yr ?? 0) * 2000) / 12)
+            );
+            const currentBid = bids[r.id];
+            return (
+              <RiderCard
+                key={r.id}
+                rider={{
+                  id: r.id,
+                  name: formatName(r.full_name),
+                  nationality_flag: r.nationality ?? undefined,
+                  team_name: r.real_team ?? undefined,
+                  pcs_rank: r.pcs_rank ?? undefined,
+                  photo_url: r.photo_url,
+                }}
+                bidState={currentBid ? "active" : "none"}
+                href={`/league/${leagueId}/rider/${r.id}`}
+                rightContent={
+                  <div className="flex flex-col items-end gap-0.5">
+                    <div
+                      className={`flex items-center gap-0.5 rounded-lg px-2 h-7 ${
+                        currentBid
+                          ? "border border-[var(--accent-default)] bg-[var(--bid-active-bg)]"
+                          : "border border-[var(--border-default)] bg-transparent"
+                      }`}
+                    >
+                      <input
+                        type="number"
+                        min={minSalary}
+                        step={100}
+                        placeholder={new Intl.NumberFormat("en-US").format(minSalary)}
+                        value={currentBid ?? ""}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          handleBidChange(r.id, isNaN(val) ? 0 : val);
+                        }}
+                        onClick={(e) => e.preventDefault()}
+                        className={`w-16 bg-transparent text-right text-sm font-semibold font-mono outline-none ${
+                          currentBid
+                            ? "text-[var(--accent-default)]"
+                            : "text-[var(--text-low)]"
+                        }`}
+                      />
+                      <span className="text-[10px] text-[var(--text-ghost)] font-medium">
+                        /mo
+                      </span>
+                    </div>
+                    {errors[r.id] && (
+                      <span className="text-[9px] text-[var(--status-danger)]">
+                        {errors[r.id]}
+                      </span>
+                    )}
+                  </div>
+                }
+              />
+            );
+          })
+        )}
 
         {filteredRiders.length === 0 && (
           <div className="px-4 py-12 text-center">

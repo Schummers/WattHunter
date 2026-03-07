@@ -141,10 +141,10 @@ export default async function MyTeamPage({
       {pendingBids && pendingBids.length > 0 && (
         <div>
           <div className="flex items-center justify-between px-4 mb-2">
-            <span className="text-base font-bold text-[var(--text-high)]">
+            <span className="text-[15px] font-bold text-[var(--text-high)]">
               Pending Bids
             </span>
-            <span className="text-xs font-semibold text-[var(--text-low)]">
+            <span className="text-xs font-semibold font-mono text-[var(--text-low)]">
               {pendingBids.length} bid{pendingBids.length > 1 ? "s" : ""}
             </span>
           </div>
@@ -165,7 +165,7 @@ export default async function MyTeamPage({
                   }}
                   bidState="active"
                   rightContent={
-                    <span className="text-sm font-bold text-[var(--accent-default)]">
+                    <span className="text-sm font-bold font-mono text-[var(--accent-default)]">
                       {bid.amount.toLocaleString()} /mo
                     </span>
                   }
@@ -179,11 +179,11 @@ export default async function MyTeamPage({
       {/* Roster */}
       <div>
         <div className="flex items-center justify-between px-4 mb-2">
-          <span className="text-base font-bold text-[var(--text-high)]">
+          <span className="text-[15px] font-bold text-[var(--text-high)]">
             Roster
           </span>
           <span className="text-xs font-semibold text-[var(--text-low)]">
-            {riderCount}/{maxSlots} slots
+            <span className="font-mono">{riderCount}/{maxSlots}</span> slots
           </span>
         </div>
 
@@ -224,7 +224,7 @@ export default async function MyTeamPage({
       <div className="px-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-default)]">
-            <span className="text-base font-bold text-[var(--text-high)]">
+            <span className="text-[15px] font-bold font-mono text-[var(--text-high)]">
               {level}
             </span>
           </div>
@@ -235,7 +235,7 @@ export default async function MyTeamPage({
               </span>
               {next && (
                 <span className="text-xs text-[var(--text-low)]">
-                  {xp.toLocaleString()} / {next.xp.toLocaleString()} XP
+                  <span className="font-mono">{xp.toLocaleString()}</span> / <span className="font-mono">{next.xp.toLocaleString()}</span> XP
                 </span>
               )}
             </div>

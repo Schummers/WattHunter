@@ -40,7 +40,7 @@ export default async function AuctionResultsPage({
 
   if (!auction) {
     return (
-      <p className="text-[var(--text-mid)]">Enchere introuvable.</p>
+      <p className="text-[var(--text-mid)]">Auction not found.</p>
     );
   }
 
@@ -54,7 +54,7 @@ export default async function AuctionResultsPage({
         <h1 className="text-xl font-semibold text-[var(--text-high)]">
           {auction.name}
         </h1>
-        <Badge variant="outline">Terminee</Badge>
+        <Badge variant="outline">Completed</Badge>
       </div>
 
       <Tabs defaultValue="1">
@@ -110,7 +110,7 @@ export default async function AuctionResultsPage({
                           >
                             {bid.teams?.name}
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right font-mono">
                             {bid.amount.toLocaleString("en-US")} EUR
                           </TableCell>
                         </TableRow>
@@ -125,7 +125,7 @@ export default async function AuctionResultsPage({
                       <span className="text-[var(--text-mid)]">
                         Riders assigned
                       </span>
-                      <span className="font-medium text-[var(--text-high)]">
+                      <span className="font-medium font-mono text-[var(--text-high)]">
                         {won.length}
                       </span>
                     </div>
@@ -133,7 +133,7 @@ export default async function AuctionResultsPage({
                       <span className="text-[var(--text-mid)]">
                         Total amount
                       </span>
-                      <span className="font-medium text-[var(--text-high)]">
+                      <span className="font-medium font-mono text-[var(--text-high)]">
                         {total.toLocaleString("en-US")} EUR
                       </span>
                     </div>
@@ -142,7 +142,7 @@ export default async function AuctionResultsPage({
                         <span className="text-[var(--text-mid)]">
                           Average bid
                         </span>
-                        <span className="font-medium text-[var(--text-high)]">
+                        <span className="font-medium font-mono text-[var(--text-high)]">
                           {Math.round(total / won.length).toLocaleString(
                             "en-US"
                           )}{" "}
