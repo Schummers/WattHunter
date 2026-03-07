@@ -5,17 +5,17 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Primitive tokens — Radix Slate Dark */
-  --color-slate-1: #111113;
-  --color-slate-2: #18191b;
-  --color-slate-3: #212225;
-  --color-slate-4: #272a2d;
-  --color-slate-5: #2e3135;
-  --color-slate-6: #363a3f;
-  --color-slate-7: #43484e;
-  --color-slate-9: #696e77;
-  --color-slate-11: #b0b4ba;
-  --color-slate-12: #edeef0;
+  /* Primitive tokens — B1 Teal-Tinted Dark */
+  --color-b1-1: #0b1113;
+  --color-b1-2: #101719;
+  --color-b1-3: #131d20;
+  --color-b1-4: #182428;
+  --color-b1-5: #1b272c;
+  --color-b1-6: #243338;
+  --color-b1-7: #2e4048;
+  --color-b1-10: #6a8890;
+  --color-b1-11: #8a9da3;
+  --color-b1-12: #ebf0f1;
 
   /* Primitive tokens — Tailwind Cyan */
   --color-cyan-400: #22d3ee;
@@ -76,22 +76,22 @@
   color-scheme: dark;
 
   /* Backgrounds */
-  --bg-app: var(--color-slate-1);
-  --bg-subtle: var(--color-slate-2);
-  --bg-surface: var(--color-slate-3);
-  --bg-surface-hover: var(--color-slate-4);
-  --bg-surface-active: var(--color-slate-5);
+  --bg-app: var(--color-b1-1);
+  --bg-subtle: var(--color-b1-2);
+  --bg-surface: var(--color-b1-3);
+  --bg-surface-hover: var(--color-b1-4);
+  --bg-surface-active: var(--color-b1-5);
 
   /* Borders */
-  --border-subtle: var(--color-slate-3);
-  --border-default: var(--color-slate-6);
-  --border-hover: var(--color-slate-7);
+  --border-subtle: var(--color-b1-3);
+  --border-default: var(--color-b1-6);
+  --border-hover: var(--color-b1-7);
 
   /* Text */
-  --text-high: var(--color-slate-12);
-  --text-mid: var(--color-slate-11);
-  --text-low: var(--color-slate-9);
-  --text-ghost: var(--color-slate-7);
+  --text-high: var(--color-b1-12);
+  --text-mid: var(--color-b1-11);
+  --text-low: var(--color-b1-10);
+  --text-ghost: var(--color-b1-7);
 
   /* Accent */
   --accent-default: var(--color-cyan-500);

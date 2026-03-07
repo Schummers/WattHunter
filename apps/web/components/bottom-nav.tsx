@@ -30,7 +30,7 @@ export function BottomNav({ leagueId, unlockedTabs }: BottomNavProps) {
 
   return (
     <nav
-      className={`fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border-subtle)] bg-[var(--bg-app)] pb-[max(8px,env(safe-area-inset-bottom))] transition-transform duration-200 lg:hidden ${
+      className={`fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border-subtle)] bg-[var(--bg-app)] pt-2 pb-[max(8px,env(safe-area-inset-bottom))] transition-transform duration-200 lg:hidden ${
         visible ? "translate-y-0" : "translate-y-full"
       }`}
     >
@@ -50,7 +50,7 @@ export function BottomNav({ leagueId, unlockedTabs }: BottomNavProps) {
                 className="relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 text-[var(--text-ghost)]"
               >
                 <tab.icon size={20} />
-                <span className="text-[9px] font-bold">{tab.label}</span>
+                <span className="text-[10px] font-medium">{tab.label}</span>
               </div>
             );
           }
@@ -67,7 +67,7 @@ export function BottomNav({ leagueId, unlockedTabs }: BottomNavProps) {
               {isActive && (
                 <span className="absolute top-1 h-1 w-1 rounded-full bg-[var(--accent-default)]" />
               )}
-              <span className="text-[9px] font-bold">{tab.label}</span>
+              <span className="text-[10px] font-medium">{tab.label}</span>
             </Link>
           );
         })}

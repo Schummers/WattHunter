@@ -74,7 +74,7 @@ export default async function MyTeamPage({
 
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, team_name, xp, level, role")
+    .select("id, team_id, teams:team_id(id, name, cumulative_xp, level)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
@@ -89,35 +89,43 @@ export default async function MyTeamPage({
     );
   }
 
+  const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
+
   const { data: teamRiders } = await supabase
-    .from("team_riders")
+    .from("contracts")
     .select(
-      "id, rider_id, salary, riders(id, full_name, nationality, team_name, pcs_rank, photo_url, specialty, pcs_points_1yr)"
+      "id, rider_id, locked_salary, status, riders(id, full_name, nationality, real_team, pcs_rank, photo_url, specialty, pcs_points_1yr)"
     )
-    .eq("league_member_id", member.id)
+    .eq("team_id", team?.id)
+    .in("status", ["active", "notice"]);
+
+  // Pending bids from active auctions
+  const { data: pendingBids } = await supabase
+    .from("auction_bids")
+    .select(
+      "id, amount, rider_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url)"
+    )
+    .eq("team_id", team?.id)
     .eq("status", "active");
 
-  const xp = member.xp ?? 0;
-  const level = member.level ?? 1;
+  const xp = team?.cumulative_xp ?? 0;
+  const level = team?.level ?? 1;
   const maxSlots = getMaxSlots(level);
   const riderCount = teamRiders?.length ?? 0;
   const progressPct = getProgressPct(xp, level);
   const { next } = getLevelInfo(level);
 
   return (
-    <div className="px-4 py-4 space-y-6">
+    <div className="py-4 space-y-6">
       {/* Header */}
-      <div className="space-y-1">
+      <div className="px-4 space-y-1">
         <div className="flex items-baseline gap-3">
-          <span className="text-2xl font-black text-[var(--accent-highlight)]">
+          <span className="text-[32px] font-black font-mono leading-none tracking-tight text-[var(--accent-highlight)]">
             {xp.toLocaleString()} XP
           </span>
-          <Link
-            href={`/league/${leagueId}/ranking`}
-            className="text-sm font-semibold text-[var(--accent-default)]"
-          >
+          <span className="text-sm font-semibold text-[var(--text-low)]">
             Ranked #—
-          </Link>
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Link
@@ -129,9 +137,48 @@ export default async function MyTeamPage({
         </div>
       </div>
 
+      {/* Pending Bids */}
+      {pendingBids && pendingBids.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between px-4 mb-2">
+            <span className="text-base font-bold text-[var(--text-high)]">
+              Pending Bids
+            </span>
+            <span className="text-xs font-semibold text-[var(--text-low)]">
+              {pendingBids.length} bid{pendingBids.length > 1 ? "s" : ""}
+            </span>
+          </div>
+          <div>
+            {pendingBids.map((bid) => {
+              const r = Array.isArray(bid.riders) ? bid.riders[0] : bid.riders;
+              if (!r) return null;
+              return (
+                <RiderCard
+                  key={bid.id}
+                  rider={{
+                    id: r.id,
+                    name: formatName(r.full_name),
+                    nationality_flag: r.nationality ?? undefined,
+                    team_name: r.real_team ?? undefined,
+                    pcs_rank: r.pcs_rank ?? undefined,
+                    photo_url: r.photo_url,
+                  }}
+                  bidState="active"
+                  rightContent={
+                    <span className="text-sm font-bold text-[var(--accent-default)]">
+                      {bid.amount.toLocaleString()} /mo
+                    </span>
+                  }
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Roster */}
       <div>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between px-4 mb-2">
           <span className="text-base font-bold text-[var(--text-high)]">
             Roster
           </span>
@@ -151,7 +198,7 @@ export default async function MyTeamPage({
                   id: r.id,
                   name: formatName(r.full_name),
                   nationality_flag: r.nationality ?? undefined,
-                  team_name: r.team_name ?? undefined,
+                  team_name: r.real_team ?? undefined,
                   pcs_rank: r.pcs_rank ?? undefined,
                   photo_url: r.photo_url,
                 }}
@@ -174,7 +221,7 @@ export default async function MyTeamPage({
       </div>
 
       {/* Team Level */}
-      <div className="space-y-3">
+      <div className="px-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-default)]">
             <span className="text-base font-bold text-[var(--text-high)]">
@@ -196,7 +243,7 @@ export default async function MyTeamPage({
           </div>
         </div>
         <Link
-          href={`/league/${leagueId}/levels`}
+          href={`/league/${leagueId}/team/levels`}
           className="text-sm text-[var(--accent-default)]"
         >
           See all &rarr;
