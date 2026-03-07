@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Users, BadgeEuro, Trophy, Lock, type LucideIcon } from "lucide-react";
+import { House, Users, BadgeEuro, Trophy, type LucideIcon } from "lucide-react";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
 interface NavTab {
@@ -49,10 +49,7 @@ export function BottomNav({ leagueId, unlockedTabs }: BottomNavProps) {
                 key={tab.key}
                 className="relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 text-[var(--text-ghost)]"
               >
-                <div className="relative">
-                  <tab.icon size={20} />
-                  <Lock size={8} className="absolute -right-1 -top-1" />
-                </div>
+                <tab.icon size={20} />
                 <span className="text-[9px] font-bold">{tab.label}</span>
               </div>
             );
