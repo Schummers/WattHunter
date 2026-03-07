@@ -14,7 +14,7 @@ export function SubTabs({ tabs }: SubTabsProps) {
 
   return (
     <nav
-      className={`sticky top-8 lg:top-0 z-40 flex gap-6 border-b border-[var(--border-subtle)] bg-[var(--bg-app)] px-4 transition-transform duration-200 ${
+      className={`sticky top-10 lg:top-0 z-40 flex gap-6 border-b border-[var(--border-subtle)] bg-[var(--bg-app)] px-4 transition-transform duration-200 ${
         visible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
