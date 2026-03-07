@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -8,8 +9,6 @@ import {
   BadgeEuro,
   Trophy,
   Settings,
-  Lock,
-  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -51,7 +50,13 @@ export function Sidebar({ leagueId, leagueName, unlockedTabs }: SidebarProps) {
     <aside className="hidden lg:flex lg:w-[220px] lg:flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-subtle)]">
       {/* Logo */}
       <div className="flex items-center gap-2 px-4 py-4">
-        <Zap size={20} className="shrink-0 text-[var(--accent-highlight)]" />
+        <Image
+          src="/watthunter-icon.svg"
+          alt="WattHunter"
+          width={20}
+          height={20}
+          className="shrink-0"
+        />
         <span className="text-sm font-bold text-[var(--text-high)]">WattHunter</span>
       </div>
       <div className="px-4 pb-4">
@@ -76,7 +81,6 @@ export function Sidebar({ leagueId, leagueName, unlockedTabs }: SidebarProps) {
               >
                 <item.icon size={16} className="shrink-0" />
                 <span className="flex-1">{item.label}</span>
-                <Lock size={12} className="shrink-0" />
               </div>
             );
           }
