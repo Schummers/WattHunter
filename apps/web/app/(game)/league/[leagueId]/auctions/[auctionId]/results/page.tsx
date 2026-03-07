@@ -75,18 +75,18 @@ export default async function AuctionResultsPage({
             <TabsContent key={round} value={round.toString()}>
               {won.length === 0 ? (
                 <p className="py-8 text-center text-sm text-[var(--text-mid)]">
-                  Aucun coureur attribue pour ce round.
+                  No riders assigned for this round.
                 </p>
               ) : (
                 <>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Coureur</TableHead>
-                        <TableHead>Equipe</TableHead>
-                        <TableHead>Spe.</TableHead>
-                        <TableHead>Gagnant</TableHead>
-                        <TableHead className="text-right">Montant</TableHead>
+                        <TableHead>Rider</TableHead>
+                        <TableHead>Team</TableHead>
+                        <TableHead>Spec.</TableHead>
+                        <TableHead>Winner</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -111,7 +111,7 @@ export default async function AuctionResultsPage({
                             {bid.teams?.name}
                           </TableCell>
                           <TableCell className="text-right">
-                            {bid.amount.toLocaleString("fr-FR")} EUR
+                            {bid.amount.toLocaleString("en-US")} EUR
                           </TableCell>
                         </TableRow>
                       ))}
@@ -123,7 +123,7 @@ export default async function AuctionResultsPage({
                   <div className="flex flex-col gap-0">
                     <div className="flex items-center justify-between border-b border-border py-2 text-sm">
                       <span className="text-[var(--text-mid)]">
-                        Coureurs attribues
+                        Riders assigned
                       </span>
                       <span className="font-medium text-[var(--text-high)]">
                         {won.length}
@@ -131,20 +131,20 @@ export default async function AuctionResultsPage({
                     </div>
                     <div className="flex items-center justify-between border-b border-border py-2 text-sm">
                       <span className="text-[var(--text-mid)]">
-                        Montant total
+                        Total amount
                       </span>
                       <span className="font-medium text-[var(--text-high)]">
-                        {total.toLocaleString("fr-FR")} EUR
+                        {total.toLocaleString("en-US")} EUR
                       </span>
                     </div>
                     {won.length > 0 && (
                       <div className="flex items-center justify-between py-2 text-sm">
                         <span className="text-[var(--text-mid)]">
-                          Mise moyenne
+                          Average bid
                         </span>
                         <span className="font-medium text-[var(--text-high)]">
                           {Math.round(total / won.length).toLocaleString(
-                            "fr-FR"
+                            "en-US"
                           )}{" "}
                           EUR
                         </span>

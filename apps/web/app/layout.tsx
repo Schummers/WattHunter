@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "WattHunter",
-  description: "Le fantasy game du cyclisme professionnel",
+  description: "The fantasy league where your team grows with you.",
 };
 
 export const viewport: Viewport = {
@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="fr"
+      lang="en"
       className={`${GeistSans.variable} ${GeistMono.variable}`}
       suppressHydrationWarning
     >

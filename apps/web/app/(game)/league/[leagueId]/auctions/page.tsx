@@ -33,7 +33,7 @@ export default async function AuctionsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold text-[var(--text-high)]">Enchères</h1>
+      <h1 className="text-xl font-semibold text-[var(--text-high)]">Auctions</h1>
 
       {active && (
         <div className="rounded-md border border-border bg-[var(--bg-surface)] p-6">
@@ -44,11 +44,11 @@ export default async function AuctionsPage({
               </span>
               <div className="flex items-center gap-3 text-sm text-[var(--text-mid)]">
                 <Badge variant="secondary">Round {activeRound}/3</Badge>
-                <span>Résolution à minuit</span>
+                <span>Resolves at midnight</span>
               </div>
             </div>
             <Link href={`/league/${leagueId}/auctions/${active.id}`}>
-              <Button variant="default">Voir les coureurs</Button>
+              <Button variant="default">View riders</Button>
             </Link>
           </div>
         </div>
@@ -59,7 +59,7 @@ export default async function AuctionsPage({
           <div className="border-b border-border" />
           <div className="flex flex-col gap-1">
             <span className="text-xs font-medium uppercase text-[var(--text-mid)]">
-              À venir
+              Upcoming
             </span>
             {upcoming.map((a) => (
               <div
@@ -68,11 +68,11 @@ export default async function AuctionsPage({
               >
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-[var(--text-mid)]">
-                    {new Date(a.opens_at).toLocaleDateString("fr-FR")}
+                    {new Date(a.opens_at).toLocaleDateString("en-US")}
                   </span>
                   <span className="text-sm text-[var(--text-high)]">{a.name}</span>
                 </div>
-                <Badge variant="secondary">Planifié</Badge>
+                <Badge variant="secondary">Scheduled</Badge>
               </div>
             ))}
           </div>
@@ -84,7 +84,7 @@ export default async function AuctionsPage({
           <div className="border-b border-border" />
           <div className="flex flex-col gap-1">
             <span className="text-xs font-medium uppercase text-[var(--text-mid)]">
-              Terminées
+              Completed
             </span>
             {closed.map((a) => (
               <div
@@ -93,13 +93,13 @@ export default async function AuctionsPage({
               >
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-[var(--text-mid)]">
-                    {new Date(a.opens_at).toLocaleDateString("fr-FR")}
+                    {new Date(a.opens_at).toLocaleDateString("en-US")}
                   </span>
                   <span className="text-sm text-[var(--text-high)]">{a.name}</span>
                 </div>
                 <Link href={`/league/${leagueId}/auctions/${a.id}/results`}>
                   <Button variant="ghost" size="sm">
-                    Résultats
+                    Results
                   </Button>
                 </Link>
               </div>
@@ -111,7 +111,7 @@ export default async function AuctionsPage({
       {(!auctions || auctions.length === 0) && (
         <div className="flex flex-col items-center gap-4 py-16">
           <p className="text-sm text-[var(--text-mid)]">
-            Aucune enchère planifiée pour le moment.
+            No auctions scheduled yet.
           </p>
         </div>
       )}

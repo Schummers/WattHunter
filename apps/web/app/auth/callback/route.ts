@@ -1,40 +1,38 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-
-async function ensureUserProfile(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
-
-  const { data: existingUser } = await supabase
-    .from("users")
-    .select("id, has_onboarded")
-    .eq("id", user.id)
-    .single();
-
-  if (!existingUser) {
-    await supabase.from("users").insert({
-      id: user.id,
-      display_name:
-        user.user_metadata?.full_name ??
-        user.email?.split("@")[0] ??
-        "Joueur",
-      avatar_url: user.user_metadata?.avatar_url ?? null,
-    });
-    return { user, hasOnboarded: false };
-  }
-
-  return { user, hasOnboarded: existingUser.has_onboarded };
-}
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next");
 
-  const supabase = await createClient();
+  const cookieStore = await cookies();
+
+  // Track cookies that Supabase sets during exchangeCodeForSession
+  const pendingCookies: Array<{
+    name: string;
+    value: string;
+    options: Record<string, unknown>;
+  }> = [];
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+            pendingCookies.push({ name, value, options });
+          });
+        },
+      },
+    },
+  );
 
   // OAuth or email confirmation flow (has code param)
   if (code) {
@@ -44,16 +42,55 @@ export async function GET(request: Request) {
     }
   }
 
-  // At this point, session exists (either from code exchange or already logged in via email/password)
-  const result = await ensureUserProfile(supabase);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!result) {
+  if (!user) {
     return NextResponse.redirect(`${origin}/login?error=auth_failed`);
   }
 
-  if (!result.hasOnboarded) {
-    return NextResponse.redirect(`${origin}/onboarding`);
+  // Ensure user profile exists
+  const { data: existingUser } = await supabase
+    .from("users")
+    .select("id")
+    .eq("id", user.id)
+    .single();
+
+  if (!existingUser) {
+    await supabase.from("users").insert({
+      id: user.id,
+      display_name:
+        user.user_metadata?.full_name ??
+        user.email?.split("@")[0] ??
+        "Player",
+      avatar_url: user.user_metadata?.avatar_url ?? null,
+    });
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  // Determine redirect destination
+  let redirectTo = `${origin}/league/choose`;
+
+  if (next) {
+    redirectTo = `${origin}${next}`;
+  } else {
+    const { data: membership } = await supabase
+      .from("league_members")
+      .select("league_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (membership) {
+      redirectTo = `${origin}/league/${membership.league_id}`;
+    }
+  }
+
+  // Create redirect response and explicitly set all auth cookies on it
+  const response = NextResponse.redirect(redirectTo);
+  for (const { name, value, options } of pendingCookies) {
+    response.cookies.set(name, value, options);
+  }
+
+  return response;
 }

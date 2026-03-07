@@ -48,7 +48,7 @@ export default async function AuctionDetailPage({
   ]);
 
   if (!auction || !team) {
-    return <p className="text-[var(--text-mid)]">Enchère introuvable.</p>;
+    return <p className="text-[var(--text-mid)]">Auction not found.</p>;
   }
 
   const now = new Date();
@@ -76,13 +76,13 @@ export default async function AuctionDetailPage({
         <div className="flex items-center gap-3 text-sm text-[var(--text-mid)]">
           <span>Round {currentRound}/3</span>
           <span>·</span>
-          <span>Résolution à minuit</span>
+          <span>Resolves at midnight</span>
           <span>·</span>
           <Link
             href={`/league/${leagueId}/auctions/${auctionId}/results`}
             className="text-[var(--accent-default)] hover:underline"
           >
-            Voir résultats
+            View results
           </Link>
         </div>
       </div>

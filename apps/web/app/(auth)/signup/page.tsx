@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,12 +34,12 @@ export default function SignupPage() {
     setMessage("");
 
     if (displayName.trim().length < 2) {
-      setError("Le nom d'utilisateur doit contenir au moins 2 caracteres.");
+      setError("Username must be at least 2 characters.");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
+      setError("Passwords do not match.");
       return;
     }
 
@@ -58,18 +59,24 @@ export default function SignupPage() {
     if (error) {
       setError(error.message);
     } else {
-      setMessage("Verifiez votre boite mail pour confirmer votre compte.");
+      setMessage("Check your email to confirm your account.");
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="flex w-full max-w-sm flex-col items-center gap-8">
-      <div className="flex flex-col items-center gap-2">
+    <div className="flex w-full max-w-sm flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-2 mb-2">
+        <Image
+          src="/watthunter-icon.png"
+          alt="WattHunter"
+          width={48}
+          height={48}
+        />
         <h1 className="text-2xl font-semibold text-[var(--text-high)]">WattHunter</h1>
         <p className="text-sm text-[var(--text-mid)]">
-          Creer votre compte
+          Create your account
         </p>
       </div>
 
@@ -79,54 +86,70 @@ export default function SignupPage() {
         onClick={handleGoogleLogin}
       >
         <Mail className="size-4" />
-        Continuer avec Google
+        Continue with Google
       </Button>
 
       <div className="flex w-full items-center gap-3">
         <div className="h-px flex-1 bg-[var(--border-subtle)]" />
-        <span className="text-xs text-[var(--text-low)]">ou</span>
+        <span className="text-xs text-[var(--text-low)]">or</span>
         <div className="h-px flex-1 bg-[var(--border-subtle)]" />
       </div>
 
       <form onSubmit={handleSignup} className="flex w-full flex-col gap-4">
-        <Input
-          type="text"
-          placeholder="Nom d'utilisateur"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          required
-          minLength={2}
-          maxLength={30}
-        />
-        <Input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <Input
-          type="password"
-          placeholder="Mot de passe"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          minLength={6}
-        />
-        <Input
-          type="password"
-          placeholder="Confirmer le mot de passe"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-          minLength={6}
-        />
+        <div className="flex flex-col gap-1">
+          <label htmlFor="displayName" className="text-sm font-semibold text-[var(--text-mid)]">Username</label>
+          <Input
+            id="displayName"
+            type="text"
+            placeholder="johndoe"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            required
+            minLength={2}
+            maxLength={30}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="email" className="text-sm font-semibold text-[var(--text-mid)]">Email</label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="password" className="text-sm font-semibold text-[var(--text-mid)]">Password</label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="Min. 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="confirmPassword" className="text-sm font-semibold text-[var(--text-mid)]">Confirm password</label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            placeholder="Repeat password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+        </div>
 
-        {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
-        {message && <p className="text-sm text-[var(--success)]">{message}</p>}
+        {error && <p className="-mt-2 text-xs text-[var(--danger)]">{error}</p>}
+        {message && <p className="-mt-2 text-xs text-[var(--status-success)]">{message}</p>}
 
-        <Button type="submit" variant="cta" className="w-full" disabled={loading}>
-          {loading ? "Creation..." : "Creer un compte"}
+        <Button type="submit" variant="cta" className="mt-4 w-full" disabled={loading}>
+          {loading ? "Creating..." : "Create account"}
         </Button>
       </form>
 
@@ -134,11 +157,11 @@ export default function SignupPage() {
         href="/login"
         className="text-sm text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors"
       >
-        Deja un compte ? Se connecter
+        Already have an account? Sign in
       </Link>
 
       <p className="text-center text-xs text-[var(--text-low)]">
-        En continuant, vous acceptez nos conditions d&apos;utilisation.
+        By continuing, you agree to our terms of service.
       </p>
     </div>
   );

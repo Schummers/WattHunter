@@ -25,16 +25,15 @@ export default async function LeagueLayout({
   // Fetch league membership (with league name via join)
   const { data: membership } = await supabase
     .from("league_members")
-    .select("team_name, role, leagues:league_id(name)")
+    .select("team_id, leagues:league_id(name), teams:team_id(name)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
 
   if (!membership) {
-    redirect("/onboarding");
+    redirect("/league/choose");
   }
 
-  // Extract league name from the joined data
   const leagueName =
     (membership.leagues as unknown as { name: string } | null)?.name ?? "League";
 

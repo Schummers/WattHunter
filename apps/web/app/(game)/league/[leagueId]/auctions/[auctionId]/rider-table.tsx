@@ -66,7 +66,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <Input
-          placeholder="Rechercher un coureur..."
+          placeholder="Search rider..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
@@ -76,7 +76,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
           onChange={(e) => setTeamFilter(e.target.value)}
           className="h-9 rounded-md border border-input bg-[var(--bg-surface)] px-3 text-sm"
         >
-          <option value="">Toutes les équipes</option>
+          <option value="">All teams</option>
           {teams.map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
@@ -86,7 +86,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
           onChange={(e) => setSpecialtyFilter(e.target.value)}
           className="h-9 rounded-md border border-input bg-[var(--bg-surface)] px-3 text-sm"
         >
-          <option value="">Toutes spécialités</option>
+          <option value="">All specialties</option>
           <option value="climber">Grimpeur</option>
           <option value="sprinter">Sprinteur</option>
           <option value="rouleur">Rouleur</option>
@@ -97,18 +97,18 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
       </div>
 
       <span className="text-xs font-medium uppercase text-[var(--text-mid)]">
-        {filtered.length} coureurs
+        {filtered.length} riders
       </span>
 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Coureur</TableHead>
-            <TableHead>Équipe</TableHead>
-            <TableHead>Spé.</TableHead>
+            <TableHead>Rider</TableHead>
+            <TableHead>Team</TableHead>
+            <TableHead>Spec.</TableHead>
             <TableHead>Nat.</TableHead>
             <TableHead className="text-right">PCS</TableHead>
-            <TableHead className="text-right">Salaire</TableHead>
+            <TableHead className="text-right">Salary</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
@@ -131,12 +131,12 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
                 </span>
               </TableCell>
               <TableCell className="text-[var(--text-mid)]">{rider.nationality}</TableCell>
-              <TableCell className="text-right">{rider.pcs_points_1yr.toLocaleString("fr-FR")}</TableCell>
+              <TableCell className="text-right">{rider.pcs_points_1yr.toLocaleString("en-US")}</TableCell>
               <TableCell className="text-right">
-                {rider.monthly_salary.toLocaleString("fr-FR")} €
+                {rider.monthly_salary.toLocaleString("en-US")} EUR
               </TableCell>
               <TableCell>
-                {rider.is_contracted && <Badge variant="outline">Recruté</Badge>}
+                {rider.is_contracted && <Badge variant="outline">Signed</Badge>}
                 {myBidRiderIds.has(rider.id) && <Badge variant="secondary">Mise</Badge>}
               </TableCell>
             </TableRow>

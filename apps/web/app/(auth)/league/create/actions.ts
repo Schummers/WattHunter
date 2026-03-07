@@ -5,7 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
 const createLeagueSchema = z.object({
-  name: z.string().min(2, "Le nom de la ligue doit contenir au moins 2 caracteres.").max(50),
+  name: z.string().min(2, "League name must be at least 2 characters.").max(50),
 });
 
 function generateInviteCode(): string {
@@ -37,12 +37,12 @@ export async function createLeague(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "Non authentifie." };
+    return { error: "Not authenticated." };
   }
 
   // Ensure public.users row exists BEFORE league insert (FK constraint)
   const displayName =
-    user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "Joueur";
+    user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "Player";
   await supabase
     .from("users")
     .upsert(
@@ -76,7 +76,7 @@ export async function createLeague(
 
   if (leagueError || !league) {
     console.error("League creation failed:", leagueError);
-    return { error: `Erreur lors de la creation de la ligue: ${leagueError?.message ?? "unknown"}` };
+    return { error: `Failed to create league: ${leagueError?.message ?? "unknown"}` };
   }
 
   const { data: team, error: teamError } = await supabase
@@ -84,14 +84,14 @@ export async function createLeague(
     .insert({
       user_id: user.id,
       league_id: league.id,
-      name: `Equipe de ${displayName}`,
+      name: `${displayName}'s Team`,
     })
     .select("id")
     .single();
 
   if (teamError || !team) {
     console.error("Team creation failed:", teamError);
-    return { error: "Erreur lors de la creation de l'equipe." };
+    return { error: "Failed to create team." };
   }
 
   const { error: memberError } = await supabase.from("league_members").insert({
@@ -101,7 +101,7 @@ export async function createLeague(
   });
 
   if (memberError) {
-    return { error: "Erreur lors de l'inscription a la ligue." };
+    return { error: "Failed to join league." };
   }
 
   redirect(`/league/${league.id}`);

@@ -51,6 +51,12 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - Pipeline E : ~1h (100 coureurs) / ~5h (500 coureurs, batch de 5 + 1min pause)
 - Calendrier WT : `services/pcs-sync/wt_calendar_2026.json`
 
+## Language rule
+- ALL user-facing text in the app MUST be in English (UI labels, error messages, placeholders, button text, etc.)
+- Code comments and variable names: English
+- CLAUDE.md and docs can remain in French
+- The user speaks French, but the app is English-only
+
 ## Règles critiques (NEVER DO)
 - NEVER bypass le RLS. L'app web utilise toujours l'anon key.
 - NEVER exposer la service_role key au browser/client.

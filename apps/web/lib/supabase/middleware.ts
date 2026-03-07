@@ -29,17 +29,15 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Redirect unauthenticated users trying to access game routes
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/signup") &&
-    !request.nextUrl.pathname.startsWith("/auth") &&
-    !request.nextUrl.pathname.startsWith("/join") &&
-    request.nextUrl.pathname !== "/"
-  ) {
+  // Public routes accessible without authentication
+  const publicPaths = ["/login", "/signup", "/auth", "/onboarding"];
+  const isPublic =
+    request.nextUrl.pathname === "/" ||
+    publicPaths.some((p) => request.nextUrl.pathname.startsWith(p));
+
+  if (!user && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/onboarding";
     return NextResponse.redirect(url);
   }
 

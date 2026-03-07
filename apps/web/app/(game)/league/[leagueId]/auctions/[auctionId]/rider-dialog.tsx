@@ -105,20 +105,20 @@ export function RiderDialog({
 
   const infoRows = [
     {
-      label: "Specialite",
+      label: "Specialty",
       value: SPECIALTY_NAMES[rider.specialty] ?? rider.specialty,
     },
     {
-      label: "Points PCS (1 an)",
-      value: `${rider.pcs_points_1yr.toLocaleString("fr-FR")} pts`,
+      label: "PCS Points (1 yr)",
+      value: `${rider.pcs_points_1yr.toLocaleString("en-US")} pts`,
     },
     {
-      label: "Classement PCS",
+      label: "PCS Rank",
       value: rider.pcs_rank ? `#${rider.pcs_rank}` : "—",
     },
     {
-      label: "Salaire minimum",
-      value: `${rider.monthly_salary.toLocaleString("fr-FR")} EUR/mois`,
+      label: "Minimum salary",
+      value: `${rider.monthly_salary.toLocaleString("en-US")} EUR/mo`,
     },
   ];
 
@@ -142,7 +142,7 @@ export function RiderDialog({
               <DialogTitle className="text-lg">{rider.full_name}</DialogTitle>
               <p className="text-sm text-[var(--text-mid)]">
                 {rider.real_team} · {rider.nationality}
-                {rider.age ? ` · ${rider.age} ans` : ""}
+                {rider.age ? ` · ${rider.age} yo` : ""}
               </p>
             </div>
           </div>
@@ -167,20 +167,20 @@ export function RiderDialog({
 
         <div className="flex flex-col gap-3">
           <span className="text-sm font-semibold text-[var(--text-high)]">
-            {existingBid ? "Modifier la mise" : "Placer une mise"}
+            {existingBid ? "Edit bid" : "Place a bid"}
           </span>
 
           {existingBid && (
             <p className="text-sm text-[var(--text-mid)]">
-              Salaire proposé actuel :{" "}
-              {existingBid.amount.toLocaleString("fr-FR")} €/mois
+              Current bid:{" "}
+              {existingBid.amount.toLocaleString("en-US")} EUR/mo
             </p>
           )}
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-[var(--text-high)]">
-              Salaire mensuel proposé (min.{" "}
-              {rider.monthly_salary.toLocaleString("fr-FR")} €/mois)
+              Monthly salary bid (min.{" "}
+              {rider.monthly_salary.toLocaleString("en-US")} EUR/mo)
             </label>
             <Input
               type="number"
@@ -198,8 +198,8 @@ export function RiderDialog({
               budgetAfter >= 0 ? "text-[var(--text-mid)]" : "text-[var(--status-danger)]"
             )}
           >
-            Budget dispo apres engagement salaire :{" "}
-            {budgetAfter.toLocaleString("fr-FR")} €/mois
+            Available budget after salary commitment:{" "}
+            {budgetAfter.toLocaleString("en-US")} EUR/mo
           </p>
 
           {error && <p className="text-sm text-[var(--status-danger)]">{error}</p>}
@@ -213,8 +213,8 @@ export function RiderDialog({
             {isPending
               ? "..."
               : existingBid
-                ? "Modifier la mise"
-                : "Confirmer la mise"}
+                ? "Update bid"
+                : "Confirm bid"}
           </Button>
 
           {existingBid && (
@@ -224,7 +224,7 @@ export function RiderDialog({
               disabled={isPending}
               onClick={handleCancel}
             >
-              Annuler la mise
+              Cancel bid
             </Button>
           )}
         </div>

@@ -7,8 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 const joinLeagueSchema = z.object({
   code: z
     .string()
-    .length(6, "Le code doit contenir exactement 6 caracteres.")
-    .regex(/^[A-Z2-9]+$/, "Code invalide."),
+    .length(6, "Code must be exactly 6 characters.")
+    .regex(/^[A-Z2-9]+$/, "Invalid code."),
 });
 
 export async function joinLeague(
@@ -31,7 +31,7 @@ export async function joinLeague(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "Non authentifie." };
+    return { error: "Not authenticated." };
   }
 
   const { data: league } = await supabase
@@ -41,11 +41,11 @@ export async function joinLeague(
     .single();
 
   if (!league) {
-    return { error: "Code invalide. Verifiez aupres du commissaire de la ligue." };
+    return { error: "Invalid code. Check with your Race Director." };
   }
 
   if (league.status === "active") {
-    return { error: "Cette ligue a deja demarre. Impossible de la rejoindre." };
+    return { error: "This league has already started. You can't join anymore." };
   }
 
   const { data: existingMember } = await supabase
@@ -65,13 +65,12 @@ export async function joinLeague(
     .eq("league_id", league.id);
 
   if (count !== null && count >= league.max_players) {
-    return { error: "Cette ligue est pleine." };
+    return { error: "This league is full." };
   }
 
-  // Ensure public.users row exists (trigger handles this normally,
-  // but belt-and-suspenders for edge cases like auto-confirm)
+  // Ensure public.users row exists
   const displayName =
-    user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "Joueur";
+    user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "Player";
   await supabase
     .from("users")
     .upsert(
@@ -84,14 +83,14 @@ export async function joinLeague(
     .insert({
       user_id: user.id,
       league_id: league.id,
-      name: `Equipe de ${displayName}`,
+      name: `${displayName}'s Team`,
     })
     .select("id")
     .single();
 
   if (teamError || !team) {
     console.error("Team creation failed:", teamError);
-    return { error: "Erreur lors de la creation de l'equipe." };
+    return { error: "Failed to create team." };
   }
 
   const { error: joinError } = await supabase.from("league_members").insert({
@@ -101,7 +100,7 @@ export async function joinLeague(
   });
 
   if (joinError) {
-    return { error: "Erreur lors de l'inscription a la ligue." };
+    return { error: "Failed to join league." };
   }
 
   redirect(`/league/${league.id}`);

@@ -31,7 +31,7 @@ export default async function LeagueDashboardPage({
     ]);
 
   if (!league || !user) {
-    return <p className="text-muted-foreground">Ligue introuvable.</p>;
+    return <p className="text-muted-foreground">League not found.</p>;
   }
 
   const isCommissioner = league.commissioner_id === user.id;
@@ -55,9 +55,9 @@ export default async function LeagueDashboardPage({
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-foreground">Tableau de bord</h2>
+      <h2 className="text-xl font-semibold text-foreground">Dashboard</h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        La ligue est active. Les encheres et le classement arrivent bientot.
+        The league is active. Auctions and rankings coming soon.
       </p>
     </div>
   );

@@ -8,7 +8,7 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/onboarding");
   }
 
   const { data: membership } = await supabase
@@ -22,5 +22,5 @@ export default async function HomePage() {
     redirect(`/league/${membership.league_id}`);
   }
 
-  redirect("/onboarding");
+  redirect("/league/choose");
 }

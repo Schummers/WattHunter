@@ -67,10 +67,10 @@ export function LobbyView({
           <h2 className="text-xl font-semibold text-foreground">
             {league.name}
           </h2>
-          <Badge variant="secondary">En attente</Badge>
+          <Badge variant="secondary">Pending</Badge>
         </div>
         <p className="text-sm text-muted-foreground">
-          {memberCount}/{league.max_players} joueurs
+          {memberCount}/{league.max_players} players
         </p>
       </div>
 
@@ -78,7 +78,7 @@ export function LobbyView({
 
       <div className="flex flex-col gap-3">
         <p className="text-sm font-medium text-foreground">
-          Inviter des joueurs
+          Invite players
         </p>
         <div className="flex items-center gap-2">
           <Input
@@ -97,7 +97,7 @@ export function LobbyView({
 
       <div className="flex flex-col gap-3">
         <p className="text-sm font-medium text-foreground">
-          Code d&apos;invitation
+          Invite code
         </p>
         <div className="flex items-center gap-2">
           <Input
@@ -115,10 +115,10 @@ export function LobbyView({
       <div className="my-6 border-b border-border" />
 
       <div className="flex flex-col gap-4">
-        <p className="text-sm font-medium text-foreground">Joueurs</p>
+        <p className="text-sm font-medium text-foreground">Players</p>
         <div className="flex flex-col">
           {members.map((member) => {
-            const name = member.users?.display_name ?? "Joueur";
+            const name = member.users?.display_name ?? "Player";
             const initials = name
               .split(" ")
               .map((n) => n[0])
@@ -145,7 +145,7 @@ export function LobbyView({
                 <span className="text-sm text-foreground">{name}</span>
                 {member.user_id === league.commissioner_id && (
                   <Badge variant="outline" className="ml-auto">
-                    Commissaire
+                    Race Director
                   </Badge>
                 )}
               </div>
@@ -165,7 +165,7 @@ export function LobbyView({
               disabled={!canLaunch || launching}
               onClick={handleLaunch}
             >
-              {launching ? "Lancement..." : "Lancer la premiere enchere"}
+              {launching ? "Launching..." : "Launch first auction"}
             </Button>
           </div>
         </>
