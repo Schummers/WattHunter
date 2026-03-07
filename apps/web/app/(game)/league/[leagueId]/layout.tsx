@@ -45,21 +45,6 @@ export default async function LeagueLayout({
 
   const hasMultipleLeagues = (leagueCount ?? 0) > 1;
 
-  // Get user profile for avatar
-  const { data: profile } = await supabase
-    .from("users")
-    .select("display_name, avatar_url")
-    .eq("id", user.id)
-    .single();
-
-  const displayName = profile?.display_name ?? user.email ?? "";
-  const userInitials = displayName
-    .split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "?";
-
   // Determine unlocked tabs based on league state
   const unlockedTabs: ("home" | "team" | "budget" | "ranking")[] = ["home"];
 
@@ -92,9 +77,7 @@ export default async function LeagueLayout({
         <TopBar
           leagueName={leagueName}
           hasMultipleLeagues={hasMultipleLeagues}
-          userAvatarUrl={profile?.avatar_url}
-          userInitials={userInitials}
-          settingsHref="/settings"
+          settingsHref={`/league/${leagueId}/settings`}
         />
         <main className="flex-1 overflow-y-auto px-4 pb-20 lg:mx-auto lg:max-w-2xl lg:px-8 lg:pb-8">
           {children}

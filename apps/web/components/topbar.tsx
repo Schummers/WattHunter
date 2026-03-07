@@ -1,15 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { Zap, ChevronDown } from "lucide-react";
+import { Settings, ChevronDown } from "lucide-react";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface TopBarProps {
   leagueName: string;
   hasMultipleLeagues?: boolean;
-  userAvatarUrl?: string | null;
-  userInitials: string;
   settingsHref: string;
   onLeagueSwitch?: () => void;
 }
@@ -17,8 +15,6 @@ interface TopBarProps {
 export function TopBar({
   leagueName,
   hasMultipleLeagues,
-  userAvatarUrl,
-  userInitials,
   settingsHref,
   onLeagueSwitch,
 }: TopBarProps) {
@@ -26,7 +22,7 @@ export function TopBar({
 
   return (
     <header
-      className={`sticky top-0 z-50 flex h-8 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-app)] px-4 transition-transform duration-200 lg:hidden ${
+      className={`sticky top-0 z-50 flex h-10 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-app)] px-4 transition-transform duration-200 lg:hidden ${
         visible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
@@ -36,7 +32,13 @@ export function TopBar({
         className="flex items-center gap-1.5 truncate"
         disabled={!hasMultipleLeagues}
       >
-        <Zap size={16} className="shrink-0 text-[var(--accent-highlight)]" />
+        <Image
+          src="/watthunter-icon.svg"
+          alt="WattHunter"
+          width={20}
+          height={20}
+          className="shrink-0"
+        />
         <span className="text-sm font-semibold text-[var(--text-high)]">
           WattHunter
         </span>
@@ -48,15 +50,8 @@ export function TopBar({
         )}
       </button>
 
-      <Link href={settingsHref}>
-        <Avatar className="h-6 w-6" size="sm">
-          {userAvatarUrl && (
-            <AvatarImage src={userAvatarUrl} alt="User avatar" />
-          )}
-          <AvatarFallback className="bg-[var(--bg-surface)] text-[9px] text-[var(--text-mid)]">
-            {userInitials}
-          </AvatarFallback>
-        </Avatar>
+      <Link href={settingsHref} className="flex items-center justify-center">
+        <Settings size={20} className="text-[var(--text-mid)] hover:text-[var(--text-high)] transition-colors" />
       </Link>
     </header>
   );
