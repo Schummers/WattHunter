@@ -79,7 +79,7 @@ export function RiderCard({
 
   const bgClass =
     bidState === "active"
-      ? "bg-[var(--bid-active-bg)]"
+      ? "bg-[var(--bg-surface-hover)]"
       : "";
 
   const inner = (
