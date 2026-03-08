@@ -85,32 +85,24 @@ export default async function LevelsPage({
                 >
                   Level {lvl.level}
                 </span>
-                {!isCurrent && (
-                  <span
-                    className={`text-xs font-mono ${
-                      isFuture
-                        ? "text-[var(--text-ghost)]"
-                        : "text-[var(--text-low)]"
-                    }`}
-                  >
-                    {lvl.xp.toLocaleString()} XP
-                  </span>
-                )}
+                <span
+                  className={`text-xs font-mono ${
+                    isCurrent
+                      ? "text-[var(--accent-default)]"
+                      : isFuture
+                      ? "text-[var(--text-ghost)]"
+                      : "text-[var(--text-low)]"
+                  }`}
+                >
+                  {isCurrent
+                    ? `${currentXp.toLocaleString()} / ${nextLevelData ? nextLevelData.xp.toLocaleString() : currentXp.toLocaleString()} XP`
+                    : `${lvl.xp.toLocaleString()} XP`}
+                </span>
               </div>
 
-              {/* Progress bar with XP for current level */}
+              {/* Progress bar for current level */}
               {isCurrent && (
-                <div className="mt-2 flex flex-col gap-1">
-                  <span className="text-[12px] font-medium text-[var(--accent-default)]">
-                    <span className="font-mono">{currentXp.toLocaleString()}</span>
-                    {nextLevelData && (
-                      <>
-                        {" / "}
-                        <span className="font-mono">{nextLevelData.xp.toLocaleString()}</span>
-                      </>
-                    )}
-                    {" XP"}
-                  </span>
+                <div className="mt-2">
                   <Progress value={progressPct} />
                 </div>
               )}

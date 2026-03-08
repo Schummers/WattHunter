@@ -53,7 +53,7 @@ export function TeamLevelCard({
             <span className="text-[13px] font-semibold text-[var(--text-mid)]">
               Team level
             </span>
-            <span className="text-[12px] font-medium text-[var(--text-low)]">
+            <span className="text-[12px] font-medium text-[var(--text-low)] hover:text-[var(--text-mid)] transition-colors">
               All levels &rarr;
             </span>
           </div>
