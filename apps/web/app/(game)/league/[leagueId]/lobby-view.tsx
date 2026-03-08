@@ -94,7 +94,7 @@ export function LobbyView({
   };
 
   return (
-    <div className="mx-auto max-w-lg pt-4 space-y-6">
+    <div className="mx-auto max-w-lg px-4 pt-4 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-3">

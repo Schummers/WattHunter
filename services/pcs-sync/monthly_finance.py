@@ -58,14 +58,20 @@ async def run_monthly_finance(supabase: Client) -> dict:
                 "description": f"Sponsor mensuel {today}",
             }).execute()
 
-            # 2. Salary deduction
+            # 2. Salary deduction (skip contracts already paid this month)
             contracts = supabase.table("contracts").select(
-                "id, rider_id, locked_salary"
+                "id, rider_id, locked_salary, last_salary_paid"
             ).eq("team_id", team_id).in_(
                 "status", ["active", "notice"]
             ).execute()
 
-            total_salary = calculate_monthly_salaries(contracts.data or [])
+            first_of_month = today[:8] + "01"  # e.g. "2026-03-01"
+            unpaid_contracts = [
+                c for c in (contracts.data or [])
+                if not c.get("last_salary_paid") or c["last_salary_paid"] < first_of_month
+            ]
+
+            total_salary = calculate_monthly_salaries(unpaid_contracts)
             treasury -= total_salary
 
             if total_salary > 0:
@@ -73,8 +79,14 @@ async def run_monthly_finance(supabase: Client) -> dict:
                     "team_id": team_id,
                     "type": "monthly_salary",
                     "amount": -total_salary,
-                    "description": f"Salaires {today} ({len(contracts.data or [])} coureurs)",
+                    "description": f"Salaires {today} ({len(unpaid_contracts)} coureurs)",
                 }).execute()
+
+                # Mark contracts as paid for this month
+                for c in unpaid_contracts:
+                    supabase.table("contracts").update({
+                        "last_salary_paid": today,
+                    }).eq("id", c["id"]).execute()
 
             # 3. Update treasury
             supabase.table("teams").update({

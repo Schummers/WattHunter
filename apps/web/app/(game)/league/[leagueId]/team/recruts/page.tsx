@@ -42,7 +42,7 @@ export default async function RecrutsPage({
 
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, team_id, teams:team_id(id, level, cumulative_xp)")
+    .select("id, team_id, teams:team_id(id, level, cumulative_xp, treasury)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
@@ -124,6 +124,7 @@ export default async function RecrutsPage({
       }
       currentSlots={(teamRiders ?? []).length}
       initialBids={initialBids}
+      treasury={team?.treasury ?? 200000}
     />
   );
 }

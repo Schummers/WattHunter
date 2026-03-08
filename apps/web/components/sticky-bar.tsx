@@ -47,7 +47,7 @@ export function StickyBar({
       style={bottomStyle}
     >
       <div className="flex items-center justify-between px-4 lg:mx-auto lg:max-w-2xl">
-        <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+        <span className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
           {slotInfo} &middot; {budgetInfo}
         </span>
         <button

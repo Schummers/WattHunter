@@ -6,18 +6,20 @@ Implements 3-round sealed-bid auction resolution per PRD_02_MECHANICS.md.
 Rules (from PRD):
   - 3 rounds of 24 h each (open window = 72 h total)
   - Each round: highest bid per rider wins; tiebreak = earliest placed_at timestamp
-  - Winner: status → 'won', contract created
+  - Winner: status → 'won', contract created, first month salary debited from treasury
   - Losers: status → 'outbid'
   - After round 3: auction.status → 'closed'
 
-BETA economy rules:
+Economy rules:
   - The winning bid amount becomes the rider's locked_salary (monthly salary).
-  - There is NO one-shot treasury deduction at auction time.
-  - The monthly salary is deducted by the monthly finance job.
-  - treasury_log is still inserted with amount=0 to record the event.
+  - The first month's salary is debited from treasury at auction time.
+  - Subsequent monthly salaries are deducted by the monthly finance job.
+  - treasury_log records the deduction with amount = -locked_salary.
   - NEVER authorize a bid if treasury < total active bids (enforced at bid time in API;
     resolution here trusts the bid was valid when placed)
 """
+from __future__ import annotations
+
 import logging
 from datetime import date, datetime
 from supabase import Client
@@ -25,22 +27,33 @@ from supabase import Client
 logger = logging.getLogger(__name__)
 
 
-async def resolve_current_round(supabase: Client) -> dict:
+async def resolve_current_round(
+    supabase: Client,
+    force_round: int | None = None,
+    force_close: bool = False,
+) -> dict:
     """
     Resolve the current auction round for all open auctions.
+
+    Args:
+        supabase: Supabase client with service role key.
+        force_round: Override the date-based round computation (1-3).
+        force_close: Close the auction after resolution regardless of round.
 
     Algorithm:
       1. Find all auctions with status = 'open'.
       2. Compute current_round = (today - opens_at).days + 1  (clamped 1-3).
+         If force_round is set, use that instead.
       3. For each open auction:
          a. Fetch all active bids for current_round.
          b. Group by rider_id.
          c. Winning bid = highest amount; tiebreak = earliest placed_at.
          d. Mark winner as 'won', losers as 'outbid'.
-         e. Create a contract with locked_salary = winner["amount"] (BETA: bid = monthly salary).
-         f. Insert treasury_log entry (type='auction_purchase', amount=0 — no one-shot deduction).
-         g. Mark rider.is_active_in_game = True.
-      4. After round 3: close the auction (status='closed', resolved_at=now).
+         e. Create a contract with locked_salary = winner amount.
+         f. Debit first month's salary from team treasury.
+         g. Insert treasury_log entry with amount = -locked_salary.
+         h. Mark rider.is_active_in_game = True.
+      4. After round 3 (or if force_close): close the auction.
 
     Returns a summary dict with per-auction results.
     """
@@ -59,9 +72,12 @@ async def resolve_current_round(supabase: Client) -> dict:
 
         try:
             # Determine which round we are in
-            opens_at_str = auction.get("opens_at", "")
-            opens_date = datetime.fromisoformat(opens_at_str).date()
-            current_round = (today - opens_date).days + 1
+            if force_round is not None:
+                current_round = force_round
+            else:
+                opens_at_str = auction.get("opens_at", "")
+                opens_date = datetime.fromisoformat(opens_at_str).date()
+                current_round = (today - opens_date).days + 1
 
             if current_round < 1 or current_round > 3:
                 logger.warning(
@@ -87,8 +103,7 @@ async def resolve_current_round(supabase: Client) -> dict:
                 logger.info(
                     f"Auction {auction_id} round {current_round}: no active bids"
                 )
-                # Still close if this is the final round
-                if current_round == 3:
+                if current_round == 3 or force_close:
                     _close_auction(supabase, auction_id)
                 results.append({
                     "auction_id": auction_id,
@@ -113,10 +128,11 @@ async def resolve_current_round(supabase: Client) -> dict:
                     winner = rbids[0]
                     losers = rbids[1:]
 
-                    # Fetch rider name (for logging purposes only — salary comes from bid)
+                    # Fetch rider name for logging
                     rider_name_resp = supabase.table("riders").select(
                         "full_name"
                     ).eq("id", rider_id).single().execute()
+                    rider_name = rider_name_resp.data.get("full_name", rider_id) if rider_name_resp.data else rider_id
 
                     # Mark winner
                     supabase.table("auction_bids").update(
@@ -129,25 +145,35 @@ async def resolve_current_round(supabase: Client) -> dict:
                             {"status": "outbid"}
                         ).eq("id", loser["id"]).execute()
 
-                    # BETA: locked_salary = winning bid amount (enchère = salaire mensuel)
                     locked_salary = int(winner["amount"])
 
-                    # Create contract
+                    # Create contract with first salary marked as paid
                     supabase.table("contracts").insert({
                         "team_id": winner["team_id"],
                         "rider_id": rider_id,
                         "locked_salary": locked_salary,
                         "status": "active",
                         "purchased_at": datetime.utcnow().isoformat(),
+                        "last_salary_paid": today.isoformat(),
                     }).execute()
 
-                    # BETA: No one-shot treasury deduction.
-                    # The bid = monthly salary, deducted by monthly finance job.
+                    # Debit first month's salary from team treasury
+                    team_resp = supabase.table("teams").select(
+                        "treasury"
+                    ).eq("id", winner["team_id"]).single().execute()
+                    current_treasury = team_resp.data["treasury"] if team_resp.data else 200000
+
+                    new_treasury = current_treasury - locked_salary
+                    supabase.table("teams").update({
+                        "treasury": new_treasury,
+                    }).eq("id", winner["team_id"]).execute()
+
+                    # Log the treasury deduction
                     supabase.table("treasury_log").insert({
                         "team_id": winner["team_id"],
                         "type": "auction_purchase",
-                        "amount": 0,  # No one-shot cost in beta
-                        "description": f"Contrat Round {current_round} — {rider_id} — salaire {locked_salary} EUR/mois",
+                        "amount": -locked_salary,
+                        "description": f"Contrat Round {current_round} — {rider_name} — salaire {locked_salary} EUR/mois",
                         "rider_id": rider_id,
                     }).execute()
 
@@ -156,6 +182,11 @@ async def resolve_current_round(supabase: Client) -> dict:
                         {"is_active_in_game": True}
                     ).eq("id", rider_id).execute()
 
+                    logger.info(
+                        f"  {rider_name}: won by team {winner['team_id']} "
+                        f"at {locked_salary} EUR/mois (treasury: {current_treasury} → {new_treasury})"
+                    )
+
                     resolved_count += 1
 
                 except Exception as e:
@@ -163,8 +194,8 @@ async def resolve_current_round(supabase: Client) -> dict:
                         f"Auction {auction_id} round {current_round} rider {rider_id}: {e}"
                     )
 
-            # Close auction after final round
-            if current_round == 3:
+            # Close auction after final round or if forced
+            if current_round == 3 or force_close:
                 _close_auction(supabase, auction_id)
 
             results.append({

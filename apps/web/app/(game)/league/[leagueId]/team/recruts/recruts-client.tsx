@@ -41,6 +41,7 @@ interface RecrutsClientProps {
   maxSlots: number;
   currentSlots: number;
   initialBids?: InitialBid[];
+  treasury: number;
 }
 
 const FILTER_OPTIONS = ["All", "Teams", "Speciality", "Nationality", "Age"];
@@ -85,6 +86,7 @@ export function RecrutsClient({
   maxSlots,
   currentSlots,
   initialBids = [],
+  treasury,
 }: RecrutsClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -485,7 +487,7 @@ export function RecrutsClient({
       <StickyBar
         saveEnabled={hasPendingBids}
         slotInfo={`${currentSlots + Object.keys(bids).length}/${maxSlots} slots`}
-        budgetInfo={`${formatThousands(totalBidAmount)} €`}
+        budgetInfo={`${formatThousands(treasury - totalBidAmount)} €`}
         onSave={handleSave}
         saving={saving}
       />
