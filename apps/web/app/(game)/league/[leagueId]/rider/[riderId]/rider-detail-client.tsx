@@ -6,7 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { SegmentedControl } from "@/components/segmented-control";
 import { BackHeader } from "@/components/back-header";
 import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
-import { formatThousands, formatEuro } from "@/lib/format";
+import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
 
 type RiderContext = "recruts" | "team" | "ranking";
 
@@ -230,7 +230,7 @@ export function RiderDetailClient({
                 {rider.full_name}
               </h1>
               {rider.nationality && (
-                <span className="shrink-0">{rider.nationality}</span>
+                <span className="shrink-0">{countryCodeToFlag(rider.nationality)}</span>
               )}
             </div>
             {rider.team_name && (

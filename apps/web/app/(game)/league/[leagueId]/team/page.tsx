@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { RiderCard } from "@/components/rider-card";
 import { TeamLevelCard } from "@/components/team-level-card";
 import { getMaxSlots } from "@/lib/levels";
-import { formatThousands, smartCountdown } from "@/lib/format";
+import { formatThousands, smartCountdown, countryCodeToFlag } from "@/lib/format";
+import { calculateBoost } from "@/lib/boost";
 
 function formatName(fullName: string): string {
   const parts = fullName.split(" ").filter(Boolean);
@@ -103,6 +104,34 @@ export default async function MyTeamPage({
   const maxSlots = getMaxSlots(level);
   const riderCount = teamRiders?.length ?? 0;
 
+  // Fetch active policies for boost calculation (MT-3)
+  const { data: activePolicies } = await supabase
+    .from("team_policies")
+    .select("policy_id, config, policies:policy_id(slug, xp_bonus)")
+    .eq("team_id", team?.id)
+    .eq("is_active", true);
+
+  const boostPolicies = (activePolicies ?? []).map((tp) => {
+    const p = Array.isArray(tp.policies) ? tp.policies[0] : tp.policies;
+    return {
+      slug: (p as { slug: string })?.slug ?? "",
+      xp_bonus: (p as { xp_bonus: number })?.xp_bonus ?? 0,
+      config: tp.config as Record<string, string> | null,
+    };
+  });
+
+  const boostRiders = (teamRiders ?? []).map((tr) => {
+    const r = Array.isArray(tr.riders) ? tr.riders[0] : tr.riders;
+    return {
+      nationality: r?.nationality ?? null,
+      real_team: r?.real_team ?? null,
+      specialty: r?.specialty ?? null,
+      birthdate: null as string | null, // birthdate not in contracts join
+    };
+  });
+
+  const boostPct = calculateBoost(boostPolicies, boostRiders);
+
   // Filter bids: active ones first, then outbid (dimmed)
   const activeBids = pendingBids?.filter((b) => b.status === "active") ?? [];
   const outbidBids = pendingBids?.filter((b) => b.status === "outbid") ?? [];
@@ -146,7 +175,7 @@ export default async function MyTeamPage({
         {/* Boost pill + Change policies link (MT-3 + MT-4) */}
         <div className="flex items-center justify-between mt-3">
           <span className="text-xs font-bold text-[var(--text-mid)] bg-white/5 rounded-full px-2.5 py-0.5">
-            +0% Boost
+            +{boostPct}% Boost
           </span>
           <Link
             href={`/league/${leagueId}/team/policies`}
@@ -181,7 +210,7 @@ export default async function MyTeamPage({
                 rider={{
                   id: r.id,
                   name: formatName(r.full_name),
-                  nationality_flag: r.nationality ?? undefined,
+                  nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
                   team_name: r.real_team ?? undefined,
                   pcs_rank: r.pcs_rank ?? undefined,
                   photo_url: r.photo_url,
@@ -228,7 +257,7 @@ export default async function MyTeamPage({
                   rider={{
                     id: r.id,
                     name: formatName(r.full_name),
-                    nationality_flag: r.nationality ?? undefined,
+                    nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
                     team_name: r.real_team ?? undefined,
                     pcs_rank: r.pcs_rank ?? undefined,
                     photo_url: r.photo_url,

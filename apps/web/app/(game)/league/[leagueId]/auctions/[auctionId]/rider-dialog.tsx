@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { countryCodeToFlag } from "@/lib/format";
 import { placeBid, cancelBid } from "./actions";
 
 interface Rider {
@@ -141,7 +142,7 @@ export function RiderDialog({
             <div>
               <DialogTitle className="text-lg">{rider.full_name}</DialogTitle>
               <p className="text-sm text-[var(--text-mid)]">
-                {rider.real_team} · {rider.nationality}
+                {rider.real_team} · {rider.nationality ? countryCodeToFlag(rider.nationality) : ""}
                 {rider.age ? ` · ${rider.age} yo` : ""}
               </p>
             </div>

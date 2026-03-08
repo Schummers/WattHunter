@@ -159,6 +159,55 @@ describe("placeBid — Zod validation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// placeBid — RC-4 edge cases (any positive integer accepted)
+// ---------------------------------------------------------------------------
+
+describe("placeBid — RC-4 edge cases", () => {
+  it("accepts odd number like 27033", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    const result = await placeBid({
+      auctionId: UUID_1,
+      riderId: UUID_2,
+      amount: 27_033,
+      round: 1,
+    });
+    expect(result).toEqual({ error: "Not authenticated" });
+  });
+
+  it("accepts large amount (999999999)", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    const result = await placeBid({
+      auctionId: UUID_1,
+      riderId: UUID_2,
+      amount: 999_999_999,
+      round: 1,
+    });
+    expect(result).toEqual({ error: "Not authenticated" });
+  });
+
+  it("accepts amount = 1 (minimum positive)", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    const result = await placeBid({
+      auctionId: UUID_1,
+      riderId: UUID_2,
+      amount: 1,
+      round: 1,
+    });
+    expect(result).toEqual({ error: "Not authenticated" });
+  });
+
+  it("rejects float amount", async () => {
+    const result = await placeBid({
+      auctionId: UUID_1,
+      riderId: UUID_2,
+      amount: 5000.5,
+      round: 1,
+    });
+    expect(result).toEqual({ error: "Invalid data" });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // placeBid — rider minimum salary check
 // ---------------------------------------------------------------------------
 

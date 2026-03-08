@@ -8,7 +8,7 @@ import { RiderCard } from "@/components/rider-card";
 import { Pill } from "@/components/pill";
 import { StickyBar } from "@/components/sticky-bar";
 import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
-import { smartCountdown, formatThousands } from "@/lib/format";
+import { smartCountdown, formatThousands, countryCodeToFlag } from "@/lib/format";
 
 interface Rider {
   id: string;
@@ -355,7 +355,7 @@ export function RecrutsClient({
                         rider={{
                           id: r.id,
                           name: formatName(r.full_name),
-                          nationality_flag: r.nationality ?? undefined,
+                          nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
                           team_name: r.real_team ?? undefined,
                           pcs_rank: r.pcs_rank ?? undefined,
                           photo_url: r.photo_url,
@@ -421,7 +421,7 @@ export function RecrutsClient({
                 rider={{
                   id: r.id,
                   name: formatName(r.full_name),
-                  nationality_flag: r.nationality ?? undefined,
+                  nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
                   team_name: r.real_team ?? undefined,
                   pcs_rank: r.pcs_rank ?? undefined,
                   photo_url: r.photo_url,

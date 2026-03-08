@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { countryCodeToFlag } from "@/lib/format";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -130,7 +131,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
                   {SPECIALTY_LABELS[rider.specialty] ?? rider.specialty}
                 </span>
               </TableCell>
-              <TableCell className="text-[var(--text-mid)]">{rider.nationality}</TableCell>
+              <TableCell className="text-[var(--text-mid)]">{rider.nationality ? countryCodeToFlag(rider.nationality) : "—"}</TableCell>
               <TableCell className="text-right">{rider.pcs_points_1yr.toLocaleString("en-US")}</TableCell>
               <TableCell className="text-right">
                 {rider.monthly_salary.toLocaleString("en-US")} EUR
