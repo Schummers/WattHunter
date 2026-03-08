@@ -49,7 +49,7 @@ export function RiderCard({
 
   if (isOpenSlot) {
     const inner = (
-      <div className="relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)]">
+      <div className={`relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] transition-colors ${href ? "hover:bg-[var(--bg-subtle)]" : ""}`}>
         {/* Avatar placeholder */}
         <div className="flex flex-col items-center gap-0.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-default)]">

@@ -2,11 +2,13 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Search, ChevronDown } from "lucide-react";
 import { RiderCard } from "@/components/rider-card";
 import { Pill } from "@/components/pill";
 import { StickyBar } from "@/components/sticky-bar";
 import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
+import { smartCountdown, formatThousands } from "@/lib/format";
 
 interface Rider {
   id: string;
@@ -75,17 +77,6 @@ function formatName(fullName: string): string {
   return `${firstInitial}. ${lastName}`;
 }
 
-function daysUntil(dateStr: string): number {
-  const target = new Date(dateStr);
-  const now = new Date();
-  const diff = target.getTime() - now.getTime();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
 
 export function RecrutsClient({
   leagueId,
@@ -270,26 +261,23 @@ export function RecrutsClient({
     <div className="pb-20">
       {/* Round header */}
       {activeRound ? (
-        <div className="flex items-center justify-between bg-[var(--bg-subtle)] px-4 py-2">
-          <span className="text-sm font-bold text-[var(--text-high)]">
-            {activeRound.name} &middot;{" "}
-            {formatDate(activeRound.opens_at)} &middot;{" "}
-            <span className="text-[var(--warning)]">
-              J-{daysUntil(activeRound.closes_at)}
-            </span>
+        <div className="flex items-center justify-between px-4 py-2">
+          <span className="text-sm text-[var(--text-mid)]">
+            <span className="font-bold">{activeRound.name}</span> &middot;{" "}
+            {smartCountdown(activeRound.closes_at)}
           </span>
-          <button className="text-sm text-[var(--accent-default)]">
+          <Link href={`/league/${leagueId}/team/recruts/history`} className="text-sm link-tertiary">
             History &rarr;
-          </button>
+          </Link>
         </div>
       ) : (
-        <div className="flex items-center justify-between bg-[var(--bg-subtle)] px-4 py-2">
-          <span className="text-sm font-bold text-[var(--text-mid)]">
+        <div className="flex items-center justify-between px-4 py-2">
+          <span className="text-sm text-[var(--text-mid)]">
             No active round
           </span>
-          <button className="text-sm text-[var(--accent-default)]">
+          <Link href={`/league/${leagueId}/team/recruts/history`} className="text-sm link-tertiary">
             History &rarr;
-          </button>
+          </Link>
         </div>
       )}
 
@@ -384,24 +372,26 @@ export function RecrutsClient({
                               }`}
                             >
                               <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 min={minSalary}
-                                step={100}
-                                placeholder={new Intl.NumberFormat("en-US").format(minSalary)}
-                                value={currentBid ?? ""}
+                                step={1000}
+                                placeholder={formatThousands(minSalary)}
+                                value={currentBid ? formatThousands(currentBid) : ""}
                                 onChange={(e) => {
-                                  const val = parseInt(e.target.value, 10);
+                                  const raw = e.target.value.replace(/\s/g, "");
+                                  const val = parseInt(raw, 10);
                                   handleBidChange(r.id, isNaN(val) ? 0 : val);
                                 }}
                                 onClick={(e) => e.preventDefault()}
-                                className={`w-16 bg-transparent text-right text-sm font-semibold font-mono outline-none ${
+                                className={`w-20 bg-transparent text-right text-sm font-semibold font-mono outline-none ${
                                   currentBid
                                     ? "text-[var(--accent-default)]"
                                     : "text-[var(--text-low)]"
                                 }`}
                               />
                               <span className="text-[10px] text-[var(--text-ghost)] font-medium">
-                                /mo
+                                €
                               </span>
                             </div>
                             {errors[r.id] && (
@@ -493,7 +483,7 @@ export function RecrutsClient({
       <StickyBar
         visible={hasPendingBids}
         slotInfo={`${currentSlots + Object.keys(bids).length}/${maxSlots} slots`}
-        budgetInfo={`${totalBidAmount.toLocaleString()} EUR`}
+        budgetInfo={`${formatThousands(totalBidAmount)} €`}
         onSave={handleSave}
         saving={saving}
       />

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
+import { getMaxSlots } from "@/lib/levels";
 
 function minRankForLevel(level: number): number {
   const pools: Record<number, number> = {
@@ -15,7 +16,7 @@ function minRankForLevel(level: number): number {
 const BidSchema = z.object({
   auctionId: z.string().uuid(),
   riderId: z.string().uuid(),
-  amount: z.number().int().positive().multipleOf(100),
+  amount: z.number().int().positive(),
   round: z.number().int().min(1).max(3),
 });
 
@@ -58,7 +59,7 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
 
   if (!rider) return { error: "Rider not found" };
   if (parsed.data.amount < rider.monthly_salary) {
-    return { error: `Minimum bid: ${rider.monthly_salary} EUR` };
+    return { error: `Minimum bid: ${rider.monthly_salary.toLocaleString("fr-FR")} €` };
   }
 
   // Check if there's already an active bid for this rider/round (to update vs insert)
@@ -97,6 +98,21 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
 
   if (rider.pcs_rank && rider.pcs_rank < minRankForLevel(team.level)) {
     return { error: "Insufficient level for this rider" };
+  }
+
+  // Slot overflow check (RC-5): contracts + active bids must not exceed max slots
+  if (!existingBid) {
+    const maxSlots = getMaxSlots(team.level);
+    const { count: contractCount } = await supabase
+      .from("contracts")
+      .select("id", { count: "exact", head: true })
+      .eq("team_id", team.id)
+      .in("status", ["active", "notice"]);
+    const bidCount = (activeBids ?? []).length;
+    const used = (contractCount ?? 0) + bidCount;
+    if (used >= maxSlots) {
+      return { error: `No available slots (${used}/${maxSlots} used)` };
+    }
   }
 
   let error;

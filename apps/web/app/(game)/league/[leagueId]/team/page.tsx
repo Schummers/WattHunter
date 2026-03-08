@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { RiderCard } from "@/components/rider-card";
 import { TeamLevelCard } from "@/components/team-level-card";
 import { getMaxSlots } from "@/lib/levels";
+import { formatThousands, smartCountdown } from "@/lib/format";
 
 function formatName(fullName: string): string {
   const parts = fullName.split(" ").filter(Boolean);
@@ -61,82 +63,104 @@ export default async function MyTeamPage({
     .eq("team_id", team?.id)
     .in("status", ["active", "notice"]);
 
-  // Pending bids from active auctions
+  // Pending bids from active auctions — include outbid/lost for lifecycle (MT-9)
   const { data: pendingBids } = await supabase
     .from("auction_bids")
     .select(
-      "id, amount, rider_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url)"
+      "id, amount, status, rider_id, auction_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url)"
     )
     .eq("team_id", team?.id)
-    .eq("status", "active");
+    .in("status", ["active", "outbid", "lost"]);
 
+  // Fetch active auction for round info (MT-8)
+  const auctionIds = [...new Set(pendingBids?.map((b) => b.auction_id) ?? [])];
+  let activeAuction: { name: string; closes_at: string } | null = null;
+  if (auctionIds.length > 0) {
+    const { data: auction } = await supabase
+      .from("auctions")
+      .select("name, closes_at")
+      .eq("id", auctionIds[0])
+      .single();
+    activeAuction = auction;
+  }
+
+  // Ranking query (MT-1): count teams with higher XP
   const xp = team?.cumulative_xp ?? 0;
   const level = team?.level ?? 1;
+  const { count: teamsAbove } = await supabase
+    .from("teams")
+    .select("id", { count: "exact", head: true })
+    .eq("league_id", leagueId)
+    .gt("cumulative_xp", xp);
+  const { count: totalTeams } = await supabase
+    .from("teams")
+    .select("id", { count: "exact", head: true })
+    .eq("league_id", leagueId);
+
+  const rank = (teamsAbove ?? 0) + 1;
+  const teamCount = totalTeams ?? 0;
+
   const maxSlots = getMaxSlots(level);
   const riderCount = teamRiders?.length ?? 0;
 
+  // Filter bids: active ones first, then outbid (dimmed)
+  const activeBids = pendingBids?.filter((b) => b.status === "active") ?? [];
+  const outbidBids = pendingBids?.filter((b) => b.status === "outbid") ?? [];
+  const allBids = [...activeBids, ...outbidBids];
+
   return (
     <div className="py-4 space-y-6">
-      {/* Header */}
-      <div className="px-4 space-y-1">
-        <div className="flex items-baseline gap-3">
-          <span className="text-[32px] font-black font-mono leading-none tracking-tight text-[var(--accent-highlight)]">
-            {xp.toLocaleString()} XP
-          </span>
-          <span className="text-sm font-semibold text-[var(--text-low)]">
-            Ranked #—
-          </span>
+      {/* Header — 2 metric blocks (MT-1) */}
+      <div className="px-4">
+        <div className="flex gap-3">
+          {/* Left: Total XP Season */}
+          <div className="flex-1 space-y-0.5">
+            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+              Total XP Season
+            </span>
+            <div className="text-[28px] font-black font-mono leading-none tracking-tight text-[var(--accent-highlight)]">
+              {xp.toLocaleString()}
+            </div>
+            <span className="text-[10px] text-[var(--text-low)]">
+              Updated after each race
+            </span>
+          </div>
+
+          {/* Right: Ranking (MT-2 — tappable) */}
+          <Link
+            href={`/league/${leagueId}/ranking`}
+            className="flex items-center gap-1.5 self-start rounded-lg px-3 py-2 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] transition-colors"
+          >
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+                Ranking
+              </span>
+              <div className="text-lg font-black font-mono leading-none text-[var(--text-high)]">
+                {rank}<span className="text-sm font-semibold text-[var(--text-low)]">/{teamCount}</span>
+              </div>
+            </div>
+            <ChevronRight size={14} className="text-[var(--text-ghost)]" />
+          </Link>
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Boost pill + Change policies link (MT-3 + MT-4) */}
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-xs font-bold text-[var(--text-mid)] bg-white/5 rounded-full px-2.5 py-0.5">
+            +0% Boost
+          </span>
           <Link
             href={`/league/${leagueId}/team/policies`}
-            className="text-sm text-[var(--accent-default)]"
+            className="text-sm link-tertiary"
           >
-            Policies &rarr;
+            Change policies &rarr;
           </Link>
         </div>
       </div>
 
-      {/* Pending Bids */}
-      {pendingBids && pendingBids.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between px-4 mb-2">
-            <span className="text-[15px] font-bold text-[var(--text-high)]">
-              Pending Bids
-            </span>
-            <span className="text-xs font-semibold font-mono text-[var(--text-low)]">
-              {pendingBids.length} bid{pendingBids.length > 1 ? "s" : ""}
-            </span>
-          </div>
-          <div>
-            {pendingBids.map((bid) => {
-              const r = Array.isArray(bid.riders) ? bid.riders[0] : bid.riders;
-              if (!r) return null;
-              return (
-                <RiderCard
-                  key={bid.id}
-                  rider={{
-                    id: r.id,
-                    name: formatName(r.full_name),
-                    nationality_flag: r.nationality ?? undefined,
-                    team_name: r.real_team ?? undefined,
-                    pcs_rank: r.pcs_rank ?? undefined,
-                    photo_url: r.photo_url,
-                  }}
-                  bidState="active"
-                  rightContent={
-                    <span className="text-sm font-bold font-mono text-[var(--accent-default)]">
-                      {bid.amount.toLocaleString()} /mo
-                    </span>
-                  }
-                />
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* Separator (MT-5) */}
+      <div className="mx-4 border-t border-[var(--border-subtle)]" />
 
-      {/* Roster */}
+      {/* Roster (MT-6 — before Pending Bids) */}
       <div>
         <div className="flex items-center justify-between px-4 mb-2">
           <span className="text-[15px] font-bold text-[var(--text-high)]">
@@ -179,6 +203,49 @@ export default async function MyTeamPage({
           ))}
         </div>
       </div>
+
+      {/* Pending Bids (MT-8 round info, MT-9 lifecycle, MT-10 no /mo, MT-14 clickable) */}
+      {allBids.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between px-4 mb-2">
+            <span className="text-[15px] font-bold text-[var(--text-high)]">
+              Pending Bids
+            </span>
+            {activeAuction && (
+              <span className="text-xs text-[var(--text-low)]">
+                {activeAuction.name} · closes {smartCountdown(activeAuction.closes_at)}
+              </span>
+            )}
+          </div>
+          <div>
+            {allBids.map((bid) => {
+              const r = Array.isArray(bid.riders) ? bid.riders[0] : bid.riders;
+              if (!r) return null;
+              const isOutbid = bid.status === "outbid";
+              return (
+                <RiderCard
+                  key={bid.id}
+                  rider={{
+                    id: r.id,
+                    name: formatName(r.full_name),
+                    nationality_flag: r.nationality ?? undefined,
+                    team_name: r.real_team ?? undefined,
+                    pcs_rank: r.pcs_rank ?? undefined,
+                    photo_url: r.photo_url,
+                  }}
+                  bidState={isOutbid ? "outbid" : "active"}
+                  href={`/league/${leagueId}/rider/${r.id}?from=team`}
+                  rightContent={
+                    <span className={`text-sm font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--accent-default)]"}`}>
+                      {formatThousands(bid.amount)} €
+                    </span>
+                  }
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Team Level */}
       <div className="px-4">

@@ -47,8 +47,8 @@ const UUID_2 = "550e8400-e29b-41d4-a716-446655440002";
  * Awaiting the value resolves to { data, error }.
  * Every builder method (select, eq, …) returns the same chain.
  */
-function makeChain(data: unknown = null, error: unknown = null) {
-  const result = { data, error };
+function makeChain(data: unknown = null, error: unknown = null, count: number | null = null) {
+  const result = { data, error, count };
   const chain: Record<string, unknown> = {
     then: (resolve: (v: unknown) => unknown) =>
       Promise.resolve(result).then(resolve),
@@ -91,14 +91,16 @@ describe("placeBid — Zod validation", () => {
     expect(result).toEqual({ error: "Invalid data" });
   });
 
-  it("rejects amount that is not a multiple of 100", async () => {
+  it("accepts amount that is not a multiple of 100 (RC-4)", async () => {
+    // 150 is a valid positive integer — should pass Zod and hit auth
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
     const result = await placeBid({
       auctionId: UUID_1,
       riderId: UUID_2,
       amount: 150,
       round: 1,
     });
-    expect(result).toEqual({ error: "Invalid data" });
+    expect(result).toEqual({ error: "Not authenticated" });
   });
 
   it("rejects amount = 0 (must be positive)", async () => {
@@ -175,7 +177,7 @@ describe("placeBid — rider salary minimum", () => {
       round: 1,
     });
 
-    expect(result).toEqual({ error: "Minimum bid: 10000 EUR" });
+    expect(result.error).toMatch(/Minimum bid: 10.000 €/);
   });
 });
 
@@ -213,6 +215,7 @@ describe("placeBid — budget check", () => {
       .mockReturnValueOnce(makeChain({ monthly_salary: 100, pcs_rank: 5, ever_in_top500: true })) // riders
       .mockReturnValueOnce(makeChain(null))                               // existingBid
       .mockReturnValueOnce(makeChain([]))                                 // activeBids (empty)
+      .mockReturnValueOnce(makeChain(null, null, 0))                     // contracts count (slot check)
       .mockReturnValueOnce(makeChain(null, null));                        // insert success
 
     const result = await placeBid({

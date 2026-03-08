@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { BackHeader } from "@/components/back-header";
 import { Search } from "lucide-react";
+import { formatEuro } from "@/lib/format";
 
 export default async function AuctionHistoryPage({
   params,
@@ -121,15 +122,12 @@ export default async function AuctionHistoryPage({
                 riderBids[key].push(bid);
               }
 
-              const riderCount = Object.keys(riderBids).length;
-
               return (
                 <div key={round.id}>
                   {/* Round header */}
                   <div className="rounded-lg bg-[var(--bg-subtle)] px-3 py-2 mb-2">
                     <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
-                      {round.name} &middot; {closedDate} &middot;{" "}
-                      {riderCount} rider{riderCount !== 1 ? "s" : ""}
+                      {round.name} &middot; {closedDate}
                     </span>
                   </div>
 
@@ -152,7 +150,7 @@ export default async function AuctionHistoryPage({
                             >
                               <span>{bid.bidder_name}</span>
                               <span className="font-mono">
-                                {bid.amount.toLocaleString()} EUR
+                                {formatEuro(bid.amount)}
                               </span>
                             </div>
                           ))}
