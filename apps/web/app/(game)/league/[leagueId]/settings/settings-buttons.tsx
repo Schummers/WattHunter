@@ -152,6 +152,26 @@ export function LeaveLeagueButton({ leagueId }: { leagueId: string }) {
   );
 }
 
+export function InviteUrlDisplay({ inviteCode }: { inviteCode: string }) {
+  const inviteUrl = `${window.location.origin}/league/join?code=${inviteCode}`;
+
+  return (
+    <div className="space-y-1">
+      <label className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
+        Invite URL
+      </label>
+      <div className="flex items-center gap-2">
+        <div className="flex h-9 flex-1 items-center rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 overflow-hidden">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)] truncate">
+            {inviteUrl}
+          </span>
+        </div>
+        <CopyInviteCodeButton code={inviteUrl} />
+      </div>
+    </div>
+  );
+}
+
 export function LeagueSelector({
   leagues,
   currentLeagueId,

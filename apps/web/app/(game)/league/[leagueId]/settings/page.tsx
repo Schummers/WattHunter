@@ -14,6 +14,7 @@ import {
   SignOutButton,
   EditableField,
   LeaveLeagueButton,
+  InviteUrlDisplay,
 } from "./settings-buttons";
 import {
   updateUserName,
@@ -126,8 +127,6 @@ export default async function SettingsPage({
       : member.teams
     : null;
 
-  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://watthunter.com"}/league/join?code=${league?.invite_code ?? ""}`;
-
   return (
     <div className="min-h-screen">
       <BackHeader label="Back" />
@@ -225,19 +224,7 @@ export default async function SettingsPage({
             />
 
             {/* Invite URL */}
-            <div className="space-y-1">
-              <label className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
-                Invite URL
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 flex-1 items-center rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 overflow-hidden">
-                  <span className="text-[length:var(--type-caption)] text-[var(--text-mid)] truncate">
-                    {inviteUrl}
-                  </span>
-                </div>
-                <CopyInviteCodeButton code={inviteUrl} />
-              </div>
-            </div>
+            <InviteUrlDisplay inviteCode={league?.invite_code ?? ""} />
 
             {/* Invite code */}
             <div className="space-y-1">
