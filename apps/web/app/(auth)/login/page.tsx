@@ -53,8 +53,8 @@ export default function LoginPage() {
           width={48}
           height={48}
         />
-        <h1 className="text-2xl font-semibold text-[var(--text-high)]">WattHunter</h1>
-        <p className="text-sm text-[var(--text-mid)]">
+        <h1 className="text-[length:var(--type-page-title)] font-semibold text-[var(--text-high)]">WattHunter</h1>
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
           The fantasy league where your team grows with you.
         </p>
       </div>
@@ -70,7 +70,7 @@ export default function LoginPage() {
 
       <div className="flex w-full items-center gap-3">
         <div className="h-px flex-1 bg-[var(--border-subtle)]" />
-        <span className="text-xs text-[var(--text-low)]">or</span>
+        <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">or</span>
         <div className="h-px flex-1 bg-[var(--border-subtle)]" />
       </div>
 
@@ -96,7 +96,7 @@ export default function LoginPage() {
           />
         </FormField>
 
-        {error && <p className="text-xs text-[var(--status-danger)]">{error}</p>}
+        {error && <p className="text-[length:var(--type-caption)] text-[var(--status-danger)]">{error}</p>}
 
         <Button type="submit" variant="cta" className="mt-4 w-full" disabled={loading}>
           {loading ? "Signing in..." : "Sign in"}
@@ -105,12 +105,12 @@ export default function LoginPage() {
 
       <Link
         href="/signup"
-        className="text-sm text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors"
+        className="text-[length:var(--type-body)] text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors"
       >
         Don&apos;t have an account? Sign up
       </Link>
 
-      <p className="text-center text-xs text-[var(--text-low)]">
+      <p className="text-center text-[length:var(--type-caption)] text-[var(--text-low)]">
         By continuing, you agree to our terms of service.
       </p>
     </div>

@@ -41,7 +41,7 @@ export function TeamLevelCard({
         {/* Header */}
         {!hideHeader && (
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-[var(--text-mid)]">
+            <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-mid)]">
               {teamName ?? "Team level"}
             </span>
             <span className="text-[12px] font-medium link-tertiary">
@@ -87,14 +87,14 @@ export function TeamLevelCard({
         {/* Unlock pills */}
         <div className="flex flex-wrap gap-1.5">
           {isMaxLevel ? (
-            <span className="text-[11px] text-[var(--text-mid)]">
+            <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
               Max level reached
             </span>
           ) : (
             unlocks.map((label) => (
               <span
                 key={label}
-                className="rounded-full bg-[var(--text-high)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--bg-app)]"
+                className="rounded-full bg-[var(--text-high)] px-2.5 py-0.5 text-[length:var(--type-caption)] font-medium text-[var(--bg-app)]"
               >
                 {label}
               </span>

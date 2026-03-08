@@ -126,7 +126,7 @@ export default async function AuctionHistoryPage({
                 <div key={round.id}>
                   {/* Round header */}
                   <div className="rounded-lg bg-[var(--bg-subtle)] px-3 py-2 mb-2">
-                    <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+                    <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
                       {round.name} &middot; {closedDate}
                     </span>
                   </div>

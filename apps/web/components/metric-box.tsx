@@ -19,7 +19,7 @@ export function MetricBox({ value, label, highlight }: MetricBoxProps) {
       >
         {formattedValue}
       </span>
-      <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--text-low)]">
+      <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
         {label}
       </span>
     </div>

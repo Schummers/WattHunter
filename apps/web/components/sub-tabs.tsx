@@ -19,7 +19,7 @@ export function SubTabs({ tabs }: SubTabsProps) {
             <Link
               key={tab.href}
               href={tab.href}
-              className={`pb-1.5 pt-1.5 text-sm font-semibold transition-colors ${
+              className={`pb-1.5 pt-3 text-[length:var(--type-section)] font-semibold transition-colors ${
                 isActive
                   ? "border-b-2 border-[var(--accent-default)] text-[var(--text-high)]"
                   : "text-[var(--text-mid)]"

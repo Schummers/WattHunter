@@ -6,31 +6,43 @@ import {
   Layers,
   Gavel,
   ChevronRight,
+  Plus,
 } from "lucide-react";
+import Link from "next/link";
 import {
   CopyInviteCodeButton,
   SignOutButton,
-  EditableTeamName,
+  EditableField,
   LeaveLeagueButton,
 } from "./settings-buttons";
+import {
+  updateUserName,
+  updateUserEmail,
+  updateTeamName,
+  updateLeagueName,
+} from "./actions";
 
 const DOC_ITEMS = [
   {
+    slug: "points",
     icon: Trophy,
     title: "How points work",
     subtitle: "PCS scoring, XP conversion, ranking",
   },
   {
+    slug: "money",
     icon: Coins,
     title: "Bonus & money",
     subtitle: "Salaries, bonuses, treasury management",
   },
   {
+    slug: "levels",
     icon: Layers,
     title: "Team levels & unlocks",
     subtitle: "XP thresholds, slots, policies, pool",
   },
   {
+    slug: "auctions",
     icon: Gavel,
     title: "Auctions & rounds",
     subtitle: "Bidding, sealed rounds, schedule",
@@ -52,7 +64,7 @@ export default async function SettingsPage({
   if (!user) {
     return (
       <div className="px-4 py-8">
-        <p className="text-sm text-[var(--text-mid)]">
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
           Please sign in to view settings.
         </p>
       </div>
@@ -72,18 +84,31 @@ export default async function SettingsPage({
     .eq("id", leagueId)
     .single();
 
-  // Fetch all user leagues for the selector (ST-4)
-  const { data: allMemberships } = await supabase
-    .from("league_members")
-    .select("league_id, leagues:league_id(id, name)")
-    .eq("user_id", user.id);
+  // Fetch commissioner name via league_members → teams
+  let commissionerName = "Race Director";
+  if (league?.commissioner_id) {
+    if (league.commissioner_id === user.id) {
+      commissionerName =
+        user.user_metadata?.full_name ??
+        user.email?.split("@")[0] ??
+        "Race Director";
+    } else {
+      const { data: commMember } = await supabase
+        .from("league_members")
+        .select("teams:team_id(name)")
+        .eq("league_id", leagueId)
+        .eq("user_id", league.commissioner_id)
+        .single();
+      if (commMember?.teams) {
+        const t = Array.isArray(commMember.teams)
+          ? commMember.teams[0]
+          : commMember.teams;
+        commissionerName = (t as { name: string })?.name ?? "Race Director";
+      }
+    }
+  }
 
-  const userLeagues = (allMemberships ?? [])
-    .map((m) => {
-      const l = Array.isArray(m.leagues) ? m.leagues[0] : m.leagues;
-      return l ? { id: (l as { id: string }).id, name: (l as { name: string }).name } : null;
-    })
-    .filter(Boolean) as { id: string; name: string }[];
+  const isCommissioner = league?.commissioner_id === user.id;
 
   const userName =
     user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "User";
@@ -96,7 +121,9 @@ export default async function SettingsPage({
     .slice(0, 2);
 
   const memberTeam = member?.teams
-    ? Array.isArray(member.teams) ? member.teams[0] : member.teams
+    ? Array.isArray(member.teams)
+      ? member.teams[0]
+      : member.teams
     : null;
 
   const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://watthunter.com"}/league/join?code=${league?.invite_code ?? ""}`;
@@ -106,81 +133,105 @@ export default async function SettingsPage({
       <BackHeader label="Back" />
 
       <div className="px-4 pt-4 space-y-6">
-        {/* Section 1: Account Settings (ST-1, ST-2, ST-3) */}
+        {/* Section 1: Account */}
         <div className="space-y-3">
-          <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+          <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             Account
           </span>
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--bg-surface)] text-sm font-bold text-[var(--text-mid)]">
+          <div className="flex items-start gap-3">
+            <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-[var(--bg-surface)] text-[length:var(--type-section)] font-bold text-[var(--text-mid)]">
               {initials}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-[var(--text-high)] truncate">
-                {userName}
-              </p>
-              <p className="text-xs text-[var(--text-low)] truncate">
-                {userEmail}
-              </p>
+            <div className="flex-1 min-w-0 space-y-3">
+              <EditableField
+                label="First name"
+                initialValue={userName}
+                onSave={async (value) => {
+                  "use server";
+                  return updateUserName(value);
+                }}
+              />
+              <EditableField
+                label="Email"
+                initialValue={userEmail}
+                onSave={async (value) => {
+                  "use server";
+                  return updateUserEmail(value);
+                }}
+              />
             </div>
           </div>
 
+          {/* Create a new league */}
+          <Link
+            href="/league/create"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--accent-default)] px-4 py-2.5 text-[length:var(--type-body)] font-semibold text-[var(--accent-default)] transition-colors hover:bg-[var(--accent-default)] hover:text-[var(--bg-app)]"
+          >
+            <Plus size={16} />
+            Create a new league
+          </Link>
+
+          {/* Sign out */}
           <SignOutButton />
         </div>
 
         {/* Divider */}
         <div className="border-t border-[var(--border-subtle)]" />
 
-        {/* Section 2: League Settings (ST-4, ST-5, ST-6, ST-7) */}
+        {/* Section 2: League */}
         <div className="space-y-3">
-          <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+          <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             League
           </span>
 
           <div className="space-y-4">
-            {/* League selector (ST-4) */}
-            {userLeagues.length > 1 ? (
-              <div className="space-y-1">
-                <label className="text-xs text-[var(--text-low)]">
-                  Current league
-                </label>
-                <div className="flex h-9 items-center rounded-lg border border-[var(--border-default)] bg-transparent px-3">
-                  <span className="text-sm font-semibold text-[var(--text-high)]">
-                    {league?.name ?? "League"}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-[var(--text-high)]">
-                  {league?.name ?? "League"}
-                </span>
-                <span className="text-xs font-medium text-[var(--text-mid)]">
-                  {league?.commissioner_id === user.id ? "Race Director" : "Member"}
-                </span>
-              </div>
-            )}
+            {/* League name */}
+            <EditableField
+              label="League name"
+              initialValue={league?.name ?? "League"}
+              onSave={async (value) => {
+                "use server";
+                return updateLeagueName(leagueId, value);
+              }}
+              disabled={!isCommissioner}
+            />
 
-            {/* Team name — editable (ST-5) */}
+            {/* Race director */}
             <div className="space-y-1">
-              <label className="text-xs text-[var(--text-low)]">
-                Team name
+              <label className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
+                Race director
               </label>
-              <EditableTeamName
-                teamId={(memberTeam as { id: string })?.id ?? ""}
-                initialName={(memberTeam as { name: string })?.name ?? "My Team"}
-              />
+              <div className="flex h-9 items-center rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3">
+                <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+                  {commissionerName}
+                </span>
+              </div>
             </div>
 
-            {/* Invite URL (ST-6) */}
+            {/* Team name — editable */}
+            <EditableField
+              label="Team name"
+              initialValue={
+                (memberTeam as { name: string })?.name ?? "My Team"
+              }
+              onSave={async (value) => {
+                "use server";
+                return updateTeamName(
+                  (memberTeam as { id: string })?.id ?? "",
+                  value
+                );
+              }}
+            />
+
+            {/* Invite URL */}
             <div className="space-y-1">
-              <label className="text-xs text-[var(--text-low)]">
+              <label className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
                 Invite URL
               </label>
               <div className="flex items-center gap-2">
                 <div className="flex h-9 flex-1 items-center rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 overflow-hidden">
-                  <span className="text-xs text-[var(--text-mid)] truncate">
+                  <span className="text-[length:var(--type-caption)] text-[var(--text-mid)] truncate">
                     {inviteUrl}
                   </span>
                 </div>
@@ -188,14 +239,14 @@ export default async function SettingsPage({
               </div>
             </div>
 
-            {/* Invite code (ST-6) */}
+            {/* Invite code */}
             <div className="space-y-1">
-              <label className="text-xs text-[var(--text-low)]">
+              <label className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
                 Invite code
               </label>
               <div className="flex items-center gap-2">
                 <div className="flex h-9 flex-1 items-center rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3">
-                  <span className="font-mono text-sm text-[var(--text-mid)]">
+                  <span className="font-mono text-[length:var(--type-body)] text-[var(--text-mid)]">
                     {league?.invite_code ?? "------"}
                   </span>
                 </div>
@@ -203,7 +254,7 @@ export default async function SettingsPage({
               </div>
             </div>
 
-            {/* Leave league (ST-7) */}
+            {/* Leave league */}
             <LeaveLeagueButton leagueId={leagueId} />
           </div>
         </div>
@@ -211,27 +262,30 @@ export default async function SettingsPage({
         {/* Divider */}
         <div className="border-t border-[var(--border-subtle)]" />
 
-        {/* Section 3: Documentation (ST-8 hover state) */}
+        {/* Section 3: Documentation */}
         <div className="space-y-3">
-          <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+          <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             Documentation
           </span>
 
           <div className="divide-y divide-[var(--border-subtle)]">
             {DOC_ITEMS.map((item) => (
-              <button
-                key={item.title}
-                type="button"
+              <Link
+                key={item.slug}
+                href={`/league/${leagueId}/settings/docs/${item.slug}`}
                 className="flex w-full items-center gap-3 py-3 text-left rounded-lg hover:bg-[var(--bg-subtle)] transition-colors -mx-2 px-2"
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface)]">
-                  <item.icon size={18} className="text-[var(--text-mid)]" />
+                  <item.icon
+                    size={18}
+                    className="text-[var(--text-mid)]"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[var(--text-high)]">
+                  <p className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
                     {item.title}
                   </p>
-                  <p className="text-xs text-[var(--text-low)]">
+                  <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
                     {item.subtitle}
                   </p>
                 </div>
@@ -239,7 +293,7 @@ export default async function SettingsPage({
                   size={16}
                   className="shrink-0 text-[var(--text-ghost)]"
                 />
-              </button>
+              </Link>
             ))}
           </div>
         </div>

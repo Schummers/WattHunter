@@ -114,7 +114,7 @@ export default async function RiderDetailPage({
           .from("auctions")
           .select("id")
           .eq("league_id", leagueId)
-          .eq("status", "active")
+          .in("status", ["active", "open"])
           .maybeSingle();
         if (auction) activeAuctionId = auction.id;
       }

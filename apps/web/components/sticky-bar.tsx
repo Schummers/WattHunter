@@ -28,13 +28,13 @@ export function StickyBar({
       }`}
     >
       <div className="flex items-center justify-between px-4 lg:mx-auto lg:max-w-2xl">
-        <span className="text-sm font-bold text-[var(--text-high)]">
+        <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
           {slotInfo} &middot; {budgetInfo}
         </span>
         <button
           onClick={onSave}
           disabled={saving}
-          className="rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-400 px-4 py-1.5 text-sm font-bold text-[var(--cta-text)] shadow-[var(--cta-shadow)] disabled:opacity-40 disabled:shadow-none"
+          className="rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-400 px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold text-[var(--cta-text)] disabled:opacity-40"
         >
           {saving ? "Saving..." : "Save"}
         </button>

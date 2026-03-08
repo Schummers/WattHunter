@@ -11,19 +11,19 @@ export function TreasuryWidget({ treasury, activeBidsTotal }: TreasuryWidgetProp
   return (
     <div className="sticky top-0 z-10 flex items-center gap-8 border-b border-border bg-[var(--bg-surface)] py-3">
       <div className="flex flex-col gap-0.5">
-        <span className="text-xs text-[var(--text-mid)]">Treasury</span>
+        <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">Treasury</span>
         <span className="text-sm font-semibold text-[var(--text-high)]">
           {treasury.toLocaleString("en-US")} EUR
         </span>
       </div>
       <div className="flex flex-col gap-0.5">
-        <span className="text-xs text-[var(--text-mid)]">Active bids</span>
+        <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">Active bids</span>
         <span className="text-sm font-semibold text-[var(--text-high)]">
           {activeBidsTotal.toLocaleString("en-US")} EUR
         </span>
       </div>
       <div className="flex flex-col gap-0.5">
-        <span className="text-xs text-[var(--text-mid)]">Available budget</span>
+        <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">Available budget</span>
         <span
           className={cn(
             "text-sm font-semibold",

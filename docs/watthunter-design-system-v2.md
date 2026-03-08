@@ -225,28 +225,23 @@ uMode: 0  // 0=Mesh
 
 > **Règle : tous les chiffres en Geist Mono** avec `font-variant-numeric: tabular-nums`. Ça garantit l'alignement vertical des colonnes et renforce le côté "data dashboard" de l'app.
 
-### Type Scale — 7 niveaux
+### Type Scale — 11 niveaux (even px only)
 
-| Niveau | Size | Weight | Font | Line-height | Tracking | Cas d'usage |
-|--------|------|--------|------|-------------|----------|-------------|
-| **display** | 32px (2rem) | 900 | Mono | 1.0 | -0.02em | Hero stat (XP total, budget) |
-| **stat** | 20px (1.25rem) | 800 | Mono | 1.1 | -0.01em | Stats secondaires, scores coureurs |
-| **heading** | 15px (0.9375rem) | 700 | Sans | 1.3 | 0 | Noms coureurs, titres de sections |
-| **body** | 14px (0.875rem) | 400 | Sans | 1.5 | 0 | Descriptions, texte courant |
-| **caption** | 12px (0.75rem) | 500 | Sans | 1.4 | 0 | Texte secondaire, hints |
-| **label** | 11px (0.6875rem) | 700 | Sans | 1.2 | 0.08em | Labels uppercase (TOTAL XP, SEASON) |
-| **micro** | 9px (0.5625rem) | 600 | Sans | 1.2 | 0.06em | Badges, metadata extrême |
+| Niveau | Mobile | Desktop (md:) | Weight | Font | Cas d'usage |
+|--------|--------|---------------|--------|------|-------------|
+| **display** | 32px | 34px | 900 | Mono | Hero stat unique (Total XP) |
+| **stat** | 20px | 22px | 800 | Mono | Stats, ranking, metric values |
+| **page-title** | 18px | 20px | 700 | Sans | Page titles, tabs, rider name (detail) |
+| **section** | 16px | 18px | 600 | Sans | Section titles (Roster, Pending Bids) |
+| **stat-small** | 16px | 18px | 700 | Mono | Stats inline, XP in cards |
+| **emphasis** | 14px | 16px | 600 | Sans | Rider names (cards), back header, links |
+| **body** | 14px | 16px | 400 | Sans | Body text, descriptions |
+| **caption** | 12px | 14px | 500 | Sans | Hints, secondary text, info badges |
+| **label** | 12px | 14px | 700 | Sans | Labels UPPERCASE + tracking |
+| **nav** | 10px | 12px | 500 | Sans | Bottom navigation |
+| **micro** | 10px | 12px | 600 | Sans | PCS rank, badges, euro suffix |
 
-### Changements vs v0 (type system HTML)
-
-| Élément | Avant (v0) | Après (v1) | Pourquoi |
-|---------|------------|------------|----------|
-| **display** | 36px/900 | **32px/900** | 36px trop imposant sur mobile 375px — écrase le contenu |
-| **stat** | 22px/800 | **20px/800** | Proportionnel au display réduit |
-| **heading** | 16px/700 | **15px/700** | "WattHunter" et section titles trop proéminents à 16px |
-| **body** | 14px/400 | 14px/400 (= 0.875rem) | **Inchangé** — standard mobile |
-| **Bottom nav** | 9px UC + tracking | **10px normal case/500** | UC trop agressif en bottom nav, normal case = plus clean et lisible |
-| **Back button** | 14px/600 | **13px/500** | Trop grand, doit être discret (action secondaire) |
+> Scale uses only even pixel values: 10/12/14/16/18/20/32. All sizes +2px at `md:` breakpoint.
 
 ### Rem et base font-size
 
@@ -256,18 +251,22 @@ uMode: 0  // 0=Mesh
 
 ### Tokens sémantiques typographiques
 
-| Token | Spec | Contexte |
-|-------|------|----------|
-| `--type-display` | 900 32px/1.0 Geist Mono | Hero stat unique |
-| `--type-stat` | 800 20px/1.1 Geist Mono | Stats, scores, classements |
-| `--type-stat-small` | 700 16px/1.2 Geist Mono | Stats inline, valeurs secondaires |
-| `--type-heading` | 700 15px/1.3 Geist Sans | Section titles, rider names |
-| `--type-heading-sm` | 600 13px/1.3 Geist Sans | Sub-headings, back button |
-| `--type-body` | 400 14px/1.5 Geist Sans | Texte courant, descriptions |
-| `--type-caption` | 500 12px/1.4 Geist Sans | Hints, texte secondaire |
-| `--type-label` | 700 11px/1.2 Geist Sans | Labels uppercase + letter-spacing |
-| `--type-micro` | 600 9px/1.2 Geist Sans | Badges, metadata |
-| `--type-nav` | 500 10px/1.2 Geist Sans | Bottom navigation (normal case) |
+| Token | Mobile | Desktop (md:) | Weight | Font | Contexte |
+|-------|--------|---------------|--------|------|----------|
+| `--type-display` | 32px | 34px | 900 | Geist Mono | Hero stat unique (Total XP) |
+| `--type-stat` | 20px | 22px | 800 | Geist Mono | Stats, ranking, metric values |
+| `--type-page-title` | 18px | 20px | 700 | Geist Sans | Page titles, tabs, rider name (detail) |
+| `--type-section` | 16px | 18px | 600 | Geist Sans | Section titles (Roster, Pending Bids) |
+| `--type-stat-small` | 16px | 18px | 700 | Geist Mono | Stats inline, XP in cards |
+| `--type-emphasis` | 14px | 16px | 600 | Geist Sans | Rider names (cards), back header, links |
+| `--type-body` | 14px | 16px | 400 | Geist Sans | Body text, descriptions |
+| `--type-caption` | 12px | 14px | 500 | Geist Sans | Hints, secondary text, info badges |
+| `--type-label` | 12px | 14px | 700 | Geist Sans | Labels UPPERCASE + tracking |
+| `--type-nav` | 10px | 12px | 500 | Geist Sans | Bottom navigation |
+| `--type-micro` | 10px | 12px | 600 | Geist Sans | PCS rank, badges, euro suffix |
+
+> **Responsive:** all sizes +2px at `md:` (768px+) via CSS custom properties in `@media (min-width: 768px)`.
+> **Removed tokens:** `--type-heading` (was 15px), `--type-heading-sm` (was 13px) — replaced by `--type-page-title`, `--type-section`, `--type-emphasis`.
 
 ### Règles typographiques
 
@@ -284,9 +283,9 @@ uMode: 0  // 0=Mesh
 
 | Élément | Token | Spec |
 |---------|-------|------|
-| Logo "WattHunter" | `--type-heading` | 15px/700, `--text-high` |
+| Logo "WattHunter" | `--type-emphasis` | 14px/600, `--text-high` |
 | Subtitle (ex: "Fantasy Cycling") | `--type-caption` | 12px/500, `--text-low` |
-| Back button text | `--type-heading-sm` | 13px/500, `--text-mid` |
+| Back button text | `--type-emphasis` | 14px/600, `--text-mid` |
 | Back arrow icon | — | 18px, `--text-mid` |
 
 ### Hero Stats
@@ -294,23 +293,23 @@ uMode: 0  // 0=Mesh
 | Élément | Token | Spec |
 |---------|-------|------|
 | Hero number | `--type-display` | 32px/900 Mono, `--cyan-400` |
-| Hero label | `--type-label` | 11px/700 UC, `--text-low` |
+| Hero label | `--type-label` | 12px/700 UC, `--text-low` |
 | Secondary stat value | `--type-stat` | 20px/800 Mono, `--text-high` |
-| Secondary stat label | `--type-label` | 11px/700 UC, `--text-low` |
+| Secondary stat label | `--type-label` | 12px/700 UC, `--text-low` |
 
 ### Segmented Control / Tabs
 
 | Élément | Token | Spec |
 |---------|-------|------|
-| Tab label (inactive) | `--type-caption` | 12px/500, `--text-mid` |
-| Tab label (active) | `--type-caption` | 12px/600, `--text-high` |
+| Tab label (inactive) | `--type-section` | 16px/600, `--text-mid` |
+| Tab label (active) | `--type-section` | 16px/600, `--text-high` |
 
 ### Lists (Roster, Bids, Results)
 
 | Élément | Token | Spec |
 |---------|-------|------|
-| Section header | `--type-label` | 11px/700 UC + tracking, `--text-low` |
-| Rider name | `--type-heading` | 15px/700, `--text-high` |
+| Section header | `--type-label` | 12px/700 UC + tracking, `--text-low` |
+| Rider name | `--type-emphasis` | 14px/600, `--text-high` |
 | Rider team / subtitle | `--type-caption` | 12px/500, `--text-mid` |
 | Stat value inline | `--type-stat-small` | 16px/700 Mono, `--text-high` |
 | Hint / metadata | `--type-caption` | 12px/400, `--text-low` |
@@ -358,9 +357,9 @@ Base 4px. Scale harmonique pour mobile-first, dense data UI.
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `--radius-sm` | 6px | Tags, pills, badges |
-| `--radius-md` | 10px | Buttons, inputs, segmented controls |
-| `--radius-lg` | 14px | Cards, bottom sheets, modals |
+| `--radius-sm` | 2px | Tags, pills, badges |
+| `--radius-md` | 6px | Buttons, inputs, segmented controls |
+| `--radius-lg` | 8px | Cards, bottom sheets, modals |
 | `--radius-full` | 9999px | Avatars, notification dots, toggle thumbs |
 
 | Token | Value | Usage |
@@ -399,15 +398,24 @@ Dark mode = shadows subtils. On s'appuie plus sur les différences de luminosit�
 
 ## Responsive (Desktop)
 
-Pour le passage mobile → desktop, utiliser `clamp()` sur les niveaux display et stat :
+Tous les tokens typographiques sont **+2px** au breakpoint `md:` (768px). Implémenté via CSS custom properties dans un `@media (min-width: 768px)` block dans `globals.css`.
 
 ```css
---type-display-size: clamp(32px, 4vw, 48px);
---type-stat-size: clamp(20px, 2.5vw, 28px);
---type-heading-size: clamp(15px, 1.8vw, 18px);
+/* Mobile (default) → Desktop (md:) */
+--type-display:    32px → 34px
+--type-stat:       20px → 22px
+--type-page-title: 18px → 20px
+--type-section:    16px → 18px
+--type-stat-small: 16px → 18px
+--type-emphasis:   14px → 16px
+--type-body:       14px → 16px
+--type-caption:    12px → 14px
+--type-label:      12px → 14px
+--type-nav:        10px → 12px
+--type-micro:      10px → 12px
 ```
 
-Les autres niveaux (body, caption, label, micro) restent fixes — ils sont déjà optimisés pour la lisibilité.
+Pas de `clamp()` — le step +2px est simple et prévisible.
 
 ---
 
@@ -464,16 +472,18 @@ Les autres niveaux (body, caption, label, micro) restent fixes — ils sont déj
   --font-sans: 'Geist Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'Geist Mono', 'SF Mono', 'Cascadia Code', monospace;
 
-  --type-display: 900 32px/1.0 var(--font-mono);
-  --type-stat: 800 20px/1.1 var(--font-mono);
-  --type-stat-small: 700 16px/1.2 var(--font-mono);
-  --type-heading: 700 15px/1.3 var(--font-sans);
-  --type-heading-sm: 600 13px/1.3 var(--font-sans);
-  --type-body: 400 14px/1.5 var(--font-sans);
-  --type-caption: 500 12px/1.4 var(--font-sans);
-  --type-label: 700 11px/1.2 var(--font-sans);
-  --type-micro: 600 9px/1.2 var(--font-sans);
-  --type-nav: 500 10px/1.2 var(--font-sans);
+  /* Even-number scale — all +2px at md: (768px+) */
+  --type-display: 32px;       /* 900 Geist Mono */
+  --type-stat: 20px;          /* 800 Geist Mono */
+  --type-page-title: 18px;    /* 700 Geist Sans */
+  --type-section: 16px;       /* 600 Geist Sans */
+  --type-stat-small: 16px;    /* 700 Geist Mono */
+  --type-emphasis: 14px;      /* 600 Geist Sans */
+  --type-body: 14px;          /* 400 Geist Sans */
+  --type-caption: 12px;       /* 500 Geist Sans */
+  --type-label: 12px;         /* 700 Geist Sans UPPERCASE */
+  --type-nav: 10px;           /* 500 Geist Sans */
+  --type-micro: 10px;         /* 600 Geist Sans */
 
   --tracking-tight: -0.02em;
   --tracking-snug: -0.01em;
@@ -492,9 +502,9 @@ Les autres niveaux (body, caption, label, micro) restent fixes — ils sont déj
   --space-12: 48px;
 
   /* ── Borders & Radius ── */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
   --radius-full: 9999px;
   --border-width-default: 1px;
   --border-width-focus: 2px;

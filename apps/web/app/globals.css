@@ -33,10 +33,10 @@
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
 
-  /* Border radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  /* Border radius (Tailwind defaults) */
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
   --radius-full: 9999px;
   --border-width-default: 1px;
   --border-width-focus: 2px;
@@ -117,12 +117,7 @@
   --status-warning: var(--warning);
 
   /* Component tokens */
-  --bid-active-bg: rgba(8, 51, 68, 0.10);
-  --bid-active-border: var(--accent-default);
-  --bid-outbid-bg: oklch(0.5 0 0 / 0.08);
   --cta-text: #020617;
-  --cta-shadow: 0 4px 24px rgba(6, 182, 212, 0.25);
-
   /* Spacing (base 4px) */
   --space-1: 4px;
   --space-2: 8px;
@@ -235,4 +230,37 @@
 }
 .link-tertiary:hover {
   color: var(--accent-highlight);
+}
+
+/* ============================
+   Typography scale (even px)
+   ============================ */
+:root {
+  --type-display: 32px;       /* Hero stat — Geist Mono 900 */
+  --type-stat: 20px;          /* Stats, ranking — Geist Mono 800 */
+  --type-page-title: 18px;    /* Page titles, tabs — Geist Sans 700 */
+  --type-section: 16px;       /* Section titles — Geist Sans 600 */
+  --type-stat-small: 16px;    /* Inline stats — Geist Mono 700 */
+  --type-emphasis: 14px;      /* Rider names, labels — Geist Sans 600 */
+  --type-body: 14px;          /* Body text — Geist Sans 400 */
+  --type-caption: 12px;       /* Hints, secondary — Geist Sans 500 */
+  --type-label: 12px;         /* UPPERCASE labels — Geist Sans 700 */
+  --type-nav: 10px;           /* Bottom nav — Geist Sans 500 */
+  --type-micro: 10px;         /* PCS rank, badges — Geist Sans 600 */
+}
+
+@media (min-width: 768px) {
+  :root {
+    --type-display: 34px;
+    --type-stat: 22px;
+    --type-page-title: 20px;
+    --type-section: 18px;
+    --type-stat-small: 18px;
+    --type-emphasis: 16px;
+    --type-body: 16px;
+    --type-caption: 14px;
+    --type-label: 14px;
+    --type-nav: 12px;
+    --type-micro: 12px;
+  }
 }

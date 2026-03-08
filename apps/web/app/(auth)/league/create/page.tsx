@@ -15,17 +15,17 @@ export default function CreateLeaguePage() {
     <div className="flex w-full max-w-sm flex-col gap-8">
       <Link
         href="/league/choose"
-        className="flex items-center gap-1.5 text-sm text-[var(--text-mid)] hover:text-[var(--text-high)] transition-colors"
+        className="flex items-center gap-1.5 text-[length:var(--type-body)] text-[var(--text-mid)] hover:text-[var(--text-high)] transition-colors"
       >
         <ArrowLeft className="size-4" />
         Back
       </Link>
 
       <div className="flex flex-col gap-2 text-center">
-        <h2 className="text-xl font-semibold text-[var(--text-high)]">
+        <h2 className="text-[length:var(--type-page-title)] font-semibold text-[var(--text-high)]">
           Create a league
         </h2>
-        <p className="text-sm text-[var(--text-mid)]">
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
           Invite your friends with the code generated after creation.
         </p>
       </div>
@@ -43,7 +43,7 @@ export default function CreateLeaguePage() {
         </FormField>
 
         {state?.error && (
-          <p className="text-sm text-[var(--status-danger)]">{state.error}</p>
+          <p className="text-[length:var(--type-body)] text-[var(--status-danger)]">{state.error}</p>
         )}
 
         <Button type="submit" variant="cta" disabled={pending}>

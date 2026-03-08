@@ -137,8 +137,8 @@ export function RiderDetailClient({
   // Metric boxes per context (RD-4)
   function renderMetrics() {
     const boxClass = "flex-1 rounded-lg bg-[var(--bg-surface)] px-3 py-2.5 space-y-0.5";
-    const labelClass = "text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]";
-    const valueClass = "text-xl font-bold font-mono text-[var(--text-high)]";
+    const labelClass = "text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]";
+    const valueClass = "text-[length:var(--type-stat)] font-extrabold font-mono text-[var(--text-high)]";
 
     if (context === "recruts") {
       return (
@@ -204,7 +204,7 @@ export function RiderDetailClient({
       {/* Hero — horizontal layout (RD-3) */}
       <div className="flex items-start gap-3 px-4">
         <div className="relative shrink-0">
-          <Avatar className="size-16">
+          <Avatar className="size-20">
             {rider.photo_url && (
               <AvatarImage
                 src={resolvePhoto(rider.photo_url)}
@@ -217,7 +217,7 @@ export function RiderDetailClient({
             </AvatarFallback>
           </Avatar>
           {rider.pcs_rank != null && (
-            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold font-mono text-[var(--text-mid)] bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-full px-1.5 leading-tight">
+            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[length:var(--type-micro)] font-semibold font-mono text-[var(--text-mid)] bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-full px-1.5 leading-tight">
               #{rider.pcs_rank}
             </span>
           )}
@@ -226,7 +226,7 @@ export function RiderDetailClient({
         <div className="flex-1 min-w-0 space-y-2">
           <div className="space-y-0.5">
             <div className="flex items-center gap-1.5">
-              <h1 className="text-lg font-black text-[var(--text-high)] truncate">
+              <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)] truncate">
                 {rider.full_name}
               </h1>
               {rider.nationality && (
@@ -240,22 +240,22 @@ export function RiderDetailClient({
 
           <div className="flex flex-wrap gap-1.5">
             {rider.specialty && (
-              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-mid)]">
+              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
                 {rider.specialty}
               </span>
             )}
             {age !== null && (
-              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-mid)]">
+              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
                 {age} yrs
               </span>
             )}
             {rider.height_cm && (
-              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-mid)]">
+              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
                 {rider.height_cm} cm
               </span>
             )}
             {rider.weight_kg && (
-              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-mid)]">
+              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
                 {rider.weight_kg} kg
               </span>
             )}
@@ -278,7 +278,7 @@ export function RiderDetailClient({
             >
               −
             </button>
-            <div className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-[var(--accent-default)] bg-[var(--bid-active-bg)] h-10 px-3">
+            <div className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-[var(--accent-default)] bg-[var(--bg-surface-hover)] h-10 px-3">
               <input
                 type="text"
                 inputMode="numeric"
@@ -365,82 +365,90 @@ export function RiderDetailClient({
 
       {/* Tab Content */}
       <div className="px-4 pb-8">
-        {(context === "ranking" || tabIndex === 1) && context === "ranking" ? (
-          // Ranking: show game results directly
-          <GameResultsSection raceResults={raceResults} />
-        ) : tabIndex === 0 ? (
+        {context === "ranking" ? (
+          // Ranking: all sections inline (no tabs)
           <div className="space-y-6">
-            {/* Season Rankings — flat table (RD-9) */}
-            <div className="space-y-2">
-              <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
-                Season Rankings
-              </span>
-
-              {rankings.length === 0 ? (
-                <p className="text-sm text-[var(--text-mid)]">
-                  No season data available.
-                </p>
-              ) : (
-                <div>
-                  {/* Table header */}
-                  <div className="flex items-center gap-4 px-1 py-1.5 text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
-                    <span className="w-12">Year</span>
-                    <span className="flex-1">Team</span>
-                    <span className="w-16 text-right">Points</span>
-                    <span className="w-12 text-right">Rank</span>
-                  </div>
-                  <div className="divide-y divide-[var(--border-subtle)]">
-                    {rankings.map((r) => (
-                      <div key={r.season} className="flex items-center gap-4 px-1 py-2">
-                        <span className="w-12 text-sm font-bold text-[var(--text-high)]">
-                          {r.season}
-                        </span>
-                        <span className="flex-1 text-sm text-[var(--text-mid)] truncate">
-                          {r.team ?? "—"}
-                        </span>
-                        <span className="w-16 text-right font-mono text-sm font-bold text-[var(--text-high)]">
-                          {r.points != null ? r.points.toLocaleString() : "—"}
-                        </span>
-                        <span className="w-12 text-right font-mono text-sm text-[var(--text-mid)]">
-                          {r.rank != null ? `#${r.rank}` : "—"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Race Programme (RD-10) */}
-            {startlists.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
-                  Race Programme
-                </span>
-                <div className="divide-y divide-[var(--border-subtle)]">
-                  {startlists.map((s, i) => (
-                    <div key={i} className="flex items-center justify-between py-2 px-1">
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-semibold text-[var(--text-high)] block truncate">
-                          {s.race_name}
-                        </span>
-                        {s.race_date && (
-                          <span className="text-xs text-[var(--text-low)]">
-                            {new Date(s.race_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <PcsStatsSection rankings={rankings} startlists={startlists} />
+            <GameResultsSection raceResults={raceResults} />
           </div>
+        ) : tabIndex === 0 ? (
+          <PcsStatsSection rankings={rankings} startlists={startlists} />
         ) : (
-          // Game Stats tab
           <GameResultsSection raceResults={raceResults} />
         )}
       </div>
+    </div>
+  );
+}
+
+// PCS Stats section (season rankings + race programme)
+function PcsStatsSection({ rankings, startlists }: { rankings: SeasonRanking[]; startlists: Startlist[] }) {
+  return (
+    <div className="space-y-6">
+      {/* Season Rankings — flat table (RD-9) */}
+      <div className="space-y-2">
+        <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
+          Season Rankings
+        </span>
+
+        {rankings.length === 0 ? (
+          <p className="text-sm text-[var(--text-mid)]">
+            No season data available.
+          </p>
+        ) : (
+          <div>
+            <div className="flex items-center gap-4 px-1 py-1.5 text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+              <span className="w-12">Year</span>
+              <span className="flex-1">Team</span>
+              <span className="w-16 text-right">Points</span>
+              <span className="w-12 text-right">Rank</span>
+            </div>
+            <div className="divide-y divide-[var(--border-subtle)]">
+              {rankings.map((r) => (
+                <div key={r.season} className="flex items-center gap-4 px-1 py-2">
+                  <span className="w-12 text-sm font-bold text-[var(--text-high)]">
+                    {r.season}
+                  </span>
+                  <span className="flex-1 text-sm text-[var(--text-mid)] truncate">
+                    {r.team ?? "—"}
+                  </span>
+                  <span className="w-16 text-right font-mono text-sm font-bold text-[var(--text-high)]">
+                    {r.points != null ? r.points.toLocaleString() : "—"}
+                  </span>
+                  <span className="w-12 text-right font-mono text-sm text-[var(--text-mid)]">
+                    {r.rank != null ? `#${r.rank}` : "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Race Programme (RD-10) */}
+      {startlists.length > 0 && (
+        <div className="space-y-2">
+          <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
+            Race Programme
+          </span>
+          <div className="divide-y divide-[var(--border-subtle)]">
+            {startlists.map((s, i) => (
+              <div key={i} className="flex items-center justify-between py-2 px-1">
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-semibold text-[var(--text-high)] block truncate">
+                    {s.race_name}
+                  </span>
+                  {s.race_date && (
+                    <span className="text-xs text-[var(--text-low)]">
+                      {new Date(s.race_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -470,7 +478,7 @@ function GameResultsSection({ raceResults }: { raceResults: RaceResult[] }) {
     <div className="space-y-4">
       {Object.entries(grouped).map(([month, results]) => (
         <div key={month} className="space-y-1">
-          <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+          <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
             {month}
           </span>
           <div className="divide-y divide-[var(--border-subtle)]">

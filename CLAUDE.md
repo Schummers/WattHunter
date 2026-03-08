@@ -1,5 +1,12 @@
 # WattHunter — CLAUDE.md
 
+## Rule #1 — Design System First
+Before ANY frontend work (new component, new page, styling change), READ `docs/watthunter-design-system-v2.md` first. Every decision (typography, colors, spacing, component patterns) must follow this file. If something is ambiguous or missing from the design system, ASK the user before inventing a solution.
+- **Typography**: ALWAYS use `text-[length:var(--type-*)]` tokens. NEVER hardcode pixel sizes (`text-[15px]`, `text-[9px]`, etc.).
+- **Colors**: ALWAYS use semantic tokens (`--text-high`, `--text-mid`, `--bg-surface`, `--accent-default`, etc.). NEVER hardcode hex colors.
+- **Spacing**: Use Tailwind spacing utilities (`p-4`, `gap-3`) or `--space-*` tokens.
+- **When in doubt**: ask the user rather than guessing.
+
 ## Stack
 - Next.js 16 App Router, TypeScript strict mode
 - Tailwind CSS v4 + Shadcn UI

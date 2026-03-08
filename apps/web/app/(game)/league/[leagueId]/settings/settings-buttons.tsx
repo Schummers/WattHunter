@@ -4,7 +4,74 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Copy, LogOut, Check, DoorOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
-import { updateTeamName, leaveLeague } from "./actions";
+import { leaveLeague } from "./actions";
+
+export function EditableField({
+  label,
+  initialValue,
+  onSave,
+  disabled,
+}: {
+  label: string;
+  initialValue: string;
+  onSave: (value: string) => Promise<{ success?: boolean; error?: string }>;
+  disabled?: boolean;
+}) {
+  const [value, setValue] = useState(initialValue);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const hasChanged = value !== initialValue;
+
+  async function handleSave() {
+    setSaving(true);
+    setError("");
+    const result = await onSave(value);
+    setSaving(false);
+    if (result.success) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } else if (result.error) {
+      setError(result.error);
+    }
+  }
+
+  return (
+    <div className="space-y-1">
+      <label className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
+        {label}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          disabled={disabled}
+          className="flex h-9 flex-1 items-center rounded-lg border border-[var(--border-default)] bg-transparent px-3 text-[length:var(--type-body)] text-[var(--text-high)] outline-none focus:border-[var(--accent-default)] disabled:opacity-50 disabled:cursor-not-allowed"
+        />
+        {!disabled && (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!hasChanged || saving}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-mid)] disabled:opacity-30 hover:border-[var(--border-hover)]"
+          >
+            {saved ? (
+              <Check size={16} className="text-[var(--accent-default)]" />
+            ) : (
+              <Check size={16} />
+            )}
+          </button>
+        )}
+      </div>
+      {error && (
+        <p className="text-[length:var(--type-micro)] text-[var(--status-danger)]">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function CopyInviteCodeButton({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
@@ -21,7 +88,11 @@ export function CopyInviteCodeButton({ code }: { code: string }) {
       onClick={handleCopy}
       className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-mid)] hover:border-[var(--border-hover)]"
     >
-      {copied ? <Check size={16} className="text-[var(--accent-default)]" /> : <Copy size={16} />}
+      {copied ? (
+        <Check size={16} className="text-[var(--accent-default)]" />
+      ) : (
+        <Copy size={16} />
+      )}
     </button>
   );
 }
@@ -39,47 +110,11 @@ export function SignOutButton() {
     <button
       type="button"
       onClick={handleSignOut}
-      className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border-default)] py-2.5 px-4 text-sm font-semibold text-[var(--text-mid)] hover:bg-[var(--bg-surface-hover)] transition-colors"
+      className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border-default)] py-2.5 px-4 text-[length:var(--type-body)] font-semibold text-[var(--status-danger)] hover:bg-[var(--bg-surface-hover)] transition-colors"
     >
       <LogOut size={16} />
       Sign out
     </button>
-  );
-}
-
-export function EditableTeamName({ teamId, initialName }: { teamId: string; initialName: string }) {
-  const [name, setName] = useState(initialName);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const hasChanged = name !== initialName;
-
-  async function handleSave() {
-    setSaving(true);
-    const result = await updateTeamName(teamId, name);
-    setSaving(false);
-    if (result.success) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    }
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="flex h-9 flex-1 items-center rounded-lg border border-[var(--border-default)] bg-transparent px-3 text-sm text-[var(--text-high)] outline-none focus:border-[var(--accent-default)]"
-      />
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={!hasChanged || saving}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-mid)] disabled:opacity-30 hover:border-[var(--border-hover)]"
-      >
-        {saved ? <Check size={16} className="text-[var(--accent-default)]" /> : <Check size={16} />}
-      </button>
-    </div>
   );
 }
 
@@ -88,7 +123,12 @@ export function LeaveLeagueButton({ leagueId }: { leagueId: string }) {
   const [loading, setLoading] = useState(false);
 
   async function handleLeave() {
-    if (!confirm("Are you sure you want to leave this league? This cannot be undone.")) return;
+    if (
+      !confirm(
+        "Are you sure you want to leave this league? This cannot be undone."
+      )
+    )
+      return;
     setLoading(true);
     const result = await leaveLeague(leagueId);
     setLoading(false);
@@ -104,7 +144,7 @@ export function LeaveLeagueButton({ leagueId }: { leagueId: string }) {
       type="button"
       onClick={handleLeave}
       disabled={loading}
-      className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border-default)] py-2.5 px-4 text-sm font-semibold text-[var(--status-danger)] hover:bg-[var(--bg-surface-hover)] transition-colors"
+      className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border-default)] py-2.5 px-4 text-[length:var(--type-body)] font-semibold text-[var(--status-danger)] hover:bg-[var(--bg-surface-hover)] transition-colors"
     >
       <DoorOpen size={16} />
       {loading ? "Leaving..." : "Leave league"}
@@ -124,7 +164,7 @@ export function LeagueSelector({
   if (leagues.length <= 1) {
     return (
       <div className="flex h-9 items-center rounded-lg border border-[var(--border-default)] bg-transparent px-3">
-        <span className="text-sm text-[var(--text-high)]">
+        <span className="text-[length:var(--type-body)] text-[var(--text-high)]">
           {leagues[0]?.name ?? "League"}
         </span>
       </div>
@@ -135,7 +175,7 @@ export function LeagueSelector({
     <select
       value={currentLeagueId}
       onChange={(e) => onChange(e.target.value)}
-      className="flex h-9 w-full items-center rounded-lg border border-[var(--border-default)] bg-transparent px-3 text-sm text-[var(--text-high)] outline-none"
+      className="flex h-9 w-full items-center rounded-lg border border-[var(--border-default)] bg-transparent px-3 text-[length:var(--type-body)] text-[var(--text-high)] outline-none"
     >
       {leagues.map((l) => (
         <option key={l.id} value={l.id}>

@@ -77,16 +77,18 @@ export function RiderCard({
     return inner;
   }
 
-  const bgClass =
-    bidState === "active"
-      ? "bg-[var(--bg-surface-hover)]"
-      : "";
+  const hasBid = bidState === "active" || bidState === "outbid";
+  const bgClass = hasBid ? "bg-[var(--bg-surface)]" : "";
+
+  const hoverClass =
+    !href ? "" :
+    hasBid ? "hover:bg-[var(--bg-surface-hover)]" : "hover:bg-[var(--bg-subtle)]";
 
   const inner = (
     <div
       className={`relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] transition-colors ${bgClass} ${
         isMuted ? "opacity-60" : ""
-      } ${href ? "hover:bg-[var(--bg-subtle)]" : ""}`}
+      } ${hoverClass}`}
     >
       {/* Avatar + PCS rank overlay */}
       <div className="relative shrink-0">
@@ -99,7 +101,7 @@ export function RiderCard({
           </AvatarFallback>
         </Avatar>
         {rider.pcs_rank != null && (
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold font-mono text-[var(--text-mid)] bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-full px-1.5 leading-tight">
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[length:var(--type-micro)] font-semibold font-mono text-[var(--text-mid)] bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-full px-1.5 leading-tight">
             #{rider.pcs_rank}
           </span>
         )}
@@ -108,26 +110,26 @@ export function RiderCard({
       {/* Name + team */}
       <div className="flex flex-1 flex-col min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="text-[15px] font-bold text-[var(--text-high)] truncate">
+          <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] truncate">
             {rider.name}
           </span>
           {rider.nationality_flag && (
             <span className="shrink-0">{rider.nationality_flag}</span>
           )}
           {boostPct != null && boostPct > 0 && (
-            <span className="shrink-0 bg-[var(--bg-surface)] text-[var(--text-high)] text-[9px] font-bold rounded-lg px-1.5 py-0.5">
+            <span className="shrink-0 bg-[var(--bg-surface)] text-[var(--text-high)] text-[length:var(--type-micro)] font-semibold rounded-lg px-1.5 py-0.5">
               +{boostPct}%
             </span>
           )}
         </div>
         <div className="flex items-center gap-1">
           {rider.team_name && (
-            <span className="text-xs text-[var(--text-mid)] truncate">
+            <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)] truncate">
               {rider.team_name}
             </span>
           )}
           {bidState === "outbid" && outbidMessage && (
-            <span className="text-xs text-[var(--text-mid)] truncate">
+            <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)] truncate">
               {outbidMessage}
             </span>
           )}
@@ -142,7 +144,7 @@ export function RiderCard({
           <span className="text-base font-bold font-mono text-[var(--text-high)]">
             {xp.toLocaleString()}
           </span>
-          <span className="text-[9px] text-[var(--text-low)]">XP</span>
+          <span className="text-[length:var(--type-micro)] font-semibold text-[var(--text-low)]">XP</span>
         </div>
       ) : null}
 

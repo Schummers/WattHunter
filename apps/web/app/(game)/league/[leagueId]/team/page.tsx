@@ -144,13 +144,13 @@ export default async function MyTeamPage({
         <div className="flex gap-3">
           {/* Left: Total XP Season */}
           <div className="flex-1 space-y-0.5">
-            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
               Total XP Season
             </span>
-            <div className="text-[28px] font-black font-mono leading-none tracking-tight text-[var(--accent-highlight)]">
+            <div className="text-[length:var(--type-display)] font-black font-mono leading-none tracking-tight text-[var(--accent-highlight)]">
               {xp.toLocaleString()}
             </div>
-            <span className="text-[10px] text-[var(--text-low)]">
+            <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
               Updated after each race
             </span>
           </div>
@@ -161,11 +161,11 @@ export default async function MyTeamPage({
             className="flex items-center gap-1.5 self-start rounded-lg px-3 py-2 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] transition-colors"
           >
             <div className="space-y-0.5">
-              <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+              <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
                 Ranking
               </span>
-              <div className="text-lg font-black font-mono leading-none text-[var(--text-high)]">
-                {rank}<span className="text-sm font-semibold text-[var(--text-low)]">/{teamCount}</span>
+              <div className="text-[length:var(--type-stat)] font-extrabold font-mono leading-none text-[var(--text-high)]">
+                {rank}<span className="text-[length:var(--type-emphasis)] font-semibold font-mono text-[var(--text-low)]">/{teamCount}</span>
               </div>
             </div>
             <ChevronRight size={14} className="text-[var(--text-ghost)]" />
@@ -174,7 +174,7 @@ export default async function MyTeamPage({
 
         {/* Boost pill + Change policies link (MT-3 + MT-4) */}
         <div className="flex items-center justify-between mt-3">
-          <span className="text-xs font-bold text-[var(--text-mid)] bg-white/5 rounded-full px-2.5 py-0.5">
+          <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)] bg-white/5 rounded-full px-2.5 py-0.5">
             +{boostPct}% Boost
           </span>
           <Link
@@ -192,7 +192,7 @@ export default async function MyTeamPage({
       {/* Roster (MT-6 — before Pending Bids) */}
       <div>
         <div className="flex items-center justify-between px-4 mb-2">
-          <span className="text-[15px] font-bold text-[var(--text-high)]">
+          <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             Roster
           </span>
           <span className="text-xs font-semibold text-[var(--text-low)]">
@@ -237,11 +237,11 @@ export default async function MyTeamPage({
       {allBids.length > 0 && (
         <div>
           <div className="flex items-center justify-between px-4 mb-2">
-            <span className="text-[15px] font-bold text-[var(--text-high)]">
+            <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
               Pending Bids
             </span>
             {activeAuction && (
-              <span className="text-xs text-[var(--text-low)]">
+              <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
                 {activeAuction.name} · closes {smartCountdown(activeAuction.closes_at)}
               </span>
             )}
@@ -263,7 +263,7 @@ export default async function MyTeamPage({
                     photo_url: r.photo_url,
                   }}
                   bidState={isOutbid ? "outbid" : "active"}
-                  href={`/league/${leagueId}/rider/${r.id}?from=team`}
+                  href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
                   rightContent={
                     <span className={`text-sm font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--accent-default)]"}`}>
                       {formatThousands(bid.amount)} €

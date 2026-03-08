@@ -14,7 +14,7 @@ export function Pill({ label, active, onClick }: PillProps) {
       className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
         active
           ? "bg-[var(--text-high)] text-[var(--bg-app)]"
-          : "border border-[var(--border-default)] text-[var(--text-mid)] hover:border-[var(--border-hover)]"
+          : "border border-[var(--border-default)] text-[var(--text-mid)] hover:bg-[var(--bg-subtle)] hover:border-[var(--border-hover)]"
       }`}
     >
       {label}
