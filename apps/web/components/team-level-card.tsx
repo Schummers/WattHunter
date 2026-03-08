@@ -23,21 +23,17 @@ export function TeamLevelCard({
   const isMaxLevel = !next;
   const unlocks = isMaxLevel ? [] : getNewUnlocks(currentLevel + 1);
 
-  const xpLabel = isMaxLevel
-    ? `${currentXp} XP`
-    : `${currentXp} / ${next.xp} XP`;
-
   const card = (
     <div
-      className={`relative overflow-hidden rounded-xl p-4 ${
+      className={`relative overflow-hidden rounded-xl border p-4 ${
         !hideHeader
-          ? "hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] transition-all duration-200"
-          : ""
+          ? "border-transparent hover:border-[var(--accent-default)] transition-colors duration-200"
+          : "border-transparent"
       }`}
     >
-      {/* Mesh gradient background */}
+      {/* Mesh gradient background (static) */}
       <div
-        className="absolute inset-0 animate-mesh-slow"
+        className="absolute inset-0"
         style={{
           backgroundColor: "#020617",
           backgroundImage: [
@@ -63,34 +59,34 @@ export function TeamLevelCard({
           </div>
         )}
 
-        {/* XP text */}
-        <span className="text-[12px] font-medium text-[var(--text-mid)]">
-          <span className="font-mono">{currentXp}</span>
-          {!isMaxLevel && (
-            <>
-              {" / "}
-              <span className="font-mono">{next.xp}</span>
-            </>
-          )}
-          {" XP"}
-        </span>
-
-        {/* Progress row: current badge + bar + next badge */}
+        {/* Progress row: current badge + (XP text above bar) + next badge */}
         <div className="flex items-center gap-2">
           {/* Current level badge */}
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
             <span className="text-sm font-bold text-[var(--text-high)]">
               {currentLevel}
             </span>
           </div>
 
-          {/* Progress bar */}
-          <Progress value={pct} className="h-1.5 flex-1" />
+          {/* XP text + progress bar stacked */}
+          <div className="flex-1 flex flex-col gap-1">
+            <span className="text-[12px] font-medium text-[var(--text-mid)]">
+              <span className="font-mono">{currentXp.toLocaleString()}</span>
+              {!isMaxLevel && (
+                <>
+                  {" / "}
+                  <span className="font-mono">{next.xp.toLocaleString()}</span>
+                </>
+              )}
+              {" XP"}
+            </span>
+            <Progress value={pct} className="h-1.5" />
+          </div>
 
           {/* Next level badge */}
           {!isMaxLevel && (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface)]">
-              <span className="text-sm font-medium text-[var(--text-ghost)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
+              <span className="text-sm font-bold text-[var(--text-mid)]">
                 {currentLevel + 1}
               </span>
             </div>
@@ -107,7 +103,7 @@ export function TeamLevelCard({
             unlocks.map((label) => (
               <span
                 key={label}
-                className="rounded-full border border-[var(--border-default)] px-2.5 py-0.5 text-[11px] text-[var(--text-mid)]"
+                className="rounded-full bg-[var(--text-high)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--bg-app)]"
               >
                 {label}
               </span>
@@ -123,7 +119,7 @@ export function TeamLevelCard({
   }
 
   return (
-    <Link href={`/league/${leagueId}/team/levels`}>
+    <Link href={`/league/${leagueId}/levels`}>
       {card}
     </Link>
   );

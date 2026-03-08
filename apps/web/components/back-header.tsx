@@ -10,7 +10,7 @@ interface BackHeaderProps {
 export function BackHeader({ label }: BackHeaderProps) {
   const router = useRouter();
   return (
-    <div className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[var(--bg-app)]">
+    <div className="sticky top-0 z-40 bg-[var(--bg-app)]">
       <button
         onClick={() => router.back()}
         className="flex min-h-[40px] items-center gap-2 px-4 py-2 text-sm font-semibold text-[var(--text-mid)]"

@@ -85,24 +85,32 @@ export default async function LevelsPage({
                 >
                   Level {lvl.level}
                 </span>
-                <span
-                  className={`text-xs font-mono ${
-                    isCurrent
-                      ? "text-[var(--accent-default)]"
-                      : isFuture
-                      ? "text-[var(--text-ghost)]"
-                      : "text-[var(--text-low)]"
-                  }`}
-                >
-                  {isCurrent
-                    ? `${currentXp.toLocaleString()} / ${nextLevelData ? nextLevelData.xp.toLocaleString() : currentXp.toLocaleString()} XP`
-                    : `${lvl.xp.toLocaleString()} XP`}
-                </span>
+                {!isCurrent && (
+                  <span
+                    className={`text-xs font-mono ${
+                      isFuture
+                        ? "text-[var(--text-ghost)]"
+                        : "text-[var(--text-low)]"
+                    }`}
+                  >
+                    {lvl.xp.toLocaleString()} XP
+                  </span>
+                )}
               </div>
 
-              {/* Progress bar for current level */}
+              {/* Progress bar with XP for current level */}
               {isCurrent && (
-                <div className="mt-2">
+                <div className="mt-2 flex flex-col gap-1">
+                  <span className="text-[12px] font-medium text-[var(--accent-default)]">
+                    <span className="font-mono">{currentXp.toLocaleString()}</span>
+                    {nextLevelData && (
+                      <>
+                        {" / "}
+                        <span className="font-mono">{nextLevelData.xp.toLocaleString()}</span>
+                      </>
+                    )}
+                    {" XP"}
+                  </span>
                   <Progress value={progressPct} />
                 </div>
               )}
@@ -113,10 +121,10 @@ export default async function LevelsPage({
                   {unlocks.map((pill) => (
                     <span
                       key={pill}
-                      className={`rounded-full border px-2.5 py-0.5 text-[11px] ${
+                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
                         isFuture
-                          ? "border-[var(--border-subtle)] text-[var(--text-ghost)]"
-                          : "border-[var(--border-default)] text-[var(--text-mid)]"
+                          ? "bg-[var(--bg-surface)] text-[var(--text-ghost)]"
+                          : "bg-[var(--text-high)] text-[var(--bg-app)]"
                       }`}
                     >
                       {pill}

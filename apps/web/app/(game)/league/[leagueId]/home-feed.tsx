@@ -48,7 +48,7 @@ export function HomeFeed({
   memberCount,
 }: HomeFeedProps) {
   return (
-    <div className="pt-4 space-y-3">
+    <div className="px-4 pt-4 space-y-3">
       {/* Team Overview */}
       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 space-y-3">
         <div className="flex items-center justify-between">
