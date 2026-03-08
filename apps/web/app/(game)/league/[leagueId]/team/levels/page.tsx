@@ -2,30 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { BackHeader } from "@/components/back-header";
 import { Progress } from "@/components/ui/progress";
 import { Check, Lock } from "lucide-react";
-
-const LEVELS = [
-  { level: 1, xp: 0, slots: 6, pool: "#401 -> #500", policy: "Speciality", maxActive: 1 },
-  { level: 2, xp: 100, slots: 7, pool: "#301 -> #500", policy: null, maxActive: 1 },
-  { level: 3, xp: 250, slots: 7, pool: "#201 -> #500", policy: "Nationality", maxActive: 1 },
-  { level: 4, xp: 500, slots: 8, pool: "#151 -> #500", policy: null, maxActive: 1 },
-  { level: 5, xp: 900, slots: 9, pool: "#101 -> #500", policy: "Teams", maxActive: 2 },
-  { level: 6, xp: 1500, slots: 9, pool: "#76 -> #500", policy: null, maxActive: 2 },
-  { level: 7, xp: 2500, slots: 10, pool: "#51 -> #500", policy: "Age", maxActive: 2 },
-  { level: 8, xp: 4000, slots: 11, pool: "#26 -> #500", policy: null, maxActive: 2 },
-  { level: 9, xp: 6000, slots: 11, pool: "#11 -> #500", policy: null, maxActive: 2 },
-  { level: 10, xp: 9000, slots: 12, pool: "#1 -> #500", policy: null, maxActive: 2 },
-];
-
-function getProgressPct(xp: number, currentLevel: number): number {
-  const currentIdx = LEVELS.findIndex((l) => l.level === currentLevel);
-  if (currentIdx < 0) return 0;
-  const current = LEVELS[currentIdx];
-  const next = currentIdx < LEVELS.length - 1 ? LEVELS[currentIdx + 1] : null;
-  if (!next) return 100;
-  const range = next.xp - current.xp;
-  if (range <= 0) return 100;
-  return Math.min(100, Math.round(((xp - current.xp) / range) * 100));
-}
+import { LEVELS, getProgressPct } from "@/lib/levels";
 
 export default async function LevelsPage({
   params,

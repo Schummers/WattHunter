@@ -2,45 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { RiderCard } from "@/components/rider-card";
 import { Progress } from "@/components/ui/progress";
-
-const LEVEL_THRESHOLDS = [
-  { level: 1, xp: 0, slots: 6 },
-  { level: 2, xp: 100, slots: 7 },
-  { level: 3, xp: 250, slots: 7 },
-  { level: 4, xp: 500, slots: 8 },
-  { level: 5, xp: 900, slots: 9 },
-  { level: 6, xp: 1500, slots: 9 },
-  { level: 7, xp: 2500, slots: 10 },
-  { level: 8, xp: 4000, slots: 11 },
-  { level: 9, xp: 6000, slots: 11 },
-  { level: 10, xp: 9000, slots: 12 },
-];
-
-function getLevelInfo(level: number) {
-  const currentIdx = Math.max(
-    0,
-    LEVEL_THRESHOLDS.findIndex((l) => l.level === level)
-  );
-  const current = LEVEL_THRESHOLDS[currentIdx];
-  const next =
-    currentIdx < LEVEL_THRESHOLDS.length - 1
-      ? LEVEL_THRESHOLDS[currentIdx + 1]
-      : null;
-  return { current, next };
-}
-
-function getProgressPct(xp: number, level: number): number {
-  const { current, next } = getLevelInfo(level);
-  if (!next) return 100;
-  const range = next.xp - current.xp;
-  if (range <= 0) return 100;
-  return Math.min(100, Math.round(((xp - current.xp) / range) * 100));
-}
-
-function getMaxSlots(level: number): number {
-  const entry = LEVEL_THRESHOLDS.find((l) => l.level === level);
-  return entry?.slots ?? 6;
-}
+import { getMaxSlots, getProgressPct, getNextLevel } from "@/lib/levels";
 
 function formatName(fullName: string): string {
   const parts = fullName.split(" ").filter(Boolean);
@@ -113,7 +75,7 @@ export default async function MyTeamPage({
   const maxSlots = getMaxSlots(level);
   const riderCount = teamRiders?.length ?? 0;
   const progressPct = getProgressPct(xp, level);
-  const { next } = getLevelInfo(level);
+  const next = getNextLevel(level);
 
   return (
     <div className="py-4 space-y-6">
