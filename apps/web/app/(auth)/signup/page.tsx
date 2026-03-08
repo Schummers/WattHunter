@@ -75,8 +75,8 @@ export default function SignupPage() {
           width={48}
           height={48}
         />
-        <h1 className="text-2xl font-semibold text-[var(--text-high)]">WattHunter</h1>
-        <p className="text-sm text-[var(--text-mid)]">
+        <h1 className="text-[length:var(--type-page-title)] font-semibold text-[var(--text-high)]">WattHunter</h1>
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
           Create your account
         </p>
       </div>
@@ -92,7 +92,7 @@ export default function SignupPage() {
 
       <div className="flex w-full items-center gap-3">
         <div className="h-px flex-1 bg-[var(--border-subtle)]" />
-        <span className="text-xs text-[var(--text-low)]">or</span>
+        <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">or</span>
         <div className="h-px flex-1 bg-[var(--border-subtle)]" />
       </div>
 
@@ -142,8 +142,8 @@ export default function SignupPage() {
           />
         </FormField>
 
-        {error && <p className="-mt-2 text-xs text-[var(--status-danger)]">{error}</p>}
-        {message && <p className="-mt-2 text-xs text-[var(--status-success)]">{message}</p>}
+        {error && <p className="-mt-2 text-[length:var(--type-caption)] text-[var(--status-danger)]">{error}</p>}
+        {message && <p className="-mt-2 text-[length:var(--type-caption)] text-[var(--status-success)]">{message}</p>}
 
         <Button type="submit" variant="cta" className="mt-4 w-full" disabled={loading}>
           {loading ? "Creating..." : "Create account"}
@@ -152,12 +152,12 @@ export default function SignupPage() {
 
       <Link
         href="/login"
-        className="text-sm text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors"
+        className="text-[length:var(--type-body)] text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors"
       >
         Already have an account? Sign in
       </Link>
 
-      <p className="text-center text-xs text-[var(--text-low)]">
+      <p className="text-center text-[length:var(--type-caption)] text-[var(--text-low)]">
         By continuing, you agree to our terms of service.
       </p>
     </div>

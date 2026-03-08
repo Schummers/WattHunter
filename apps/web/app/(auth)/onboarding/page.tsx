@@ -44,10 +44,10 @@ export default function OnboardingPage() {
             height={56}
             className="drop-shadow-[0_0_20px_rgba(6,182,212,0.4)]"
           />
-          <h1 className="text-2xl font-bold text-[var(--text-high)]">
+          <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
             WattHunter
           </h1>
-          <p className="text-sm text-[var(--text-mid)]">
+          <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
             The fantasy league where your team grows with you.
           </p>
         </div>
@@ -63,10 +63,10 @@ export default function OnboardingPage() {
                 <step.icon className="size-4 text-[var(--accent-default)]" />
               </div>
               <div className="flex flex-col gap-0.5">
-                <h3 className="text-sm font-semibold text-[var(--text-high)]">
+                <h3 className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
                   {step.title}
                 </h3>
-                <p className="text-xs leading-snug text-[var(--text-mid)]">
+                <p className="text-[length:var(--type-caption)] leading-snug text-[var(--text-mid)]">
                   {step.description}
                 </p>
               </div>
@@ -81,7 +81,7 @@ export default function OnboardingPage() {
           </Button>
           <Link
             href="/login"
-            className="text-center text-sm text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors"
+            className="text-center text-[length:var(--type-body)] text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors"
           >
             Already have an account? Log in
           </Link>

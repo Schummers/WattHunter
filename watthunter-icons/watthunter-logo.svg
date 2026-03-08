@@ -1,0 +1,17 @@
+<svg width="512" height="512" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wh-bottom" x1="55" y1="55" x2="88" y2="82" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0891b2"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="wh-overlay" x1="42" y1="48" x2="60" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#000"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Bottom half — darker gradient -->
+  <path d="M65 114C62.8 117 58 115.5 57.9 111.5L57 57H86C92.5 57 96.5 64.5 92.5 69.5L65 114Z" fill="url(#wh-bottom)"/>
+  <path d="M65 114C62.8 117 58 115.5 57.9 111.5L57 57H86C92.5 57 96.5 64.5 92.5 69.5L65 114Z" fill="url(#wh-overlay)" fill-opacity="0.2"/>
+  <!-- Top half — bright cyan -->
+  <path d="M55 6C57.2 3 62 4.5 62.1 8.5L63 63H34C27.5 63 23.5 55.5 27.5 50.5L55 6Z" fill="#22d3ee"/>
+</svg>

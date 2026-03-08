@@ -83,10 +83,10 @@ export default async function PoliciesPage({
         {/* Policy slots */}
         <div className="space-y-0">
           <div className="flex items-center justify-between px-1 pb-2">
-            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
               Policy slots
             </span>
-            <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
               {maxActive} max active
             </span>
           </div>

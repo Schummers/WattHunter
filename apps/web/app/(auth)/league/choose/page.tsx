@@ -14,10 +14,10 @@ export default function ChooseLeaguePage() {
           width={48}
           height={48}
         />
-        <h1 className="text-2xl font-semibold text-[var(--text-high)]">
+        <h1 className="text-[length:var(--type-page-title)] font-semibold text-[var(--text-high)]">
           WattHunter
         </h1>
-        <p className="text-sm text-[var(--text-mid)]">
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
           Create a new league or join an existing one.
         </p>
       </div>
@@ -31,10 +31,10 @@ export default function ChooseLeaguePage() {
             <Plus className="size-5 text-[var(--accent-default)]" />
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-semibold text-[var(--text-high)]">
+            <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
               Create a league
             </span>
-            <span className="text-xs text-[var(--text-mid)]">
+            <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
               Start a new league and invite your friends.
             </span>
           </div>
@@ -48,10 +48,10 @@ export default function ChooseLeaguePage() {
             <ArrowRight className="size-5 text-[var(--accent-default)]" />
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-semibold text-[var(--text-high)]">
+            <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
               Join a league
             </span>
-            <span className="text-xs text-[var(--text-mid)]">
+            <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
               Enter the 6-character code from your Race Director.
             </span>
           </div>

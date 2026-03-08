@@ -261,9 +261,9 @@ export function RecrutsClient({
     <div className="pb-20">
       {/* Round header */}
       {activeRound ? (
-        <div className="flex items-center justify-between px-4 py-2">
+        <div className="flex items-center justify-between px-4 pt-4 pb-0">
           <span className="text-sm text-[var(--text-mid)]">
-            <span className="font-bold">{activeRound.name}</span> &middot;{" "}
+            {activeRound.name} &middot;{" "}
             {smartCountdown(activeRound.closes_at)}
           </span>
           <Link href={`/league/${leagueId}/team/recruts/history`} className="text-sm link-tertiary">
@@ -271,7 +271,7 @@ export function RecrutsClient({
           </Link>
         </div>
       ) : (
-        <div className="flex items-center justify-between px-4 py-2">
+        <div className="flex items-center justify-between px-4 pt-4 pb-0">
           <span className="text-sm text-[var(--text-mid)]">
             No active round
           </span>
@@ -282,7 +282,7 @@ export function RecrutsClient({
       )}
 
       {/* Search */}
-      <div className="px-4 py-3">
+      <div className="px-4 pt-2 pb-3">
         <div className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2 focus-within:ring-2 focus-within:ring-[var(--accent-focus-ring)]">
           <Search size={16} className="shrink-0 text-[var(--text-ghost)]" />
           <input
@@ -309,7 +309,7 @@ export function RecrutsClient({
 
       {/* Counter */}
       <div className="px-4 pb-2">
-        <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--text-low)]">
+        <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
           {filteredRiders.length} available
         </span>
       </div>
@@ -327,7 +327,7 @@ export function RecrutsClient({
                   onClick={() => toggleGroup(groupName)}
                   className="flex w-full items-center justify-between px-4 py-2.5 bg-[var(--bg-subtle)] border-b border-[var(--border-subtle)]"
                 >
-                  <span className="text-sm font-bold text-[var(--text-high)]">
+                  <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
                     {groupName}
                   </span>
                   <div className="flex items-center gap-2">
@@ -361,13 +361,13 @@ export function RecrutsClient({
                           photo_url: r.photo_url,
                         }}
                         bidState={currentBid ? "active" : "none"}
-                        href={`/league/${leagueId}/rider/${r.id}`}
+                        href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
                         rightContent={
                           <div className="flex flex-col items-end gap-0.5">
                             <div
                               className={`flex items-center gap-0.5 rounded-lg px-2 h-7 ${
                                 currentBid
-                                  ? "border border-[var(--accent-default)] bg-[var(--bid-active-bg)]"
+                                  ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
                                   : "border border-[var(--border-default)] bg-transparent"
                               }`}
                             >
@@ -390,12 +390,12 @@ export function RecrutsClient({
                                     : "text-[var(--text-low)]"
                                 }`}
                               />
-                              <span className="text-[10px] text-[var(--text-ghost)] font-medium">
+                              <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)] font-medium">
                                 €
                               </span>
                             </div>
                             {errors[r.id] && (
-                              <span className="text-[9px] text-[var(--status-danger)]">
+                              <span className="text-[length:var(--type-micro)] text-[var(--status-danger)]">
                                 {errors[r.id]}
                               </span>
                             )}
@@ -427,39 +427,41 @@ export function RecrutsClient({
                   photo_url: r.photo_url,
                 }}
                 bidState={currentBid ? "active" : "none"}
-                href={`/league/${leagueId}/rider/${r.id}`}
+                href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
                 rightContent={
                   <div className="flex flex-col items-end gap-0.5">
                     <div
                       className={`flex items-center gap-0.5 rounded-lg px-2 h-7 ${
                         currentBid
-                          ? "border border-[var(--accent-default)] bg-[var(--bid-active-bg)]"
+                          ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
                           : "border border-[var(--border-default)] bg-transparent"
                       }`}
                     >
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         min={minSalary}
-                        step={100}
-                        placeholder={new Intl.NumberFormat("en-US").format(minSalary)}
-                        value={currentBid ?? ""}
+                        step={1000}
+                        placeholder={formatThousands(minSalary)}
+                        value={currentBid ? formatThousands(currentBid) : ""}
                         onChange={(e) => {
-                          const val = parseInt(e.target.value, 10);
+                          const raw = e.target.value.replace(/\s/g, "");
+                          const val = parseInt(raw, 10);
                           handleBidChange(r.id, isNaN(val) ? 0 : val);
                         }}
                         onClick={(e) => e.preventDefault()}
-                        className={`w-16 bg-transparent text-right text-sm font-semibold font-mono outline-none ${
+                        className={`w-20 bg-transparent text-right text-sm font-semibold font-mono outline-none ${
                           currentBid
                             ? "text-[var(--accent-default)]"
                             : "text-[var(--text-low)]"
                         }`}
                       />
-                      <span className="text-[10px] text-[var(--text-ghost)] font-medium">
-                        /mo
+                      <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)] font-medium">
+                        €
                       </span>
                     </div>
                     {errors[r.id] && (
-                      <span className="text-[9px] text-[var(--status-danger)]">
+                      <span className="text-[length:var(--type-micro)] text-[var(--status-danger)]">
                         {errors[r.id]}
                       </span>
                     )}

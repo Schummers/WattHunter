@@ -59,7 +59,7 @@ export function AuctionClient({
     <>
       {myBids.length > 0 && (
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium uppercase text-[var(--text-mid)]">
+          <span className="text-[length:var(--type-label)] font-bold uppercase text-[var(--text-mid)]">
             My bids ({myBids.length})
           </span>
           {myBids.map((bid) => {

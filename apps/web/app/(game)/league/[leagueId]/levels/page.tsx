@@ -46,7 +46,7 @@ export default async function LevelsPage({
 
       {/* Title + Hero */}
       <div className="px-4 pt-4 space-y-3">
-        <h1 className="text-[15px] font-bold text-[var(--text-high)]">
+        <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
           {teamName} progression
         </h1>
         <TeamLevelCard
@@ -79,7 +79,7 @@ export default async function LevelsPage({
               {/* Level title + XP */}
               <div className="flex items-center justify-between">
                 <span
-                  className={`text-[15px] ${
+                  className={`text-[length:var(--type-section)] ${
                     isCurrent
                       ? "font-bold text-[var(--text-high)]"
                       : isFuture
@@ -117,7 +117,7 @@ export default async function LevelsPage({
                   {unlocks.map((pill) => (
                     <span
                       key={pill}
-                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                      className={`rounded-full px-2.5 py-0.5 text-[length:var(--type-caption)] font-medium ${
                         isFuture
                           ? "bg-[var(--bg-surface)] text-[var(--text-ghost)]"
                           : "bg-[var(--text-high)] text-[var(--bg-app)]"

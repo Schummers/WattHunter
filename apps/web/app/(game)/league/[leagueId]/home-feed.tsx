@@ -61,7 +61,7 @@ export function HomeFeed({
       {/* Team Overview */}
       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)]/80 backdrop-blur-sm p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-base font-bold text-[var(--text-high)]">
+          <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             {teamName}
           </span>
           <span className="text-xs font-medium text-[var(--text-low)]">
@@ -73,10 +73,10 @@ export function HomeFeed({
           {/* Treasury */}
           <div className="flex flex-col items-center gap-1 rounded-lg bg-[var(--bg-app)] px-2 py-2.5">
             <Wallet size={16} className="text-[var(--text-mid)]" />
-            <span className="font-mono text-sm font-bold text-[var(--text-high)]">
+            <span className="font-mono text-[length:var(--type-stat-small)] font-bold text-[var(--text-high)]">
               {(treasury / 1000).toFixed(0)}k
             </span>
-            <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--text-low)]">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
               Treasury
             </span>
           </div>
@@ -87,10 +87,10 @@ export function HomeFeed({
             className="flex flex-col items-center gap-1 rounded-lg bg-[var(--bg-app)] px-2 py-2.5 hover:bg-[var(--bg-subtle)] transition-colors"
           >
             <Users size={16} className="text-[var(--text-mid)]" />
-            <span className="font-mono text-sm font-bold text-[var(--text-high)]">
+            <span className="font-mono text-[length:var(--type-stat-small)] font-bold text-[var(--text-high)]">
               {rosterCount}/{maxSlots}
             </span>
-            <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--text-low)]">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
               Roster
             </span>
           </Link>
@@ -101,7 +101,7 @@ export function HomeFeed({
             <span className="font-mono text-sm font-bold text-[var(--text-low)]">
               --
             </span>
-            <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--text-low)]">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
               Rank
             </span>
           </div>
