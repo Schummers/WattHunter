@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { TeamLevelCard } from "@/components/team-level-card";
+import { InfoCard } from "@/components/info-card";
 import { Users, Wallet, Timer, ChevronRight, Trophy } from "lucide-react";
 
 function timeUntil(dateStr: string): string {
@@ -59,12 +60,12 @@ export function HomeFeed({
       </div>
       <div className="relative z-10 px-4 pt-4 space-y-3">
       {/* Team Overview */}
-      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)]/80 backdrop-blur-sm p-4 space-y-3">
+      <InfoCard className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             {teamName}
           </span>
-          <span className="text-xs font-medium text-[var(--text-low)]">
+          <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
             {memberCount} players
           </span>
         </div>
@@ -98,7 +99,7 @@ export function HomeFeed({
           {/* Ranking */}
           <div className="flex flex-col items-center gap-1 rounded-lg bg-[var(--bg-app)] px-2 py-2.5">
             <Trophy size={16} className="text-[var(--text-mid)]" />
-            <span className="font-mono text-sm font-bold text-[var(--text-low)]">
+            <span className="font-mono text-[length:var(--type-body)] font-bold text-[var(--text-low)]">
               --
             </span>
             <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
@@ -106,17 +107,17 @@ export function HomeFeed({
             </span>
           </div>
         </div>
-      </div>
+      </InfoCard>
 
       {/* Auction Card */}
       {activeAuction && (
-        <Link
+        <InfoCard
           href={
             activeAuction.status === "open"
               ? `/league/${leagueId}/team/recruts`
               : `/league/${leagueId}/team`
           }
-          className="block rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)]/80 backdrop-blur-sm p-4"
+          className="p-4"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -124,10 +125,10 @@ export function HomeFeed({
                 <Timer size={18} className="text-[var(--accent-default)]" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-[var(--text-high)]">
+                <p className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
                   {activeAuction.name}
                 </p>
-                <p className="text-xs text-[var(--text-mid)]">
+                <p className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
                   {activeAuction.status === "open" ? (
                     <>
                       Closes in{" "}
@@ -148,7 +149,7 @@ export function HomeFeed({
             </div>
             <ChevronRight size={16} className="shrink-0 text-[var(--text-ghost)]" />
           </div>
-        </Link>
+        </InfoCard>
       )}
 
       {/* Level Progress */}
@@ -164,7 +165,7 @@ export function HomeFeed({
       {rosterCount < maxSlots && activeAuction?.status === "open" && (
         <Link
           href={`/league/${leagueId}/team/recruts`}
-          className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--accent-default)] bg-[var(--accent-muted)] px-4 py-3 text-sm font-semibold text-[var(--accent-default)]"
+          className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--accent-default)] bg-[var(--accent-muted)] px-4 py-3 text-[length:var(--type-emphasis)] font-semibold text-[var(--accent-default)]"
         >
           <Users size={16} />
           {maxSlots - rosterCount} open slot{maxSlots - rosterCount > 1 ? "s" : ""} — Browse recruits

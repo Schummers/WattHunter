@@ -23,6 +23,16 @@ export function formatThousands(amount: number): string {
   return amount.toLocaleString("fr-FR");
 }
 
+/** Format date as "Sat, Mar 8" — consistent across all browsers/locales. */
+export function formatShortDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 /** Smart countdown: "in X days" or "in X hours" depending on remaining time. */
 export function smartCountdown(target: Date | string): string {
   const end = typeof target === "string" ? new Date(target) : target;

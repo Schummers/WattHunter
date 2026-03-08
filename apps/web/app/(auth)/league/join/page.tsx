@@ -47,7 +47,7 @@ function JoinLeagueForm() {
         </FormField>
 
         {state?.error && (
-          <p className="text-[length:var(--type-body)] text-[var(--status-danger)]">{state.error}</p>
+          <p className="text-[length:var(--type-caption)] text-[var(--status-danger)]">{state.error}</p>
         )}
 
         <Button type="submit" variant="cta" disabled={pending}>

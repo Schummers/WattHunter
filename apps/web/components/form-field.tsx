@@ -19,10 +19,10 @@ export function FormField({ label, htmlFor, error, success, children }: FormFiel
       </label>
       {children}
       {error && (
-        <p className="text-xs text-[var(--status-danger)]">{error}</p>
+        <p className="text-[length:var(--type-caption)] text-[var(--status-danger)]">{error}</p>
       )}
       {success && (
-        <p className="text-xs text-[var(--status-success)]">{success}</p>
+        <p className="text-[length:var(--type-caption)] text-[var(--status-success)]">{success}</p>
       )}
     </div>
   );

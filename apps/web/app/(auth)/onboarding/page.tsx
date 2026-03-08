@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { InfoCard } from "@/components/info-card";
 import { Search, Trophy, TrendingUp, type LucideIcon } from "lucide-react";
 
 const steps: Array<{ icon: LucideIcon; title: string; description: string }> = [
@@ -38,11 +39,11 @@ export default function OnboardingPage() {
         {/* Logo + Title */}
         <div className="flex flex-col items-center gap-2 text-center">
           <Image
-            src="/watthunter-icon.png"
+            src="/watthunter-icon.svg"
             alt="WattHunter"
             width={56}
             height={56}
-            className="drop-shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+            unoptimized
           />
           <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
             WattHunter
@@ -55,9 +56,9 @@ export default function OnboardingPage() {
         {/* Feature cards */}
         <div className="flex w-full flex-col gap-2.5">
           {steps.map((step, i) => (
-            <div
+            <InfoCard
               key={i}
-              className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)]/80 px-3.5 py-3 backdrop-blur-sm"
+              className="flex items-center gap-3 px-3.5 py-3"
             >
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface)]">
                 <step.icon className="size-4 text-[var(--accent-default)]" />
@@ -70,7 +71,7 @@ export default function OnboardingPage() {
                   {step.description}
                 </p>
               </div>
-            </div>
+            </InfoCard>
           ))}
         </div>
 

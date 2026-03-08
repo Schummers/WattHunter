@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatShortDate } from "@/lib/format";
 import Link from "next/link";
 
 export default async function AuctionsPage({
@@ -32,17 +33,19 @@ export default async function AuctionsPage({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold text-[var(--text-high)]">Auctions</h1>
+    <div className="flex flex-col gap-6 px-4 pt-4">
+      <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
+        Auctions
+      </h1>
 
       {active && (
-        <div className="rounded-md border border-border bg-[var(--bg-surface)] p-6">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
           <div className="flex items-start justify-between">
             <div className="flex flex-col gap-1">
-              <span className="text-lg font-semibold text-[var(--text-high)]">
+              <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
                 {active.name}
               </span>
-              <div className="flex items-center gap-3 text-sm text-[var(--text-mid)]">
+              <div className="flex items-center gap-3 text-[length:var(--type-body)] text-[var(--text-mid)]">
                 <Badge variant="secondary">Round {activeRound}/3</Badge>
                 <span>Resolves at midnight</span>
               </div>
@@ -56,21 +59,23 @@ export default async function AuctionsPage({
 
       {upcoming.length > 0 && (
         <>
-          <div className="border-b border-border" />
+          <div className="border-b border-[var(--border-subtle)]" />
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium uppercase text-[var(--text-mid)]">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-mid)]">
               Upcoming
             </span>
             {upcoming.map((a) => (
               <div
                 key={a.id}
-                className="flex items-center justify-between border-b border-border py-3 last:border-0"
+                className="flex items-center justify-between border-b border-[var(--border-subtle)] py-3 last:border-0"
               >
                 <div className="flex items-center gap-4">
-                  <span className="text-sm text-[var(--text-mid)]">
-                    {new Date(a.opens_at).toLocaleDateString("en-US")}
+                  <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+                    {formatShortDate(a.opens_at)}
                   </span>
-                  <span className="text-sm text-[var(--text-high)]">{a.name}</span>
+                  <span className="text-[length:var(--type-body)] text-[var(--text-high)]">
+                    {a.name}
+                  </span>
                 </div>
                 <Badge variant="secondary">Scheduled</Badge>
               </div>
@@ -81,21 +86,23 @@ export default async function AuctionsPage({
 
       {closed.length > 0 && (
         <>
-          <div className="border-b border-border" />
+          <div className="border-b border-[var(--border-subtle)]" />
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium uppercase text-[var(--text-mid)]">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-mid)]">
               Completed
             </span>
             {closed.map((a) => (
               <div
                 key={a.id}
-                className="flex items-center justify-between border-b border-border py-3 last:border-0"
+                className="flex items-center justify-between border-b border-[var(--border-subtle)] py-3 last:border-0"
               >
                 <div className="flex items-center gap-4">
-                  <span className="text-sm text-[var(--text-mid)]">
-                    {new Date(a.opens_at).toLocaleDateString("en-US")}
+                  <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+                    {formatShortDate(a.opens_at)}
                   </span>
-                  <span className="text-sm text-[var(--text-high)]">{a.name}</span>
+                  <span className="text-[length:var(--type-body)] text-[var(--text-high)]">
+                    {a.name}
+                  </span>
                 </div>
                 <Link href={`/league/${leagueId}/auctions/${a.id}/results`}>
                   <Button variant="ghost" size="sm">
@@ -110,7 +117,7 @@ export default async function AuctionsPage({
 
       {(!auctions || auctions.length === 0) && (
         <div className="flex flex-col items-center gap-4 py-16">
-          <p className="text-sm text-[var(--text-mid)]">
+          <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
             No auctions scheduled yet.
           </p>
         </div>
