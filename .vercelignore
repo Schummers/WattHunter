@@ -1,0 +1,15 @@
+node_modules
+.pnpm-store
+.next
+.turbo
+.venv
+venv
+__pycache__
+services/pcs-sync/.venv
+services/pcs-sync/venv
+.DS_Store
+*.log
+backups
+.worktrees
+.claude
+docs

@@ -37,6 +37,9 @@ Thumbs.db
 .idea/
 *.swp
 
+# Backups
+backups/
+
 # Build outputs
 dist/
 build/
@@ -45,3 +48,4 @@ build/
 *.log
 npm-debug.log*
 pnpm-debug.log*
+.vercel
