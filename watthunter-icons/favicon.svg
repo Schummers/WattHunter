@@ -1,0 +1,6 @@
+<svg width="32" height="32" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bottom half — solid color for favicon clarity -->
+  <path d="M65 114C62.8 117 58 115.5 57.9 111.5L57 57H86C92.5 57 96.5 64.5 92.5 69.5L65 114Z" fill="#06b6d4"/>
+  <!-- Top half — bright cyan -->
+  <path d="M55 6C57.2 3 62 4.5 62.1 8.5L63 63H34C27.5 63 23.5 55.5 27.5 50.5L55 6Z" fill="#22d3ee"/>
+</svg>
