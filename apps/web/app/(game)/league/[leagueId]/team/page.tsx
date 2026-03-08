@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { RiderCard } from "@/components/rider-card";
-import { Progress } from "@/components/ui/progress";
-import { getMaxSlots, getProgressPct, getNextLevel } from "@/lib/levels";
+import { TeamLevelCard } from "@/components/team-level-card";
+import { getMaxSlots } from "@/lib/levels";
 
 function formatName(fullName: string): string {
   const parts = fullName.split(" ").filter(Boolean);
@@ -74,8 +74,6 @@ export default async function MyTeamPage({
   const level = team?.level ?? 1;
   const maxSlots = getMaxSlots(level);
   const riderCount = teamRiders?.length ?? 0;
-  const progressPct = getProgressPct(xp, level);
-  const next = getNextLevel(level);
 
   return (
     <div className="py-4 space-y-6">
@@ -183,33 +181,12 @@ export default async function MyTeamPage({
       </div>
 
       {/* Team Level */}
-      <div className="px-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-default)]">
-            <span className="text-[15px] font-bold font-mono text-[var(--text-high)]">
-              {level}
-            </span>
-          </div>
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-[var(--text-high)]">
-                Level {level}
-              </span>
-              {next && (
-                <span className="text-xs text-[var(--text-low)]">
-                  <span className="font-mono">{xp.toLocaleString()}</span> / <span className="font-mono">{next.xp.toLocaleString()}</span> XP
-                </span>
-              )}
-            </div>
-            <Progress value={progressPct} />
-          </div>
-        </div>
-        <Link
-          href={`/league/${leagueId}/team/levels`}
-          className="text-sm text-[var(--accent-default)]"
-        >
-          See all &rarr;
-        </Link>
+      <div className="px-4">
+        <TeamLevelCard
+          leagueId={leagueId}
+          currentLevel={level}
+          currentXp={xp}
+        />
       </div>
     </div>
   );
