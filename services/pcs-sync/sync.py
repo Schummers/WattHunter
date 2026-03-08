@@ -21,7 +21,7 @@ RATE_LIMIT_MS = int(os.getenv("PCS_RATE_LIMIT_DELAY_MS", "4000"))
 SALARY_FLOOR = 5_000    # €/month (no upper cap)
 
 # Level gating thresholds: level → max PCS rank accessible
-LEVEL_RANK_THRESHOLDS = [500, 400, 300, 200, 150, 100, 75, 50, 25, 10]
+LEVEL_RANK_THRESHOLDS = [500, 350, 250, 175, 100, 75, 50, 25, 10, 3]
 
 
 def rank_max_for_level(level: int) -> int:

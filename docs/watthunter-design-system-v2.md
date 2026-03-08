@@ -1,6 +1,6 @@
-# WattHunter — Design System v1.0
+# WattHunter — Design System v2.1
 
-> **Philosophy:** Restrained Cyan on Teal-tinted Dark.
+> **Philosophy:** Restrained Cyan on Sky Blue Night Dark.
 > Le fond a du caractère mais reste silencieux. Le blanc structure. Le cyan guide l'œil.
 
 ---
@@ -9,83 +9,81 @@
 
 | Couche | Source | Rôle | Surface |
 |--------|--------|------|---------|
-| **1. Neutral** | Teal-tinted dark (B1) | Backgrounds, surfaces, texte, dividers | ~80% |
+| **1. Neutral** | Sky Blue Night dark (200°) | Backgrounds, surfaces, texte, dividers | ~80% |
 | **2. Accent** | Tailwind Cyan | Interactions, états actifs, hero stat | ~15% |
 | **3. CTA Gradient** | Cyan-500 → Cyan-400 | Boutons d'action primaires | ~5% |
 | **4. Mesh Gradient** | 5 couleurs brand (animé) | Hero sections, marketing, onboarding | Web only |
 
 ---
 
-## Layer 1 — Neutral Teal-Tinted (B1)
+## Layer 1 — Neutral Sky Blue Night (200°)
 
-**Remplace Radix Slate Dark.** Hue ~195° (teal), saturation ~10-14%. Suffisamment teinté pour avoir du caractère, assez subtil pour ne pas rivaliser avec l'accent cyan.
+**Remplace le Blue Night 220° (v2.0).** Hue ~200° (sky blue), saturation ~18%. Inspiré des defaults de makegradient.com — un compromis entre le teal (195°, trop proche du cyan) et le bleu pur (220°, trop froid). Le résultat : des backgrounds qui appartiennent à la même famille que le gradient animé.
 
-### Pourquoi B1 ?
+### Pourquoi Sky Blue Night ?
 
-Le Radix Slate pur (hue 0°, sat 0%) était **trop plat** — pas de personnalité, pas de lien avec la brand. B1 injecte une teinte teal subtile qui :
+Après itération (Slate → Teal 195° → Blue 220°), le hue 200° est le sweet spot :
 
-- Crée une parenté naturelle avec l'accent Cyan (~188°) — même famille de hue
-- Ajoute de la profondeur sans saturer l'œil
-- Différencie WattHunter d'un thème dark générique
+- **12° d'écart** avec le Cyan accent (188°) — assez pour ne pas être un camaïeu, assez proche pour une cohérence naturelle
+- Même famille de hue que les **darks du gradient animé** (site makegradient = ~200-220°) → unité visuelle entre l'app et le branding
+- Feeling **sky blue night** — plus chaleureux que le bleu pur 220°, plus caractériel que le teal 195°
 
 ### Backgrounds
 
-| Token | Hex (B1) | Ancien (Slate) | Delta | Usage |
-|-------|----------|----------------|-------|-------|
-| `--bg-app` | `#0b1113` | `#111113` | Hue shift 195° | Background principal de l'app |
-| `--bg-subtle` | `#101719` | `#18191b` | +teal tint | Background alterné, sections secondaires |
-| `--bg-surface` | `#131d20` | `#212225` | Plus sombre, plus teal | Cards, inputs, wells |
-| `--bg-surface-hover` | `#182428` | `#272a2d` | — | Hover state des surfaces |
-| `--bg-surface-active` | `#1b272c` | `#2e3135` | — | Pressed/selected state |
+| Token | Hex | Ancien (Blue 220°) | Contrast vs précédent | Usage |
+|-------|-----|---------------------|----------------------|-------|
+| `--bg-app` | `#0c1012` | `#0c0e13` | Hue shift 220° → 200° | Background principal de l'app |
+| `--bg-subtle` | `#111618` | `#10131a` | +sky blue tint | Background alterné, sections secondaires |
+| `--bg-surface` | `#151b1e` | `#141820` | Plus sky blue | Cards, inputs, wells |
+| `--bg-surface-hover` | `#1a2226` | `#191e28` | — | Hover state des surfaces |
+| `--bg-surface-active` | `#1f292e` | `#1e2430` | — | Pressed/selected state |
 
 ### Borders & Dividers
 
-| Token | Hex (B1) | Ancien (Slate) | Usage |
-|-------|----------|----------------|-------|
-| `--border-subtle` | `#131d20` | `#212225` | Dividers entre sections |
-| `--border-default` | `#243338` | `#363a3f` | Borders de composants |
-| `--border-hover` | `#2e4048` | `#43484e` | Borders au hover |
+| Token | Hex | Ancien (Blue 220°) | Usage |
+|-------|-----|---------------------|-------|
+| `--border-subtle` | `#151b1e` | `#141820` | Dividers entre sections |
+| `--border-default` | `#273339` | `#252d3c` | Borders de composants |
+| `--border-hover` | `#334249` | `#313a4c` | Borders au hover |
 
 ### Texte
 
-| Token | Hex (B1) | Ancien (Slate) | Contrast vs bg-app | Usage |
-|-------|----------|----------------|---------------------|-------|
-| `--text-high` | `#ebf0f1` | `#edeef0` | ~15:1 ✅ AAA | Titres, noms, chiffres |
-| `--text-mid` | `#8a9da3` | `#b0b4ba` | ~7:1 ✅ AA | Descriptions, texte secondaire |
-| `--text-low` | `#6a8890` | `#696e77` | 5.0:1 ✅ AA | Labels, captions, metadata |
-| `--text-ghost` | `#2e4048` | `#43484e` | ~1.8:1 | Placeholders, disabled (décoratif uniquement) |
+| Token | Hex | Ancien (Blue 220°) | Contrast vs bg-app | Usage |
+|-------|-----|---------------------|---------------------|-------|
+| `--text-high` | `#eaeff1` | `#ecedf0` | 16.49:1 ✅ AAA | Titres, noms, chiffres |
+| `--text-mid` | `#89a1ad` | `#8e96a8` | 7.07:1 ✅ AAA | Descriptions, texte secondaire |
+| `--text-low` | `#74919f` | `#7482a0` | 5.73:1 ✅ AA | Labels, captions, metadata |
+| `--text-ghost` | `#334249` | `#313a4c` | 1.84:1 | Placeholders, disabled (décoratif uniquement) |
 
-> **`--text-low` fixé (v1.1) :** rehaussé de `#456068` (2.83:1 ❌) à `#6a8890` (5.02:1 ✅ AA).
-> Passe AA sur `--bg-app` et `--bg-surface`. Passe AA-large sur `--bg-surface-active` (4.03:1).
-> Utilisable pour du small text (11px labels) sans restriction.
+> **`--text-low` :** 5.73:1 AA sur `--bg-app` (meilleur que v2.0). Passe AA sur toutes les surfaces jusqu'à `--bg-surface-hover` (4.84:1). AA-large sur `--bg-surface-active` (4.45:1).
+>
+> **`--text-mid` :** 7.07:1 AAA sur `--bg-app` — amélioration significative vs v2.0 (6.51:1).
 >
 > **`--text-ghost` :** réservé aux éléments **purement décoratifs** (placeholders, texte disabled).
 > Ne porte jamais d'information critique — toujours doublé d'un autre indicateur visuel.
 
 ### Échelle complète (12 steps, Radix-like)
 
-Pour référence, voici la scale complète dérivée de B1 :
-
 | Step | Hex | Sat | Usage type |
 |------|-----|-----|------------|
-| 1 | `#0b1113` | ~12% | bg-app |
-| 2 | `#101719` | ~12% | bg-subtle |
-| 3 | `#131d20` | ~14% | bg-surface |
-| 4 | `#182428` | ~14% | surface-hover |
-| 5 | `#1b272c` | ~14% | surface-active |
-| 6 | `#243338` | ~15% | border-default |
-| 7 | `#2e4048` | ~15% | border-hover |
-| 8 | `#3a5058` | ~14% | — réservé — |
-| 9 | `#456068` | ~14% | — ancien text-low, retiré — |
-| 10 | `#6a8890` | ~13% | text-low (fixé v1.1) |
-| 11 | `#8a9da3` | ~10% | text-mid |
-| 12 | `#ebf0f1` | ~6% | text-high |
+| 1 | `#0c1012` | ~18% | bg-app |
+| 2 | `#111618` | ~18% | bg-subtle |
+| 3 | `#151b1e` | ~18% | bg-surface |
+| 4 | `#1a2226` | ~18% | surface-hover |
+| 5 | `#1f292e` | ~18% | surface-active |
+| 6 | `#273339` | ~18% | border-default |
+| 7 | `#334249` | ~18% | border-hover / text-ghost |
+| 8 | `#40535d` | ~18% | — réservé — |
+| 9 | `#597380` | ~18% | — réservé — |
+| 10 | `#74919f` | ~18% | text-low |
+| 11 | `#89a1ad` | ~18% | text-mid |
+| 12 | `#eaeff1` | ~18% | text-high |
 
 ---
 
 ## Layer 2 — Accent (Tailwind Cyan)
 
-**Inchangé.** Le B1 s'harmonise naturellement avec le Cyan car les deux partagent une famille de hue (~190-195° pour B1, ~188° pour Cyan).
+**Inchangé.** Le Sky Blue Night (200°) et le Cyan (188°) sont proches en hue (12° d'écart) mais distincts — le fond est plus froid, l'accent plus chaud. Résultat : cohérence naturelle sans camaïeu.
 
 ### Scale
 
@@ -133,15 +131,19 @@ Règle : 1 CTA gradient max par écran.
 
 Gradient WebGL animé avec noise pour les contextes marketing et atmosphériques. 100% couleurs brand.
 
+**v2.1 : les dark slots utilisent les couleurs Sky Blue Night (200°)** et le slot 5 passe de Blue-500 à **Sky-500** (#0ea5e9), inspiré des defaults de makegradient.com. Le gradient combine : sky blue profond + cyan + sky blue vif.
+
 ### Les 5 couleurs
 
 | Slot | Hex | Source | Rôle |
 |------|-----|--------|------|
-| uColor1 | `#020617` | TW Slate-950 | Centre — ancre sombre profonde |
-| uColor2 | `#0b1120` | Custom navy | Mid-dark — profondeur |
-| uColor3 | `#1e293b` | TW Slate-800 | Mid-tone — relief subtil |
+| uColor1 | `#040607` | Deep sky (sous bg-app) | Centre — ancre sombre profonde |
+| uColor2 | `#0c1012` | `--bg-app` | Mid-dark — continuité avec l'app |
+| uColor3 | `#1f292e` | `--bg-surface-active` | Mid-tone — relief sky blue subtil |
 | uColor4 | `#06b6d4` | TW Cyan-500 | Accent lumineux — brand primary |
-| uColor5 | `#22d3ee` | TW Cyan-400 | Highlight — point le plus lumineux |
+| uColor5 | `#0ea5e9` | TW Sky-500 | Accent sky blue — pont entre fond et cyan |
+
+> **Pourquoi Sky-500 ?** Inspiré de makegradient.com (stops 04+05 = #0ea5e9 + #22d3ee). Sky-500 (199°) est un pont naturel entre les backgrounds (200°) et le cyan (188°). Ça crée un gradient qui va du sombre au lumineux dans une **même famille de hue** — plus organique que le tricolore blue+cyan de la v2.0.
 
 ### Implémentation animée (makegradient.com)
 
@@ -149,7 +151,7 @@ Gradient WebGL animé avec noise pour les contextes marketing et atmosphériques
 <script src="https://makegradient.com/embed.js"></script>
 <div
   data-lumina-gradient
-  data-colors='["#020617","#0b1120","#1e293b","#06b6d4","#22d3ee"]'
+  data-colors='["#040607","#0c1012","#1f292e","#06b6d4","#0ea5e9"]'
   data-mode="mesh"
   data-noise="0.05"
   data-speed="1"
@@ -161,23 +163,23 @@ Gradient WebGL animé avec noise pour les contextes marketing et atmosphériques
 
 ```css
 .mesh-gradient-fallback {
-  background-color: #020617;
+  background-color: #040607;
   background-image:
-    radial-gradient(circle at 20% 20%, #0b1120 0%, transparent 55%),
-    radial-gradient(circle at 70% 25%, #1e293b 0%, transparent 50%),
+    radial-gradient(circle at 20% 20%, #0c1012 0%, transparent 55%),
+    radial-gradient(circle at 70% 25%, #1f292e 0%, transparent 50%),
     radial-gradient(circle at 30% 75%, rgba(6, 182, 212, 0.25) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(34, 211, 238, 0.18) 0%, transparent 45%);
+    radial-gradient(circle at 80% 70%, rgba(14, 165, 233, 0.20) 0%, transparent 45%);
 }
 ```
 
 ### WebGL uniforms (OGL)
 
 ```js
-uColor1: new Vec3(0.008, 0.024, 0.090)  // #020617
-uColor2: new Vec3(0.043, 0.067, 0.125)  // #0b1120
-uColor3: new Vec3(0.118, 0.161, 0.231)  // #1e293b
+uColor1: new Vec3(0.016, 0.024, 0.027)  // #040607
+uColor2: new Vec3(0.047, 0.063, 0.071)  // #0c1012
+uColor3: new Vec3(0.122, 0.161, 0.180)  // #1f292e
 uColor4: new Vec3(0.024, 0.714, 0.831)  // #06b6d4
-uColor5: new Vec3(0.133, 0.827, 0.933)  // #22d3ee
+uColor5: new Vec3(0.055, 0.647, 0.914)  // #0ea5e9
 uNoiseStrength: 0.05
 uMode: 0  // 0=Mesh
 ```
@@ -413,21 +415,21 @@ Les autres niveaux (body, caption, label, micro) restent fixes — ils sont déj
 
 ```css
 :root {
-  /* ── Layer 1: Neutral Teal-Tinted (B1) ── */
-  --bg-app: #0b1113;
-  --bg-subtle: #101719;
-  --bg-surface: #131d20;
-  --bg-surface-hover: #182428;
-  --bg-surface-active: #1b272c;
+  /* ── Layer 1: Neutral Sky Blue Night (200°, ~18% sat) ── */
+  --bg-app: #0c1012;
+  --bg-subtle: #111618;
+  --bg-surface: #151b1e;
+  --bg-surface-hover: #1a2226;
+  --bg-surface-active: #1f292e;
 
-  --border-subtle: #131d20;
-  --border-default: #243338;
-  --border-hover: #2e4048;
+  --border-subtle: #151b1e;
+  --border-default: #273339;
+  --border-hover: #334249;
 
-  --text-high: #ebf0f1;
-  --text-mid: #8a9da3;
-  --text-low: #6a8890;
-  --text-ghost: #2e4048;
+  --text-high: #eaeff1;
+  --text-mid: #89a1ad;
+  --text-low: #74919f;
+  --text-ghost: #334249;
 
   /* ── Layer 2: Accent (Tailwind Cyan) ── */
   --cyan-950: #083344;
@@ -511,11 +513,11 @@ Les autres niveaux (body, caption, label, micro) restent fixes — ils sont déj
   --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ── Mesh Gradient (Web only) ── */
-  --mesh-color-1: #020617;
-  --mesh-color-2: #0b1120;
-  --mesh-color-3: #1e293b;
+  --mesh-color-1: #040607;
+  --mesh-color-2: #0c1012;
+  --mesh-color-3: #1f292e;
   --mesh-color-4: #06b6d4;
-  --mesh-color-5: #22d3ee;
+  --mesh-color-5: #0ea5e9;
 }
 ```
 
@@ -654,15 +656,15 @@ Les composants ci-dessous sont listés par ordre d'impact. Les cocher au fur et 
 
 ### Ce qui fonctionne bien
 
-1. **La parenté hue neutral/accent** : B1 (~195°) et Cyan (~188°) sont de la même famille, ça crée une cohésion chromatique naturelle.
+1. **La cohérence de famille hue** : Sky Blue Night (200°), Cyan (188°) et Sky-500 (199°) sont dans la même zone ~188-200° du spectre — tout le système "parle la même langue" chromatique.
 2. **La séparation Mono/Sans** est claire et renforce l'identité "data app".
 3. **Le système 7 niveaux + sous-tokens** couvre tous les cas sans bloat.
 
 ### Ce que je challengerais
 
-1. ~~**`--text-low` à 3.5:1**~~ → **FIXÉ v1.1** : rehaussé à `#6a8890` (5.02:1 AA ✅).
+1. ~~**`--text-low` à 3.5:1**~~ → **FIXÉ** : `#74919f` (5.73:1 AA ✅) — meilleur ratio de toutes les versions.
 
-2. **`--text-mid` à #8a9da3 (~7:1)** — c'est bien pour du body text, mais comparé à l'ancien Slate 11 (`#b0b4ba` à 9.2:1), on perd en lisibilité sur le texte secondaire. Option : monter à `#96aab0` (~8:1) pour retrouver du confort.
+2. **`--text-mid` à #89a1ad (7.07:1 AAA)** — amélioration significative vs v2.0 (6.51:1). Plus besoin de bumper.
 
 3. **Le display à 32px est-il encore trop gros ?** Sur un écran 375px, 32px/900 en mono prend ~40% de la largeur pour un nombre à 5 chiffres. Alternative : 28px qui reste imposant mais laisse plus de breathing room.
 
@@ -680,5 +682,6 @@ Les composants ci-dessous sont listés par ordre d'impact. Les cocher au fur et 
 
 ---
 
-*WattHunter Design System v1.1 — 2026-03-07*
-*Palette: B1 Teal Léger (~12% sat, ~195° hue) | Fonts: Geist Sans + Geist Mono*
+*WattHunter Design System v2.1 — 2026-03-08*
+*Palette: Sky Blue Night (~18% sat, ~200° hue) | Fonts: Geist Sans + Geist Mono*
+*Historique: v0 Radix Slate → v1.0 Teal B1 (195°, 12%) → v1.1 text-low fix → v2.0 Blue Night (220°, 18%) → v2.1 Sky Blue Night (200°, 18%)*

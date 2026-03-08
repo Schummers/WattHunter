@@ -48,9 +48,18 @@ export function HomeFeed({
   memberCount,
 }: HomeFeedProps) {
   return (
-    <div className="px-4 pt-4 space-y-3">
+    <div className="relative min-h-full">
+      {/* Mesh gradient background — same blurred-circles as onboarding */}
+      <div className="absolute inset-0 bg-[var(--bg-app)] pointer-events-none">
+        <div className="absolute inset-0 animate-mesh-slow">
+          <div className="absolute -left-1/4 -top-1/4 h-[60%] w-[60%] rounded-full bg-cyan-700 opacity-20 blur-[100px]" />
+          <div className="absolute -bottom-1/4 -right-1/4 h-[60%] w-[60%] rounded-full bg-cyan-600 opacity-15 blur-[100px]" />
+          <div className="absolute left-1/3 top-1/2 h-[40%] w-[40%] rounded-full bg-cyan-800 opacity-20 blur-[80px]" />
+        </div>
+      </div>
+      <div className="relative z-10 px-4 pt-4 space-y-3">
       {/* Team Overview */}
-      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 space-y-3">
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)]/80 backdrop-blur-sm p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-base font-bold text-[var(--text-high)]">
             {teamName}
@@ -107,7 +116,7 @@ export function HomeFeed({
               ? `/league/${leagueId}/team/recruts`
               : `/league/${leagueId}/team`
           }
-          className="block rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4"
+          className="block rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)]/80 backdrop-blur-sm p-4"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -147,6 +156,8 @@ export function HomeFeed({
         leagueId={leagueId}
         currentLevel={level}
         currentXp={xp}
+        teamName={teamName}
+        variant="home"
       />
 
       {/* Open Slots CTA */}
@@ -159,6 +170,7 @@ export function HomeFeed({
           {maxSlots - rosterCount} open slot{maxSlots - rosterCount > 1 ? "s" : ""} — Browse recruits
         </Link>
       )}
+      </div>
     </div>
   );
 }

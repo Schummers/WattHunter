@@ -27,7 +27,7 @@ export function TreasuryWidget({ treasury, activeBidsTotal }: TreasuryWidgetProp
         <span
           className={cn(
             "text-sm font-semibold",
-            available >= 50_000 ? "text-green-600" : "text-[var(--status-danger)]"
+            available >= 50_000 ? "text-[var(--success)]" : "text-[var(--status-danger)]"
           )}
         >
           {available.toLocaleString("en-US")} EUR

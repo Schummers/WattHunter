@@ -8,14 +8,18 @@ interface TeamLevelCardProps {
   leagueId: string;
   currentLevel: number;
   currentXp: number;
+  teamName?: string;
   hideHeader?: boolean;
+  variant?: "home" | "default";
 }
 
 export function TeamLevelCard({
   leagueId,
   currentLevel,
   currentXp,
+  teamName,
   hideHeader = false,
+  variant = "default",
 }: TeamLevelCardProps) {
   const next = getNextLevel(currentLevel);
   const current = getLevelByNumber(currentLevel);
@@ -25,33 +29,20 @@ export function TeamLevelCard({
 
   const card = (
     <div
-      className={`relative overflow-hidden rounded-xl border p-4 ${
-        !hideHeader
-          ? "border-transparent hover:border-[var(--accent-default)] transition-colors duration-200"
-          : "border-transparent"
+      className={`rounded-xl border p-4 transition-colors duration-200 ${
+        variant === "home"
+          ? "border-[var(--border-subtle)] bg-[var(--bg-app)]/80 backdrop-blur-sm hover:bg-[var(--bg-surface)]"
+          : hideHeader
+            ? "border-transparent bg-[var(--bg-surface)]"
+            : "border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)]"
       }`}
     >
-      {/* Mesh gradient background (static) */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundColor: "#020617",
-          backgroundImage: [
-            "radial-gradient(circle at 20% 20%, #0b1120 0%, transparent 55%)",
-            "radial-gradient(circle at 70% 25%, #1e293b 0%, transparent 50%)",
-            "radial-gradient(circle at 30% 75%, rgba(6, 182, 212, 0.25) 0%, transparent 50%)",
-            "radial-gradient(circle at 80% 70%, rgba(34, 211, 238, 0.18) 0%, transparent 45%)",
-          ].join(", "),
-        }}
-      />
-
-      {/* Content */}
-      <div className="relative z-10 flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
         {/* Header */}
         {!hideHeader && (
           <div className="flex items-center justify-between">
             <span className="text-[13px] font-semibold text-[var(--text-mid)]">
-              Team level
+              {teamName ?? "Team level"}
             </span>
             <span className="text-[12px] font-medium text-[var(--text-low)] hover:text-[var(--text-mid)] transition-colors">
               All levels &rarr;
@@ -62,7 +53,7 @@ export function TeamLevelCard({
         {/* Progress row: current badge + (XP text above bar) + next badge */}
         <div className="flex items-center gap-2">
           {/* Current level badge */}
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/5">
             <span className="text-sm font-bold text-[var(--text-high)]">
               {currentLevel}
             </span>
@@ -85,7 +76,7 @@ export function TeamLevelCard({
 
           {/* Next level badge */}
           {!isMaxLevel && (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/5">
               <span className="text-sm font-bold text-[var(--text-mid)]">
                 {currentLevel + 1}
               </span>

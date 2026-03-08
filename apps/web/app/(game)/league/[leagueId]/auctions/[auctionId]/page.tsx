@@ -5,7 +5,7 @@ import { TreasuryWidget } from "./treasury-widget";
 import { AuctionClient } from "./auction-client";
 
 function rankMaxForLevel(level: number): number {
-  const thresholds = [500, 400, 300, 200, 150, 100, 75, 50, 25, 10];
+  const thresholds = [500, 350, 250, 175, 100, 75, 50, 25, 10, 3];
   return thresholds[Math.min(Math.max(level, 1), 10) - 1];
 }
 

@@ -186,6 +186,7 @@ export default async function MyTeamPage({
           leagueId={leagueId}
           currentLevel={level}
           currentXp={xp}
+          teamName={team?.name ?? undefined}
         />
       </div>
     </div>

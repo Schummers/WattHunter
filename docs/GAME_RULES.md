@@ -58,15 +58,15 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 
 | Niveau | Rang PCS debloque |
 |--------|-------------------|
-| 1 | #401-500 |
-| 2 | #301-500 |
-| 3 | #201-500 |
-| 4 | #151-500 |
-| 5 | #101-500 |
-| 6 | #76-500 |
-| 7 | #51-500 |
-| 8 | #26-500 |
-| 9 | #11-500 |
+| 1 | #351-500 |
+| 2 | #251-500 |
+| 3 | #176-500 |
+| 4 | #101-500 |
+| 5 | #76-500 |
+| 6 | #51-500 |
+| 7 | #26-500 |
+| 8 | #11-500 |
+| 9 | #4-500 |
 | 10 | #1-500 |
 
 ---
@@ -192,18 +192,18 @@ XP equipe = Σ XP de tous les coureurs du roster
 
 ### Progression par niveaux
 
-| Niveau | XP cumule | Slots | Politiques actives | Rang PCS debloque | Policy debloquee |
-|--------|-----------|-------|--------------------|-------------------|------------------|
-| 1 | 0 | 6 | 1 | #401-500 | Speciality |
-| 2 | 100 | 7 | 1 | #301-500 | — |
-| 3 | 250 | 7 | 1 | #201-500 | Nationality |
-| 4 | 500 | 8 | 1 | #151-500 | — |
-| 5 | 900 | 9 | 2 | #101-500 | Teams |
-| 6 | 1 500 | 9 | 2 | #76-500 | — |
-| 7 | 2 500 | 10 | 2 | #51-500 | Age |
-| 8 | 4 000 | 11 | 2 | #26-500 | — |
-| 9 | 6 000 | 11 | 2 | #11-500 | — |
-| 10 | 9 000 | 12 | 2 | #1-500 | — |
+| Niveau | XP cumule | Slots | Politiques actives | Rang PCS debloque | Policy debloquee | Sponsor debloque |
+|--------|-----------|-------|--------------------|-------------------|------------------|------------------|
+| 1 | 0 | 6 | 1 | #351-500 | Speciality | Secondary T1 |
+| 2 | 50 | 7 | 1 | #251-500 | — | — |
+| 3 | 150 | 7 | 1 | #176-500 | Nationality | Secondary T2 |
+| 4 | 350 | 8 | 1 | #101-500 | — | — |
+| 5 | 700 | 9 | 2 | #76-500 | Teams | Principal T3 |
+| 6 | 1 200 | 9 | 2 | #51-500 | — | — |
+| 7 | 1 900 | 10 | 2 | #26-500 | Age | Principal T4 |
+| 8 | 2 900 | 11 | 2 | #11-500 | — | Principal T5 |
+| 9 | 4 400 | 11 | 2 | #4-500 | — | — |
+| 10 | 6 400 | 12 | 2 | #1-500 | — | — |
 
 ---
 
@@ -222,6 +222,20 @@ Types debloques par niveau : Speciality (Nv.1) → Nationality (Nv.3) → Teams 
 
 Les bonus sont **additifs**. Exemple : National Pride (Belgique) + Specialist (Sprinteur) = +10%.
 
+**Calcul du boost total affiche (pill My Team) :**
+
+```
+Boost total = Σ (5% × nombre de riders du roster matchant la policy)
+```
+
+Exemples :
+- 1 policy Specialty=GC, 2 riders GC sur 6 → boost affiche = +10%
+- 1 policy Nationality=FR, 3 riders FR sur 6 → boost affiche = +15%
+- 2 policies (Specialty=GC + Nationality=FR), 2 GC + 3 FR → boost affiche = +25%
+- 0 policies actives → boost affiche = +0%
+
+Le boost s'applique individuellement : chaque rider matche reçoit +5% sur ses points PCS gagnes en course. Le pill affiche la **somme de tous les bonus individuels** comme indicateur global.
+
 ---
 
 ## 9. Sponsors
@@ -239,17 +253,15 @@ Les bonus sont **additifs**. Exemple : National Pride (Belgique) + Specialist (S
 
 **Systeme de tiers (post-beta, reference) :**
 
-1 sponsor actif a la fois. Contrat de 2 mois. Tier limite par le niveau.
+2 slots : Secondary (petit sponsor passif) + Principal (sponsor majeur avec conditions). Tier limite par le niveau (voir §7). Voir `docs/prd et wireframe/watthunter-prd-budget-sponsors.md` pour le detail complet (14 sponsors, marketplace, conditions).
 
-| Tier | Niveau | Option A (inconditionnel) | Option B (conditionnel) | Condition |
-|------|--------|--------------------------|-------------------------|-----------|
-| 1 | 3 | 80 000 €/2mo | 120 000 €/2mo | ≥3 coureurs meme nationalite |
-| 2 | 5 | 170 000 €/2mo | 220 000 €/2mo | ≥2 coureurs < 23 ans |
-| 3 | 7 | 250 000 €/2mo | 300 000 €/2mo | ≥2 coureurs meme specialite |
-| 4 | 9 | 400 000 €/2mo | 500 000 €/2mo | ≥3 coureurs meme equipe |
-| 5 | 10 | 800 000 €/2mo | 1 000 000 €/2mo | ≥4 meme nationalite OU ≥3 meme equipe |
-
-Condition non remplie au jour du paiement → montant Option A verse a la place.
+| Type | Tier | Niveau | Montant/mois |
+|------|------|--------|--------------|
+| Secondary | T1 | 1 | ~40 000 € |
+| Secondary | T2 | 3 | ~60 000 € |
+| Principal | T3 | 5 | ~125 000 € |
+| Principal | T4 | 7 | ~200 000 € |
+| Principal | T5 | 8 | ~400 000 € |
 
 ---
 
@@ -268,9 +280,9 @@ Condition non remplie au jour du paiement → montant Option A verse a la place.
 | Duree d'enchere | 72 heures | Non |
 | Increment d'enchere | 100 € | Non |
 | Slots max | 6 (Niv 1) → 12 (Niv 10) | Non |
-| Politiques max | 0 (Niv 1) → 3 (Niv 10) | Non |
+| Politiques max | 1 (Niv 1) → 2 (Niv 5+) | Non |
 | Pool coureurs | Top 500 PCS global (12 mois glissants) | Non |
-| XP Niveau 5 | 10 000 | Non |
-| XP Niveau 10 | 120 000 | Non |
+| XP Niveau 5 | 700 | Non |
+| XP Niveau 10 | 6 400 | Non |
 | Contrat sponsor | 2 mois (post-beta) | Non |
 | Joueurs max par ligue | 20 | Non |

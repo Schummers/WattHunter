@@ -28,7 +28,7 @@ export default async function LevelsPage({
 
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, team_id, teams:team_id(level, cumulative_xp)")
+    .select("id, team_id, teams:team_id(name, level, cumulative_xp)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
@@ -36,15 +36,19 @@ export default async function LevelsPage({
   const team = member?.teams
     ? Array.isArray(member.teams) ? member.teams[0] : member.teams
     : null;
+  const teamName = (team as { name?: string })?.name ?? "My Team";
   const currentLevel = team?.level ?? 1;
   const currentXp = team?.cumulative_xp ?? 0;
 
   return (
     <div className="min-h-screen">
-      <BackHeader label="My Team" />
+      <BackHeader label="Back" />
 
-      {/* Hero — reuses TeamLevelCard without header */}
-      <div className="px-4 pt-4">
+      {/* Title + Hero */}
+      <div className="px-4 pt-4 space-y-3">
+        <h1 className="text-[15px] font-bold text-[var(--text-high)]">
+          {teamName} progression
+        </h1>
         <TeamLevelCard
           leagueId={leagueId}
           currentLevel={currentLevel}

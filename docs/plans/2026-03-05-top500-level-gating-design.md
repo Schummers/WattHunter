@@ -10,9 +10,9 @@ Les riders sont débloqués progressivement par paliers liés au niveau du joueu
 
 ### Objectif stratégique
 
-- **Early game** : les joueurs n'ont accès qu'aux riders #401-500 — des coureurs solides mais pas chers, parfaits pour la stratégie "pépites"
-- **Mid game** : les riders #101-300 deviennent disponibles — des coureurs reconnus avec de vrais points
-- **End game** : les top 10 mondiaux (Pogačar, Evenepoel, Vingegaard) sont le graal ultime
+- **Early game** : les joueurs n'ont accès qu'aux riders #351-500 — des coureurs solides mais pas chers, parfaits pour la stratégie "pépites"
+- **Mid game** : les riders #101-500 deviennent disponibles (Lv4) — des coureurs reconnus avec de vrais points
+- **End game** : les top 3 mondiaux (Pogačar, Evenepoel, Vingegaard) sont le graal ultime (Lv10 = podium)
 - **Anti-snowball** : impossible d'avoir les meilleurs riders sans avoir monté en level, ce qui prend des mois
 
 ---
@@ -51,31 +51,31 @@ Les riders sont débloqués progressivement par paliers liés au niveau du joueu
 
 | Level | Rang PCS débloqué | Nouveaux riders | Cumulé |
 |---|---|---|---|
-| 1 | #401 → #500 | 100 | 100 |
-| 2 | #301 → #400 | 100 | 200 |
-| 3 | #201 → #300 | 100 | 300 |
-| 4 | #151 → #200 | 50 | 350 |
-| 5 | #101 → #150 | 50 | 400 |
-| 6 | #76 → #100 | 25 | 425 |
-| 7 | #51 → #75 | 25 | 450 |
-| 8 | #26 → #50 | 25 | 475 |
-| 9 | #11 → #25 | 15 | 490 |
-| 10 | #1 → #10 | 10 | 500 |
+| 1 | #351 → #500 | 150 | 150 |
+| 2 | #251 → #350 | 100 | 250 |
+| 3 | #176 → #250 | 75 | 325 |
+| 4 | #101 → #175 | 75 | 400 |
+| 5 | #76 → #100 | 25 | 425 |
+| 6 | #51 → #75 | 25 | 450 |
+| 7 | #26 → #50 | 25 | 475 |
+| 8 | #11 → #25 | 15 | 490 |
+| 9 | #4 → #10 | 7 | 497 |
+| 10 | #1 → #3 | 3 | 500 |
 
 ### Formule
 
 ```
 rank_max_for_level(level) =
   level 1  → 500
-  level 2  → 400
-  level 3  → 300
-  level 4  → 200
-  level 5  → 150
-  level 6  → 100
-  level 7  → 75
-  level 8  → 50
-  level 9  → 25
-  level 10 → 10
+  level 2  → 350
+  level 3  → 250
+  level 4  → 175
+  level 5  → 100
+  level 6  → 75
+  level 7  → 50
+  level 8  → 25
+  level 9  → 10
+  level 10 → 3 (podium)
 ```
 
 Un rider est jouable si : `rider.pcs_rank <= rank_max_for_level(team.level)` OU `rider.ever_unlocked_by_team = TRUE` (persistance).
@@ -99,22 +99,24 @@ Implémentation : colonne `ever_in_top500` sur `riders` + la vérification se fa
 
 ### Seuils XP cumulés
 
-| Level | XP cumulé requis | XP pour ce level | Temps estimé |
-|---|---|---|---|
-| 1 | 0 | — | Jour 1 |
-| 2 | 1 000 | 1 000 | ~2 semaines |
-| 3 | 3 000 | 2 000 | ~1 mois |
-| 4 | 6 000 | 3 000 | ~6 semaines |
-| 5 | 10 000 | 4 000 | ~2 mois |
-| 6 | 18 000 | 8 000 | ~3.5 mois |
-| 7 | 30 000 | 12 000 | ~5 mois |
-| 8 | 50 000 | 20 000 | ~6.5 mois |
-| 9 | 80 000 | 30 000 | ~8 mois |
-| 10 | 120 000 | 40 000 | ~9 mois |
+> **Mis à jour 2026-03-08** — Courbe exponentielle lisse, incréments 50→100→200→350→500→700→1000→1500→2000.
+
+| Level | XP cumulé requis | Δ XP |
+|---|---|---|
+| 1 | 0 | — |
+| 2 | 50 | +50 |
+| 3 | 150 | +100 |
+| 4 | 350 | +200 |
+| 5 | 700 | +350 |
+| 6 | 1 200 | +500 |
+| 7 | 1 900 | +700 |
+| 8 | 2 900 | +1 000 |
+| 9 | 4 400 | +1 500 |
+| 10 | 6 400 | +2 000 |
 
 ### Anti-steamroll
 
-- L'écart entre level 5 (10K XP) et level 10 (120K XP) est de **12×**
+- L'écart entre level 5 (700 XP) et level 10 (6 400 XP) est de **~9×**
 - Les levels 1-5 se font rapidement (accrocher le joueur)
 - Les levels 6-10 sont longs (empêcher les hardcores de dominer trop vite)
 - L'économie beta (enchère = salaire mensuel) freine naturellement : les stars coûtent cher, limitant le nombre de riders forts dans l'équipe
@@ -186,7 +188,7 @@ Après :
 Fonction helper :
 ```typescript
 function rankMaxForLevel(level: number): number {
-  const thresholds = [500, 400, 300, 200, 150, 100, 75, 50, 25, 10];
+  const thresholds = [500, 350, 250, 175, 100, 75, 50, 25, 10, 3];
   return thresholds[Math.min(level, 10) - 1];
 }
 ```
@@ -203,10 +205,10 @@ L'action d'enchère (`actions.ts`) doit vérifier que le rider est bien débloqu
 |---|---|
 | Pool total | 500 riders (top PCS global) |
 | Pages scrapées | 5 (offsets 0-400) |
-| Level 1 déblocage | #401-500 |
-| Level 10 déblocage | #1-10 |
-| XP Level 5 | 10 000 |
-| XP Level 10 | 120 000 |
+| Level 1 déblocage | #351-500 (150 riders) |
+| Level 10 déblocage | #1-3 (podium) |
+| XP Level 5 | 700 |
+| XP Level 10 | 6 400 |
 | Persistance rider | Jamais retiré du pool une fois ajouté |
 
 ---

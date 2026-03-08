@@ -80,7 +80,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - Politiques actives max : 1 (Niveau 1) → 2 (Niveau 5+)
 - 4 types de policies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)
 - Pool = Top 500 PCS global (12 mois glissants), gating par rang selon niveau
-- XP Niveau 5 = 900 | XP Niveau 10 = 9 000
+- XP Niveau 5 = 700 | XP Niveau 10 = 6 400
 - Contrats sponsors : 2 mois
 
 ## Blockers ouverts (résoudre avant alpha)
@@ -120,9 +120,16 @@ watthunter/
 └── CLAUDE.md
 ```
 
-## Design System (v1 — 2026-03-07)
-- Source of truth : `docs/watthunter-design-system-v1.md`
-- Palette : B1 Teal-Tinted Dark + Tailwind Cyan — tokens in `apps/web/app/globals.css`
+## Gestion du contexte (compression)
+- **Fichier de session** : `~/.claude/projects/-Users-jonathanschummers-Documents-WattHunter/memory/sessions/YYYY-MM-DD.md`
+- **Avant compression** : sauvegarder proactivement dans le fichier session du jour : tâche en cours, décisions prises, items traités, prochaine action
+- **Après compression** : relire le fichier session du jour pour reprendre le fil
+- **Backlog centralisé** : `docs/TODO_BACKLOG.md` — source unique pour le bug fixing et les tâches UI
+- Prévenir l'utilisateur quand une sauvegarde de contexte est faite
+
+## Design System (v2.1 — 2026-03-08)
+- Source of truth : `docs/watthunter-design-system-v2.md`
+- Palette : Sky Blue Night (200° hue, ~18% sat) + Tailwind Cyan — tokens in `apps/web/app/globals.css`
 - Font : Geist Sans (UI) + Geist Mono (ALL numbers) — package `geist`
 - Icons : Lucide React (base) + @phosphor-icons/react (gamification)
 - Theme : dark-first (no .dark class needed)

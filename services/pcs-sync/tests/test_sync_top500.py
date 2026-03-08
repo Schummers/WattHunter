@@ -6,19 +6,19 @@ import pytest
 
 
 def test_rank_max_for_level():
-    """Level thresholds: L1=500, L5=150, L10=10."""
+    """Level thresholds: L1=500, L5=100, L10=3 (podium)."""
     from sync import rank_max_for_level
 
     assert rank_max_for_level(1) == 500
-    assert rank_max_for_level(2) == 400
-    assert rank_max_for_level(3) == 300
-    assert rank_max_for_level(4) == 200
-    assert rank_max_for_level(5) == 150
-    assert rank_max_for_level(6) == 100
-    assert rank_max_for_level(7) == 75
-    assert rank_max_for_level(8) == 50
-    assert rank_max_for_level(9) == 25
-    assert rank_max_for_level(10) == 10
+    assert rank_max_for_level(2) == 350
+    assert rank_max_for_level(3) == 250
+    assert rank_max_for_level(4) == 175
+    assert rank_max_for_level(5) == 100
+    assert rank_max_for_level(6) == 75
+    assert rank_max_for_level(7) == 50
+    assert rank_max_for_level(8) == 25
+    assert rank_max_for_level(9) == 10
+    assert rank_max_for_level(10) == 3
 
 
 def test_format_rider_name():

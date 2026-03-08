@@ -376,6 +376,7 @@
 
 ## P3 — UI Polish
 
+- [ ] Sub-tabs (My Team / Recruts) — double the top padding above the tab bar to give more breathing room between TopBar and tabs
 - [ ] FormField component (label + input wrapper, consistent gap/font/color)
 - [ ] Replace all inline label+input patterns with FormField
 - [ ] Invite code input: remove bold, align left, keep uppercase
