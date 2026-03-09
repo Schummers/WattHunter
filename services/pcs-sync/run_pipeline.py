@@ -216,6 +216,33 @@ async def run_post_race(race_slug: str) -> None:
             print("--- Updating global PCS ranking (top 500) ---")
             ranking_result = await update_global_ranking(supabase, browser, pages=5)
             print(f"  Updated: {ranking_result['updated']} riders (from {ranking_result['total_in_ranking']} ranked)")
+            if ranking_result.get("created"):
+                print(f"  Created: {ranking_result['created']} new rider(s)")
+            if ranking_result.get("dropped"):
+                print(f"  Dropped: {ranking_result['dropped']} rider(s) marked as >500")
+
+            # Step 3b: enrich new riders
+            new_riders = ranking_result.get("new_riders", [])
+            if new_riders:
+                from enrich import enrich_single_rider
+                print(f"\n--- Enriching {len(new_riders)} new rider(s) ---")
+                for i, nr in enumerate(new_riders):
+                    ctx = await browser.new_context(user_agent=USER_AGENT)
+                    enrich_page = await ctx.new_page()
+                    try:
+                        result = await enrich_single_rider(
+                            supabase, enrich_page, nr["id"], nr["pcs_slug"]
+                        )
+                        print(f"  Enriched: {nr['pcs_slug']} — {result}")
+                    except Exception as exc:
+                        print(f"  Failed to enrich {nr['pcs_slug']}: {exc}")
+                    finally:
+                        await ctx.close()
+                    if i < len(new_riders) - 1:
+                        print("  Waiting 15s...")
+                        await asyncio.sleep(15)
+            else:
+                print("  No new riders to enrich.")
 
         finally:
             await browser.close()

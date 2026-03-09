@@ -12,7 +12,8 @@ from typing import Optional, List, Dict, Any
 from procyclingstats import Stage, Race, Ranking, RaceStartlist
 from supabase import Client
 
-from sync import fetch_html, calculate_monthly_salary, get_supabase
+from sync import fetch_html, calculate_monthly_salary, get_supabase, format_rider_name
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -121,8 +122,11 @@ async def update_global_ranking(supabase: Client, browser, *, pages: int = 5) ->
     }
 
     updated = 0
+    created = 0
     total_entries = 0
     errors: List[str] = []
+    seen_ids: set = set()
+    new_riders: List[Dict[str, str]] = []
 
     for page_idx in range(pages):
         offset = page_idx * 100
@@ -151,16 +155,55 @@ async def update_global_ranking(supabase: Client, browser, *, pages: int = 5) ->
             batch = 0
             for entry in ranking_entries:
                 rider_url = entry.get("rider_url", "")
-                if rider_url not in rider_map:
+                if not rider_url:
                     continue
+
+                pcs_points = entry.get("points", 0) or 0
+                if pcs_points == 0:
+                    continue
+                pcs_rank = entry.get("rank")
+                salary = calculate_monthly_salary(pcs_points)
+
+                # Create new rider if not in DB
+                if rider_url not in rider_map:
+                    try:
+                        name = format_rider_name(entry.get("rider_name", "Unknown"))
+                        team_name = entry.get("team_name", "Unknown")
+                        nationality = entry.get("nationality", "??")[:2].upper()
+
+                        rider_data = {
+                            "pcs_slug": rider_url,
+                            "full_name": name,
+                            "nationality": nationality,
+                            "real_team": team_name,
+                            "pcs_points_1yr": pcs_points,
+                            "pcs_rank": pcs_rank,
+                            "monthly_salary": salary,
+                            "ever_in_top500": True,
+                            "last_synced_at": datetime.utcnow().isoformat(),
+                        }
+
+                        resp = supabase.table("riders").upsert(
+                            rider_data, on_conflict="pcs_slug"
+                        ).execute()
+
+                        if resp.data:
+                            new_id = resp.data[0]["id"]
+                            rider_map[rider_url] = new_id
+                            new_riders.append({"id": new_id, "pcs_slug": rider_url})
+                            seen_ids.add(new_id)
+                            created += 1
+                            batch += 1
+                            logger.info("Created new rider: %s (rank %s)", name, pcs_rank)
+                        continue
+                    except Exception as exc:
+                        logger.error("Failed to create rider %s: %s", rider_url, exc)
+                        errors.append(str(exc))
+                        continue
 
                 try:
                     rider_id = rider_map[rider_url]
-                    pcs_points = entry.get("points", 0) or 0
-                    if pcs_points == 0:
-                        continue
-                    pcs_rank = entry.get("rank")
-                    salary = calculate_monthly_salary(pcs_points)
+                    seen_ids.add(rider_id)
 
                     supabase.table("riders").update(
                         {
@@ -190,8 +233,36 @@ async def update_global_ranking(supabase: Client, browser, *, pages: int = 5) ->
         if page_idx < pages - 1:
             await asyncio.sleep(11)
 
+    # Mark dropped riders (previously ranked ≤500 but no longer in top 500)
+    dropped = 0
+    if seen_ids:
+        try:
+            prev_top500_resp = (
+                supabase.table("riders")
+                .select("id")
+                .lte("pcs_rank", 500)
+                .execute()
+            )
+            prev_top500_ids = {r["id"] for r in (prev_top500_resp.data or [])}
+            dropped_ids = prev_top500_ids - seen_ids
+
+            for rid in dropped_ids:
+                supabase.table("riders").update(
+                    {"pcs_rank": 501}
+                ).eq("id", rid).execute()
+                dropped += 1
+
+            if dropped:
+                logger.info("Marked %d riders as dropped from top 500", dropped)
+        except Exception as exc:
+            logger.error("Failed to mark dropped riders: %s", exc)
+            errors.append(str(exc))
+
     return {
         "updated": updated,
+        "created": created,
+        "dropped": dropped,
+        "new_riders": new_riders,
         "total_in_ranking": total_entries,
         "errors": errors,
     }
