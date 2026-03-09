@@ -1,22 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { RecrutsClient } from "./recruts-client";
-
-const LEVEL_POOL: Record<number, number> = {
-  1: 401,
-  2: 301,
-  3: 201,
-  4: 151,
-  5: 101,
-  6: 76,
-  7: 51,
-  8: 26,
-  9: 11,
-  10: 1,
-};
-
-function getMinRank(level: number): number {
-  return LEVEL_POOL[level] ?? 401;
-}
+import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
 
 export default async function RecrutsPage({
   params,
@@ -59,7 +43,7 @@ export default async function RecrutsPage({
 
   const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
   const level = team?.level ?? 1;
-  const minRank = getMinRank(level);
+  const minRank = getLevelByNumber(level).poolMin;
 
   // Fetch available riders within pool range
   const { data: riders } = await supabase
@@ -72,16 +56,28 @@ export default async function RecrutsPage({
     .order("pcs_rank", { ascending: true })
     .limit(500);
 
-  // Fetch current team rider IDs to exclude them
-  const { data: teamRiders } = await supabase
+  // Fetch ALL league teams, then all their contracts to exclude owned riders
+  const { data: leagueTeams } = await supabase
+    .from("teams")
+    .select("id")
+    .eq("league_id", leagueId);
+
+  const leagueTeamIds = (leagueTeams ?? []).map((t) => t.id);
+
+  const { data: leagueContracts } = await supabase
     .from("contracts")
-    .select("rider_id")
-    .eq("team_id", team?.id)
+    .select("rider_id, team_id")
+    .in("team_id", leagueTeamIds)
     .in("status", ["active", "notice"]);
 
   const ownedRiderIds = new Set(
-    (teamRiders ?? []).map((tr) => tr.rider_id)
+    (leagueContracts ?? []).map((c) => c.rider_id)
   );
+
+  // Count own team contracts for currentSlots
+  const ownTeamSlots = (leagueContracts ?? []).filter(
+    (c) => c.team_id === team?.id
+  ).length;
 
   const availableRiders = (riders ?? []).filter(
     (r) => !ownedRiderIds.has(r.id)
@@ -119,10 +115,8 @@ export default async function RecrutsPage({
       leagueId={leagueId}
       riders={availableRiders}
       activeRound={activeRound}
-      maxSlots={
-        [6, 7, 7, 8, 9, 9, 10, 11, 11, 12][Math.min(level, 10) - 1]
-      }
-      currentSlots={(teamRiders ?? []).length}
+      maxSlots={getMaxSlots(level)}
+      currentSlots={ownTeamSlots}
       initialBids={initialBids}
       treasury={team?.treasury ?? 200000}
     />

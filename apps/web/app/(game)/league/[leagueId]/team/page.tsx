@@ -133,10 +133,44 @@ export default async function MyTeamPage({
 
   const boostPct = calculateBoost(boostPolicies, boostRiders);
 
+  // Bug 5: Fetch game XP per rider (not PCS historical points)
+  const riderIds = (teamRiders ?? []).map((tr) => tr.rider_id);
+  const { data: xpData } = riderIds.length > 0
+    ? await supabase
+        .from("rider_xp_daily")
+        .select("rider_id, xp_gained")
+        .eq("team_id", team?.id)
+        .in("rider_id", riderIds)
+    : { data: [] };
+
+  const xpByRider: Record<string, number> = {};
+  for (const row of xpData ?? []) {
+    xpByRider[row.rider_id] = (xpByRider[row.rider_id] ?? 0) + row.xp_gained;
+  }
+
   // Filter bids: active ones first, then outbid (dimmed)
   const activeBids = pendingBids?.filter((b) => b.status === "active") ?? [];
   const outbidBids = pendingBids?.filter((b) => b.status === "outbid") ?? [];
   const allBids = [...activeBids, ...outbidBids];
+
+  // Bug 3: Fetch winning bids for outbid riders to show who won
+  const outbidRiderIds = outbidBids.map((b) => b.rider_id);
+  let winnerMap: Record<string, { team_name: string; amount: number }> = {};
+  if (outbidRiderIds.length > 0) {
+    const { data: winningBids } = await supabase
+      .from("auction_bids")
+      .select("rider_id, amount, teams:team_id(name)")
+      .eq("status", "won")
+      .in("rider_id", outbidRiderIds);
+
+    for (const wb of winningBids ?? []) {
+      const t = Array.isArray(wb.teams) ? wb.teams[0] : wb.teams;
+      winnerMap[wb.rider_id] = {
+        team_name: (t as { name: string })?.name ?? "Unknown",
+        amount: wb.amount,
+      };
+    }
+  }
 
   return (
     <div className="py-4 space-y-6">
@@ -216,7 +250,7 @@ export default async function MyTeamPage({
                   pcs_rank: r.pcs_rank ?? undefined,
                   photo_url: r.photo_url,
                 }}
-                xp={r.pcs_points_1yr ?? 0}
+                xp={xpByRider[r.id] ?? 0}
                 href={`/league/${leagueId}/rider/${r.id}`}
               />
             );
@@ -252,6 +286,7 @@ export default async function MyTeamPage({
               const r = Array.isArray(bid.riders) ? bid.riders[0] : bid.riders;
               if (!r) return null;
               const isOutbid = bid.status === "outbid";
+              const winner = isOutbid ? winnerMap[bid.rider_id] : undefined;
               return (
                 <RiderCard
                   key={bid.id}
@@ -266,9 +301,16 @@ export default async function MyTeamPage({
                   bidState={isOutbid ? "outbid" : "active"}
                   href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
                   rightContent={
-                    <span className={`text-[length:var(--type-body)] font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--accent-default)]"}`}>
-                      {formatThousands(bid.amount)} €
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className={`text-[length:var(--type-body)] font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--accent-default)]"}`}>
+                        {formatThousands(bid.amount)} €
+                      </span>
+                      {winner && (
+                        <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+                          Won by {winner.team_name} · {formatThousands(winner.amount)} €
+                        </span>
+                      )}
+                    </div>
                   }
                 />
               );

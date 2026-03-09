@@ -60,15 +60,7 @@ export default async function LeagueLayout({
     .eq("league_id", leagueId);
 
   if (auctions && auctions.length > 0) {
-    unlockedTabs.push("team");
-
-    // Check if any round is completed
-    const hasCompleted = auctions.some(
-      (a: { status: string }) => a.status === "completed",
-    );
-    if (hasCompleted) {
-      unlockedTabs.push("budget", "ranking");
-    }
+    unlockedTabs.push("team", "budget", "ranking");
   }
 
   return (
