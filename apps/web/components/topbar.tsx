@@ -58,10 +58,10 @@ export function TopBar({
             height={20}
             className="shrink-0"
           />
-          <span className="text-sm font-semibold text-[var(--text-high)]">
+          <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
             WattHunter
           </span>
-          <span className="truncate text-sm text-[var(--text-low)]">
+          <span className="truncate text-[length:var(--type-body)] text-[var(--text-low)]">
             {leagueName}
           </span>
           {hasMultiple && (
@@ -84,7 +84,7 @@ export function TopBar({
                     router.push(`/league/${league.id}`);
                   }
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--bg-subtle)]"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[length:var(--type-body)] transition-colors hover:bg-[var(--bg-subtle)]"
               >
                 <span
                   className={

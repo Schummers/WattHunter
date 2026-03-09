@@ -135,13 +135,13 @@ export function RiderDialog({
                 className="size-16 rounded-md object-cover"
               />
             ) : (
-              <div className="flex size-16 items-center justify-center rounded-md bg-[var(--bg-subtle)] text-xs text-[var(--text-mid)]">
+              <div className="flex size-16 items-center justify-center rounded-md bg-[var(--bg-subtle)] text-[length:var(--type-caption)] text-[var(--text-mid)]">
                 Photo
               </div>
             )}
             <div>
-              <DialogTitle className="text-lg">{rider.full_name}</DialogTitle>
-              <p className="text-sm text-[var(--text-mid)]">
+              <DialogTitle className="text-[length:var(--type-section)]">{rider.full_name}</DialogTitle>
+              <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
                 {rider.real_team} · {rider.nationality ? countryCodeToFlag(rider.nationality) : ""}
                 {rider.age ? ` · ${rider.age} yo` : ""}
               </p>
@@ -149,37 +149,37 @@ export function RiderDialog({
           </div>
         </DialogHeader>
 
-        <div className="my-4 border-b border-border" />
+        <div className="my-4 border-b border-[var(--border-default)]" />
 
         {infoRows.map((row, i) => (
           <div
             key={row.label}
             className={cn(
-              "flex items-center justify-between py-2 text-sm",
-              i < infoRows.length - 1 && "border-b border-border"
+              "flex items-center justify-between py-2 text-[length:var(--type-body)]",
+              i < infoRows.length - 1 && "border-b border-[var(--border-default)]"
             )}
           >
             <span className="text-[var(--text-mid)]">{row.label}</span>
-            <span className="font-medium text-[var(--text-high)]">{row.value}</span>
+            <span className="font-medium font-mono text-[var(--text-high)]">{row.value}</span>
           </div>
         ))}
 
-        <div className="my-4 border-b border-border" />
+        <div className="my-4 border-b border-[var(--border-default)]" />
 
         <div className="flex flex-col gap-3">
-          <span className="text-sm font-semibold text-[var(--text-high)]">
+          <span className="text-[length:var(--type-body)] font-semibold text-[var(--text-high)]">
             {existingBid ? "Edit bid" : "Place a bid"}
           </span>
 
           {existingBid && (
-            <p className="text-sm text-[var(--text-mid)]">
+            <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
               Current bid:{" "}
-              {existingBid.amount.toLocaleString("en-US")} EUR/mo
+              <span className="font-mono">{existingBid.amount.toLocaleString("en-US")} EUR/mo</span>
             </p>
           )}
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--text-high)]">
+            <label className="text-[length:var(--type-body)] font-medium text-[var(--text-high)]">
               Monthly salary bid (min.{" "}
               {rider.monthly_salary.toLocaleString("en-US")} EUR/mo)
             </label>
@@ -195,15 +195,15 @@ export function RiderDialog({
 
           <p
             className={cn(
-              "text-xs",
+              "text-[length:var(--type-caption)]",
               budgetAfter >= 0 ? "text-[var(--text-mid)]" : "text-[var(--status-danger)]"
             )}
           >
             Available budget after salary commitment:{" "}
-            {budgetAfter.toLocaleString("en-US")} EUR/mo
+            <span className="font-mono">{budgetAfter.toLocaleString("en-US")} EUR/mo</span>
           </p>
 
-          {error && <p className="text-sm text-[var(--status-danger)]">{error}</p>}
+          {error && <p className="text-[length:var(--type-body)] text-[var(--status-danger)]">{error}</p>}
 
           <Button
             variant="cta"

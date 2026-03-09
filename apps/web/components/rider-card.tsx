@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { RailLink } from "@/components/rail-link";
 import { ChevronRight, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -59,7 +59,7 @@ export function RiderCard({
 
         {/* Text */}
         <div className="flex flex-1 flex-col">
-          <span className="text-sm font-semibold text-[var(--text-ghost)]">
+          <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-ghost)]">
             Open slot
           </span>
         </div>
@@ -72,7 +72,7 @@ export function RiderCard({
     );
 
     if (href) {
-      return <Link href={href}>{inner}</Link>;
+      return <RailLink href={href}>{inner}</RailLink>;
     }
     return inner;
   }
@@ -96,7 +96,7 @@ export function RiderCard({
           {rider.photo_url && (
             <AvatarImage src={resolvePhotoUrl(rider.photo_url)} alt={rider.name} referrerPolicy="no-referrer" />
           )}
-          <AvatarFallback className="bg-[var(--bg-surface)] text-xs text-[var(--text-mid)]">
+          <AvatarFallback className="bg-[var(--bg-surface)] text-[length:var(--type-caption)] text-[var(--text-mid)]">
             {getInitials(rider.name)}
           </AvatarFallback>
         </Avatar>
@@ -141,7 +141,7 @@ export function RiderCard({
         <div className="shrink-0">{rightContent}</div>
       ) : xp != null ? (
         <div className="flex flex-col items-end shrink-0">
-          <span className="text-base font-bold font-mono text-[var(--text-high)]">
+          <span className="text-[length:var(--type-stat-small)] font-bold font-mono text-[var(--text-high)]">
             {xp.toLocaleString()}
           </span>
           <span className="text-[length:var(--type-micro)] font-semibold text-[var(--text-low)]">XP</span>
@@ -156,7 +156,7 @@ export function RiderCard({
   );
 
   if (href) {
-    return <Link href={href} className="group">{inner}</Link>;
+    return <RailLink href={href} className="group">{inner}</RailLink>;
   }
   return inner;
 }

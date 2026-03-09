@@ -1,50 +1,59 @@
-import { createClient } from "@/lib/supabase/server";
-import { BackHeader } from "@/components/back-header";
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/browser";
 import { TeamLevelCard } from "@/components/team-level-card";
 import { Progress } from "@/components/ui/progress";
 import { LEVELS, getProgressPct, getNewUnlocks, getNextLevel } from "@/lib/levels";
 
-export default async function LevelsPage({
-  params,
-}: {
-  params: Promise<{ leagueId: string }>;
-}) {
-  const { leagueId } = await params;
-  const supabase = await createClient();
+interface Props {
+  leagueId: string;
+}
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function LevelsRail({ leagueId }: Props) {
+  const [loading, setLoading] = useState(true);
+  const [teamName, setTeamName] = useState("My Team");
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [currentXp, setCurrentXp] = useState(0);
 
-  if (!user) {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchData() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      const { data: member } = await supabase
+        .from("league_members")
+        .select("id, team_id, teams:team_id(name, level, cumulative_xp)")
+        .eq("league_id", leagueId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (!cancelled && member) {
+        const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
+        setTeamName((team as any)?.name ?? "My Team");
+        setCurrentLevel((team as any)?.level ?? 1);
+        setCurrentXp((team as any)?.cumulative_xp ?? 0);
+      }
+      if (!cancelled) setLoading(false);
+    }
+
+    fetchData();
+    return () => { cancelled = true; };
+  }, [leagueId]);
+
+  if (loading) {
     return (
-      <div className="px-4 py-8">
-        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-          Please sign in to view levels.
-        </p>
+      <div className="flex items-center justify-center py-12">
+        <div className="size-6 animate-spin rounded-full border-2 border-[var(--border-default)] border-t-[var(--accent-default)]" />
       </div>
     );
   }
 
-  const { data: member } = await supabase
-    .from("league_members")
-    .select("id, team_id, teams:team_id(name, level, cumulative_xp)")
-    .eq("league_id", leagueId)
-    .eq("user_id", user.id)
-    .single();
-
-  const team = member?.teams
-    ? Array.isArray(member.teams) ? member.teams[0] : member.teams
-    : null;
-  const teamName = (team as { name?: string })?.name ?? "My Team";
-  const currentLevel = team?.level ?? 1;
-  const currentXp = team?.cumulative_xp ?? 0;
-
   return (
-    <div className="min-h-screen">
-      <BackHeader label="Back" />
-
-      {/* Title + Hero */}
+    <div>
       <div className="px-4 pt-4 space-y-3">
         <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
           {teamName} progression
@@ -57,10 +66,8 @@ export default async function LevelsPage({
         />
       </div>
 
-      {/* All levels list */}
       <div className="px-4 pt-6">
         {LEVELS.map((lvl) => {
-          const isDone = lvl.level < currentLevel;
           const isCurrent = lvl.level === currentLevel;
           const isFuture = lvl.level > currentLevel;
           const progressPct = isCurrent ? getProgressPct(currentXp, currentLevel) : 0;
@@ -71,12 +78,9 @@ export default async function LevelsPage({
             <div
               key={lvl.level}
               className={`py-4 ${
-                lvl.level < LEVELS.length
-                  ? "border-b border-[var(--border-subtle)]"
-                  : ""
+                lvl.level < LEVELS.length ? "border-b border-[var(--border-subtle)]" : ""
               }`}
             >
-              {/* Level title + XP */}
               <div className="flex items-center justify-between">
                 <span
                   className={`text-[length:var(--type-section)] ${
@@ -104,14 +108,12 @@ export default async function LevelsPage({
                 </span>
               </div>
 
-              {/* Progress bar for current level */}
               {isCurrent && (
                 <div className="mt-2">
                   <Progress value={progressPct} />
                 </div>
               )}
 
-              {/* Unlock pills */}
               {unlocks.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {unlocks.map((pill) => (

@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/topbar";
 import { BottomNav } from "@/components/bottom-nav";
+import { RailProvider } from "@/contexts/rail-context";
+import { LeagueShell } from "./league-shell";
 
 export default async function LeagueLayout({
   children,
@@ -70,25 +72,27 @@ export default async function LeagueLayout({
   }
 
   return (
-    <div className="flex h-[100svh] overflow-hidden">
-      <Sidebar
-        leagueId={leagueId}
-        leagueName={leagueName}
-        leagues={leagues}
-        unlockedTabs={unlockedTabs}
-      />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto pb-20 lg:mx-auto lg:max-w-2xl lg:pb-8">
-          <TopBar
-            leagueId={leagueId}
-            leagueName={leagueName}
-            leagues={leagues}
-            settingsHref={`/league/${leagueId}/settings`}
-          />
-          {children}
-        </main>
-        <BottomNav leagueId={leagueId} unlockedTabs={unlockedTabs} />
+    <RailProvider>
+      <div className="flex h-[100svh] overflow-hidden">
+        <Sidebar
+          leagueId={leagueId}
+          leagueName={leagueName}
+          leagues={leagues}
+          unlockedTabs={unlockedTabs}
+        />
+        <LeagueShell>
+          <main className="flex-1 overflow-y-auto pb-20 lg:pb-8 lg:flex-[3] lg:min-w-[440px]">
+            <TopBar
+              leagueId={leagueId}
+              leagueName={leagueName}
+              leagues={leagues}
+              settingsHref={`/league/${leagueId}/settings`}
+            />
+            {children}
+          </main>
+          <BottomNav leagueId={leagueId} unlockedTabs={unlockedTabs} />
+        </LeagueShell>
       </div>
-    </div>
+    </RailProvider>
   );
 }

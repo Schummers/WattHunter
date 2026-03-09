@@ -98,23 +98,23 @@ export function LobbyView({
       {/* Header */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-[var(--text-high)]">
+          <h2 className="text-[length:var(--type-page-title)] font-semibold text-[var(--text-high)]">
             {league.name}
           </h2>
-          <Badge variant="secondary">Pending</Badge>
+          <Badge variant="highlighted">Pending</Badge>
         </div>
       </div>
 
       {/* Invite section */}
       <div className="flex flex-col gap-3">
-        <p className="text-sm font-medium text-[var(--text-high)]">
+        <p className="text-[length:var(--type-body)] font-medium text-[var(--text-high)]">
           Invite players
         </p>
         <div className="flex items-center gap-2">
           <Input
             readOnly
             value={inviteUrl}
-            className="flex-1 truncate text-sm text-[var(--text-mid)]"
+            className="flex-1 truncate text-[length:var(--type-body)] text-[var(--text-mid)]"
             onClick={(e) => (e.target as HTMLInputElement).select()}
           />
           <Button variant="outline" size="icon" className="shrink-0" onClick={handleCopyLink}>
@@ -125,7 +125,7 @@ export function LobbyView({
           <Input
             readOnly
             value={league.invite_code}
-            className="flex-1 text-center text-lg font-semibold tracking-widest"
+            className="flex-1 text-center text-[length:var(--type-section)] font-semibold tracking-widest"
             onClick={(e) => (e.target as HTMLInputElement).select()}
           />
           <Button variant="outline" size="icon" className="shrink-0" onClick={handleCopyCode}>
@@ -139,8 +139,8 @@ export function LobbyView({
       {/* Players */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-[var(--text-high)]">Players</p>
-          <span className="text-xs text-[var(--text-low)]">
+          <p className="text-[length:var(--type-body)] font-medium text-[var(--text-high)]">Players</p>
+          <span className="text-[length:var(--type-caption)] font-mono text-[var(--text-low)]">
             {memberCount}/{league.max_players}
           </span>
         </div>
@@ -166,13 +166,13 @@ export function LobbyView({
                       alt={name}
                     />
                   )}
-                  <AvatarFallback className="bg-[var(--bg-surface)] text-xs text-[var(--text-mid)]">
+                  <AvatarFallback className="bg-[var(--bg-surface)] text-[length:var(--type-caption)] text-[var(--text-mid)]">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm text-[var(--text-high)]">{name}</span>
+                <span className="text-[length:var(--type-body)] text-[var(--text-high)]">{name}</span>
                 {member.user_id === league.commissioner_id && (
-                  <Badge variant="outline" className="ml-auto">
+                  <Badge variant="default" className="ml-auto">
                     Race Director
                   </Badge>
                 )}
@@ -186,7 +186,7 @@ export function LobbyView({
 
       {/* Auction rounds */}
       <div className="flex flex-col gap-3">
-        <p className="text-sm font-medium text-[var(--text-high)]">
+        <p className="text-[length:var(--type-body)] font-medium text-[var(--text-high)]">
           Auction rounds
         </p>
 
@@ -196,7 +196,7 @@ export function LobbyView({
               key={i}
               className="flex items-center gap-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2.5"
             >
-              <span className="text-xs font-bold text-[var(--text-mid)] w-16 shrink-0">
+              <span className="text-[length:var(--type-caption)] font-bold font-mono text-[var(--text-mid)] w-16 shrink-0">
                 Round {i + 1}
               </span>
               {isCommissioner ? (
@@ -204,10 +204,10 @@ export function LobbyView({
                   type="date"
                   value={dateStr}
                   onChange={(e) => handleRoundDateChange(i, e.target.value)}
-                  className="flex-1 bg-transparent text-sm text-[var(--text-high)] outline-none [color-scheme:dark]"
+                  className="flex-1 bg-transparent text-[length:var(--type-body)] text-[var(--text-high)] outline-none [color-scheme:dark]"
                 />
               ) : (
-                <span className="flex-1 text-sm text-[var(--text-high)]">
+                <span className="flex-1 text-[length:var(--type-body)] text-[var(--text-high)]">
                   {formatDate(dateStr)}
                 </span>
               )}
@@ -216,7 +216,7 @@ export function LobbyView({
         </div>
 
         {!isCommissioner && (
-          <p className="text-xs text-[var(--text-low)]">
+          <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
             The Race Director will set the dates and launch the auction.
           </p>
         )}
@@ -224,7 +224,7 @@ export function LobbyView({
 
       {isCommissioner && (
         <div className="flex flex-col gap-3 pb-4">
-          {error && <p className="text-sm text-[var(--status-danger)]">{error}</p>}
+          {error && <p className="text-[length:var(--type-body)] text-[var(--status-danger)]">{error}</p>}
           <Button
             variant="cta"
             className="w-full"

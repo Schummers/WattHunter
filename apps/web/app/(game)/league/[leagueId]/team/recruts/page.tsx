@@ -33,7 +33,7 @@ export default async function RecrutsPage({
   if (!user) {
     return (
       <div className="px-4 py-8">
-        <p className="text-sm text-[var(--text-mid)]">
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
           Please sign in to view recruts.
         </p>
       </div>
@@ -50,7 +50,7 @@ export default async function RecrutsPage({
   if (!member) {
     return (
       <div className="px-4 py-8">
-        <p className="text-sm text-[var(--text-mid)]">
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
           You are not a member of this league.
         </p>
       </div>

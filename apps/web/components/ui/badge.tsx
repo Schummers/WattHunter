@@ -5,16 +5,18 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-md border border-transparent px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  "inline-flex items-center justify-center rounded-[var(--radius-pill)] border border-transparent px-[10px] py-[3px] text-[length:var(--type-caption)] font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1.5 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-[color,box-shadow] overflow-hidden",
   {
     variants: {
       variant: {
-        default: "bg-[var(--bg-surface)] text-[var(--text-mid)] border-[var(--border-default)]",
-        secondary: "bg-[var(--bg-surface)] text-[var(--text-mid)]",
-        boost: "bg-[var(--bg-surface)] text-[var(--text-high)]",
-        warning: "border-transparent bg-transparent text-[var(--status-warning)]",
-        outline: "border-[var(--border-default)] text-[var(--text-high)]",
-        ghost: "border-transparent text-[var(--text-low)]",
+        default:
+          "border-[var(--border-default)] text-[var(--text-low)]",
+        highlighted:
+          "bg-[var(--badge-bg)] text-[var(--accent-label)]",
+        success:
+          "bg-emerald-500/10 text-[var(--success)]",
+        warning:
+          "bg-amber-500/8 text-[var(--warning)]",
       },
     },
     defaultVariants: {

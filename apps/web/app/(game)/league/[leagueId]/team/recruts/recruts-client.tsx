@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, ChevronDown } from "lucide-react";
 import { RiderCard } from "@/components/rider-card";
-import { Pill } from "@/components/pill";
+import { SegmentedControl } from "@/components/segmented-control";
 import { StickyBar } from "@/components/sticky-bar";
 import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
 import { smartCountdown, formatThousands, countryCodeToFlag } from "@/lib/format";
@@ -118,6 +118,16 @@ export function RecrutsClient({
     if (bidKeys.length !== savedKeys.length) return true;
     return bidKeys.some((k) => bids[k] !== savedBids[k]);
   }, [bids, savedBids]);
+
+  // Warn before leaving with unsaved bids (browser back/reload)
+  useEffect(() => {
+    if (!hasPendingBids) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasPendingBids]);
 
   const filteredRiders = useMemo(() => {
     let result = riders;
@@ -264,20 +274,20 @@ export function RecrutsClient({
       {/* Round header */}
       {activeRound ? (
         <div className="flex items-center justify-between px-4 pt-4 pb-0">
-          <span className="text-sm text-[var(--text-mid)]">
+          <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
             {activeRound.name} &middot;{" "}
             {smartCountdown(activeRound.closes_at)}
           </span>
-          <Link href={`/league/${leagueId}/team/recruts/history`} className="text-sm link-tertiary">
+          <Link href={`/league/${leagueId}/team/recruts/history`} className="text-[length:var(--type-body)] link-tertiary">
             History &rarr;
           </Link>
         </div>
       ) : (
         <div className="flex items-center justify-between px-4 pt-4 pb-0">
-          <span className="text-sm text-[var(--text-mid)]">
+          <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
             No active round
           </span>
-          <Link href={`/league/${leagueId}/team/recruts/history`} className="text-sm link-tertiary">
+          <Link href={`/league/${leagueId}/team/recruts/history`} className="text-[length:var(--type-body)] link-tertiary">
             History &rarr;
           </Link>
         </div>
@@ -292,21 +302,18 @@ export function RecrutsClient({
             placeholder="Search rider, team, country..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-base text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
+            className="flex-1 bg-transparent text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
           />
         </div>
       </div>
 
-      {/* Filter pills */}
-      <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
-        {FILTER_OPTIONS.map((f) => (
-          <Pill
-            key={f}
-            label={f}
-            active={activeFilter === f}
-            onClick={() => setActiveFilter(f)}
-          />
-        ))}
+      {/* Filter chips */}
+      <div className="px-4 pb-3">
+        <SegmentedControl
+          segments={FILTER_OPTIONS}
+          activeIndex={FILTER_OPTIONS.indexOf(activeFilter)}
+          onChange={(i) => setActiveFilter(FILTER_OPTIONS[i])}
+        />
       </div>
 
       {/* Counter */}
@@ -333,7 +340,7 @@ export function RecrutsClient({
                     {groupName}
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-[var(--text-low)]">
+                    <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
                       {groupRiders.length}
                     </span>
                     <ChevronDown
@@ -367,7 +374,7 @@ export function RecrutsClient({
                         rightContent={
                           <div className="flex flex-col items-end gap-0.5">
                             <div
-                              className={`flex items-center gap-0.5 rounded-lg px-2 h-7 ${
+                              className={`flex items-center gap-0.5 rounded-lg px-2 h-7 lg:pointer-events-none ${
                                 currentBid
                                   ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
                                   : "border border-[var(--border-default)] bg-transparent"
@@ -385,8 +392,8 @@ export function RecrutsClient({
                                   const val = parseInt(raw, 10);
                                   handleBidChange(r.id, isNaN(val) ? 0 : val);
                                 }}
-                                onClick={(e) => e.preventDefault()}
-                                className={`w-20 bg-transparent text-right text-base font-semibold font-mono outline-none ${
+                                onClick={(e) => { if (window.innerWidth < 1024) e.stopPropagation(); }}
+                                className={`w-20 bg-transparent text-right text-[length:var(--type-body)] font-semibold font-mono outline-none ${
                                   currentBid
                                     ? "text-[var(--accent-default)]"
                                     : "text-[var(--text-low)]"
@@ -452,7 +459,7 @@ export function RecrutsClient({
                           handleBidChange(r.id, isNaN(val) ? 0 : val);
                         }}
                         onClick={(e) => e.preventDefault()}
-                        className={`w-20 bg-transparent text-right text-base font-semibold font-mono outline-none ${
+                        className={`w-20 bg-transparent text-right text-[length:var(--type-body)] font-semibold font-mono outline-none ${
                           currentBid
                             ? "text-[var(--accent-default)]"
                             : "text-[var(--text-low)]"
@@ -476,7 +483,7 @@ export function RecrutsClient({
 
         {filteredRiders.length === 0 && (
           <div className="px-4 py-12 text-center">
-            <p className="text-sm text-[var(--text-mid)]">
+            <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
               No riders match your search.
             </p>
           </div>

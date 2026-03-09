@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/segmented-control";
 import { BackHeader } from "@/components/back-header";
 import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
 import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
+import { Plus, Minus } from "lucide-react";
 
 type RiderContext = "recruts" | "team" | "ranking";
 
@@ -51,10 +53,18 @@ interface RiderDetailClientProps {
   raceResults: RaceResult[];
   context: RiderContext;
   minSalary: number;
+  currentBidId?: string;
   currentBidAmount: number | null;
   activeAuctionId: string | null;
   contractData: { locked_salary: number; status: string } | null;
   ownerInfo: { display_name: string; team_name: string } | null;
+  budgetInfo?: {
+    currentSlots: number;
+    maxSlots: number;
+    treasury: number;
+    totalBidAmount: number;
+  };
+  inRail?: boolean;
 }
 
 function getAge(birthdate: string | null): number | null {
@@ -91,23 +101,24 @@ export function RiderDetailClient({
   raceResults,
   context,
   minSalary,
+  currentBidId,
   currentBidAmount,
   activeAuctionId,
   contractData,
   ownerInfo,
+  budgetInfo,
+  inRail,
 }: RiderDetailClientProps) {
   const router = useRouter();
   const [tabIndex, setTabIndex] = useState(0);
-  const [bidAmount, setBidAmount] = useState<number>(currentBidAmount ?? minSalary);
+  const [bidAmount, setBidAmount] = useState<number | null>(currentBidAmount);
   const [saving, setSaving] = useState(false);
-  const [bidSaved, setBidSaved] = useState(!!currentBidAmount);
   const [error, setError] = useState<string | null>(null);
+  const bidInputRef = useRef<HTMLInputElement>(null);
   const age = getAge(rider.birthdate);
 
-  const hasBidChanged = bidAmount !== (currentBidAmount ?? minSalary) || !bidSaved;
-
   async function handleSaveBid() {
-    if (!activeAuctionId) return;
+    if (!activeAuctionId || bidAmount === null) return;
     setSaving(true);
     setError(null);
     const result = await placeBid({
@@ -118,23 +129,29 @@ export function RiderDetailClient({
     });
     if (result.error) {
       setError(result.error);
-    } else {
-      setBidSaved(true);
     }
     setSaving(false);
   }
 
   async function handleRemoveBid() {
-    if (!currentBidAmount) return;
+    if (!currentBidId) return;
     setSaving(true);
-    // We need the bid ID — cancel via the action
-    // For now, placing a bid of 0 effectively removes. But we have cancelBid.
-    // cancelBid requires bid ID which we don't have here. Use placeBid pattern.
+    setError(null);
+    const result = await cancelBid(currentBidId);
+    if (result.error) {
+      setError(result.error);
+      setSaving(false);
+      return;
+    }
     setSaving(false);
-    router.back();
+    if (inRail) {
+      router.refresh();
+    } else {
+      router.back();
+    }
   }
 
-  // Metric boxes per context (RD-4)
+  // Metric boxes per context (RD-4) — value on top, label below (DS standard)
   function renderMetrics() {
     const boxClass = "flex-1 rounded-lg bg-[var(--bg-surface)] px-3 py-2.5 space-y-0.5";
     const labelClass = "text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]";
@@ -144,18 +161,18 @@ export function RiderDetailClient({
       return (
         <div className="flex gap-3 px-4">
           <div className={boxClass}>
+            <div className={valueClass}>—</div>
             <span className={labelClass}>Game XP</span>
-            <div className={valueClass}>—</div>
           </div>
           <div className={boxClass}>
+            <div className={valueClass}>—</div>
             <span className={labelClass}>Bonus</span>
-            <div className={valueClass}>—</div>
           </div>
           <div className={boxClass}>
-            <span className={labelClass}>Min. Salary</span>
-            <div className={`${valueClass} text-[var(--accent-default)]`}>
+            <div className={valueClass}>
               {formatThousands(minSalary)}
             </div>
+            <span className={labelClass}>Min. Salary</span>
           </div>
         </div>
       );
@@ -165,18 +182,18 @@ export function RiderDetailClient({
       return (
         <div className="flex gap-3 px-4">
           <div className={boxClass}>
+            <div className={valueClass}>—</div>
             <span className={labelClass}>Game XP</span>
-            <div className={valueClass}>—</div>
           </div>
           <div className={boxClass}>
+            <div className={valueClass}>—</div>
             <span className={labelClass}>Bonus</span>
-            <div className={valueClass}>—</div>
           </div>
           <div className={boxClass}>
-            <span className={labelClass}>Paid Salary</span>
             <div className={valueClass}>
               {formatThousands(contractData.locked_salary)}
             </div>
+            <span className={labelClass}>Paid Salary</span>
           </div>
         </div>
       );
@@ -186,12 +203,12 @@ export function RiderDetailClient({
     return (
       <div className="flex gap-3 px-4">
         <div className={boxClass}>
-          <span className={labelClass}>Game XP</span>
           <div className={valueClass}>—</div>
+          <span className={labelClass}>Game XP</span>
         </div>
         <div className={boxClass}>
-          <span className={labelClass}>Bonus</span>
           <div className={valueClass}>—</div>
+          <span className={labelClass}>Bonus</span>
         </div>
       </div>
     );
@@ -199,7 +216,7 @@ export function RiderDetailClient({
 
   return (
     <div className="space-y-6">
-      <BackHeader label={BACK_LABELS[context]} />
+      {!inRail && <BackHeader label={BACK_LABELS[context]} />}
 
       {/* Hero — horizontal layout (RD-3) */}
       <div className="flex items-start gap-3 px-4">
@@ -212,7 +229,7 @@ export function RiderDetailClient({
                 referrerPolicy="no-referrer"
               />
             )}
-            <AvatarFallback className="bg-[var(--bg-surface)] text-sm text-[var(--text-mid)]">
+            <AvatarFallback className="bg-[var(--bg-surface)] text-[length:var(--type-body)] text-[var(--text-mid)]">
               {getInitials(rider.full_name)}
             </AvatarFallback>
           </Avatar>
@@ -234,7 +251,7 @@ export function RiderDetailClient({
               )}
             </div>
             {rider.team_name && (
-              <p className="text-sm text-[var(--text-mid)]">{rider.team_name}</p>
+              <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">{rider.team_name}</p>
             )}
           </div>
 
@@ -245,17 +262,17 @@ export function RiderDetailClient({
               </span>
             )}
             {age !== null && (
-              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
+              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium font-mono text-[var(--text-mid)]">
                 {age} yrs
               </span>
             )}
             {rider.height_cm && (
-              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
+              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium font-mono text-[var(--text-mid)]">
                 {rider.height_cm} cm
               </span>
             )}
             {rider.weight_kg && (
-              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
+              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium font-mono text-[var(--text-mid)]">
                 {rider.weight_kg} kg
               </span>
             )}
@@ -268,57 +285,89 @@ export function RiderDetailClient({
 
       {/* Action zone */}
       {/* RD-5: Bid section (recruts only) */}
-      {context === "recruts" && activeAuctionId && (
-        <div className="px-4 space-y-3">
+      {context === "recruts" && (
+        <div className={`px-4 space-y-3 ${!activeAuctionId ? "opacity-50 pointer-events-none" : ""}`}>
+          {!activeAuctionId && (
+            <p className="text-center text-[length:var(--type-caption)] text-[var(--text-mid)] !opacity-100">
+              No active round
+            </p>
+          )}
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setBidAmount((v) => Math.max(minSalary, v - 1000))}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-default)] text-lg font-bold text-[var(--text-mid)]"
+            <Button
+              variant="outline"
+              size="icon-lg"
+              className="size-11"
+              onClick={() => {
+                if (bidAmount !== null) setBidAmount(Math.max(minSalary, bidAmount - 1000));
+              }}
+              disabled={!activeAuctionId || bidAmount === null}
             >
-              −
-            </button>
-            <div className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-[var(--accent-default)] bg-[var(--bg-surface-hover)] h-10 px-3">
+              <Minus className="size-4" />
+            </Button>
+            <div className={`flex-1 flex items-center justify-center gap-1 h-10 px-3 rounded-md ${
+              bidAmount !== null
+                ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
+                : "border border-[var(--border-default)] bg-transparent"
+            }`}>
               <input
+                ref={bidInputRef}
                 type="text"
                 inputMode="numeric"
-                value={formatThousands(bidAmount)}
+                placeholder={formatThousands(minSalary)}
+                value={bidAmount !== null ? formatThousands(bidAmount) : ""}
                 onChange={(e) => {
                   const raw = e.target.value.replace(/\s/g, "");
                   const val = parseInt(raw, 10);
                   if (!isNaN(val) && val >= 0) setBidAmount(val);
+                  else if (raw === "") setBidAmount(null);
                 }}
-                className="w-full bg-transparent text-center text-base font-bold font-mono text-[var(--accent-default)] outline-none"
+                disabled={!activeAuctionId}
+                className={`w-full bg-transparent text-center text-[length:var(--type-body)] font-semibold font-mono outline-none ${
+                  bidAmount !== null
+                    ? "text-[var(--accent-default)]"
+                    : "text-[var(--text-low)]"
+                }`}
               />
-              <span className="text-sm text-[var(--text-ghost)]">€</span>
+              <span className="text-[length:var(--type-body)] text-[var(--text-ghost)]">€</span>
             </div>
-            <button
-              type="button"
-              onClick={() => setBidAmount((v) => v + 1000)}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-default)] text-lg font-bold text-[var(--text-mid)]"
+            <Button
+              variant="outline"
+              size="icon-lg"
+              className="size-11"
+              onClick={() => {
+                if (bidAmount === null) setBidAmount(minSalary);
+                else setBidAmount(bidAmount + 1000);
+              }}
+              disabled={!activeAuctionId}
             >
-              +
-            </button>
+              <Plus className="size-4" />
+            </Button>
           </div>
-          <button
-            type="button"
+          {budgetInfo && (
+            <div className="text-center font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-mid)]">
+              {budgetInfo.currentSlots}/{budgetInfo.maxSlots} slots &middot; {formatThousands(budgetInfo.treasury - budgetInfo.totalBidAmount)} €
+            </div>
+          )}
+          <Button
+            variant="cta"
+            size="lg"
+            className="w-full"
             onClick={handleSaveBid}
-            disabled={saving || (bidSaved && bidAmount === currentBidAmount)}
-            className="w-full rounded-lg bg-[var(--accent-default)] py-2.5 text-sm font-bold text-[var(--cta-text)] disabled:opacity-40"
+            disabled={!activeAuctionId || saving || bidAmount === null || bidAmount === currentBidAmount}
           >
             {saving ? "Saving..." : "Save bid"}
-          </button>
-          {currentBidAmount && (
+          </Button>
+          {currentBidId && activeAuctionId && (
             <button
               type="button"
               onClick={handleRemoveBid}
-              className="w-full text-center text-sm link-tertiary"
+              className="w-full text-center text-[length:var(--type-body)] link-tertiary"
             >
               Remove bid
             </button>
           )}
           {error && (
-            <p className="text-xs text-[var(--status-danger)] text-center">{error}</p>
+            <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
           )}
         </div>
       )}
@@ -326,25 +375,26 @@ export function RiderDetailClient({
       {/* RD-6: Release button (team only) */}
       {context === "team" && contractData?.status === "active" && (
         <div className="px-4">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full"
             onClick={() => {
               // Simple confirm — could be AlertDialog later
               if (confirm("Release this rider? They will leave in 1 month.")) {
                 // Would need contractId passed down
               }
             }}
-            className="w-full rounded-lg border border-[var(--border-default)] py-2.5 text-sm font-semibold text-[var(--text-mid)] hover:bg-[var(--bg-surface-hover)] transition-colors"
           >
             Release rider — 1 month notice
-          </button>
+          </Button>
         </div>
       )}
 
       {/* RD-7: Ownership line (ranking only) */}
       {context === "ranking" && (
         <div className="px-4">
-          <p className="text-sm text-[var(--text-mid)]">
+          <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
             {ownerInfo
               ? `Owned by @${ownerInfo.display_name} · ${ownerInfo.team_name}`
               : "Not recruited"}
@@ -392,7 +442,7 @@ function PcsStatsSection({ rankings, startlists }: { rankings: SeasonRanking[]; 
         </span>
 
         {rankings.length === 0 ? (
-          <p className="text-sm text-[var(--text-mid)]">
+          <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
             No season data available.
           </p>
         ) : (
@@ -406,16 +456,16 @@ function PcsStatsSection({ rankings, startlists }: { rankings: SeasonRanking[]; 
             <div className="divide-y divide-[var(--border-subtle)]">
               {rankings.map((r) => (
                 <div key={r.season} className="flex items-center gap-4 px-1 py-2">
-                  <span className="w-12 text-sm font-bold text-[var(--text-high)]">
+                  <span className="w-12 text-[length:var(--type-body)] font-bold font-mono text-[var(--text-high)]">
                     {r.season}
                   </span>
-                  <span className="flex-1 text-sm text-[var(--text-mid)] truncate">
+                  <span className="flex-1 text-[length:var(--type-body)] text-[var(--text-mid)] truncate">
                     {r.team ?? "—"}
                   </span>
-                  <span className="w-16 text-right font-mono text-sm font-bold text-[var(--text-high)]">
+                  <span className="w-16 text-right font-mono text-[length:var(--type-body)] font-bold text-[var(--text-high)]">
                     {r.points != null ? r.points.toLocaleString() : "—"}
                   </span>
-                  <span className="w-12 text-right font-mono text-sm text-[var(--text-mid)]">
+                  <span className="w-12 text-right font-mono text-[length:var(--type-body)] text-[var(--text-mid)]">
                     {r.rank != null ? `#${r.rank}` : "—"}
                   </span>
                 </div>
@@ -455,7 +505,7 @@ function PcsStatsSection({ rankings, startlists }: { rankings: SeasonRanking[]; 
 function GameResultsSection({ raceResults }: { raceResults: RaceResult[] }) {
   if (raceResults.length === 0) {
     return (
-      <p className="text-sm text-[var(--text-mid)]">
+      <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
         Game stats will be available once this rider is on a team.
       </p>
     );
@@ -483,18 +533,18 @@ function GameResultsSection({ raceResults }: { raceResults: RaceResult[] }) {
             {results.map((r, i) => (
               <div key={i} className="flex items-center justify-between py-2 px-1">
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-semibold text-[var(--text-high)] block truncate">
+                  <span className="text-[length:var(--type-body)] font-semibold text-[var(--text-high)] block truncate">
                     {r.race_name}
                   </span>
                   {r.race_date && (
-                    <span className="text-xs text-[var(--text-low)]">
+                    <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
                       {new Date(r.race_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   {r.pcs_points != null && (
-                    <span className="font-mono text-sm font-bold text-[var(--text-high)]">
+                    <span className="font-mono text-[length:var(--type-body)] font-bold text-[var(--text-high)]">
                       {r.pcs_points} PCS
                     </span>
                   )}

@@ -1,7 +1,8 @@
 # WattHunter — CLAUDE.md
 
 ## Rule #1 — Design System First
-Before ANY frontend work (new component, new page, styling change), READ `docs/watthunter-design-system-v2.md` first. Every decision (typography, colors, spacing, component patterns) must follow this file. If something is ambiguous or missing from the design system, ASK the user before inventing a solution.
+Before ANY frontend work (new component, new page, styling change), READ `docs/watthunter-design-system-v3.md` first. Every decision (typography, colors, spacing, component patterns) must follow this file. If something is ambiguous or missing from the design system, ASK the user before inventing a solution.
+- **Component patterns**: Use the design system components (Tags, Filter Chips, Underline Tabs) — do not invent new patterns.
 - **Typography**: ALWAYS use `text-[length:var(--type-*)]` tokens. NEVER hardcode pixel sizes (`text-[15px]`, `text-[9px]`, etc.).
 - **Colors**: ALWAYS use semantic tokens (`--text-high`, `--text-mid`, `--bg-surface`, `--accent-default`, etc.). NEVER hardcode hex colors.
 - **Spacing**: Use Tailwind spacing utilities (`p-4`, `gap-3`) or `--space-*` tokens.
@@ -134,10 +135,13 @@ watthunter/
 - **Backlog centralisé** : `docs/TODO_BACKLOG.md` — source unique pour le bug fixing et les tâches UI
 - Prévenir l'utilisateur quand une sauvegarde de contexte est faite
 
-## Design System (v2.1 — 2026-03-08)
-- Source of truth : `docs/watthunter-design-system-v2.md`
+## Design System (v3.0 — 2026-03-09)
+- Source of truth : `docs/watthunter-design-system-v3.md`
 - Palette : Sky Blue Night (200° hue, ~18% sat) + Tailwind Cyan — tokens in `apps/web/app/globals.css`
 - Font : Geist Sans (UI) + Geist Mono (ALL numbers) — package `geist`
 - Icons : Lucide React (base) + @phosphor-icons/react (gamification)
 - Theme : dark-first (no .dark class needed)
+- Responsive : Sidebar 180px + Main (flex:3) + Detail Rail (flex:2, min 380px) at lg:
+- **Radius-as-affordance** : 6px = interactive (buttons, chips), 20px = decorative (tags, badges)
+- **3 component patterns** : Underline Tabs (`ui/tabs.tsx` line variant), Filter Chips (`segmented-control.tsx`), Tags (`pill.tsx` / `ui/badge.tsx`)
 - Backlog : `docs/TODO_BACKLOG.md`

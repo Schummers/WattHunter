@@ -18,7 +18,7 @@ export default async function AuctionHistoryPage({
   if (!user) {
     return (
       <div className="px-4 py-8">
-        <p className="text-sm text-[var(--text-mid)]">
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
           Please sign in to view auction history.
         </p>
       </div>
@@ -90,16 +90,16 @@ export default async function AuctionHistoryPage({
           <input
             type="text"
             placeholder="Search rider or team..."
-            className="h-9 w-full rounded-lg border border-[var(--border-default)] bg-transparent pl-9 pr-3 text-sm text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none focus:border-[var(--accent-focus-ring)]"
+            className="h-9 w-full rounded-lg border border-[var(--border-default)] bg-transparent pl-9 pr-3 text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none focus:border-[var(--accent-focus-ring)]"
           />
         </div>
 
         {!hasHistory ? (
           <div className="flex flex-col items-center justify-center py-16 space-y-2">
-            <p className="text-sm font-semibold text-[var(--text-mid)]">
+            <p className="text-[length:var(--type-body)] font-semibold text-[var(--text-mid)]">
               No auction history yet
             </p>
-            <p className="text-xs text-[var(--text-low)]">
+            <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
               Completed rounds will appear here.
             </p>
           </div>
@@ -136,13 +136,13 @@ export default async function AuctionHistoryPage({
                     {Object.entries(riderBids).map(
                       ([riderName, riderBidList]) => (
                         <div key={riderName} className="py-3 space-y-1.5">
-                          <span className="text-sm font-semibold text-[var(--text-high)]">
+                          <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
                             {riderName}
                           </span>
                           {riderBidList.map((bid) => (
                             <div
                               key={bid.id}
-                              className={`flex items-center justify-between text-xs ${
+                              className={`flex items-center justify-between text-[length:var(--type-caption)] ${
                                 bid.is_winner
                                   ? "text-[var(--text-mid)]"
                                   : "text-[var(--text-low)] opacity-60"

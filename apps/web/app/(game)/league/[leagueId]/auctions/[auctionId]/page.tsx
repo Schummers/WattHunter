@@ -73,7 +73,7 @@ export default async function AuctionDetailPage({
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">{auction.name}</h1>
-        <div className="flex items-center gap-3 text-sm text-[var(--text-mid)]">
+        <div className="flex items-center gap-3 text-[length:var(--type-body)] text-[var(--text-mid)]">
           <span>Round {currentRound}/3</span>
           <span>·</span>
           <span>Resolves at midnight</span>

@@ -51,10 +51,10 @@ export default async function AuctionResultsPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-[var(--text-high)]">
+        <h1 className="text-[length:var(--type-page-title)] font-semibold text-[var(--text-high)]">
           {auction.name}
         </h1>
-        <Badge variant="outline">Completed</Badge>
+        <Badge variant="default">Completed</Badge>
       </div>
 
       <Tabs defaultValue="1">
@@ -74,7 +74,7 @@ export default async function AuctionResultsPage({
           return (
             <TabsContent key={round} value={round.toString()}>
               {won.length === 0 ? (
-                <p className="py-8 text-center text-sm text-[var(--text-mid)]">
+                <p className="py-8 text-center text-[length:var(--type-body)] text-[var(--text-mid)]">
                   No riders assigned for this round.
                 </p>
               ) : (
@@ -98,7 +98,7 @@ export default async function AuctionResultsPage({
                           <TableCell className="text-[var(--text-mid)]">
                             {bid.riders?.real_team}
                           </TableCell>
-                          <TableCell className="text-xs text-[var(--text-mid)]">
+                          <TableCell className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
                             {bid.riders?.specialty}
                           </TableCell>
                           <TableCell
@@ -118,10 +118,10 @@ export default async function AuctionResultsPage({
                     </TableBody>
                   </Table>
 
-                  <div className="my-6 border-b border-border" />
+                  <div className="my-6 border-b border-[var(--border-default)]" />
 
                   <div className="flex flex-col gap-0">
-                    <div className="flex items-center justify-between border-b border-border py-2 text-sm">
+                    <div className="flex items-center justify-between border-b border-[var(--border-default)] py-2 text-[length:var(--type-body)]">
                       <span className="text-[var(--text-mid)]">
                         Riders assigned
                       </span>
@@ -129,7 +129,7 @@ export default async function AuctionResultsPage({
                         {won.length}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between border-b border-border py-2 text-sm">
+                    <div className="flex items-center justify-between border-b border-[var(--border-default)] py-2 text-[length:var(--type-body)]">
                       <span className="text-[var(--text-mid)]">
                         Total amount
                       </span>
@@ -138,7 +138,7 @@ export default async function AuctionResultsPage({
                       </span>
                     </div>
                     {won.length > 0 && (
-                      <div className="flex items-center justify-between py-2 text-sm">
+                      <div className="flex items-center justify-between py-2 text-[length:var(--type-body)]">
                         <span className="text-[var(--text-mid)]">
                           Average bid
                         </span>

@@ -45,7 +45,7 @@ export default async function PoliciesPage({
   if (!user) {
     return (
       <div className="px-4 py-8">
-        <p className="text-sm text-[var(--text-mid)]">
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
           Please sign in to view policies.
         </p>
       </div>
@@ -74,7 +74,7 @@ export default async function PoliciesPage({
       <div className="px-4 pt-4 space-y-4">
         {/* Banner */}
         <div className="rounded-xl bg-[var(--bg-subtle)] px-4 py-3">
-          <p className="text-xs font-medium text-[var(--text-mid)]">
+          <p className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
             Changes apply to the next round. Current policies active until round
             closes.
           </p>
@@ -107,7 +107,7 @@ export default async function PoliciesPage({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`text-sm font-semibold ${
+                        className={`text-[length:var(--type-emphasis)] font-semibold ${
                           isUnlocked
                             ? "text-[var(--text-high)]"
                             : "text-[var(--text-ghost)]"
@@ -116,14 +116,14 @@ export default async function PoliciesPage({
                         {policy.name}
                       </span>
                       {!isUnlocked && (
-                        <span className="flex items-center gap-1 text-xs text-[var(--text-ghost)]">
+                        <span className="flex items-center gap-1 text-[length:var(--type-caption)] text-[var(--text-ghost)]">
                           <Lock size={12} />
                           Unlock Lv.{policy.unlockLevel}
                         </span>
                       )}
                     </div>
                     <p
-                      className={`text-xs mt-0.5 ${
+                      className={`text-[length:var(--type-caption)] mt-0.5 ${
                         isUnlocked
                           ? "text-[var(--text-mid)]"
                           : "text-[var(--text-ghost)]"

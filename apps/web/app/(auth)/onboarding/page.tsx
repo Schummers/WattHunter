@@ -28,9 +28,9 @@ export default function OnboardingPage() {
       {/* Mesh gradient background */}
       <div className="absolute inset-0 bg-[var(--bg-app)]">
         <div className="absolute inset-0 animate-mesh-slow">
-          <div className="absolute -left-1/4 -top-1/4 h-[60%] w-[60%] rounded-full bg-cyan-700 opacity-20 blur-[100px]" />
-          <div className="absolute -bottom-1/4 -right-1/4 h-[60%] w-[60%] rounded-full bg-cyan-600 opacity-15 blur-[100px]" />
-          <div className="absolute left-1/3 top-1/2 h-[40%] w-[40%] rounded-full bg-cyan-800 opacity-20 blur-[80px]" />
+          <div className="absolute -left-1/4 -top-1/4 h-[60%] w-[60%] rounded-full bg-[var(--color-cyan-700)] opacity-20 blur-[100px]" />
+          <div className="absolute -bottom-1/4 -right-1/4 h-[60%] w-[60%] rounded-full bg-[var(--color-cyan-600)] opacity-15 blur-[100px]" />
+          <div className="absolute left-1/3 top-1/2 h-[40%] w-[40%] rounded-full bg-[var(--color-cyan-800)] opacity-20 blur-[80px]" />
         </div>
       </div>
 
@@ -54,14 +54,14 @@ export default function OnboardingPage() {
         </div>
 
         {/* Feature cards */}
-        <div className="flex w-full flex-col gap-2.5">
+        <div className="flex w-full flex-col gap-3">
           {steps.map((step, i) => (
             <InfoCard
               key={i}
               className="flex items-center gap-3 px-3.5 py-3"
             >
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface)]">
-                <step.icon className="size-4 text-[var(--accent-default)]" />
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--badge-bg)]">
+                <step.icon className="size-4 text-[var(--accent-label)]" />
               </div>
               <div className="flex flex-col gap-0.5">
                 <h3 className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">

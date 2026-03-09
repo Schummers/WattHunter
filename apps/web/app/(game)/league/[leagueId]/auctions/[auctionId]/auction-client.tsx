@@ -67,16 +67,16 @@ export function AuctionClient({
             return (
               <div
                 key={bid.id}
-                className="flex items-center justify-between border-b border-border py-2 last:border-0"
+                className="flex items-center justify-between border-b border-[var(--border-default)] py-2 last:border-0"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-[var(--text-high)]">
+                  <span className="text-[length:var(--type-body)] font-medium text-[var(--text-high)]">
                     {rider?.full_name ?? "—"}
                   </span>
-                  <span className="text-sm text-[var(--text-mid)]">
+                  <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
                     {rider?.real_team}
                   </span>
-                  <span className="text-sm font-semibold text-[var(--accent-default)]">
+                  <span className="text-[length:var(--type-body)] font-semibold font-mono text-[var(--accent-default)]">
                     {bid.amount.toLocaleString("en-US")} EUR
                   </span>
                 </div>
@@ -100,7 +100,7 @@ export function AuctionClient({
               </div>
             );
           })}
-          <div className="my-2 border-b border-border" />
+          <div className="my-2 border-b border-[var(--border-default)]" />
         </div>
       )}
 

@@ -46,7 +46,7 @@ export default async function AuctionsPage({
                 {active.name}
               </span>
               <div className="flex items-center gap-3 text-[length:var(--type-body)] text-[var(--text-mid)]">
-                <Badge variant="secondary">Round {activeRound}/3</Badge>
+                <Badge variant="highlighted">Round {activeRound}/3</Badge>
                 <span>Resolves at midnight</span>
               </div>
             </div>
@@ -77,7 +77,7 @@ export default async function AuctionsPage({
                     {a.name}
                   </span>
                 </div>
-                <Badge variant="secondary">Scheduled</Badge>
+                <Badge variant="highlighted">Scheduled</Badge>
               </div>
             ))}
           </div>

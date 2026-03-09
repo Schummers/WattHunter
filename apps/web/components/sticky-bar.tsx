@@ -43,17 +43,17 @@ export function StickyBar({
 
   return (
     <div
-      className="fixed inset-x-0 z-30 border-t border-[var(--border-default)] bg-[var(--bg-subtle)] py-2 transition-[bottom] duration-200 lg:!bottom-0"
+      className="fixed inset-x-0 z-30 border-t border-[var(--border-default)] bg-[var(--bg-subtle)] py-2 transition-[bottom] duration-200 lg:hidden"
       style={bottomStyle}
     >
-      <div className="flex items-center justify-between px-4 lg:mx-auto lg:max-w-2xl">
+      <div className="flex items-center justify-between px-4">
         <span className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
           {slotInfo} &middot; {budgetInfo}
         </span>
         <button
           onClick={onSave}
           disabled={!saveEnabled || saving}
-          className="rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-400 px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold text-[var(--cta-text)] disabled:opacity-40"
+          className="rounded-lg cta-gradient px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold text-[var(--cta-text)] disabled:opacity-40"
         >
           {saving ? "Saving..." : "Save"}
         </button>

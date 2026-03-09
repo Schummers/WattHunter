@@ -12,16 +12,16 @@ export function SegmentedControl({
   onChange,
 }: SegmentedControlProps) {
   return (
-    <div className="flex rounded-lg bg-[var(--bg-app)] p-0.5">
+    <div className="inline-flex rounded-[var(--radius-lg)] border border-[var(--border-default)] p-[3px] gap-1.5">
       {segments.map((segment, index) => (
         <button
           key={segment}
           type="button"
           onClick={() => onChange(index)}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
+          className={`rounded-[var(--radius-md)] px-3.5 py-1.5 text-[length:var(--type-caption)] transition-colors ${
             index === activeIndex
-              ? "bg-[var(--bg-surface)] text-[var(--text-high)]"
-              : "text-[var(--text-mid)]"
+              ? "bg-[var(--bg-surface-active)] text-[var(--text-high)] font-semibold"
+              : "text-[var(--text-low)] font-medium"
           }`}
         >
           {segment}

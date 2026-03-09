@@ -71,7 +71,7 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
   }, [open]);
 
   return (
-    <aside className="hidden lg:flex lg:w-[220px] lg:flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-subtle)]">
+    <aside className="hidden lg:flex lg:w-[180px] lg:flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-subtle)]">
       {/* Logo */}
       <div className="flex items-center gap-2 px-4 py-4">
         <Image
@@ -81,7 +81,7 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
           height={20}
           className="shrink-0"
         />
-        <span className="text-sm font-bold text-[var(--text-high)]">WattHunter</span>
+        <span className="text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)]">WattHunter</span>
       </div>
 
       {/* League switcher */}
@@ -90,7 +90,7 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
           type="button"
           onClick={() => hasMultiple && setOpen(!open)}
           disabled={!hasMultiple}
-          className="flex items-center gap-1 text-xs text-[var(--text-low)] hover:text-[var(--text-mid)] transition-colors"
+          className="flex items-center gap-1 text-[length:var(--type-caption)] text-[var(--text-low)] hover:text-[var(--text-mid)] transition-colors"
         >
           <span>{leagueName}</span>
           {hasMultiple && (
@@ -113,7 +113,7 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
                     router.push(`/league/${league.id}`);
                   }
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--bg-subtle)]"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[length:var(--type-body)] transition-colors hover:bg-[var(--bg-subtle)]"
               >
                 <span
                   className={
@@ -147,7 +147,7 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
             return (
               <div
                 key={item.key}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-ghost)]"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-[length:var(--type-body)] font-medium text-[var(--text-ghost)]"
               >
                 <item.icon size={16} className="shrink-0" />
                 <span className="flex-1">{item.label}</span>
@@ -160,7 +160,7 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
               <Link
                 href={href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-[length:var(--type-body)] font-medium transition-colors",
                   isActive
                     ? "bg-[var(--accent-default)]/10 text-[var(--accent-default)]"
                     : "text-[var(--text-mid)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-high)]"
@@ -180,7 +180,7 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
                         key={subHref}
                         href={subHref}
                         className={cn(
-                          "rounded-lg px-3 py-1.5 text-sm transition-colors",
+                          "rounded-lg px-3 py-1.5 text-[length:var(--type-body)] transition-colors",
                           isSubActive
                             ? "text-[var(--accent-default)] font-medium"
                             : "text-[var(--text-mid)] hover:text-[var(--text-high)]"
@@ -201,7 +201,7 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
       <div className="border-t border-[var(--border-subtle)] p-2">
         <Link
           href={`/league/${leagueId}/settings`}
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-mid)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-high)]"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-[length:var(--type-body)] font-medium text-[var(--text-mid)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-high)]"
         >
           <Settings size={16} className="shrink-0" />
           Settings

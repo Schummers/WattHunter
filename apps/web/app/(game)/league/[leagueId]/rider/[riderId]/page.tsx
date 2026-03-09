@@ -24,7 +24,7 @@ export default async function RiderDetailPage({
   if (!rider) {
     return (
       <div className="px-4 py-8">
-        <p className="text-sm text-[var(--text-mid)]">Rider not found.</p>
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">Rider not found.</p>
       </div>
     );
   }
@@ -68,6 +68,7 @@ export default async function RiderDetailPage({
   let context: RiderContext = (from as RiderContext) ?? "ranking";
   let contractData: { locked_salary: number; status: string } | null = null;
   let currentBidAmount: number | null = null;
+  let currentBidId: string | null = null;
   let activeAuctionId: string | null = null;
   let ownerInfo: { display_name: string; team_name: string } | null = null;
 
@@ -90,7 +91,7 @@ export default async function RiderDetailPage({
         .maybeSingle();
 
       if (contract) {
-        if (context !== "ranking") context = "team";
+        if (from !== "recruts" && from !== "team") context = "team";
         contractData = { locked_salary: contract.locked_salary, status: contract.status };
       }
 
@@ -104,6 +105,7 @@ export default async function RiderDetailPage({
         .maybeSingle();
 
       if (activeBid) {
+        currentBidId = activeBid.id;
         currentBidAmount = activeBid.amount;
         activeAuctionId = activeBid.auction_id;
       }
@@ -143,9 +145,49 @@ export default async function RiderDetailPage({
 
   const minSalary = Math.max(5000, Math.round(((rider.pcs_points_1yr ?? 0) * 2000) / 12));
 
+  // Phase 1.3: Budget info for recruts context
+  let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number } | undefined;
+  if (context === "recruts" && user) {
+    const { data: memberForBudget } = await supabase
+      .from("league_members")
+      .select("team_id, teams:team_id(level, treasury)")
+      .eq("league_id", leagueId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (memberForBudget?.team_id) {
+      const budgetTeam = Array.isArray(memberForBudget.teams) ? memberForBudget.teams[0] : memberForBudget.teams;
+      const level = budgetTeam?.level ?? 1;
+      const maxSlots = [6, 7, 7, 8, 9, 9, 10, 11, 11, 12][Math.min(level, 10) - 1];
+
+      const { count: contractCount } = await supabase
+        .from("contracts")
+        .select("id", { count: "exact", head: true })
+        .eq("team_id", memberForBudget.team_id)
+        .in("status", ["active", "notice"]);
+
+      const { data: activeBids } = await supabase
+        .from("auction_bids")
+        .select("amount")
+        .eq("team_id", memberForBudget.team_id)
+        .eq("status", "active");
+
+      const totalBidAmount = (activeBids ?? []).reduce((sum, b) => sum + b.amount, 0);
+
+      budgetInfo = {
+        currentSlots: contractCount ?? 0,
+        maxSlots,
+        treasury: budgetTeam?.treasury ?? 200000,
+        totalBidAmount,
+      };
+    }
+  }
+
   return (
     <RiderDetailClient
       leagueId={leagueId}
+      currentBidId={currentBidId ?? undefined}
+      budgetInfo={budgetInfo}
       rider={{
         id: rider.id,
         full_name: rider.full_name,

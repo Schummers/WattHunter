@@ -50,7 +50,7 @@ export function BottomNav({ leagueId, unlockedTabs }: BottomNavProps) {
                 className="relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 text-[var(--text-ghost)]"
               >
                 <tab.icon size={20} />
-                <span className="text-[10px] font-medium">{tab.label}</span>
+                <span className="text-[length:var(--type-nav)] font-medium">{tab.label}</span>
               </div>
             );
           }
@@ -67,7 +67,7 @@ export function BottomNav({ leagueId, unlockedTabs }: BottomNavProps) {
               {isActive && (
                 <span className="absolute top-1 h-1 w-1 rounded-full bg-[var(--accent-default)]" />
               )}
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <span className="text-[length:var(--type-nav)] font-medium">{tab.label}</span>
             </Link>
           );
         })}

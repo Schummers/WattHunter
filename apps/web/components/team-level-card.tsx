@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { RailLink } from "@/components/rail-link";
 import { Progress } from "@/components/ui/progress";
 import { getNextLevel, getProgressPct, getNewUnlocks, getLevelByNumber } from "@/lib/levels";
 
@@ -44,7 +44,7 @@ export function TeamLevelCard({
             <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-mid)]">
               {teamName ?? "Team level"}
             </span>
-            <span className="text-[12px] font-medium link-tertiary">
+            <span className="text-[length:var(--type-caption)] font-medium link-tertiary">
               All levels &rarr;
             </span>
           </div>
@@ -54,14 +54,14 @@ export function TeamLevelCard({
         <div className="flex items-center gap-2">
           {/* Current level badge */}
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/5">
-            <span className="text-sm font-bold text-[var(--text-high)]">
+            <span className="text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)]">
               {currentLevel}
             </span>
           </div>
 
           {/* XP text + progress bar stacked */}
           <div className="flex-1 flex flex-col gap-1">
-            <span className="text-[12px] font-medium text-[var(--text-mid)]">
+            <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
               <span className="font-mono">{currentXp.toLocaleString()}</span>
               {!isMaxLevel && (
                 <>
@@ -77,7 +77,7 @@ export function TeamLevelCard({
           {/* Next level badge */}
           {!isMaxLevel && (
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/5">
-              <span className="text-sm font-bold text-[var(--text-mid)]">
+              <span className="text-[length:var(--type-emphasis)] font-bold text-[var(--text-mid)]">
                 {currentLevel + 1}
               </span>
             </div>
@@ -110,8 +110,8 @@ export function TeamLevelCard({
   }
 
   return (
-    <Link href={`/league/${leagueId}/levels`}>
+    <RailLink href={`/league/${leagueId}/levels`}>
       {card}
-    </Link>
+    </RailLink>
   );
 }

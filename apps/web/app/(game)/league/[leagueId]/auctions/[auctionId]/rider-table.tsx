@@ -75,7 +75,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
         <select
           value={teamFilter}
           onChange={(e) => setTeamFilter(e.target.value)}
-          className="h-9 rounded-md border border-input bg-[var(--bg-surface)] px-3 text-sm"
+          className="h-9 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-[length:var(--type-body)]"
         >
           <option value="">All teams</option>
           {teams.map((t) => (
@@ -85,7 +85,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
         <select
           value={specialtyFilter}
           onChange={(e) => setSpecialtyFilter(e.target.value)}
-          className="h-9 rounded-md border border-input bg-[var(--bg-surface)] px-3 text-sm"
+          className="h-9 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-[length:var(--type-body)]"
         >
           <option value="">All specialties</option>
           <option value="climber">Grimpeur</option>
@@ -97,7 +97,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
         </select>
       </div>
 
-      <span className="text-xs font-medium uppercase text-[var(--text-mid)]">
+      <span className="text-[length:var(--type-caption)] font-medium uppercase text-[var(--text-mid)]">
         {filtered.length} riders
       </span>
 
@@ -127,18 +127,18 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
               <TableCell className="font-medium">{rider.full_name}</TableCell>
               <TableCell className="text-[var(--text-mid)]">{rider.real_team}</TableCell>
               <TableCell>
-                <span className="text-xs text-[var(--text-mid)]">
+                <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
                   {SPECIALTY_LABELS[rider.specialty] ?? rider.specialty}
                 </span>
               </TableCell>
               <TableCell className="text-[var(--text-mid)]">{rider.nationality ? countryCodeToFlag(rider.nationality) : "—"}</TableCell>
-              <TableCell className="text-right">{rider.pcs_points_1yr.toLocaleString("en-US")}</TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-right font-mono">{rider.pcs_points_1yr.toLocaleString("en-US")}</TableCell>
+              <TableCell className="text-right font-mono">
                 {rider.monthly_salary.toLocaleString("en-US")} EUR
               </TableCell>
               <TableCell>
-                {rider.is_contracted && <Badge variant="outline">Signed</Badge>}
-                {myBidRiderIds.has(rider.id) && <Badge variant="secondary">Mise</Badge>}
+                {rider.is_contracted && <Badge variant="default">Signed</Badge>}
+                {myBidRiderIds.has(rider.id) && <Badge variant="highlighted">Bid</Badge>}
               </TableCell>
             </TableRow>
           ))}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { RailLink } from "@/components/rail-link";
 import { createClient } from "@/lib/supabase/server";
 import { RiderCard } from "@/components/rider-card";
 import { TeamLevelCard } from "@/components/team-level-card";
@@ -30,7 +31,7 @@ export default async function MyTeamPage({
   if (!user) {
     return (
       <div className="px-4 py-8">
-        <p className="text-sm text-[var(--text-mid)]">
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
           Please sign in to view your team.
         </p>
       </div>
@@ -47,7 +48,7 @@ export default async function MyTeamPage({
   if (!member) {
     return (
       <div className="px-4 py-8">
-        <p className="text-sm text-[var(--text-mid)]">
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
           You are not a member of this league.
         </p>
       </div>
@@ -177,12 +178,12 @@ export default async function MyTeamPage({
           <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)] bg-white/5 rounded-full px-2.5 py-0.5">
             +{boostPct}% Boost
           </span>
-          <Link
+          <RailLink
             href={`/league/${leagueId}/team/policies`}
-            className="text-sm link-tertiary"
+            className="text-[length:var(--type-body)] link-tertiary"
           >
             Change policies &rarr;
-          </Link>
+          </RailLink>
         </div>
       </div>
 
@@ -195,7 +196,7 @@ export default async function MyTeamPage({
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             Roster
           </span>
-          <span className="text-xs font-semibold text-[var(--text-low)]">
+          <span className="text-[length:var(--type-caption)] font-semibold text-[var(--text-low)]">
             <span className="font-mono">{riderCount}/{maxSlots}</span> slots
           </span>
         </div>
@@ -265,7 +266,7 @@ export default async function MyTeamPage({
                   bidState={isOutbid ? "outbid" : "active"}
                   href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
                   rightContent={
-                    <span className={`text-sm font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--accent-default)]"}`}>
+                    <span className={`text-[length:var(--type-body)] font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--accent-default)]"}`}>
                       {formatThousands(bid.amount)} €
                     </span>
                   }

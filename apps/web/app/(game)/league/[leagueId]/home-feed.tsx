@@ -49,16 +49,8 @@ export function HomeFeed({
   memberCount,
 }: HomeFeedProps) {
   return (
-    <div className="relative min-h-full">
-      {/* Mesh gradient background — same blurred-circles as onboarding */}
-      <div className="absolute inset-0 bg-[var(--bg-app)] pointer-events-none">
-        <div className="absolute inset-0 animate-mesh-slow">
-          <div className="absolute -left-1/4 -top-1/4 h-[60%] w-[60%] rounded-full bg-cyan-700 opacity-20 blur-[100px]" />
-          <div className="absolute -bottom-1/4 -right-1/4 h-[60%] w-[60%] rounded-full bg-cyan-600 opacity-15 blur-[100px]" />
-          <div className="absolute left-1/3 top-1/2 h-[40%] w-[40%] rounded-full bg-cyan-800 opacity-20 blur-[80px]" />
-        </div>
-      </div>
-      <div className="relative z-10 px-4 pt-4 space-y-3">
+    <div className="min-h-full">
+      <div className="px-4 pt-4 space-y-3">
       {/* Team Overview */}
       <InfoCard className="p-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -120,9 +112,9 @@ export function HomeFeed({
           className="p-4"
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
-                <Timer size={18} className="text-[var(--accent-default)]" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--badge-bg)]">
+                <Timer size={18} className="text-[var(--accent-label)]" />
               </div>
               <div>
                 <p className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
@@ -165,7 +157,7 @@ export function HomeFeed({
       {rosterCount < maxSlots && activeAuction?.status === "open" && (
         <Link
           href={`/league/${leagueId}/team/recruts`}
-          className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--accent-default)] bg-[var(--accent-muted)] px-4 py-3 text-[length:var(--type-emphasis)] font-semibold text-[var(--accent-default)]"
+          className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--accent-default)] bg-[var(--badge-bg)] px-4 py-3 text-[length:var(--type-emphasis)] font-semibold text-[var(--accent-default)]"
         >
           <Users size={16} />
           {maxSlots - rosterCount} open slot{maxSlots - rosterCount > 1 ? "s" : ""} — Browse recruits
