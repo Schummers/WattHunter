@@ -3,11 +3,11 @@ import { ChevronRight } from "lucide-react";
 import { RailLink } from "@/components/rail-link";
 import { createClient } from "@/lib/supabase/server";
 import { RiderCard } from "@/components/rider-card";
+import { BrandCard } from "@/components/brand-card";
 import { getMaxSlots, getProgressPct, getNextLevel, getLevelByNumber } from "@/lib/levels";
 import { formatThousands, smartCountdown, countryCodeToFlag } from "@/lib/format";
 import { calculateBoost, riderMatchesPolicy } from "@/lib/boost";
 import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
-import { Progress } from "@/components/ui/progress";
 
 function formatName(fullName: string): string {
   const parts = fullName.split(" ").filter(Boolean);
@@ -220,63 +220,15 @@ export default async function MyTeamPage({
       {/* MT-2: Branded XP Hero Card */}
       <div className="px-4">
         <RailLink href={`/league/${leagueId}/levels`}>
-          <div className="relative overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--bg-surface)] via-[var(--bg-subtle)] to-[var(--bg-surface)] p-4 transition-colors hover:border-[var(--border-hover)]">
-            {/* SVG noise overlay */}
-            <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.035]">
-              <filter id="noise">
-                <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" />
-              </filter>
-              <rect width="100%" height="100%" filter="url(#noise)" />
-            </svg>
-
-            {/* Subtle glow */}
-            <div className="pointer-events-none absolute -top-20 -right-20 h-40 w-40 rounded-full bg-[var(--accent-default)] opacity-[0.06] blur-3xl" />
-
-            <div className="relative space-y-3">
-              {/* Top row: label + ranking pill */}
-              <div className="flex items-start justify-between">
-                <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-                  Total XP Season
-                </span>
-                <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-[length:var(--type-caption)] font-semibold font-mono text-[var(--text-high)]">
-                  #{rank} / {teamCount}
-                </span>
-              </div>
-
-              {/* XP hero number */}
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-[length:var(--type-display)] font-black font-mono leading-none tracking-tight text-[var(--accent-highlight)]">
-                  {xp.toLocaleString()}
-                </span>
-                <span className="text-[length:var(--type-caption)] font-semibold text-[var(--text-low)]">
-                  XP
-                </span>
-              </div>
-
-              {/* Level + percentage */}
-              <div className="flex items-center justify-between">
-                <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-                  Level {level}{!isMaxLevel && ` → ${level + 1}`}
-                </span>
-                <span className="text-[length:var(--type-caption)] font-mono text-[var(--text-mid)]">
-                  {progressPct}%
-                </span>
-              </div>
-
-              {/* Progress bar */}
-              <Progress value={progressPct} className="h-1.5" />
-
-              {/* XP targets */}
-              <div className="flex items-center justify-between">
-                <span className="text-[length:var(--type-caption)] font-mono text-[var(--text-low)]">
-                  {xp.toLocaleString()}
-                </span>
-                <span className="text-[length:var(--type-caption)] font-mono text-[var(--text-low)]">
-                  {isMaxLevel ? "MAX" : nextLevel.xp.toLocaleString()}
-                </span>
-              </div>
-            </div>
-          </div>
+          <BrandCard
+            xp={xp}
+            level={level}
+            progressPct={progressPct}
+            rank={rank}
+            teamCount={teamCount}
+            nextLevelXp={isMaxLevel ? null : nextLevel.xp}
+            isMaxLevel={isMaxLevel}
+          />
         </RailLink>
       </div>
 
