@@ -12,6 +12,9 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+import re
+
+from selectolax.parser import HTMLParser
 from supabase import Client
 
 from sync import fetch_html, get_supabase, CLOUDFLARE_MARKERS
@@ -19,11 +22,12 @@ from sync import fetch_html, get_supabase, CLOUDFLARE_MARKERS
 logger = logging.getLogger(__name__)
 
 # Map PCS specialty keys to our DB values (ignore Climber and Hills)
+# Library returns snake_case keys: one_day_races, gc, time_trial, sprint, climber, hills
 SPECIALTY_MAP = {
-    "GC": "GC",
-    "One day races": "OneDay",
-    "Time trial": "TT",
-    "Sprint": "Sprint",
+    "gc": "GC",
+    "one_day_races": "OneDay",
+    "time_trial": "TT",
+    "sprint": "Sprint",
 }
 
 BATCH_SIZE = 5
@@ -61,6 +65,76 @@ def _parse_weight_kg(value: Any) -> Optional[int]:
         return int(float(value))
     except (ValueError, TypeError):
         return None
+
+
+def parse_race_program(html: str, current_year: int = 2026) -> List[Dict[str, Any]]:
+    """Parse the 'Program' section from a PCS rider page.
+
+    PCS structure:
+      <div class="mt20">
+        <h4>Program</h4>
+        <ul class="list dashed flex pad2">
+          <li>
+            <div class="bold mr5">21.03</div>
+            <div class="ellipsis"><span class="flag it"></span>
+              <a href="race/milano-sanremo/2026/startlist">Milano-Sanremo</a>
+            </div>
+          </li>
+          ...
+        </ul>
+      </div>
+
+    Returns a list of dicts with keys: race_slug, race_name, race_date (YYYY-MM-DD).
+    """
+    tree = HTMLParser(html)
+    results = []
+    seen_slugs = set()
+
+    # Find the h4 "Program" header, then parse its parent div's <li> items
+    for h4 in tree.css("h4"):
+        if h4.text().strip().lower() != "program":
+            continue
+        parent = h4.parent
+        if not parent:
+            continue
+        for li in parent.css("li"):
+            # Date: "21.03" in div.bold
+            date_el = li.css_first("div.bold")
+            date_text = date_el.text().strip() if date_el else ""
+
+            # Race link in div.ellipsis > a[href*="race/"]
+            link = li.css_first("div.ellipsis a")
+            if not link:
+                continue
+            href = link.attributes.get("href", "")
+            if "race/" not in href:
+                continue
+            race_name = link.text().strip()
+
+            # Clean slug: strip leading /, remove trailing /startlist
+            race_slug = href.strip("/")
+            race_slug = re.sub(r"/startlist$", "", race_slug)
+
+            if not race_name or not race_slug or race_slug in seen_slugs:
+                continue
+            seen_slugs.add(race_slug)
+
+            # Convert "DD.MM" to "YYYY-MM-DD"
+            race_date = None
+            if date_text and "." in date_text:
+                parts = date_text.split(".")
+                if len(parts) == 2:
+                    day, month = parts[0].strip(), parts[1].strip()
+                    race_date = f"{current_year}-{month.zfill(2)}-{day.zfill(2)}"
+
+            results.append({
+                "race_slug": race_slug,
+                "race_name": race_name,
+                "race_date": race_date,
+            })
+        break  # Only process the first "Program" h4
+
+    return results
 
 
 def parse_rider_data(
@@ -162,16 +236,46 @@ async def enrich_single_rider(
             season_val = sp.get("season")
             points_val = sp.get("points", 0)
             if season_val:
+                rank_val = sp.get("rank")
                 supabase.table("rider_season_rankings").upsert(
                     {
                         "rider_id": rider_id,
                         "season": int(season_val),
                         "points": int(points_val),
+                        "rank": int(rank_val) if rank_val else None,
                     },
                     on_conflict="rider_id,season",
                 ).execute()
 
-        # 4. Upsert current season results into race_results (existing table)
+        # 4. Parse and upsert race program into race_startlists
+        try:
+            race_program = parse_race_program(html)
+            for entry in race_program:
+                race_slug = entry.get("race_slug", "")
+                race_name = entry.get("race_name", "")
+                race_date = entry.get("race_date")
+                if race_slug and race_name:
+                    row = {
+                        "rider_id": rider_id,
+                        "race_slug": race_slug,
+                        "race_name": race_name,
+                    }
+                    if race_date:
+                        row["race_date"] = race_date
+                    else:
+                        # race_date is NOT NULL — use a placeholder date
+                        # derived from the slug year if possible
+                        year_match = re.search(r"/(\d{4})", race_slug)
+                        row["race_date"] = f"{year_match.group(1)}-01-01" if year_match else "2026-01-01"
+                    supabase.table("race_startlists").upsert(
+                        row, on_conflict="rider_id,race_slug"
+                    ).execute()
+            if race_program:
+                logger.info("  %d upcoming races for %s", len(race_program), pcs_slug)
+        except Exception as e:
+            logger.warning("race program parsing failed for %s: %s", pcs_slug, e)
+
+        # 5. Upsert current season results into race_results (existing table)
         for result in season_results:
             race_url = result.get("race_url", "")
             if not race_url:

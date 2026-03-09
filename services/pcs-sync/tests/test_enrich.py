@@ -8,25 +8,25 @@ from conftest import make_supabase
 def test_assign_specialty_gc():
     """Highest among GC/OneDay/TT/Sprint wins."""
     from enrich import assign_specialty
-    points = {"GC": 3000, "One day races": 1500, "Time trial": 800, "Sprint": 200, "Climber": 5000, "Hills": 4000}
+    points = {"gc": 3000, "one_day_races": 1500, "time_trial": 800, "sprint": 200, "climber": 5000, "hills": 4000}
     assert assign_specialty(points) == "GC"
 
 
 def test_assign_specialty_oneday():
     from enrich import assign_specialty
-    points = {"GC": 500, "One day races": 2000, "Time trial": 300, "Sprint": 100}
+    points = {"gc": 500, "one_day_races": 2000, "time_trial": 300, "sprint": 100}
     assert assign_specialty(points) == "OneDay"
 
 
 def test_assign_specialty_tt():
     from enrich import assign_specialty
-    points = {"GC": 100, "One day races": 200, "Time trial": 3000, "Sprint": 100}
+    points = {"gc": 100, "one_day_races": 200, "time_trial": 3000, "sprint": 100}
     assert assign_specialty(points) == "TT"
 
 
 def test_assign_specialty_sprint():
     from enrich import assign_specialty
-    points = {"GC": 100, "One day races": 200, "Time trial": 300, "Sprint": 5000}
+    points = {"gc": 100, "one_day_races": 200, "time_trial": 300, "sprint": 5000}
     assert assign_specialty(points) == "Sprint"
 
 
@@ -34,13 +34,13 @@ def test_assign_specialty_empty():
     """No matching keys -> all_rounder."""
     from enrich import assign_specialty
     assert assign_specialty({}) == "all_rounder"
-    assert assign_specialty({"Climber": 5000, "Hills": 3000}) == "all_rounder"
+    assert assign_specialty({"climber": 5000, "hills": 3000}) == "all_rounder"
 
 
 def test_assign_specialty_ignores_climber_hills():
     """Climber and Hills are ignored even if highest."""
     from enrich import assign_specialty
-    points = {"GC": 100, "One day races": 50, "Climber": 9999, "Hills": 8888}
+    points = {"gc": 100, "one_day_races": 50, "climber": 9999, "hills": 8888}
     assert assign_specialty(points) == "GC"
 
 
@@ -57,7 +57,7 @@ def test_parse_rider_data():
         "image_url": "https://www.procyclingstats.com/images/riders/tadej-pogacar.jpg",
         "nationality": "SI",
     }
-    specialty_points = {"GC": 5000, "One day races": 3000, "Time trial": 1500, "Sprint": 200}
+    specialty_points = {"gc": 5000, "one_day_races": 3000, "time_trial": 1500, "sprint": 200}
     teams = [
         {"team_name": "UAE Team Emirates", "team_url": "team/uae-team-emirates-2026", "season": 2026},
         {"team_name": "UAE Team Emirates", "team_url": "team/uae-team-emirates-2025", "season": 2025},
@@ -106,3 +106,63 @@ def test_build_parser_accepts_enrich_riders():
     args2 = parser.parse_args(["enrich-riders", "--start", "401", "--end", "500"])
     assert args2.start == 401
     assert args2.end == 500
+
+
+# --- Race program parsing tests ---
+
+PCS_PROGRAM_HTML = """
+<html><body>
+<div class="mt20">
+<h4>Program</h4><ul class="list dashed flex pad2">
+<li><div class="bold mr5">21.03</div><div class="ellipsis"><span class="flag it"></span> <a href="race/milano-sanremo/2026/startlist">Milano-Sanremo</a></div></li>
+<li><div class="bold mr5">04.07</div><div class="ellipsis"><span class="flag fr"></span> <a href="race/tour-de-france/2026/startlist">Tour de France</a></div></li>
+<li><div class="bold mr5">26.04</div><div class="ellipsis"><span class="flag be"></span> <a href="race/liege-bastogne-liege/2026/startlist">Liège-Bastogne-Liège</a></div></li>
+</ul>
+</div>
+</body></html>
+"""
+
+
+def test_parse_race_program_empty_html():
+    """Empty/minimal HTML returns empty list."""
+    from enrich import parse_race_program
+    assert parse_race_program("<html><body></body></html>") == []
+
+
+def test_parse_race_program_pcs_structure():
+    """Parses races from the real PCS Program section structure."""
+    from enrich import parse_race_program
+    result = parse_race_program(PCS_PROGRAM_HTML, current_year=2026)
+    assert len(result) == 3
+    assert result[0]["race_slug"] == "race/milano-sanremo/2026"
+    assert result[0]["race_name"] == "Milano-Sanremo"
+    assert result[0]["race_date"] == "2026-03-21"
+    assert result[1]["race_slug"] == "race/tour-de-france/2026"
+    assert result[1]["race_date"] == "2026-07-04"
+    assert result[2]["race_slug"] == "race/liege-bastogne-liege/2026"
+    assert result[2]["race_date"] == "2026-04-26"
+
+
+def test_parse_race_program_strips_startlist():
+    """Race slug should not contain /startlist suffix."""
+    from enrich import parse_race_program
+    result = parse_race_program(PCS_PROGRAM_HTML)
+    for entry in result:
+        assert not entry["race_slug"].endswith("/startlist")
+
+
+def test_parse_race_program_deduplicates():
+    """Same race slug should not appear twice."""
+    from enrich import parse_race_program
+    html = """
+    <html><body>
+    <div class="mt20">
+    <h4>Program</h4><ul class="list dashed flex pad2">
+    <li><div class="bold mr5">21.03</div><div class="ellipsis"><a href="race/tour-de-france/2026/startlist">Tour de France</a></div></li>
+    <li><div class="bold mr5">04.07</div><div class="ellipsis"><a href="race/tour-de-france/2026/startlist">Tour de France</a></div></li>
+    </ul>
+    </div>
+    </body></html>
+    """
+    result = parse_race_program(html)
+    assert len(result) == 1

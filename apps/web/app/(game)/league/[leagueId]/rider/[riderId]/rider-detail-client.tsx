@@ -433,17 +433,15 @@ function PcsStatsSection({ rankings, startlists }: { rankings: SeasonRanking[]; 
           </span>
           <div className="divide-y divide-[var(--border-subtle)]">
             {startlists.map((s, i) => (
-              <div key={i} className="flex items-center justify-between py-2 px-1">
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-semibold text-[var(--text-high)] block truncate">
-                    {s.race_name}
+              <div key={i} className="flex items-baseline justify-between py-2 px-1">
+                <span className="text-[length:var(--type-body)] font-semibold text-[var(--text-high)] truncate min-w-0">
+                  {s.race_name}
+                </span>
+                {s.race_date && (
+                  <span className="text-[length:var(--type-body)] text-[var(--text-mid)] ml-3 shrink-0">
+                    {new Date(s.race_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </span>
-                  {s.race_date && (
-                    <span className="text-xs text-[var(--text-low)]">
-                      {new Date(s.race_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
-                  )}
-                </div>
+                )}
               </div>
             ))}
           </div>
