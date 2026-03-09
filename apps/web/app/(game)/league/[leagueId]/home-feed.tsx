@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { TeamLevelCard } from "@/components/team-level-card";
 import { InfoCard } from "@/components/info-card";
 import { Users, Wallet, Timer, ChevronRight, Trophy } from "lucide-react";
 
@@ -143,15 +142,6 @@ export function HomeFeed({
           </div>
         </InfoCard>
       )}
-
-      {/* Level Progress */}
-      <TeamLevelCard
-        leagueId={leagueId}
-        currentLevel={level}
-        currentXp={xp}
-        teamName={teamName}
-        variant="home"
-      />
 
       {/* Open Slots CTA */}
       {rosterCount < maxSlots && activeAuction?.status === "open" && (

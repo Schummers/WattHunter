@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Copy, LogOut, Check, DoorOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { leaveLeague } from "./actions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function EditableField({
   label,
@@ -192,16 +193,17 @@ export function LeagueSelector({
   }
 
   return (
-    <select
-      value={currentLeagueId}
-      onChange={(e) => onChange(e.target.value)}
-      className="flex h-9 w-full items-center rounded-lg border border-[var(--border-default)] bg-transparent px-3 text-[length:var(--type-body)] text-[var(--text-high)] outline-none"
-    >
-      {leagues.map((l) => (
-        <option key={l.id} value={l.id}>
-          {l.name}
-        </option>
-      ))}
-    </select>
+    <Select value={currentLeagueId} onValueChange={onChange}>
+      <SelectTrigger>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {leagues.map((l) => (
+          <SelectItem key={l.id} value={l.id}>
+            {l.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

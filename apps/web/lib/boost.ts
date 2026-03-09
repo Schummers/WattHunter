@@ -5,13 +5,13 @@
  * Total boost = sum of (xp_bonus × matching riders count) for all active policies.
  */
 
-interface PolicyWithConfig {
+export interface PolicyWithConfig {
   xp_bonus: number;
   slug: string;
   config: Record<string, string> | null;
 }
 
-interface RiderForBoost {
+export interface RiderForBoost {
   nationality: string | null;
   real_team: string | null;
   specialty: string | null;
@@ -28,7 +28,7 @@ function getAge(birthdate: string | null): number | null {
   return age;
 }
 
-function riderMatchesPolicy(rider: RiderForBoost, policy: PolicyWithConfig): boolean {
+export function riderMatchesPolicy(rider: RiderForBoost, policy: PolicyWithConfig): boolean {
   const cfg = policy.config;
   switch (policy.slug) {
     case "national_pride":

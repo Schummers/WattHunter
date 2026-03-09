@@ -1,34 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { BackHeader } from "@/components/back-header";
-import { Switch } from "@/components/ui/switch";
-import { Lock } from "lucide-react";
-
-const POLICY_TYPES = [
-  {
-    key: "speciality",
-    name: "Speciality",
-    description: "Boost riders matching a specific specialty (GC, Sprint, TT, One Day).",
-    unlockLevel: 1,
-  },
-  {
-    key: "nationality",
-    name: "Nationality",
-    description: "Boost riders from a specific country or region.",
-    unlockLevel: 3,
-  },
-  {
-    key: "teams",
-    name: "Teams",
-    description: "Boost riders belonging to a specific pro team.",
-    unlockLevel: 5,
-  },
-  {
-    key: "age",
-    name: "Age",
-    description: "Boost riders within a specific age range.",
-    unlockLevel: 7,
-  },
-];
+import { POLICY_TYPES } from "@/lib/policies";
+import { PoliciesClient } from "./policies-client";
 
 export default async function PoliciesPage({
   params,
@@ -54,7 +27,7 @@ export default async function PoliciesPage({
 
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, team_id, teams:team_id(level)")
+    .select("id, team_id, teams:team_id(id, level)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
@@ -63,80 +36,85 @@ export default async function PoliciesPage({
     ? Array.isArray(member.teams) ? member.teams[0] : member.teams
     : null;
   const level = team?.level ?? 1;
+  const teamId = (team as { id: string })?.id ?? "";
 
-  // Max active policies: 1 for levels 1-4, 2 for levels 5+
-  const maxActive = level >= 5 ? 2 : 1;
+  // Fetch all policies from DB (to get policy_id per slug)
+  const { data: dbPolicies } = await supabase
+    .from("policies")
+    .select("id, slug");
+
+  // Current team_policies
+  const { data: teamPolicies } = await supabase
+    .from("team_policies")
+    .select("policy_id, is_active, config")
+    .eq("team_id", teamId);
+
+  // Build initial policies map
+  const policyIdToSlug: Record<string, string> = {};
+  for (const p of dbPolicies ?? []) {
+    policyIdToSlug[p.id] = p.slug;
+  }
+
+  const initialPolicies: Record<string, { isActive: boolean; config: Record<string, string> | null }> = {};
+  for (const pt of POLICY_TYPES) {
+    initialPolicies[pt.slug] = { isActive: false, config: null };
+  }
+  for (const tp of teamPolicies ?? []) {
+    const slug = policyIdToSlug[tp.policy_id];
+    if (slug && initialPolicies[slug] !== undefined) {
+      initialPolicies[slug] = {
+        isActive: tp.is_active,
+        config: tp.config as Record<string, string> | null,
+      };
+    }
+  }
+
+  // Dynamic select options
+  const { data: nationalitiesData } = await supabase
+    .from("riders")
+    .select("nationality")
+    .not("nationality", "is", null)
+    .order("nationality");
+  const nationalities = [...new Set((nationalitiesData ?? []).map((r) => r.nationality).filter(Boolean))] as string[];
+
+  const { data: teamsData } = await supabase
+    .from("riders")
+    .select("real_team")
+    .not("real_team", "is", null)
+    .order("real_team");
+  const teams = [...new Set((teamsData ?? []).map((r) => r.real_team).filter(Boolean))] as string[];
+
+  // Roster riders for coverage
+  const { data: contracts } = await supabase
+    .from("contracts")
+    .select("riders(nationality, real_team, specialty, birthdate)")
+    .eq("team_id", teamId)
+    .in("status", ["active", "notice"]);
+
+  const rosterRiders = (contracts ?? []).map((c) => {
+    const r = Array.isArray(c.riders) ? c.riders[0] : c.riders;
+    return {
+      nationality: r?.nationality ?? null,
+      real_team: r?.real_team ?? null,
+      specialty: r?.specialty ?? null,
+      birthdate: (r as { birthdate?: string | null })?.birthdate ?? null,
+    };
+  });
 
   return (
     <div className="min-h-screen">
       <BackHeader label="My Team" />
 
-      <div className="px-4 pt-4 space-y-4">
-        {/* Banner */}
-        <div className="rounded-xl bg-[var(--bg-subtle)] px-4 py-3">
-          <p className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
-            Changes apply to the next round. Current policies active until round
-            closes.
-          </p>
-        </div>
-
-        {/* Policy slots */}
-        <div className="space-y-0">
-          <div className="flex items-center justify-between px-1 pb-2">
-            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-              Policy slots
-            </span>
-            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-              {maxActive} max active
-            </span>
-          </div>
-
-          <div className="divide-y divide-[var(--border-subtle)]">
-            {POLICY_TYPES.map((policy) => {
-              const isUnlocked = level >= policy.unlockLevel;
-
-              return (
-                <div
-                  key={policy.key}
-                  className="flex items-center gap-3 py-4"
-                >
-                  {/* Toggle */}
-                  <Switch checked={false} disabled={!isUnlocked} className="shrink-0" />
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-[length:var(--type-emphasis)] font-semibold ${
-                          isUnlocked
-                            ? "text-[var(--text-high)]"
-                            : "text-[var(--text-ghost)]"
-                        }`}
-                      >
-                        {policy.name}
-                      </span>
-                      {!isUnlocked && (
-                        <span className="flex items-center gap-1 text-[length:var(--type-caption)] text-[var(--text-ghost)]">
-                          <Lock size={12} />
-                          Unlock Lv.{policy.unlockLevel}
-                        </span>
-                      )}
-                    </div>
-                    <p
-                      className={`text-[length:var(--type-caption)] mt-0.5 ${
-                        isUnlocked
-                          ? "text-[var(--text-mid)]"
-                          : "text-[var(--text-ghost)]"
-                      }`}
-                    >
-                      {policy.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      <div className="px-4 pt-4">
+        <PoliciesClient
+          teamId={teamId}
+          leagueId={leagueId}
+          level={level}
+          initialPolicies={initialPolicies}
+          nationalities={nationalities}
+          teams={teams}
+          rosterRiders={rosterRiders}
+        />
       </div>
     </div>
   );

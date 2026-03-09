@@ -5,18 +5,20 @@ import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
 interface StickyBarProps {
   saveEnabled: boolean;
-  slotInfo: string;
-  budgetInfo: string;
   onSave: () => void;
   saving?: boolean;
+  slotInfo?: string;
+  budgetInfo?: string;
+  children?: React.ReactNode;
 }
 
 export function StickyBar({
   saveEnabled,
-  slotInfo,
-  budgetInfo,
   onSave,
   saving,
+  slotInfo,
+  budgetInfo,
+  children,
 }: StickyBarProps) {
   const navVisible = useScrollDirection();
   const [keyboardOffset, setKeyboardOffset] = useState(0);
@@ -46,18 +48,22 @@ export function StickyBar({
       className="fixed inset-x-0 z-30 border-t border-[var(--border-default)] bg-[var(--bg-subtle)] py-2 transition-[bottom] duration-200 lg:hidden"
       style={bottomStyle}
     >
-      <div className="flex items-center justify-between px-4">
-        <span className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-          {slotInfo} &middot; {budgetInfo}
-        </span>
-        <button
-          onClick={onSave}
-          disabled={!saveEnabled || saving}
-          className="rounded-lg cta-gradient px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold text-[var(--cta-text)] disabled:opacity-40"
-        >
-          {saving ? "Saving..." : "Save"}
-        </button>
-      </div>
+      {children ? (
+        <div className="px-4">{children}</div>
+      ) : (
+        <div className="flex items-center justify-between px-4">
+          <span className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+            {slotInfo} &middot; {budgetInfo}
+          </span>
+          <button
+            onClick={onSave}
+            disabled={!saveEnabled || saving}
+            className="rounded-lg cta-gradient px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold text-[var(--cta-text)] disabled:opacity-40"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

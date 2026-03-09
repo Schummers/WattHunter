@@ -62,3 +62,33 @@ export function getNewUnlocks(level: number): string[] {
 
   return pills;
 }
+
+export function getUnlockDescriptions(level: number): string[] {
+  const current = getLevelByNumber(level);
+  const prev = level > 1 ? getLevelByNumber(level - 1) : null;
+  const descriptions: string[] = [];
+
+  if (!prev || current.slots !== prev.slots) {
+    const prevSlots = prev?.slots ?? 0;
+    descriptions.push(`Roster expanded to **${current.slots} slots** (was ${prevSlots})`);
+  }
+
+  if (!prev || current.pool !== prev.pool) {
+    const poolStart = current.pool.replace("#", "");
+    descriptions.push(`Access riders ranked **#${poolStart}**`);
+  }
+
+  if (current.policy) {
+    descriptions.push(`Unlock **${current.policy}** policy type`);
+  }
+
+  if (prev && current.maxActive !== prev.maxActive) {
+    descriptions.push(`Use **${current.maxActive} policies** at the same time`);
+  }
+
+  if (current.sponsor) {
+    descriptions.push(`Access **${current.sponsor}**`);
+  }
+
+  return descriptions;
+}

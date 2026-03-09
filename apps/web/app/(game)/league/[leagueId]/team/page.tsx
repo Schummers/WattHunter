@@ -3,10 +3,11 @@ import { ChevronRight } from "lucide-react";
 import { RailLink } from "@/components/rail-link";
 import { createClient } from "@/lib/supabase/server";
 import { RiderCard } from "@/components/rider-card";
-import { TeamLevelCard } from "@/components/team-level-card";
-import { getMaxSlots } from "@/lib/levels";
+import { getMaxSlots, getProgressPct, getNextLevel, getLevelByNumber } from "@/lib/levels";
 import { formatThousands, smartCountdown, countryCodeToFlag } from "@/lib/format";
-import { calculateBoost } from "@/lib/boost";
+import { calculateBoost, riderMatchesPolicy } from "@/lib/boost";
+import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
+import { Progress } from "@/components/ui/progress";
 
 function formatName(fullName: string): string {
   const parts = fullName.split(" ").filter(Boolean);
@@ -60,12 +61,12 @@ export default async function MyTeamPage({
   const { data: teamRiders } = await supabase
     .from("contracts")
     .select(
-      "id, rider_id, locked_salary, status, riders(id, full_name, nationality, real_team, pcs_rank, photo_url, specialty, pcs_points_1yr)"
+      "id, rider_id, locked_salary, status, riders(id, full_name, nationality, real_team, pcs_rank, photo_url, specialty, pcs_points_1yr, birthdate)"
     )
     .eq("team_id", team?.id)
     .in("status", ["active", "notice"]);
 
-  // Pending bids from active auctions — include outbid/lost for lifecycle (MT-9)
+  // Pending bids from active auctions
   const { data: pendingBids } = await supabase
     .from("auction_bids")
     .select(
@@ -74,7 +75,7 @@ export default async function MyTeamPage({
     .eq("team_id", team?.id)
     .in("status", ["active", "outbid", "lost"]);
 
-  // Fetch active auction for round info (MT-8)
+  // Fetch active auction for round info
   const auctionIds = [...new Set(pendingBids?.map((b) => b.auction_id) ?? [])];
   let activeAuction: { name: string; closes_at: string } | null = null;
   if (auctionIds.length > 0) {
@@ -86,7 +87,7 @@ export default async function MyTeamPage({
     activeAuction = auction;
   }
 
-  // Ranking query (MT-1): count teams with higher XP
+  // Ranking
   const xp = team?.cumulative_xp ?? 0;
   const level = team?.level ?? 1;
   const { count: teamsAbove } = await supabase
@@ -101,11 +102,10 @@ export default async function MyTeamPage({
 
   const rank = (teamsAbove ?? 0) + 1;
   const teamCount = totalTeams ?? 0;
-
   const maxSlots = getMaxSlots(level);
   const riderCount = teamRiders?.length ?? 0;
 
-  // Fetch active policies for boost calculation (MT-3)
+  // Active policies
   const { data: activePolicies } = await supabase
     .from("team_policies")
     .select("policy_id, config, policies:policy_id(slug, xp_bonus)")
@@ -127,13 +127,34 @@ export default async function MyTeamPage({
       nationality: r?.nationality ?? null,
       real_team: r?.real_team ?? null,
       specialty: r?.specialty ?? null,
-      birthdate: null as string | null, // birthdate not in contracts join
+      birthdate: (r as { birthdate?: string | null })?.birthdate ?? null,
     };
   });
 
   const boostPct = calculateBoost(boostPolicies, boostRiders);
 
-  // Bug 5: Fetch game XP per rider (not PCS historical points)
+  // Per-rider boost calculation
+  const riderBoosts: Record<string, number> = {};
+  if (teamRiders) {
+    for (const tr of teamRiders) {
+      const r = Array.isArray(tr.riders) ? tr.riders[0] : tr.riders;
+      if (!r) continue;
+      const riderData = {
+        nationality: r.nationality ?? null,
+        real_team: r.real_team ?? null,
+        specialty: r.specialty ?? null,
+        birthdate: (r as { birthdate?: string | null })?.birthdate ?? null,
+      };
+      const matchCount = boostPolicies.filter((p) =>
+        riderMatchesPolicy(riderData, p)
+      ).length;
+      if (matchCount > 0) {
+        riderBoosts[r.id] = matchCount * 5;
+      }
+    }
+  }
+
+  // Game XP per rider
   const riderIds = (teamRiders ?? []).map((tr) => tr.rider_id);
   const { data: xpData } = riderIds.length > 0
     ? await supabase
@@ -148,12 +169,12 @@ export default async function MyTeamPage({
     xpByRider[row.rider_id] = (xpByRider[row.rider_id] ?? 0) + row.xp_gained;
   }
 
-  // Filter bids: active ones first, then outbid (dimmed)
+  // Filter bids
   const activeBids = pendingBids?.filter((b) => b.status === "active") ?? [];
   const outbidBids = pendingBids?.filter((b) => b.status === "outbid") ?? [];
   const allBids = [...activeBids, ...outbidBids];
 
-  // Bug 3: Fetch winning bids for outbid riders to show who won
+  // Winning bids for outbid riders
   const outbidRiderIds = outbidBids.map((b) => b.rider_id);
   let winnerMap: Record<string, { team_name: string; amount: number }> = {};
   if (outbidRiderIds.length > 0) {
@@ -172,59 +193,160 @@ export default async function MyTeamPage({
     }
   }
 
+  // Level progress
+  const progressPct = getProgressPct(xp, level);
+  const nextLevel = getNextLevel(level);
+  const isMaxLevel = !nextLevel;
+
+  // Policy slots data
+  const maxActivePolicies = getMaxActivePolicies(level);
+  const activePolicySlots = boostPolicies.map((bp) => {
+    const policyType = POLICY_TYPES.find((pt) => pt.slug === bp.slug);
+    if (!policyType) return null;
+    const configValue = bp.config?.[policyType.paramKey] ?? null;
+    return {
+      slug: bp.slug,
+      emoji: policyType.emoji,
+      name: policyType.name,
+      value: configValue,
+      boostPct: boostPolicies.length > 0
+        ? boostRiders.filter((r) => riderMatchesPolicy(r, bp)).length * 5
+        : 0,
+    };
+  }).filter(Boolean);
+
   return (
     <div className="py-4 space-y-6">
-      {/* Header — 2 metric blocks (MT-1) */}
+      {/* MT-2: Branded XP Hero Card */}
       <div className="px-4">
-        <div className="flex gap-3">
-          {/* Left: Total XP Season */}
-          <div className="flex-1 space-y-0.5">
-            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-              Total XP Season
-            </span>
-            <div className="text-[length:var(--type-display)] font-black font-mono leading-none tracking-tight text-[var(--accent-highlight)]">
-              {xp.toLocaleString()}
-            </div>
-            <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-              Updated after each race
-            </span>
-          </div>
+        <RailLink href={`/league/${leagueId}/levels`}>
+          <div className="relative overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--bg-surface)] via-[var(--bg-subtle)] to-[var(--bg-surface)] p-4 transition-colors hover:border-[var(--border-hover)]">
+            {/* SVG noise overlay */}
+            <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.035]">
+              <filter id="noise">
+                <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" />
+              </filter>
+              <rect width="100%" height="100%" filter="url(#noise)" />
+            </svg>
 
-          {/* Right: Ranking (MT-2 — tappable) */}
-          <Link
-            href={`/league/${leagueId}/ranking`}
-            className="flex items-center gap-1.5 self-start rounded-lg px-3 py-2 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] transition-colors"
-          >
-            <div className="space-y-0.5">
-              <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-                Ranking
-              </span>
-              <div className="text-[length:var(--type-stat)] font-extrabold font-mono leading-none text-[var(--text-high)]">
-                {rank}<span className="text-[length:var(--type-emphasis)] font-semibold font-mono text-[var(--text-low)]">/{teamCount}</span>
+            {/* Subtle glow */}
+            <div className="pointer-events-none absolute -top-20 -right-20 h-40 w-40 rounded-full bg-[var(--accent-default)] opacity-[0.06] blur-3xl" />
+
+            <div className="relative space-y-3">
+              {/* Top row: label + ranking pill */}
+              <div className="flex items-start justify-between">
+                <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+                  Total XP Season
+                </span>
+                <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-[length:var(--type-caption)] font-semibold font-mono text-[var(--text-high)]">
+                  #{rank} / {teamCount}
+                </span>
+              </div>
+
+              {/* XP hero number */}
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[length:var(--type-display)] font-black font-mono leading-none tracking-tight text-[var(--accent-highlight)]">
+                  {xp.toLocaleString()}
+                </span>
+                <span className="text-[length:var(--type-caption)] font-semibold text-[var(--text-low)]">
+                  XP
+                </span>
+              </div>
+
+              {/* Level + percentage */}
+              <div className="flex items-center justify-between">
+                <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+                  Level {level}{!isMaxLevel && ` → ${level + 1}`}
+                </span>
+                <span className="text-[length:var(--type-caption)] font-mono text-[var(--text-mid)]">
+                  {progressPct}%
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <Progress value={progressPct} className="h-1.5" />
+
+              {/* XP targets */}
+              <div className="flex items-center justify-between">
+                <span className="text-[length:var(--type-caption)] font-mono text-[var(--text-low)]">
+                  {xp.toLocaleString()}
+                </span>
+                <span className="text-[length:var(--type-caption)] font-mono text-[var(--text-low)]">
+                  {isMaxLevel ? "MAX" : nextLevel.xp.toLocaleString()}
+                </span>
               </div>
             </div>
-            <ChevronRight size={14} className="text-[var(--text-ghost)]" />
-          </Link>
-        </div>
+          </div>
+        </RailLink>
+      </div>
 
-        {/* Boost pill + Change policies link (MT-3 + MT-4) */}
-        <div className="flex items-center justify-between mt-3">
-          <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)] bg-white/5 rounded-full px-2.5 py-0.5">
-            +{boostPct}% Boost
+      {/* MT-3: Policy Slots Section */}
+      <div>
+        <div className="flex items-center justify-between px-4 mb-2">
+          <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
+            Policies
           </span>
           <RailLink
             href={`/league/${leagueId}/team/policies`}
             className="text-[length:var(--type-body)] link-tertiary"
           >
-            Change policies &rarr;
+            See all &rarr;
           </RailLink>
+        </div>
+
+        <div className="px-4 space-y-1">
+          {/* Active policy slots */}
+          {activePolicySlots.map((slot) => (
+            <RailLink
+              key={slot!.slug}
+              href={`/league/${leagueId}/team/policies`}
+            >
+              <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-[var(--bg-subtle)] transition-colors">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--bg-surface)]">
+                  <span className="text-[16px]">{slot!.emoji}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="block text-[length:var(--type-caption)] text-[var(--text-mid)]">
+                    {slot!.name}
+                  </span>
+                  <span className="block text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+                    {slot!.value ?? "Any"}
+                  </span>
+                </div>
+                {slot!.boostPct > 0 && (
+                  <span className="rounded-[var(--radius-pill)] bg-[var(--badge-bg)] px-2 py-0.5 text-[length:var(--type-caption)] font-semibold text-[var(--accent-highlight)]">
+                    +{slot!.boostPct}%
+                  </span>
+                )}
+                <ChevronRight size={14} className="shrink-0 text-[var(--text-ghost)]" />
+              </div>
+            </RailLink>
+          ))}
+
+          {/* Empty slots (unlocked but inactive) */}
+          {Array.from({ length: Math.max(0, maxActivePolicies - activePolicySlots.length) }).map((_, i) => (
+            <RailLink
+              key={`empty-${i}`}
+              href={`/league/${leagueId}/team/policies`}
+            >
+              <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-[var(--bg-subtle)] transition-colors">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--border-default)]">
+                  <span className="text-[14px] text-[var(--text-ghost)]">+</span>
+                </div>
+                <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-ghost)]">
+                  Open slot
+                </span>
+                <ChevronRight size={14} className="shrink-0 text-[var(--text-ghost)] ml-auto" />
+              </div>
+            </RailLink>
+          ))}
         </div>
       </div>
 
-      {/* Separator (MT-5) */}
+      {/* Separator */}
       <div className="mx-4 border-t border-[var(--border-subtle)]" />
 
-      {/* Roster (MT-6 — before Pending Bids) */}
+      {/* Roster */}
       <div>
         <div className="flex items-center justify-between px-4 mb-2">
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
@@ -251,6 +373,7 @@ export default async function MyTeamPage({
                   photo_url: r.photo_url,
                 }}
                 xp={xpByRider[r.id] ?? 0}
+                boostPct={riderBoosts[r.id] ?? 0}
                 href={`/league/${leagueId}/rider/${r.id}`}
               />
             );
@@ -268,7 +391,7 @@ export default async function MyTeamPage({
         </div>
       </div>
 
-      {/* Pending Bids (MT-8 round info, MT-9 lifecycle, MT-10 no /mo, MT-14 clickable) */}
+      {/* Pending Bids — MT-5: success green amounts */}
       {allBids.length > 0 && (
         <div>
           <div className="flex items-center justify-between px-4 mb-2">
@@ -302,7 +425,7 @@ export default async function MyTeamPage({
                   href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
                   rightContent={
                     <div className="flex flex-col items-end">
-                      <span className={`text-[length:var(--type-body)] font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--accent-default)]"}`}>
+                      <span className={`text-[length:var(--type-body)] font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--success)]"}`}>
                         {formatThousands(bid.amount)} €
                       </span>
                       {winner && (
@@ -318,16 +441,6 @@ export default async function MyTeamPage({
           </div>
         </div>
       )}
-
-      {/* Team Level */}
-      <div className="px-4">
-        <TeamLevelCard
-          leagueId={leagueId}
-          currentLevel={level}
-          currentXp={xp}
-          teamName={team?.name ?? undefined}
-        />
-      </div>
     </div>
   );
 }
