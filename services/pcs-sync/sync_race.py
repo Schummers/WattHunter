@@ -79,7 +79,7 @@ async def import_race_results(
                     "race_name": race_name,
                     "stage": stage_label,
                     "race_date": race_date,
-                    "pcs_points": entry.get("points", 0) or 0,
+                    "pcs_points": entry.get("pcs_points") or entry.get("points", 0) or 0,
                     "rank": entry.get("rank"),
                 },
                 on_conflict="rider_id,race_slug",
