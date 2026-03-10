@@ -305,9 +305,6 @@ export default async function MyTeamPage({
         </div>
       </div>
 
-      {/* Separator */}
-      <div className="mx-4 border-t border-[var(--border-subtle)]" />
-
       {/* Roster */}
       <div>
         <div className="flex items-center justify-between px-4 mb-2">

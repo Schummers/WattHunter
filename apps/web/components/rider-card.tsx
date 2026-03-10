@@ -115,7 +115,7 @@ export function RiderCard({
             <span className="shrink-0 text-[length:var(--type-caption)]">{rider.nationality_flag}</span>
           )}
           {boostPct != null && boostPct > 0 && (
-            <span className="shrink-0 bg-[var(--bg-surface)] text-[var(--text-high)] text-[length:var(--type-micro)] font-semibold rounded-lg px-1.5 py-0.5">
+            <span className="shrink-0 bg-[var(--badge-bg)] text-[var(--accent-highlight)] text-[length:var(--type-micro)] font-semibold rounded-[var(--radius-pill)] px-1.5 py-0.5">
               +{boostPct}%
             </span>
           )}
