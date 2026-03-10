@@ -1,22 +1,29 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import { useParams } from "next/navigation";
 import { SubTabs } from "@/components/sub-tabs";
 
-export default async function TeamLayout({
+export default function TeamLayout({
   children,
-  params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ leagueId: string }>;
 }) {
-  const { leagueId } = await params;
+  const pathname = usePathname();
+  const params = useParams<{ leagueId: string }>();
+  const leagueId = params.leagueId;
+  const hideTabs = pathname.includes("/policies");
 
   return (
     <>
-      <SubTabs
-        tabs={[
-          { label: "My Team", href: `/league/${leagueId}/team` },
-          { label: "Recruts", href: `/league/${leagueId}/team/recruts` },
-        ]}
-      />
+      {!hideTabs && (
+        <SubTabs
+          tabs={[
+            { label: "My Team", href: `/league/${leagueId}/team` },
+            { label: "Recruts", href: `/league/${leagueId}/team/recruts` },
+          ]}
+        />
+      )}
       {children}
     </>
   );

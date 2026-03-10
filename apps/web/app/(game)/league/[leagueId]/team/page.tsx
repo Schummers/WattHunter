@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Target, Globe, Users, Clock } from "lucide-react";
 import { RailLink } from "@/components/rail-link";
 import { createClient } from "@/lib/supabase/server";
 import { RiderCard } from "@/components/rider-card";
@@ -8,6 +8,13 @@ import { getMaxSlots, getProgressPct, getNextLevel, getLevelByNumber } from "@/l
 import { formatThousands, smartCountdown, countryCodeToFlag } from "@/lib/format";
 import { calculateBoost, riderMatchesPolicy } from "@/lib/boost";
 import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
+
+const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  Target,
+  Globe,
+  Users,
+  Clock,
+};
 
 function formatName(fullName: string): string {
   const parts = fullName.split(" ").filter(Boolean);
@@ -206,7 +213,7 @@ export default async function MyTeamPage({
     const configValue = bp.config?.[policyType.paramKey] ?? null;
     return {
       slug: bp.slug,
-      emoji: policyType.emoji,
+      icon: policyType.icon,
       name: policyType.name,
       value: configValue,
       boostPct: boostPolicies.length > 0
@@ -246,34 +253,37 @@ export default async function MyTeamPage({
           </RailLink>
         </div>
 
-        <div className="px-4 space-y-1">
+        <div>
           {/* Active policy slots */}
-          {activePolicySlots.map((slot) => (
-            <RailLink
-              key={slot!.slug}
-              href={`/league/${leagueId}/team/policies`}
-            >
-              <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-[var(--bg-subtle)] transition-colors">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--bg-surface)]">
-                  <span className="text-[16px]">{slot!.emoji}</span>
+          {activePolicySlots.map((slot) => {
+            const IconComp = ICON_MAP[slot!.icon];
+            return (
+              <RailLink
+                key={slot!.slug}
+                href={`/league/${leagueId}/team/policies`}
+              >
+                <div className="relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] hover:bg-[var(--bg-subtle)] transition-colors">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--bg-surface)]">
+                    {IconComp && <IconComp size={16} className="text-[var(--text-high)]" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="block text-[length:var(--type-caption)] text-[var(--text-mid)]">
+                      {slot!.name}
+                    </span>
+                    <span className="block text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+                      {slot!.value ?? "Any"}
+                    </span>
+                  </div>
+                  {slot!.boostPct > 0 && (
+                    <span className="rounded-[var(--radius-pill)] bg-[var(--badge-bg)] px-2 py-0.5 text-[length:var(--type-caption)] font-semibold text-[var(--accent-highlight)]">
+                      +{slot!.boostPct}%
+                    </span>
+                  )}
+                  <ChevronRight size={14} className="shrink-0 text-[var(--text-ghost)]" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <span className="block text-[length:var(--type-caption)] text-[var(--text-mid)]">
-                    {slot!.name}
-                  </span>
-                  <span className="block text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-                    {slot!.value ?? "Any"}
-                  </span>
-                </div>
-                {slot!.boostPct > 0 && (
-                  <span className="rounded-[var(--radius-pill)] bg-[var(--badge-bg)] px-2 py-0.5 text-[length:var(--type-caption)] font-semibold text-[var(--accent-highlight)]">
-                    +{slot!.boostPct}%
-                  </span>
-                )}
-                <ChevronRight size={14} className="shrink-0 text-[var(--text-ghost)]" />
-              </div>
-            </RailLink>
-          ))}
+              </RailLink>
+            );
+          })}
 
           {/* Empty slots (unlocked but inactive) */}
           {Array.from({ length: Math.max(0, maxActivePolicies - activePolicySlots.length) }).map((_, i) => (
@@ -281,7 +291,7 @@ export default async function MyTeamPage({
               key={`empty-${i}`}
               href={`/league/${leagueId}/team/policies`}
             >
-              <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-[var(--bg-subtle)] transition-colors">
+              <div className="relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] hover:bg-[var(--bg-subtle)] transition-colors">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--border-default)]">
                   <span className="text-[14px] text-[var(--text-ghost)]">+</span>
                 </div>
@@ -377,7 +387,7 @@ export default async function MyTeamPage({
                   href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
                   rightContent={
                     <div className="flex flex-col items-end">
-                      <span className={`text-[length:var(--type-body)] font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--success)]"}`}>
+                      <span className={`text-[length:var(--type-body)] font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--text-high)]"}`}>
                         {formatThousands(bid.amount)} €
                       </span>
                       {winner && (

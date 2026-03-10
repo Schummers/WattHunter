@@ -51,20 +51,20 @@ export function BrandCard({
           </span>
 
           {/* XP hero number + ranking pill */}
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-2 mt-1">
             <span className="text-[length:var(--type-display)] font-black font-mono leading-none tracking-tight text-[var(--accent-highlight)]">
               {xp.toLocaleString()}
             </span>
             <span className="text-[length:var(--type-caption)] font-semibold text-[var(--text-low)]">
               XP
             </span>
-            <span className="ml-auto rounded-full bg-white/5 px-2.5 py-0.5 text-[length:var(--type-caption)] font-semibold font-mono text-[var(--text-high)]">
+            <span className="ml-auto rounded-full bg-white/5 px-3.5 py-1 text-[length:var(--type-stat)] font-extrabold font-mono text-[var(--text-high)]">
               #{rank} / {teamCount}
             </span>
           </div>
 
           {/* Level + percentage */}
-          <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center justify-between mt-4">
             <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
               Level {level}{!isMaxLevel && ` → ${level + 1}`}
             </span>

@@ -1,7 +1,7 @@
 export const POLICY_TYPES = [
   {
     slug: "specialist",
-    emoji: "\u{1F3AF}",
+    icon: "Target",
     name: "Speciality",
     description: "Boost riders matching a specific specialty.",
     unlockLevel: 1,
@@ -10,7 +10,7 @@ export const POLICY_TYPES = [
   },
   {
     slug: "national_pride",
-    emoji: "\u{1F30D}",
+    icon: "Globe",
     name: "Nationality",
     description: "Boost riders from a specific country.",
     unlockLevel: 3,
@@ -19,7 +19,7 @@ export const POLICY_TYPES = [
   },
   {
     slug: "team_chemistry",
-    emoji: "\u{1F91D}",
+    icon: "Users",
     name: "Teams",
     description: "Boost riders belonging to a specific pro team.",
     unlockLevel: 5,
@@ -28,7 +28,7 @@ export const POLICY_TYPES = [
   },
   {
     slug: "young_blood",
-    emoji: "\u{231B}",
+    icon: "Clock",
     name: "Age",
     description: "Boost riders within a specific age range.",
     unlockLevel: 7,

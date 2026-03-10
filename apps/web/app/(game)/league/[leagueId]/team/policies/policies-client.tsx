@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { Lock } from "lucide-react";
+import { Lock, Info, Save, Target, Globe, Users, Clock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StickyBar } from "@/components/sticky-bar";
@@ -10,6 +10,13 @@ import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
 import { riderMatchesPolicy } from "@/lib/boost";
 import { countryCodeToFlag } from "@/lib/format";
 import { savePolicies } from "./actions";
+
+const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  Target,
+  Globe,
+  Users,
+  Clock,
+};
 
 interface PolicyState {
   isActive: boolean;
@@ -121,24 +128,29 @@ export function PoliciesClient({
     <div className="space-y-4 pb-24">
       {/* PO-6: Pending banner */}
       {savedBanner ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3">
-          <p className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
-            Saved for next round
-          </p>
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Save size={14} className="shrink-0 text-[var(--text-high)]" />
+            <p className="text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
+              Saved for next round
+            </p>
+          </div>
           <ul className="mt-1.5 space-y-0.5">
             {POLICY_TYPES.filter((pt) => localPolicies[pt.slug]?.isActive).map((pt) => {
               const config = localPolicies[pt.slug]?.config;
               const value = config?.[pt.paramKey] ?? null;
+              const IconComp = ICON_MAP[pt.icon];
               return (
-                <li key={pt.slug} className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-                  {pt.emoji} {pt.name}{value ? ` · ${value}` : ""}
+                <li key={pt.slug} className="flex items-center gap-1.5 text-[length:var(--type-caption)] text-[var(--text-low)]">
+                  {IconComp && <IconComp size={12} />}
+                  {pt.name}{value ? ` · ${value}` : ""}
                 </li>
               );
             })}
           </ul>
         </div>
       ) : (
-        <div className="rounded-xl bg-[var(--bg-subtle)] px-4 py-3">
+        <div className="rounded-lg bg-[var(--bg-subtle)] px-4 py-3">
           <p className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
             Changes apply to the next round. Current policies active until round closes.
           </p>
@@ -146,7 +158,7 @@ export function PoliciesClient({
       )}
 
       {/* PO-4: Section header */}
-      <div className="flex items-center justify-between px-1">
+      <div className="flex items-center justify-between">
         <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
           Slots
         </span>
@@ -154,6 +166,9 @@ export function PoliciesClient({
           {activeCount} / {maxActive} max active
         </span>
       </div>
+
+      {/* Separator */}
+      <div className="border-t border-[var(--border-subtle)]" />
 
       {/* PO-1: Flat list of all 4 types */}
       <div className="divide-y divide-[var(--border-subtle)]">
@@ -163,6 +178,7 @@ export function PoliciesClient({
           const isForced = level === 1 && policy.slug === "specialist" && maxActive === 1;
           const maxReached = !isActive && activeCount >= maxActive;
           const config = localPolicies[policy.slug]?.config;
+          const IconComp = ICON_MAP[policy.icon];
 
           return (
             <div
@@ -173,7 +189,7 @@ export function PoliciesClient({
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[16px]">{policy.emoji}</span>
+                    {IconComp && <IconComp size={16} className={isUnlocked ? "text-[var(--text-high)]" : "text-[var(--text-ghost)]"} />}
                     <span
                       className={`text-[length:var(--type-emphasis)] font-semibold ${
                         isUnlocked ? "text-[var(--text-high)]" : "text-[var(--text-ghost)]"
@@ -210,7 +226,7 @@ export function PoliciesClient({
 
               {/* PO-3: Select dropdown (conditional) */}
               {isActive && isUnlocked && (
-                <div className="mt-3 ml-7">
+                <div className="mt-3">
                   {policy.slug === "specialist" && (
                     <Select
                       value={config?.specialty ?? ""}
@@ -286,12 +302,14 @@ export function PoliciesClient({
       {/* PO-5: Sticky footer */}
       <StickyBar saveEnabled={hasChanges} onSave={handleSave} saving={saving}>
         <div className="flex items-center justify-between">
-          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-            {coveredCount} / {totalRiders} riders covered
-          </span>
-          <span className="text-[length:var(--type-page-title)] font-extrabold font-mono text-[var(--accent-highlight)]">
-            +{boostPct}%
-          </span>
+          <div className="flex items-center gap-6">
+            <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+              {coveredCount} / {totalRiders} riders covered
+            </span>
+            <span className="text-[length:var(--type-body)] font-bold font-mono text-[var(--accent-highlight)]">
+              +{boostPct}% boost
+            </span>
+          </div>
           <button
             onClick={handleSave}
             disabled={!hasChanges || saving}

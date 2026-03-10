@@ -52,7 +52,7 @@ export function RiderCard({
       <div className={`relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] transition-colors ${href ? "hover:bg-[var(--bg-subtle)]" : ""}`}>
         {/* Avatar placeholder */}
         <div className="flex flex-col items-center gap-0.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-default)]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-[var(--border-default)]">
             <Plus size={16} className="text-[var(--text-ghost)]" />
           </div>
         </div>
@@ -78,11 +78,9 @@ export function RiderCard({
   }
 
   const hasBid = bidState === "active" || bidState === "outbid";
-  const bgClass = hasBid ? "bg-[var(--bg-surface)]" : "";
+  const bgClass = "";
 
-  const hoverClass =
-    !href ? "" :
-    hasBid ? "hover:bg-[var(--bg-surface-hover)]" : "hover:bg-[var(--bg-subtle)]";
+  const hoverClass = !href ? "" : "hover:bg-[var(--bg-subtle)]";
 
   const inner = (
     <div

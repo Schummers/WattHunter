@@ -105,6 +105,10 @@ export default async function PoliciesPage({
     <div className="min-h-screen">
       <BackHeader label="My Team" />
 
+      <h1 className="px-4 pt-4 text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
+        Team Policies
+      </h1>
+
       <div className="px-4 pt-4">
         <PoliciesClient
           teamId={teamId}
