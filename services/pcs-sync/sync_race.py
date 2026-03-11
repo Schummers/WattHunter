@@ -17,6 +17,48 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+# Race slug → race_class mapping for sponsor eligibility
+RACE_CLASS_MAP = {
+    "milano-sanremo": "monument",
+    "ronde-van-vlaanderen": "monument",
+    "paris-roubaix": "monument",
+    "liege-bastogne-liege": "monument",
+    "il-lombardia": "monument",
+    "giro-d-italia": "grand_tour",
+    "tour-de-france": "grand_tour",
+    "vuelta-a-espana": "grand_tour",
+    "strade-bianche": "classic",
+    "e3-harelbeke": "classic",
+    "gent-wevelgem": "classic",
+    "amstel-gold-race": "classic",
+    "la-fleche-wallonne": "classic",
+    "san-sebastian": "classic",
+    "bretagne-classic": "classic",
+    "cyclassics-hamburg": "classic",
+    "gp-quebec": "classic",
+    "gp-montreal": "classic",
+    "omloop-het-nieuwsblad": "classic",
+    "dwars-door-vlaanderen": "classic",
+    "paris-nice": "stage_race",
+    "tirreno-adriatico": "stage_race",
+    "volta-a-catalunya": "stage_race",
+    "itzulia": "stage_race",
+    "tour-de-romandie": "stage_race",
+    "dauphine": "stage_race",
+    "tour-de-suisse": "stage_race",
+    "tour-de-pologne": "stage_race",
+    "renewi-tour": "stage_race",
+}
+
+
+def _classify_race(race_slug: str) -> Optional[str]:
+    """Determine race_class from a race slug."""
+    slug_lower = race_slug.lower()
+    for key, cls in RACE_CLASS_MAP.items():
+        if key in slug_lower:
+            return cls
+    return None
+
 
 async def get_stage_urls(page, race_slug: str) -> List[Dict[str, str]]:
     """Return stage URL dicts for a multi-stage race, or [] for one-day races.
@@ -73,8 +115,7 @@ async def import_race_results(
             rider_id = rider_map[rider_url]
             race_result_slug = stage_url if stage_url else f"{race_slug}/result"
 
-            supabase.table("race_results").upsert(
-                {
+            row = {
                     "rider_id": rider_id,
                     "race_slug": race_result_slug,
                     "race_name": race_name,
@@ -82,7 +123,13 @@ async def import_race_results(
                     "race_date": race_date,
                     "pcs_points": entry.get("pcs_points") or entry.get("points", 0) or 0,
                     "rank": entry.get("rank"),
-                },
+                }
+            race_class = _classify_race(race_slug)
+            if race_class:
+                row["race_class"] = race_class
+
+            supabase.table("race_results").upsert(
+                row,
                 on_conflict="rider_id,race_slug",
             ).execute()
             imported += 1
