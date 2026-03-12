@@ -1,14 +1,17 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentPhase, getPhaseRange } from "@/lib/phases";
+import { AUCTION_PHASES, getCurrentPhase, getPhaseRange } from "@/lib/phases";
 import { BudgetClient } from "./budget-client";
 
 export default async function BudgetPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ leagueId: string }>;
+  searchParams: Promise<{ phase?: string }>;
 }) {
   const { leagueId } = await params;
+  const sp = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -25,6 +28,13 @@ export default async function BudgetPage({
 
   if (!team) redirect(`/league/${leagueId}`);
 
+  // Determine phase index
+  const currentPhase = getCurrentPhase();
+  const defaultIndex = AUCTION_PHASES.findIndex((p) => p.id === currentPhase.id);
+  const rawPhase = sp.phase != null ? parseInt(sp.phase, 10) : defaultIndex;
+  const phaseIndex = rawPhase >= 0 && rawPhase < AUCTION_PHASES.length ? rawPhase : (defaultIndex >= 0 ? defaultIndex : 0);
+  const selectedPhase = AUCTION_PHASES[phaseIndex];
+
   // Active sponsors with details
   const { data: teamSponsors } = await supabase
     .from("team_sponsors")
@@ -32,10 +42,9 @@ export default async function BudgetPage({
     .eq("team_id", team.id)
     .eq("status", "active");
 
-  // Transactions for current phase
-  const currentPhase = getCurrentPhase();
+  // Transactions for selected phase
   const year = new Date().getFullYear();
-  const { start, end } = getPhaseRange(currentPhase, year);
+  const { start, end } = getPhaseRange(selectedPhase, year);
 
   const { data: transactions } = await supabase
     .from("treasury_log")
@@ -69,6 +78,7 @@ export default async function BudgetPage({
       income={income}
       outgoing={outgoing}
       transactions={transactions ?? []}
+      phaseIndex={phaseIndex}
       teamSponsors={(teamSponsors ?? []).map((ts) => {
         const s = Array.isArray(ts.sponsors) ? ts.sponsors[0] : ts.sponsors;
         return {

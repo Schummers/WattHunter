@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { PhaseNavigator } from "@/components/phase-navigator";
 import { SegmentedControl } from "@/components/segmented-control";
 import { TransactionRow } from "@/components/transaction-row";
 import { Tag } from "@/components/pill";
-import { AUCTION_PHASES, getCurrentPhase } from "@/lib/phases";
 import { formatEuro } from "@/lib/format";
 import {
   formatNationalityCondition,
@@ -50,6 +49,7 @@ interface BudgetClientProps {
   outgoing: number;
   transactions: Transaction[];
   teamSponsors: TeamSponsorEntry[];
+  phaseIndex: number;
 }
 
 const FILTER_SEGMENTS = ["All", "Bonuses", "Salaries", "Sponsors"];
@@ -76,10 +76,9 @@ export function BudgetClient({
   outgoing,
   transactions,
   teamSponsors,
+  phaseIndex,
 }: BudgetClientProps) {
-  const currentPhase = getCurrentPhase();
-  const initialIndex = AUCTION_PHASES.findIndex((p) => p.id === currentPhase.id);
-  const [phaseIndex, setPhaseIndex] = useState(initialIndex >= 0 ? initialIndex : 0);
+  const router = useRouter();
   const [filterIndex, setFilterIndex] = useState(0);
 
   const filtered = useMemo(
@@ -91,33 +90,39 @@ export function BudgetClient({
   const principal = teamSponsors.find((ts) => ts.slot === "principal");
   const hasPrincipalSlot = level >= 5;
 
+  function handlePhaseChange(newIndex: number) {
+    router.replace(`?phase=${newIndex}`, { scroll: false });
+  }
+
   return (
-    <div className="space-y-6 pb-24">
+    <div className="pb-24">
       {/* Phase Navigator */}
-      <PhaseNavigator currentIndex={phaseIndex} onChange={setPhaseIndex} />
+      <PhaseNavigator currentIndex={phaseIndex} onChange={handlePhaseChange} />
 
       {/* Balance Hero Card */}
-      <div className="mx-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
-        <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-          Balance
-        </span>
-        <div className="mt-1 font-mono text-[length:var(--type-display)] font-black text-[var(--accent-highlight)] tabular-nums">
-          {formatEuro(treasury)}
-        </div>
-        <div className="mt-2 flex items-center gap-3 text-[length:var(--type-caption)]">
-          <span className="text-[var(--text-low)]">
-            Income{" "}
-            <span className="font-mono font-semibold text-[var(--text-high)]">+{formatCompact(income)}</span>
+      <div className="xp-card-body mx-4 mt-2 rounded-xl p-5">
+        <div className="xp-content">
+          <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+            Balance
           </span>
-          <span className="text-[var(--text-low)]">
-            Outgoing{" "}
-            <span className="font-mono font-semibold text-[var(--text-high)]">-{formatCompact(outgoing)}</span>
-          </span>
+          <div className="mt-1 font-mono text-[length:var(--type-display)] font-black leading-none text-[var(--accent-highlight)] tabular-nums">
+            {formatEuro(treasury)}
+          </div>
+          <div className="mt-2 flex items-center gap-3 text-[length:var(--type-caption)]">
+            <span className="text-[var(--text-low)]">
+              Income{" "}
+              <span className="font-mono font-semibold text-[var(--text-high)]">+{formatCompact(income)}</span>
+            </span>
+            <span className="text-[var(--text-low)]">
+              Outgoing{" "}
+              <span className="font-mono font-semibold text-[var(--text-high)]">-{formatCompact(outgoing)}</span>
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Transactions Section */}
-      <div>
+      <div className="mt-6">
         <div className="flex items-center justify-between px-4 mb-2">
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             Transactions
@@ -158,7 +163,7 @@ export function BudgetClient({
       </div>
 
       {/* Sponsors Section */}
-      <div>
+      <div className="mt-6">
         <div className="flex items-center justify-between px-4 mb-2">
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             Sponsors
@@ -177,8 +182,8 @@ export function BudgetClient({
             <EmptySponsorSlot label="Secondary" leagueId={leagueId} />
           )}
 
-          {/* Principal sponsor */}
-          {hasPrincipalSlot ? (
+          {/* Principal sponsor — only show if level >= 5 */}
+          {hasPrincipalSlot && (
             principal ? (
               <SponsorCard
                 sponsor={principal.sponsor}
@@ -188,8 +193,6 @@ export function BudgetClient({
             ) : (
               <EmptySponsorSlot label="Main" leagueId={leagueId} />
             )
-          ) : (
-            <LockedSponsorSlot unlockLevel={5} />
           )}
         </div>
       </div>
@@ -207,7 +210,10 @@ function SponsorCard({
   leagueId: string;
 }) {
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4">
+    <Link
+      href={`/league/${leagueId}/budget/marketplace`}
+      className="block rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 transition-colors hover:bg-[var(--bg-surface-hover)]"
+    >
       <div className="flex items-start justify-between">
         <div>
           <div className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
@@ -243,36 +249,18 @@ function SponsorCard({
           )}
         </div>
       )}
-
-      <Link
-        href={`/league/${leagueId}/budget/marketplace`}
-        className="mt-3 inline-block text-[length:var(--type-caption)] font-medium text-[var(--accent-default)]"
-      >
-        Change sponsor &rarr;
-      </Link>
-    </div>
+    </Link>
   );
 }
 
 function EmptySponsorSlot({ label, leagueId }: { label: string; leagueId: string }) {
   return (
     <Link href={`/league/${leagueId}/budget/marketplace`}>
-      <div className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border-default)] px-4 py-5">
+      <div className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] px-4 py-5">
         <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-ghost)]">
           Choose a {label.toLowerCase()} sponsor
         </span>
       </div>
     </Link>
-  );
-}
-
-function LockedSponsorSlot({ unlockLevel }: { unlockLevel: number }) {
-  return (
-    <div className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border-default)] px-4 py-5 opacity-40">
-      <Lock size={14} className="text-[var(--text-ghost)]" />
-      <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-ghost)]">
-        Unlocks at Level {unlockLevel}
-      </span>
-    </div>
   );
 }

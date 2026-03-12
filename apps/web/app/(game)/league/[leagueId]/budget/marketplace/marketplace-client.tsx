@@ -158,27 +158,18 @@ export function MarketplaceClient({
         </p>
       </div>
 
-      {level < 5 ? (
-        <div className="mx-4 my-4 flex items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border-default)] px-4 py-5 opacity-50">
-          <Lock size={14} className="text-[var(--text-ghost)]" />
-          <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-ghost)]">
-            Unlocks at Level 5
-          </span>
-        </div>
-      ) : (
-        <div className="divide-y divide-[var(--border-subtle)]">
-          {principalSponsors.map((sponsor) => (
-            <SponsorRowItem
-              key={sponsor.id}
-              sponsor={sponsor}
-              level={level}
-              isActive={selectedPrincipal === sponsor.id}
-              eligibility={eligibilityMap[sponsor.id]}
-              onToggle={(checked) => handleToggle(sponsor, checked)}
-            />
-          ))}
-        </div>
-      )}
+      <div className="divide-y divide-[var(--border-subtle)]">
+        {principalSponsors.map((sponsor) => (
+          <SponsorRowItem
+            key={sponsor.id}
+            sponsor={sponsor}
+            level={level}
+            isActive={selectedPrincipal === sponsor.id}
+            eligibility={eligibilityMap[sponsor.id]}
+            onToggle={(checked) => handleToggle(sponsor, checked)}
+          />
+        ))}
+      </div>
 
       {/* Sticky CTA */}
       {hasChanges && (
@@ -226,8 +217,8 @@ function SponsorRowItem({
   return (
     <div
       className={`flex flex-col gap-2 px-4 py-3 ${
-        isLocked ? "opacity-[0.35]" : ""
-      } ${isActive ? "bg-[rgba(6,182,212,0.04)]" : ""}`}
+        isActive ? "bg-[rgba(6,182,212,0.04)]" : ""
+      }`}
     >
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
