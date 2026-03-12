@@ -135,8 +135,21 @@ export default async function RiderDetailPage({
     if (ownerContract) {
       const ownerTeam = Array.isArray(ownerContract.teams) ? ownerContract.teams[0] : ownerContract.teams;
       if (ownerTeam && (ownerTeam as { league_id: string }).league_id === leagueId) {
+        // Fetch owner display_name via league_members
+        const { data: ownerMember } = await supabase
+          .from("league_members")
+          .select("user_id, users(display_name)")
+          .eq("team_id", ownerContract.team_id)
+          .eq("league_id", leagueId)
+          .maybeSingle();
+
+        const ownerUser = ownerMember
+          ? (Array.isArray(ownerMember.users) ? ownerMember.users[0] : ownerMember.users)
+          : null;
+        const displayName = (ownerUser as { display_name?: string })?.display_name ?? "Unknown";
+
         ownerInfo = {
-          display_name: "",
+          display_name: displayName,
           team_name: (ownerTeam as { name: string }).name,
         };
       }

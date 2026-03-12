@@ -16,6 +16,7 @@ interface Rider {
   nationality: string | null;
   real_team: string | null;
   pcs_rank: number | null;
+  pcs_rank_diff: number | null;
   photo_url: string | null;
   specialty: string | null;
   pcs_points_1yr: number | null;
@@ -367,6 +368,7 @@ export function RecrutsClient({
                           nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
                           team_name: r.real_team ?? undefined,
                           pcs_rank: r.pcs_rank ?? undefined,
+                          pcs_rank_diff: r.pcs_rank_diff,
                           photo_url: r.photo_url,
                         }}
                         bidState={currentBid ? "active" : "none"}

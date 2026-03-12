@@ -49,7 +49,7 @@ export default async function RecrutsPage({
   const { data: riders } = await supabase
     .from("riders")
     .select(
-      "id, full_name, nationality, real_team, pcs_rank, photo_url, specialty, pcs_points_1yr"
+      "id, full_name, nationality, real_team, pcs_rank, pcs_rank_prev, photo_url, specialty, pcs_points_1yr"
     )
     .gte("pcs_rank", minRank)
     .lte("pcs_rank", 500)
@@ -79,9 +79,15 @@ export default async function RecrutsPage({
     (c) => c.team_id === team?.id
   ).length;
 
-  const availableRiders = (riders ?? []).filter(
-    (r) => !ownedRiderIds.has(r.id)
-  );
+  const availableRiders = (riders ?? [])
+    .filter((r) => !ownedRiderIds.has(r.id))
+    .map((r) => ({
+      ...r,
+      pcs_rank_diff:
+        r.pcs_rank != null && r.pcs_rank_prev != null
+          ? r.pcs_rank_prev - r.pcs_rank
+          : null,
+    }));
 
   // Get current active auction (if any)
   const { data: activeRound } = await supabase

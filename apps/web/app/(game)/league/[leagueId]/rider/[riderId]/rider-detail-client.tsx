@@ -199,16 +199,20 @@ export function RiderDetailClient({
       );
     }
 
-    // ranking: 2 boxes
+    // ranking: 3 boxes (Game XP, Bonus, Paid Salary)
     return (
       <div className="flex gap-3 px-4">
         <div className={boxClass}>
-          <div className={valueClass}>—</div>
+          <div className={`${valueClass} !text-[var(--accent-highlight)]`}>—</div>
           <span className={labelClass}>Game XP</span>
         </div>
         <div className={boxClass}>
           <div className={valueClass}>—</div>
           <span className={labelClass}>Bonus</span>
+        </div>
+        <div className={boxClass}>
+          <div className={valueClass}>—</div>
+          <span className={labelClass}>Paid Salary</span>
         </div>
       </div>
     );

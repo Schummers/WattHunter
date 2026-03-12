@@ -3,6 +3,7 @@
 import { RailLink } from "@/components/rail-link";
 import { ChevronRight, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MovementTag } from "@/components/movement-tag";
 
 interface RiderCardProps {
   rider: {
@@ -11,6 +12,7 @@ interface RiderCardProps {
     nationality_flag?: string;
     team_name?: string;
     pcs_rank?: number;
+    pcs_rank_diff?: number | null;
     photo_url?: string | null;
   };
   xp?: number;
@@ -113,6 +115,9 @@ export function RiderCard({
           </span>
           {rider.nationality_flag && (
             <span className="shrink-0 text-[length:var(--type-caption)]">{rider.nationality_flag}</span>
+          )}
+          {rider.pcs_rank_diff != null && (
+            <MovementTag movement={rider.pcs_rank_diff} />
           )}
           {boostPct != null && boostPct > 0 && (
             <span className="shrink-0 bg-[var(--badge-bg)] text-[var(--accent-highlight)] text-[length:var(--type-micro)] font-semibold rounded-[var(--radius-pill)] px-1.5 py-0.5">

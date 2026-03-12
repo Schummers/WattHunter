@@ -121,7 +121,7 @@ async def import_race_results(
                     "race_name": race_name,
                     "stage": stage_label,
                     "race_date": race_date,
-                    "pcs_points": entry.get("pcs_points") or entry.get("points", 0) or 0,
+                    "pcs_points": int(entry.get("pcs_points") or entry.get("points", 0) or 0),
                     "rank": entry.get("rank"),
                 }
             race_class = _classify_race(race_slug)
@@ -225,6 +225,7 @@ async def update_global_ranking(supabase: Client, browser, *, pages: int = 5) ->
                             "real_team": team_name,
                             "pcs_points_1yr": pcs_points,
                             "pcs_rank": pcs_rank,
+                            "pcs_rank_prev": entry.get("prev_rank"),
                             "monthly_salary": salary,
                             "ever_in_top500": True,
                             "last_synced_at": datetime.utcnow().isoformat(),
@@ -256,6 +257,7 @@ async def update_global_ranking(supabase: Client, browser, *, pages: int = 5) ->
                         {
                             "pcs_points_1yr": pcs_points,
                             "pcs_rank": pcs_rank,
+                            "pcs_rank_prev": entry.get("prev_rank"),
                             "monthly_salary": salary,
                         }
                     ).eq("id", rider_id).execute()

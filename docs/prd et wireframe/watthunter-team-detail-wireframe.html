@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WattHunter — Team Detail</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700;800;900&display=swap');
+  @font-face { font-family:'Geist Sans'; src:url('https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/Geist-Regular.woff2') format('woff2'); font-weight:400; }
+  @font-face { font-family:'Geist Sans'; src:url('https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/Geist-Medium.woff2') format('woff2'); font-weight:500; }
+  @font-face { font-family:'Geist Sans'; src:url('https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/Geist-SemiBold.woff2') format('woff2'); font-weight:600; }
+  @font-face { font-family:'Geist Sans'; src:url('https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/Geist-Bold.woff2') format('woff2'); font-weight:700; }
+  @font-face { font-family:'Geist Sans'; src:url('https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/Geist-Black.woff2') format('woff2'); font-weight:900; }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+
+  :root {
+    --bg-app: #0c1012;
+    --bg-subtle: #111618;
+    --bg-surface: #151b1e;
+    --bg-surface-hover: #1a2226;
+    --bg-surface-active: #1f292e;
+    --border-subtle: #1a2226;
+    --border-default: #273339;
+    --border-hover: #334249;
+    --text-high: #eaeff1;
+    --text-mid: #89a1ad;
+    --text-low: #74919f;
+    --text-ghost: #334249;
+    --cyan-500: #06b6d4;
+    --cyan-400: #22d3ee;
+    --sky-500: #0ea5e9;
+    --accent-label: var(--sky-500);
+    --badge-bg: rgba(14, 165, 233, 0.10);
+    --success: #10b981;
+    --danger: #ef4444;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-pill: 20px;
+    --radius-full: 9999px;
+    --font-sans: 'Geist Sans', system-ui, sans-serif;
+    --font-mono: 'Geist Mono', monospace;
+  }
+
+  body {
+    background: #080a0b;
+    font-family: var(--font-sans);
+    color: var(--text-high);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+  }
+
+  .phone {
+    width: 390px;
+    min-height: 844px;
+    background: var(--bg-app);
+    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-radius: 20px;
+    border: 1px solid var(--border-default);
+    padding-bottom: 24px;
+  }
+
+  /* ═══ STATUS BAR ═══ */
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 24px 8px; font-size: 12px; font-weight: 600;
+  }
+  .status-bar-icons { display: flex; gap: 4px; align-items: center; }
+  .status-bar-icons svg { width: 16px; height: 16px; fill: var(--text-high); }
+
+  /* ═══ BACK HEADER ═══ */
+  .back-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 20px 16px;
+    cursor: pointer;
+  }
+  .back-header svg {
+    width: 18px; height: 18px;
+    stroke: var(--text-mid); fill: none; stroke-width: 2;
+  }
+  .back-header span {
+    font-size: 14px; font-weight: 600; color: var(--text-mid);
+  }
+
+  /* ═══ TEAM HERO (left-aligned, no avatar) ═══ */
+  .team-hero {
+    padding: 0 20px 20px;
+  }
+
+  .team-hero-name {
+    font-size: 18px; font-weight: 700; color: var(--text-high);
+    margin-bottom: 4px;
+  }
+
+  .team-hero-owner {
+    font-size: 12px; font-weight: 500; color: var(--text-low);
+  }
+
+  /* ═══ STAT BOXES ═══ */
+  .stat-row {
+    display: flex; gap: 8px;
+    padding: 0 20px 20px;
+  }
+
+  .stat-box {
+    flex: 1;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    text-align: center;
+  }
+
+  .stat-box-value {
+    font-family: var(--font-mono);
+    font-size: 20px; font-weight: 800;
+    color: var(--text-high);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+
+  .stat-box-value.hero { color: var(--cyan-400); }
+
+  .stat-box-label {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-low);
+    margin-top: 4px;
+  }
+
+  /* ═══ SECTION HEADER ═══ */
+  .section-header {
+    padding: 12px 20px 8px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-low);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .section-count {
+    font-size: 10px; font-weight: 600;
+    color: var(--text-ghost);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  /* ═══ RIDER ROWS ═══ */
+  .rider-row {
+    display: flex; align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .rider-row:hover { background: var(--bg-surface-hover); }
+
+  .rider-avatar {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-full);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    color: var(--text-mid);
+    flex-shrink: 0;
+  }
+
+  .rider-info { flex: 1; min-width: 0; }
+
+  .rider-name-row {
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .rider-name {
+    font-size: 14px; font-weight: 600; color: var(--text-high);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Movement as tag */
+  .movement-tag {
+    display: inline-flex; align-items: center;
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700;
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .movement-tag.up {
+    color: var(--success);
+    background: rgba(16,185,129,0.10);
+  }
+  .movement-tag.down {
+    color: var(--danger);
+    background: rgba(239,68,68,0.10);
+  }
+  .movement-tag.stable {
+    color: var(--text-ghost);
+    background: transparent;
+  }
+
+  /* Game ranking (not PCS) */
+  .rider-sub {
+    font-size: 12px; color: var(--text-low); margin-top: 1px;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .rider-right {
+    display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .rider-xp {
+    font-family: var(--font-mono);
+    font-size: 14px; font-weight: 700;
+    color: var(--text-high);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .rider-xp-label {
+    font-size: 9px; font-weight: 500;
+    color: var(--text-low);
+    text-align: right;
+  }
+
+  .rider-chevron {
+    width: 14px; height: 14px;
+    stroke: var(--text-ghost); fill: none; stroke-width: 2;
+    flex-shrink: 0;
+  }
+
+  /* ═══ FORMER RIDERS ═══ */
+  .rider-row.former { opacity: 0.5; }
+  .rider-avatar.former { border-style: dashed; }
+
+  /* ═══ DIVIDER ═══ */
+  .section-divider {
+    height: 6px;
+    background: var(--bg-subtle);
+    margin: 4px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-bar-icons">
+      <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 00-6 0zm-4-4l2 2a7.074 7.074 0 0110 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M2 22h20V2z"/></svg>
+      <svg viewBox="0 0 24 24"><rect x="2" y="6" width="18" height="12" rx="2"/><path d="M22 10v4"/></svg>
+    </div>
+  </div>
+
+  <!-- BACK HEADER -->
+  <div class="back-header">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    <span>Ranking</span>
+  </div>
+
+  <!-- TEAM HERO (left-aligned, no avatar circle) -->
+  <div class="team-hero">
+    <div class="team-hero-name">Echappée Royale</div>
+    <div class="team-hero-owner">Managed by @MaxVelo</div>
+  </div>
+
+  <!-- STAT BOXES -->
+  <div class="stat-row">
+    <div class="stat-box">
+      <div class="stat-box-value hero">31 200</div>
+      <div class="stat-box-label">Season XP</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-value">1st</div>
+      <div class="stat-box-label">Ranking</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-value">4</div>
+      <div class="stat-box-label">Level</div>
+    </div>
+  </div>
+
+  <!-- ACTIVE ROSTER -->
+  <div class="section-header">
+    Active roster
+    <span class="section-count">6 riders</span>
+  </div>
+
+  <!-- Riders: avatar + name + movement tag (same line) | game rank below | XP right | chevron -->
+  <!-- No flags, no specialty — game ranking (#3rd in game) -->
+
+  <div class="rider-row">
+    <div class="rider-avatar">PO</div>
+    <div class="rider-info">
+      <div class="rider-name-row">
+        <span class="rider-name">Pogačar T.</span>
+        <span class="movement-tag up">+2</span>
+      </div>
+      <div class="rider-sub">#1 in game</div>
+    </div>
+    <div class="rider-right">
+      <div>
+        <div class="rider-xp">6 840</div>
+        <div class="rider-xp-label">XP</div>
+      </div>
+      <svg class="rider-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </div>
+  </div>
+
+  <div class="rider-row">
+    <div class="rider-avatar">VJ</div>
+    <div class="rider-info">
+      <div class="rider-name-row">
+        <span class="rider-name">Vingegaard J.</span>
+        <span class="movement-tag stable">—</span>
+      </div>
+      <div class="rider-sub">#2 in game</div>
+    </div>
+    <div class="rider-right">
+      <div>
+        <div class="rider-xp">5 210</div>
+        <div class="rider-xp-label">XP</div>
+      </div>
+      <svg class="rider-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </div>
+  </div>
+
+  <div class="rider-row">
+    <div class="rider-avatar">RE</div>
+    <div class="rider-info">
+      <div class="rider-name-row">
+        <span class="rider-name">Evenepoel R.</span>
+        <span class="movement-tag down">-1</span>
+      </div>
+      <div class="rider-sub">#5 in game</div>
+    </div>
+    <div class="rider-right">
+      <div>
+        <div class="rider-xp">4 890</div>
+        <div class="rider-xp-label">XP</div>
+      </div>
+      <svg class="rider-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </div>
+  </div>
+
+  <div class="rider-row">
+    <div class="rider-avatar">JS</div>
+    <div class="rider-info">
+      <div class="rider-name-row">
+        <span class="rider-name">Stuyven J.</span>
+        <span class="movement-tag up">+4</span>
+      </div>
+      <div class="rider-sub">#11 in game</div>
+    </div>
+    <div class="rider-right">
+      <div>
+        <div class="rider-xp">3 650</div>
+        <div class="rider-xp-label">XP</div>
+      </div>
+      <svg class="rider-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </div>
+  </div>
+
+  <div class="rider-row">
+    <div class="rider-avatar">TP</div>
+    <div class="rider-info">
+      <div class="rider-name-row">
+        <span class="rider-name">Pidcock T.</span>
+        <span class="movement-tag stable">—</span>
+      </div>
+      <div class="rider-sub">#14 in game</div>
+    </div>
+    <div class="rider-right">
+      <div>
+        <div class="rider-xp">3 210</div>
+        <div class="rider-xp-label">XP</div>
+      </div>
+      <svg class="rider-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </div>
+  </div>
+
+  <div class="rider-row">
+    <div class="rider-avatar">BC</div>
+    <div class="rider-info">
+      <div class="rider-name-row">
+        <span class="rider-name">Cosnefroy B.</span>
+        <span class="movement-tag down">-3</span>
+      </div>
+      <div class="rider-sub">#18 in game</div>
+    </div>
+    <div class="rider-right">
+      <div>
+        <div class="rider-xp">2 400</div>
+        <div class="rider-xp-label">XP</div>
+      </div>
+      <svg class="rider-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </div>
+  </div>
+
+  <!-- DIVIDER -->
+  <div class="section-divider"></div>
+
+  <!-- FORMER RIDERS (same format, game rank + XP, no release date) -->
+  <div class="section-header">
+    Former riders
+    <span class="section-count">2 riders</span>
+  </div>
+
+  <div class="rider-row former">
+    <div class="rider-avatar former">YL</div>
+    <div class="rider-info">
+      <div class="rider-name-row">
+        <span class="rider-name">Lampaert Y.</span>
+      </div>
+      <div class="rider-sub">#22 in game</div>
+    </div>
+    <div class="rider-right">
+      <div>
+        <div class="rider-xp">1 840</div>
+        <div class="rider-xp-label">XP</div>
+      </div>
+      <svg class="rider-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </div>
+  </div>
+
+  <div class="rider-row former">
+    <div class="rider-avatar former">NQ</div>
+    <div class="rider-info">
+      <div class="rider-name-row">
+        <span class="rider-name">Quintana N.</span>
+      </div>
+      <div class="rider-sub">#31 in game</div>
+    </div>
+    <div class="rider-right">
+      <div>
+        <div class="rider-xp">920</div>
+        <div class="rider-xp-label">XP</div>
+      </div>
+      <svg class="rider-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

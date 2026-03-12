@@ -184,15 +184,18 @@ async def run_post_race(race_slug: str) -> None:
                     print(f"\n--- Stage {i + 1}/{len(stage_urls)}: {stage_url} ---")
                     ctx = await browser.new_context(user_agent=USER_AGENT)
                     page = await ctx.new_page()
-                    result = await import_race_results(
-                        supabase, page,
-                        race_slug=race_slug,
-                        race_name=race_name,
-                        race_date=race_date,
-                        stage_url=stage_url,
-                    )
+                    try:
+                        result = await import_race_results(
+                            supabase, page,
+                            race_slug=race_slug,
+                            race_name=race_name,
+                            race_date=race_date,
+                            stage_url=stage_url,
+                        )
+                        print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
+                    except Exception as exc:
+                        print(f"  Skipped (no results yet): {exc}")
                     await ctx.close()
-                    print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
                     if i < len(stage_urls) - 1:
                         print("  Waiting 15s before next stage...")
                         await asyncio.sleep(15)
