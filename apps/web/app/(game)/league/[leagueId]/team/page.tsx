@@ -73,14 +73,15 @@ export default async function MyTeamPage({
     .eq("team_id", team?.id)
     .in("status", ["active", "notice"]);
 
-  // Pending bids from active auctions
+  // Pending bids from active auctions (exclude bids from closed auctions)
   const { data: pendingBids } = await supabase
     .from("auction_bids")
     .select(
-      "id, amount, status, rider_id, auction_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url)"
+      "id, amount, status, rider_id, auction_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url), auctions!inner(status)"
     )
     .eq("team_id", team?.id)
-    .in("status", ["active", "outbid", "lost"]);
+    .in("status", ["active", "outbid", "lost"])
+    .in("auctions.status", ["open", "scheduled"]);
 
   // Fetch active auction for round info
   const auctionIds = [...new Set(pendingBids?.map((b) => b.auction_id) ?? [])];

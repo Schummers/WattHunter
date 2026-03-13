@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { SegmentedControl } from "@/components/segmented-control";
 import { MovementTag } from "@/components/movement-tag";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatThousands, countryCodeToFlag } from "@/lib/format";
 
 interface TeamRow {
@@ -36,6 +37,7 @@ interface Race {
   slug: string;
   name: string;
   date: string;
+  childSlugs: string[];
 }
 
 interface RankingClientProps {
@@ -70,12 +72,28 @@ export function RankingClient({
 
   const isAllRaces = selectedRace === null;
 
+  // Resolve child slugs for the selected race (handles grouped stages)
+  const selectedChildSlugs = selectedRace
+    ? races.find((r) => r.slug === selectedRace)?.childSlugs ?? [selectedRace]
+    : [];
+
+  // Sum XP across all child slugs for a given entity map
+  function sumXpAcrossSlugs(
+    xpByRace: Record<string, Record<string, number>>,
+    entityId: string,
+  ): number {
+    let total = 0;
+    for (const slug of selectedChildSlugs) {
+      total += xpByRace[slug]?.[entityId] ?? 0;
+    }
+    return total;
+  }
+
   // Re-rank teams when filtering by single race
   const rankedTeams = (() => {
     if (isAllRaces) return teams;
-    const raceXp = teamXpByRace[selectedRace] ?? {};
     return teams
-      .map((t) => ({ ...t, xp: raceXp[t.id] ?? 0 }))
+      .map((t) => ({ ...t, xp: sumXpAcrossSlugs(teamXpByRace, t.id) }))
       .sort((a, b) => b.xp - a.xp)
       .map((t, i) => ({ ...t, rank: i + 1 }));
   })();
@@ -83,9 +101,8 @@ export function RankingClient({
   // Re-rank riders when filtering by single race
   const rankedRiders = (() => {
     if (isAllRaces) return riders;
-    const raceXp = riderXpByRace[selectedRace] ?? {};
     return riders
-      .map((r) => ({ ...r, xp: raceXp[r.id] ?? 0 }))
+      .map((r) => ({ ...r, xp: sumXpAcrossSlugs(riderXpByRace, r.id) }))
       .sort((a, b) => b.xp - a.xp);
   })();
 
@@ -109,18 +126,22 @@ export function RankingClient({
 
       {/* Race filter */}
       <div className="px-4">
-        <select
-          value={selectedRace ?? ""}
-          onChange={(e) => setSelectedRace(e.target.value || null)}
-          className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2 text-[length:var(--type-body)] text-[var(--text-high)] outline-none focus:border-[var(--accent-default)]"
+        <Select
+          value={selectedRace ?? "all"}
+          onValueChange={(v) => setSelectedRace(v === "all" ? null : v)}
         >
-          <option value="">All races</option>
-          {races.map((r) => (
-            <option key={r.slug} value={r.slug}>
-              {r.name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger>
+            <SelectValue placeholder="All races" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All races</SelectItem>
+            {races.map((r) => (
+              <SelectItem key={r.slug} value={r.slug}>
+                {r.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Teams tab */}
@@ -153,11 +174,6 @@ export function RankingClient({
                       {team.name}
                     </span>
                     {isAllRaces && <MovementTag movement={team.movement} />}
-                    {team.isMe && (
-                      <span className="text-[length:var(--type-micro)] font-semibold text-[var(--accent-default)]">
-                        You
-                      </span>
-                    )}
                   </div>
                   <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
                     Lv.{team.level}
@@ -174,10 +190,8 @@ export function RankingClient({
                   </span>
                 </div>
 
-                {/* Chevron (not for my row) */}
-                {!team.isMe && (
-                  <ChevronRight size={16} className="shrink-0 text-[var(--text-ghost)]" />
-                )}
+                {/* Chevron */}
+                <ChevronRight size={16} className="shrink-0 text-[var(--text-ghost)]" />
               </Link>
             ))}
           </div>

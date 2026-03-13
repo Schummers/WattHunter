@@ -69,48 +69,71 @@ export default async function RankingPage({
   // Get all rider IDs in league
   const riderIds = [...new Set(contracts.map((c) => c.rider_id))];
 
-  // Aggregate race_results per rider (game XP = sum of pcs_points)
-  const { data: resultsRaw } = await supabase
-    .from("race_results")
-    .select("rider_id, race_slug, race_name, race_date, pcs_points")
-    .in("rider_id", riderIds.length > 0 ? riderIds : ["__none__"])
-    .order("race_date", { ascending: false });
+  // Task 6: Use rider_xp_daily (game XP with policy boost) instead of raw race_results
+  const { data: xpDataRaw } = await supabase
+    .from("rider_xp_daily")
+    .select("rider_id, team_id, race_slug, xp_gained, date")
+    .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]);
 
-  const results = resultsRaw ?? [];
+  const xpData = xpDataRaw ?? [];
 
-  // Compute per-rider total XP
+  // Compute per-rider total XP (game XP, not raw PCS)
   const riderXpTotal: Record<string, number> = {};
-  for (const r of results) {
-    riderXpTotal[r.rider_id] = (riderXpTotal[r.rider_id] ?? 0) + (r.pcs_points ?? 0);
+  for (const r of xpData) {
+    riderXpTotal[r.rider_id] = (riderXpTotal[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
   }
 
-  // Compute per-team total XP from race results (not cumulative_xp which is DB-stored)
-  // We use cumulative_xp from teams table for main ranking
-  // But we need per-race breakdowns for filtering
+  // Build race list from rider_xp_daily race_slugs
+  // We also need race names/dates — fetch from race_results for metadata
+  const allRaceSlugs = [...new Set(xpData.map((x) => x.race_slug).filter(Boolean))];
+  const { data: raceMetaRaw } = await supabase
+    .from("race_results")
+    .select("race_slug, race_name, race_date")
+    .in("race_slug", allRaceSlugs.length > 0 ? allRaceSlugs : ["__none__"]);
 
-  // Build race list (distinct completed races)
-  const raceMap = new Map<string, { slug: string; name: string; date: string }>();
-  for (const r of results) {
-    if (!raceMap.has(r.race_slug)) {
-      raceMap.set(r.race_slug, { slug: r.race_slug, name: r.race_name, date: r.race_date ?? "" });
+  const raceMeta: Record<string, { name: string; date: string }> = {};
+  for (const r of raceMetaRaw ?? []) {
+    if (!raceMeta[r.race_slug]) {
+      raceMeta[r.race_slug] = { name: r.race_name, date: r.race_date ?? "" };
     }
   }
-  const races = [...raceMap.values()].sort((a, b) => b.date.localeCompare(a.date));
 
-  // Per-race XP maps for client-side re-ranking
+  // Build race list — group staged races into single entries
+  const parentRaceMap = new Map<string, { slug: string; name: string; date: string; childSlugs: string[] }>();
+  for (const slug of allRaceSlugs) {
+    const meta = raceMeta[slug] || { name: slug, date: "" };
+    const stageMatch = slug.match(/^(.+)\/stage-\d+$/);
+    const parentSlug = stageMatch ? stageMatch[1] : slug;
+    const parentName = stageMatch ? meta.name.replace(/\s*\|?\s*Stage\s+\d+.*$/i, "") || meta.name : meta.name;
+
+    const existing = parentRaceMap.get(parentSlug);
+    if (existing) {
+      if (!existing.childSlugs.includes(slug)) {
+        existing.childSlugs.push(slug);
+      }
+      if ((meta.date ?? "") > existing.date) {
+        existing.date = meta.date ?? "";
+      }
+    } else {
+      parentRaceMap.set(parentSlug, {
+        slug: parentSlug,
+        name: parentName,
+        date: meta.date ?? "",
+        childSlugs: [slug],
+      });
+    }
+  }
+  const races = [...parentRaceMap.values()].sort((a, b) => b.date.localeCompare(a.date));
+
+  // Per-race XP maps for client-side re-ranking (using game XP)
   const teamXpByRace: Record<string, Record<string, number>> = {};
   const riderXpByRace: Record<string, Record<string, number>> = {};
 
-  // Map rider_id → team_id for this league
-  const riderToTeam: Record<string, string> = {};
-  for (const c of contracts) {
-    riderToTeam[c.rider_id] = c.team_id;
-  }
-
-  for (const r of results) {
+  for (const r of xpData) {
     const raceSlug = r.race_slug;
-    const teamId = riderToTeam[r.rider_id];
-    const pts = r.pcs_points ?? 0;
+    if (!raceSlug) continue;
+    const teamId = r.team_id;
+    const pts = r.xp_gained ?? 0;
 
     if (!riderXpByRace[raceSlug]) riderXpByRace[raceSlug] = {};
     riderXpByRace[raceSlug][r.rider_id] = (riderXpByRace[raceSlug][r.rider_id] ?? 0) + pts;
@@ -121,52 +144,70 @@ export default async function RankingPage({
     }
   }
 
-  // Movement: compare current rank vs rank-before-latest-race
-  // Latest race = first entry in races array (sorted by date DESC)
-  const latestRace = races.length > 0 ? races[0].slug : null;
+  // Task 7: Movement via team_ranking_daily snapshot
+  const today = new Date().toISOString().split("T")[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
-  // Team movement
-  const teamMovement: Record<string, number> = {};
-  if (latestRace) {
-    const latestRaceXp = teamXpByRace[latestRace] ?? {};
-    // Previous XP = cumulative_xp minus latest race contribution
-    const prevTeamXp = teams.map((t) => ({
-      id: t.id,
-      xp: t.cumulative_xp - (latestRaceXp[t.id] ?? 0),
-    }));
-    prevTeamXp.sort((a, b) => b.xp - a.xp);
-    const prevRankMap: Record<string, number> = {};
-    prevTeamXp.forEach((t, i) => { prevRankMap[t.id] = i + 1; });
+  const { data: todayRanks } = await supabase
+    .from("team_ranking_daily")
+    .select("team_id, rank")
+    .eq("date", today)
+    .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]);
 
-    teams.forEach((t, i) => {
-      const currentRank = i + 1; // teams already sorted by cumulative_xp DESC
-      const prevRank = prevRankMap[t.id] ?? currentRank;
-      teamMovement[t.id] = prevRank - currentRank; // positive = moved up
-    });
+  const { data: yesterdayRanks } = await supabase
+    .from("team_ranking_daily")
+    .select("team_id, rank")
+    .eq("date", yesterday)
+    .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]);
+
+  const todayRankMap: Record<string, number> = {};
+  for (const r of todayRanks ?? []) {
+    todayRankMap[r.team_id] = r.rank;
+  }
+  const yesterdayRankMap: Record<string, number> = {};
+  for (const r of yesterdayRanks ?? []) {
+    yesterdayRankMap[r.team_id] = r.rank;
   }
 
-  // Rider movement
+  const teamMovement: Record<string, number> = {};
+  for (const t of teams) {
+    const yRank = yesterdayRankMap[t.id];
+    const tRank = todayRankMap[t.id];
+    if (yRank !== undefined && tRank !== undefined) {
+      teamMovement[t.id] = yRank - tRank; // positive = moved up
+    }
+  }
+
+  // Rider movement: compare current vs previous day XP rankings
   const riderMovement: Record<string, number> = {};
-  if (latestRace) {
-    const latestRaceRiderXp = riderXpByRace[latestRace] ?? {};
-    // Current rider ranking
-    const currentRiderRanking = riderIds
+  // Group xpData by date to find today/yesterday rider XP
+  const riderXpByDate: Record<string, Record<string, number>> = {};
+  for (const r of xpData) {
+    const d = r.date;
+    if (!d) continue;
+    if (!riderXpByDate[d]) riderXpByDate[d] = {};
+    riderXpByDate[d][r.rider_id] = (riderXpByDate[d][r.rider_id] ?? 0) + (r.xp_gained ?? 0);
+  }
+
+  // If there's today's data, compute movement by comparing total XP with/without today
+  const todayRiderXp = riderXpByDate[today] ?? {};
+  if (Object.keys(todayRiderXp).length > 0) {
+    const currentRanking = riderIds
       .map((id) => ({ id, xp: riderXpTotal[id] ?? 0 }))
       .sort((a, b) => b.xp - a.xp);
-    const currentRiderRankMap: Record<string, number> = {};
-    currentRiderRanking.forEach((r, i) => { currentRiderRankMap[r.id] = i + 1; });
+    const currentRankMap: Record<string, number> = {};
+    currentRanking.forEach((r, i) => { currentRankMap[r.id] = i + 1; });
 
-    // Previous ranking (subtract latest race XP)
-    const prevRiderRanking = riderIds
-      .map((id) => ({ id, xp: (riderXpTotal[id] ?? 0) - (latestRaceRiderXp[id] ?? 0) }))
+    const prevRanking = riderIds
+      .map((id) => ({ id, xp: (riderXpTotal[id] ?? 0) - (todayRiderXp[id] ?? 0) }))
       .sort((a, b) => b.xp - a.xp);
-    const prevRiderRankMap: Record<string, number> = {};
-    prevRiderRanking.forEach((r, i) => { prevRiderRankMap[r.id] = i + 1; });
+    const prevRankMap: Record<string, number> = {};
+    prevRanking.forEach((r, i) => { prevRankMap[r.id] = i + 1; });
 
     for (const id of riderIds) {
-      const currentRank = currentRiderRankMap[id] ?? 0;
-      const prevRank = prevRiderRankMap[id] ?? currentRank;
-      riderMovement[id] = prevRank - currentRank;
+      const cRank = currentRankMap[id] ?? 0;
+      const pRank = prevRankMap[id] ?? cRank;
+      riderMovement[id] = pRank - cRank;
     }
   }
 

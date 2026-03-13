@@ -69,6 +69,7 @@ async def resolve_current_round(
 
     for auction in auctions_resp.data:
         auction_id = auction["id"]
+        league_id = auction.get("league_id")
 
         try:
             # Determine which round we are in
@@ -147,10 +148,59 @@ async def resolve_current_round(
 
                     locked_salary = int(winner["amount"])
 
+                    # Task 11: Level gating — verify rider is accessible at team's level
+                    from sync import rank_max_for_level
+                    team_data = supabase.table("teams").select(
+                        "level"
+                    ).eq("id", winner["team_id"]).single().execute()
+                    rider_data = supabase.table("riders").select(
+                        "pcs_rank"
+                    ).eq("id", rider_id).single().execute()
+
+                    team_level = team_data.data.get("level", 1) if team_data.data else 1
+                    rider_pcs_rank = rider_data.data.get("pcs_rank") if rider_data.data else None
+
+                    if rider_pcs_rank is not None:
+                        max_rank = rank_max_for_level(team_level)
+                        if rider_pcs_rank > max_rank:
+                            logger.warning(
+                                f"  {rider_name}: PCS rank {rider_pcs_rank} exceeds max {max_rank} "
+                                f"for team level {team_level} — cancelling all bids"
+                            )
+                            supabase.table("auction_bids").update(
+                                {"status": "cancelled"}
+                            ).eq("id", winner["id"]).execute()
+                            for loser in losers:
+                                supabase.table("auction_bids").update(
+                                    {"status": "cancelled"}
+                                ).eq("id", loser["id"]).execute()
+                            continue
+
+                    # Check for existing active contract for this rider in this league
+                    existing = supabase.table("contracts").select("id").eq(
+                        "rider_id", rider_id
+                    ).eq("league_id", league_id).in_(
+                        "status", ["active", "notice"]
+                    ).execute()
+
+                    if existing.data:
+                        logger.warning(
+                            f"  {rider_name}: already has active contract in league — skipping"
+                        )
+                        supabase.table("auction_bids").update(
+                            {"status": "cancelled"}
+                        ).eq("id", winner["id"]).execute()
+                        for loser in losers:
+                            supabase.table("auction_bids").update(
+                                {"status": "cancelled"}
+                            ).eq("id", loser["id"]).execute()
+                        continue
+
                     # Create contract with first salary marked as paid
                     supabase.table("contracts").insert({
                         "team_id": winner["team_id"],
                         "rider_id": rider_id,
+                        "league_id": league_id,
                         "locked_salary": locked_salary,
                         "status": "active",
                         "purchased_at": datetime.utcnow().isoformat(),
@@ -195,7 +245,104 @@ async def resolve_current_round(
                     )
 
             # Close auction after final round or if forced
-            if current_round == 3 or force_close:
+            should_close = current_round == 3 or force_close
+            if should_close:
+                # Sweep remaining active bids from earlier rounds
+                remaining_resp = supabase.table("auction_bids").select(
+                    "id, rider_id, team_id, amount, placed_at, round"
+                ).eq("auction_id", auction_id).eq("status", "active").execute()
+
+                if remaining_resp.data:
+                    # Group by rider_id, resolve each group
+                    orphan_bids: dict[str, list[dict]] = {}
+                    for bid in remaining_resp.data:
+                        orphan_bids.setdefault(bid["rider_id"], []).append(bid)
+
+                    for rid, obids in orphan_bids.items():
+                        try:
+                            obids.sort(key=lambda b: (-int(b["amount"]), b["placed_at"]))
+                            winner = obids[0]
+                            losers = obids[1:]
+
+                            rider_name_resp = supabase.table("riders").select(
+                                "full_name"
+                            ).eq("id", rid).single().execute()
+                            rider_name = rider_name_resp.data.get("full_name", rid) if rider_name_resp.data else rid
+
+                            supabase.table("auction_bids").update(
+                                {"status": "won"}
+                            ).eq("id", winner["id"]).execute()
+
+                            for loser in losers:
+                                supabase.table("auction_bids").update(
+                                    {"status": "outbid"}
+                                ).eq("id", loser["id"]).execute()
+
+                            locked_salary = int(winner["amount"])
+
+                            # Check for existing active contract
+                            existing = supabase.table("contracts").select("id").eq(
+                                "rider_id", rid
+                            ).eq("league_id", league_id).in_(
+                                "status", ["active", "notice"]
+                            ).execute()
+
+                            if existing.data:
+                                logger.warning(
+                                    f"  Orphan sweep: {rider_name} already has active contract — skipping"
+                                )
+                                supabase.table("auction_bids").update(
+                                    {"status": "cancelled"}
+                                ).eq("id", winner["id"]).execute()
+                                for loser in losers:
+                                    supabase.table("auction_bids").update(
+                                        {"status": "cancelled"}
+                                    ).eq("id", loser["id"]).execute()
+                                continue
+
+                            supabase.table("contracts").insert({
+                                "team_id": winner["team_id"],
+                                "rider_id": rid,
+                                "league_id": league_id,
+                                "locked_salary": locked_salary,
+                                "status": "active",
+                                "purchased_at": datetime.utcnow().isoformat(),
+                                "last_salary_paid": today.isoformat(),
+                            }).execute()
+
+                            team_resp = supabase.table("teams").select(
+                                "treasury"
+                            ).eq("id", winner["team_id"]).single().execute()
+                            current_treasury = team_resp.data["treasury"] if team_resp.data else 200000
+
+                            new_treasury = current_treasury - locked_salary
+                            supabase.table("teams").update({
+                                "treasury": new_treasury,
+                            }).eq("id", winner["team_id"]).execute()
+
+                            supabase.table("treasury_log").insert({
+                                "team_id": winner["team_id"],
+                                "type": "auction_purchase",
+                                "amount": -locked_salary,
+                                "description": f"Orphan bid Round {winner['round']} — {rider_name} — salaire {locked_salary} EUR/mois",
+                                "rider_id": rid,
+                            }).execute()
+
+                            supabase.table("riders").update(
+                                {"is_active_in_game": True}
+                            ).eq("id", rid).execute()
+
+                            logger.info(
+                                f"  Orphan sweep: {rider_name} (round {winner['round']}) won by team "
+                                f"{winner['team_id']} at {locked_salary} EUR/mois"
+                            )
+                            resolved_count += 1
+
+                        except Exception as e:
+                            logger.error(
+                                f"Auction {auction_id} orphan sweep rider {rid}: {e}"
+                            )
+
                 _close_auction(supabase, auction_id)
 
             results.append({

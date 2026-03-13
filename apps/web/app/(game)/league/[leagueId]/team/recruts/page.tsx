@@ -99,6 +99,20 @@ export default async function RecrutsPage({
     .limit(1)
     .maybeSingle();
 
+  // If no active round, find next scheduled
+  let nextRound: { id: string; name: string; opens_at: string } | null = null;
+  if (!activeRound) {
+    const { data } = await supabase
+      .from("auctions")
+      .select("id, name, opens_at")
+      .eq("league_id", leagueId)
+      .eq("status", "scheduled")
+      .order("opens_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    nextRound = data;
+  }
+
   // Load existing bids for this user's team in the active auction
   let initialBids: Array<{ bid_id: string; rider_id: string; amount: number }> = [];
   if (activeRound && team?.id) {
@@ -121,6 +135,7 @@ export default async function RecrutsPage({
       leagueId={leagueId}
       riders={availableRiders}
       activeRound={activeRound}
+      nextRound={nextRound}
       maxSlots={getMaxSlots(level)}
       currentSlots={ownTeamSlots}
       initialBids={initialBids}

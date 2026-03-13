@@ -3,9 +3,9 @@ import pytest
 
 
 def test_monthly_sponsor_payment():
-    """Each team gets +200K sponsor payment."""
-    from monthly_finance import SPONSOR_AMOUNT
-    assert SPONSOR_AMOUNT == 200_000
+    """Default sponsor fallback is 200K."""
+    from monthly_finance import DEFAULT_SPONSOR_AMOUNT
+    assert DEFAULT_SPONSOR_AMOUNT == 200_000
 
 
 def test_monthly_salary_deduction():

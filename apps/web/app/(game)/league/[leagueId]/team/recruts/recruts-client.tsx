@@ -35,10 +35,17 @@ interface InitialBid {
   amount: number;
 }
 
+interface NextRound {
+  id: string;
+  name: string;
+  opens_at: string;
+}
+
 interface RecrutsClientProps {
   leagueId: string;
   riders: Rider[];
   activeRound: ActiveRound | null;
+  nextRound?: NextRound | null;
   maxSlots: number;
   currentSlots: number;
   initialBids?: InitialBid[];
@@ -84,6 +91,7 @@ export function RecrutsClient({
   leagueId,
   riders,
   activeRound,
+  nextRound,
   maxSlots,
   currentSlots,
   initialBids = [],
@@ -286,7 +294,9 @@ export function RecrutsClient({
       ) : (
         <div className="flex items-center justify-between px-4 pt-4 pb-0">
           <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-            No active round
+            {nextRound
+              ? `Next round : ${new Date(nextRound.opens_at).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" })}`
+              : "No upcoming round"}
           </span>
           <Link href={`/league/${leagueId}/team/recruts/history`} className="text-[length:var(--type-body)] link-tertiary">
             History &rarr;

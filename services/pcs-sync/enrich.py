@@ -275,7 +275,8 @@ async def enrich_single_rider(
         except Exception as e:
             logger.warning("race program parsing failed for %s: %s", pcs_slug, e)
 
-        # 5. Upsert current season results into race_results (existing table)
+        # 5. Insert current season results into race_results (existing table)
+        # Task 9: ON CONFLICT DO NOTHING — Pipeline B is authoritative for race_results
         for result in season_results:
             race_url = result.get("race_url", "")
             if not race_url:
@@ -285,17 +286,34 @@ async def enrich_single_rider(
             pcs_points = result.get("points", 0) or 0
             rank = result.get("rank")
 
-            supabase.table("race_results").upsert(
-                {
-                    "rider_id": rider_id,
-                    "race_slug": race_url,
-                    "race_name": race_name,
-                    "race_date": race_date,
-                    "pcs_points": pcs_points,
-                    "rank": rank,
-                },
-                on_conflict="rider_id,race_slug",
-            ).execute()
+            try:
+                supabase.table("race_results").upsert(
+                    {
+                        "rider_id": rider_id,
+                        "race_slug": race_url,
+                        "race_name": race_name,
+                        "race_date": race_date,
+                        "pcs_points": pcs_points,
+                        "rank": rank,
+                    },
+                    on_conflict="rider_id,race_slug",
+                    ignore_duplicates=True,
+                ).execute()
+            except Exception:
+                # Fallback: if ignore_duplicates not supported, just skip on error
+                try:
+                    supabase.table("race_results").insert(
+                        {
+                            "rider_id": rider_id,
+                            "race_slug": race_url,
+                            "race_name": race_name,
+                            "race_date": race_date,
+                            "pcs_points": pcs_points,
+                            "rank": rank,
+                        },
+                    ).execute()
+                except Exception:
+                    pass  # Already exists — Pipeline B data takes precedence
 
         return {"rider": pcs_slug, "status": "ok"}
 

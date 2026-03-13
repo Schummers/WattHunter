@@ -18,6 +18,7 @@ def make_chain(data=None):
     for attr in (
         "select", "eq", "neq", "gt", "gte", "lt", "lte", "in_",
         "single", "maybeSingle", "upsert", "update", "insert", "delete",
+        "order",
     ):
         getattr(m, attr).return_value = m
     return m

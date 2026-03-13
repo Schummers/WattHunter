@@ -10,17 +10,25 @@ Requires:
 Usage:
   cd services/pcs-sync
 
-  # Pipeline A — sync top 500 PCS riders + season rankings
+  # Pipeline A — sync top 500 PCS riders (no season rankings — Pipeline E handles those)
   python3 run_pipeline.py init-riders
 
-  # Pipeline B — after each race/stage finishes
+  # Pipeline B — after each race/stage finishes (auto-detect or manual)
+  python3 run_pipeline.py post-race --auto
   python3 run_pipeline.py post-race --race "race/strade-bianche/2026"
+  python3 run_pipeline.py post-race --race "race/strade-bianche/2026" --with-ranking
 
   # Pipeline C — before auctions/races open
   python3 run_pipeline.py startlists --race "race/tour-de-france/2026"
 
   # Pipeline D — monthly finance (sponsor + salaries + bankruptcy)
   python3 run_pipeline.py monthly-finance
+
+  # Pipeline E — enrich riders with individual PCS page data
+  python3 run_pipeline.py enrich-riders
+
+  # Pre-auction — update global ranking + monthly finance
+  python3 run_pipeline.py pre-auction
 """
 from __future__ import annotations
 
@@ -29,6 +37,7 @@ import asyncio
 import json
 import os
 import sys
+from datetime import date
 from typing import Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
@@ -75,8 +84,37 @@ def race_meta(slug: str) -> Tuple[str, str]:
         return slug, ""
 
     name = entry.get("name", slug)
-    date = entry.get("date") or entry.get("start_date") or ""
-    return name, date
+    date_val = entry.get("date") or entry.get("start_date") or ""
+    return name, date_val
+
+
+def find_races_for_today() -> List[Dict]:
+    """Find all races/stages in the calendar whose date matches today."""
+    today_str = date.today().isoformat()
+    calendar = load_calendar()
+    matches = []
+    for race in calendar:
+        race_type = race.get("type", "one-day")
+        if race_type == "stage-race":
+            # Check each stage
+            for stage in race.get("stages", []):
+                if stage.get("date") == today_str:
+                    matches.append({
+                        "slug": race.get("slug"),
+                        "name": race.get("name"),
+                        "date": stage.get("date"),
+                        "stage_url": stage.get("url"),
+                        "type": "stage-race",
+                    })
+        else:
+            if race.get("date") == today_str:
+                matches.append({
+                    "slug": race.get("slug"),
+                    "name": race.get("name"),
+                    "date": race.get("date"),
+                    "type": "one-day",
+                })
+    return matches
 
 
 # ---------------------------------------------------------------------------
@@ -92,169 +130,195 @@ async def new_browser_page(p):
 
 
 # ---------------------------------------------------------------------------
-# Pipeline A — init-riders
+# Pipeline A — init-riders (Task 8: removed season rankings import)
 # ---------------------------------------------------------------------------
 
 async def run_init_riders() -> None:
-    """Annual initialization: sync top 500 PCS riders + import season rankings."""
-    from playwright.async_api import async_playwright
+    """Annual initialization: sync top 500 PCS riders."""
     from sync import get_supabase, sync_top500
-    from sync_race import import_season_rankings
 
     supabase = get_supabase()
 
     print("=== Pipeline A: init-riders ===")
     print()
 
-    # Step 1: sync top 500 PCS global ranking
-    print("--- Step 1/2: Sync top 500 PCS riders ---")
+    # Sync top 500 PCS global ranking (season rankings handled by Pipeline E)
+    print("--- Sync top 500 PCS riders ---")
     result = await sync_top500(supabase, pages=5)
     print(json.dumps(result, indent=2))
 
-    # Step 2: season rankings — fresh context per season to avoid Cloudflare
-    print()
-    print("--- Step 2/2: Import season rankings (2024, 2025, 2026) ---")
-    seasons = [2024, 2025, 2026]
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        try:
-            for i, season in enumerate(seasons):
-                context = await browser.new_context(user_agent=USER_AGENT)
-                page = await context.new_page()
-                print("  Season {}...".format(season))
-                result = await import_season_rankings(
-                    supabase, page, seasons=[season]
-                )
-                print("    Upserted: {}, errors: {}".format(
-                    result['total_upserted'], len(result['errors'])
-                ))
-                if result["errors"]:
-                    for err in result["errors"][:3]:
-                        print("    ERROR: {}".format(err))
-                await context.close()
-                if i < len(seasons) - 1:
-                    print("    Waiting 15s before next season...")
-                    await asyncio.sleep(15)
-        finally:
-            await browser.close()
-
     print()
     print("Done — init-riders complete.")
+    print("Note: Run 'enrich-riders' (Pipeline E) to import season rankings, specialty, and bio data.")
 
 
 # ---------------------------------------------------------------------------
 # Pipeline B — post-race
 # ---------------------------------------------------------------------------
 
-async def run_post_race(race_slug: str) -> None:
-    """Post-race pipeline: import results for every stage then update global ranking."""
-    from playwright.async_api import async_playwright
-    from sync import get_supabase
+async def _import_single_race(supabase, browser, race_slug: str, race_name: str, race_date: str, with_ranking: bool = False) -> list[str]:
+    """Import results for a single race/stage. Returns list of imported race_slugs."""
     from sync_race import get_stage_urls, import_race_results, update_global_ranking
-    from scoring import calculate_daily_scores
+    from enrich import enrich_single_rider
 
-    supabase = get_supabase()
-    race_name, race_date = race_meta(race_slug)
+    imported_slugs = []
 
-    print(f"=== Pipeline B: post-race ===")
-    print(f"Race : {race_name}")
-    print(f"Slug : {race_slug}")
-    print(f"Date : {race_date or '(not in calendar)'}")
-    print()
-
-    # Determine race type from calendar (avoids extra PCS fetch)
     race_entry = lookup_race(race_slug)
     is_stage_race = race_entry and race_entry.get("type") == "stage-race"
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        try:
-            if is_stage_race:
-                # Step 1: get stage URLs from race overview
-                print("--- Step 1: Getting stage list ---")
-                ctx1 = await browser.new_context(user_agent=USER_AGENT)
-                page1 = await ctx1.new_page()
-                stage_urls = await get_stage_urls(page1, race_slug)
-                await ctx1.close()
-                print(f"  Stage race — {len(stage_urls)} stage(s) found.")
+    if is_stage_race:
+        print("--- Getting stage list ---")
+        ctx1 = await browser.new_context(user_agent=USER_AGENT)
+        page1 = await ctx1.new_page()
+        stage_urls = await get_stage_urls(page1, race_slug)
+        await ctx1.close()
+        print(f"  Stage race — {len(stage_urls)} stage(s) found.")
 
-                # Step 2: import each stage with fresh context
-                for i, stage_entry in enumerate(stage_urls):
-                    stage_url = stage_entry.get("stage_url") or stage_entry.get("url", "")
-                    print(f"\n--- Stage {i + 1}/{len(stage_urls)}: {stage_url} ---")
-                    ctx = await browser.new_context(user_agent=USER_AGENT)
-                    page = await ctx.new_page()
-                    try:
-                        result = await import_race_results(
-                            supabase, page,
-                            race_slug=race_slug,
-                            race_name=race_name,
-                            race_date=race_date,
-                            stage_url=stage_url,
-                        )
-                        print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
-                    except Exception as exc:
-                        print(f"  Skipped (no results yet): {exc}")
-                    await ctx.close()
-                    if i < len(stage_urls) - 1:
-                        print("  Waiting 15s before next stage...")
-                        await asyncio.sleep(15)
-            else:
-                # One-day race: single fetch with fresh context
-                print("--- One-day race — importing result ---")
-                ctx = await browser.new_context(user_agent=USER_AGENT)
-                page = await ctx.new_page()
+        for i, stage_entry in enumerate(stage_urls):
+            stage_url = stage_entry.get("stage_url") or stage_entry.get("url", "")
+            print(f"\n--- Stage {i + 1}/{len(stage_urls)}: {stage_url} ---")
+            ctx = await browser.new_context(user_agent=USER_AGENT)
+            page = await ctx.new_page()
+            try:
                 result = await import_race_results(
                     supabase, page,
                     race_slug=race_slug,
                     race_name=race_name,
                     race_date=race_date,
+                    stage_url=stage_url,
                 )
-                await ctx.close()
                 print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
+                # Collect actual race_slugs imported
+                if result.get("race_slug"):
+                    imported_slugs.append(result["race_slug"])
+                else:
+                    imported_slugs.append(stage_url)
+            except Exception as exc:
+                print(f"  Skipped (no results yet): {exc}")
+            await ctx.close()
+            if i < len(stage_urls) - 1:
+                print("  Waiting 15s before next stage...")
+                await asyncio.sleep(15)
+    else:
+        print("--- One-day race — importing result ---")
+        ctx = await browser.new_context(user_agent=USER_AGENT)
+        page = await ctx.new_page()
+        result = await import_race_results(
+            supabase, page,
+            race_slug=race_slug,
+            race_name=race_name,
+            race_date=race_date,
+        )
+        await ctx.close()
+        print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
+        imported_slugs.append(race_slug)
 
-            # Step 3: update global ranking (top 500, 5 pages with fresh contexts)
-            print("\n--- Waiting 15s before updating global ranking ---")
-            await asyncio.sleep(15)
-            print("--- Updating global PCS ranking (top 500) ---")
-            ranking_result = await update_global_ranking(supabase, browser, pages=5)
-            print(f"  Updated: {ranking_result['updated']} riders (from {ranking_result['total_in_ranking']} ranked)")
-            if ranking_result.get("created"):
-                print(f"  Created: {ranking_result['created']} new rider(s)")
-            if ranking_result.get("dropped"):
-                print(f"  Dropped: {ranking_result['dropped']} rider(s) marked as >500")
+    # Optional: update global ranking
+    if with_ranking:
+        print("\n--- Waiting 15s before updating global ranking ---")
+        await asyncio.sleep(15)
+        print("--- Updating global PCS ranking (top 500) ---")
+        ranking_result = await update_global_ranking(supabase, browser, pages=5)
+        print(f"  Updated: {ranking_result['updated']} riders (from {ranking_result['total_in_ranking']} ranked)")
+        if ranking_result.get("created"):
+            print(f"  Created: {ranking_result['created']} new rider(s)")
+        if ranking_result.get("dropped"):
+            print(f"  Dropped: {ranking_result['dropped']} rider(s) marked as >500")
 
-            # Step 3b: enrich new riders
-            new_riders = ranking_result.get("new_riders", [])
-            if new_riders:
-                from enrich import enrich_single_rider
-                print(f"\n--- Enriching {len(new_riders)} new rider(s) ---")
-                for i, nr in enumerate(new_riders):
-                    ctx = await browser.new_context(user_agent=USER_AGENT)
-                    enrich_page = await ctx.new_page()
-                    try:
-                        result = await enrich_single_rider(
-                            supabase, enrich_page, nr["id"], nr["pcs_slug"]
-                        )
-                        print(f"  Enriched: {nr['pcs_slug']} — {result}")
-                    except Exception as exc:
-                        print(f"  Failed to enrich {nr['pcs_slug']}: {exc}")
-                    finally:
-                        await ctx.close()
-                    if i < len(new_riders) - 1:
-                        print("  Waiting 15s...")
-                        await asyncio.sleep(15)
-            else:
-                print("  No new riders to enrich.")
+        # Enrich new riders
+        new_riders = ranking_result.get("new_riders", [])
+        if new_riders:
+            print(f"\n--- Enriching {len(new_riders)} new rider(s) ---")
+            for i, nr in enumerate(new_riders):
+                ctx = await browser.new_context(user_agent=USER_AGENT)
+                enrich_page = await ctx.new_page()
+                try:
+                    result = await enrich_single_rider(
+                        supabase, enrich_page, nr["id"], nr["pcs_slug"]
+                    )
+                    print(f"  Enriched: {nr['pcs_slug']} — {result}")
+                except Exception as exc:
+                    print(f"  Failed to enrich {nr['pcs_slug']}: {exc}")
+                finally:
+                    await ctx.close()
+                if i < len(new_riders) - 1:
+                    print("  Waiting 15s...")
+                    await asyncio.sleep(15)
 
-        finally:
-            await browser.close()
+    return imported_slugs
 
-    # Step 4: calculate daily scores (no browser needed)
+
+async def run_post_race(race_slug: str | None = None, auto: bool = False, with_ranking: bool = False) -> None:
+    """Post-race pipeline: import results then calculate scores."""
+    from playwright.async_api import async_playwright
+    from sync import get_supabase
+    from scoring import calculate_daily_scores
+
+    supabase = get_supabase()
+
+    print(f"=== Pipeline B: post-race ===")
+
+    all_imported_slugs: list[str] = []
+
+    if auto:
+        # Task 12a: auto-detect today's races from calendar
+        today_races = find_races_for_today()
+        if not today_races:
+            print(f"No races found for today ({date.today().isoformat()}) in calendar.")
+            return
+        print(f"Found {len(today_races)} race(s) for today:")
+        for r in today_races:
+            print(f"  - {r['name']} ({r['slug']})")
+        print()
+
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            try:
+                for r in today_races:
+                    race_name = r["name"]
+                    r_slug = r["slug"]
+                    r_date = r.get("date", "")
+                    print(f"\n--- Processing: {race_name} ---")
+                    slugs = await _import_single_race(
+                        supabase, browser, r_slug, race_name, r_date,
+                        with_ranking=False,  # auto mode skips ranking (use pre-auction)
+                    )
+                    all_imported_slugs.extend(slugs)
+            finally:
+                await browser.close()
+    else:
+        if not race_slug:
+            print("ERROR: --race is required when not using --auto")
+            return
+
+        race_name, race_date_val = race_meta(race_slug)
+        print(f"Race : {race_name}")
+        print(f"Slug : {race_slug}")
+        print(f"Date : {race_date_val or '(not in calendar)'}")
+        print()
+
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            try:
+                slugs = await _import_single_race(
+                    supabase, browser, race_slug, race_name, race_date_val,
+                    with_ranking=with_ranking,
+                )
+                all_imported_slugs.extend(slugs)
+            finally:
+                await browser.close()
+
+    # Calculate daily scores with the actual race slugs imported
     print()
     print("--- Calculating daily scores ---")
-    scoring_result = await calculate_daily_scores(supabase)
+    scoring_result = await calculate_daily_scores(supabase, race_slugs=all_imported_slugs or None)
     print(json.dumps(scoring_result, indent=2))
+
+    # Treasury validation
+    from validation import validate_treasury
+    validation = await validate_treasury(supabase)
+    if validation.get("divergences"):
+        print(f"WARNING: {len(validation['divergences'])} treasury divergences detected")
 
     print()
     print("Done — post-race complete.")
@@ -271,12 +335,12 @@ async def run_startlists(race_slug: str) -> None:
     from sync_race import import_startlist
 
     supabase = get_supabase()
-    race_name, race_date = race_meta(race_slug)
+    race_name, race_date_val = race_meta(race_slug)
 
     print(f"=== Pipeline C: startlists ===")
     print(f"Race : {race_name}")
     print(f"Slug : {race_slug}")
-    print(f"Date : {race_date or '(not in calendar)'}")
+    print(f"Date : {race_date_val or '(not in calendar)'}")
     print()
 
     async with async_playwright() as p:
@@ -288,7 +352,7 @@ async def run_startlists(race_slug: str) -> None:
                 page,
                 race_slug=race_slug,
                 race_name=race_name,
-                race_date=race_date,
+                race_date=race_date_val,
             )
             print(json.dumps(result, indent=2))
         finally:
@@ -340,32 +404,82 @@ async def run_enrich_riders(start: int, end: int) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Pre-auction pipeline (Task 12b)
+# ---------------------------------------------------------------------------
+
+async def run_pre_auction() -> None:
+    """Pre-auction: update global ranking + run monthly finance."""
+    from playwright.async_api import async_playwright
+    from sync import get_supabase
+    from sync_race import update_global_ranking
+    from monthly_finance import run_monthly_finance
+
+    supabase = get_supabase()
+
+    print("=== Pre-auction pipeline ===")
+    print()
+
+    # Step 1: Update global PCS ranking
+    print("--- Step 1: Updating global PCS ranking (top 500) ---")
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        try:
+            ranking_result = await update_global_ranking(supabase, browser, pages=5)
+            print(f"  Updated: {ranking_result['updated']} riders (from {ranking_result['total_in_ranking']} ranked)")
+            if ranking_result.get("created"):
+                print(f"  Created: {ranking_result['created']} new rider(s)")
+            if ranking_result.get("dropped"):
+                print(f"  Dropped: {ranking_result['dropped']} rider(s) marked as >500")
+        finally:
+            await browser.close()
+
+    # Step 2: Monthly finance
+    print()
+    print("--- Step 2: Running monthly finance ---")
+    finance_result = await run_monthly_finance(supabase)
+    print(json.dumps(finance_result, indent=2))
+
+    print()
+    print("Done — pre-auction complete.")
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="run_pipeline.py",
-        description="WattHunter PCS Sync CLI — 4 pipelines for roster, race results, startlists, and monthly finance.",
+        description="WattHunter PCS Sync CLI — pipelines for roster, race results, startlists, finance, and pre-auction.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # init-riders
     subparsers.add_parser(
         "init-riders",
-        help="Pipeline A — sync top 500 PCS riders + import season rankings.",
+        help="Pipeline A — sync top 500 PCS riders.",
     )
 
     # post-race
     post_race = subparsers.add_parser(
         "post-race",
-        help="Pipeline B — after a race/stage: import results + update global ranking + score.",
+        help="Pipeline B — after a race/stage: import results + score. Use --auto or --race.",
     )
     post_race.add_argument(
         "--race",
-        required=True,
+        required=False,
         metavar="SLUG",
         help='PCS race slug, e.g. "race/strade-bianche/2026"',
+    )
+    post_race.add_argument(
+        "--auto",
+        action="store_true",
+        help="Auto-detect today's races from calendar",
+    )
+    post_race.add_argument(
+        "--with-ranking",
+        action="store_true",
+        help="Also update global PCS ranking (normally done in pre-auction)",
     )
 
     # startlists
@@ -406,6 +520,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="End PCS rank (default: 500)",
     )
 
+    # pre-auction
+    subparsers.add_parser(
+        "pre-auction",
+        help="Pre-auction — update global ranking + monthly finance.",
+    )
+
     return parser
 
 
@@ -422,13 +542,22 @@ async def main() -> None:
     if args.command == "init-riders":
         await run_init_riders()
     elif args.command == "post-race":
-        await run_post_race(args.race)
+        if not args.race and not args.auto:
+            print("ERROR: Either --race or --auto is required.")
+            sys.exit(1)
+        await run_post_race(
+            race_slug=args.race,
+            auto=args.auto,
+            with_ranking=args.with_ranking,
+        )
     elif args.command == "startlists":
         await run_startlists(args.race)
     elif args.command == "monthly-finance":
         await run_monthly_finance_pipeline()
     elif args.command == "enrich-riders":
         await run_enrich_riders(args.start, args.end)
+    elif args.command == "pre-auction":
+        await run_pre_auction()
     else:
         parser.print_help()
         sys.exit(1)

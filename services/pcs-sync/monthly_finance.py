@@ -2,9 +2,13 @@
 Monthly finance job — WattHunter Beta Economy.
 
 Runs on the 1st of each month (or before each auction):
-  1. Pay sponsor (200K) to each team
+  1. Pay sponsor income to each team (from team_sponsors, fallback 200K)
   2. Deduct salaries (sum of locked_salary from active contracts)
   3. Check bankruptcy: if treasury < 0, release best scorers until solvent
+
+Only processes teams in active leagues.
+Sponsor income comes from team_sponsors (joined with sponsors.monthly_budget).
+If no active sponsors, falls back to default 200K (L'Auto).
 
 Design doc: docs/plans/2026-03-05-beta-economy-design.md
 """
@@ -17,7 +21,7 @@ from supabase import Client
 
 logger = logging.getLogger(__name__)
 
-SPONSOR_AMOUNT = 200_000  # €/month — flat sponsor for beta
+DEFAULT_SPONSOR_AMOUNT = 200_000  # fallback when no sponsors active (L'Auto)
 
 
 def calculate_monthly_salaries(contracts: list[dict]) -> int:
@@ -30,32 +34,74 @@ def get_release_order(contracts: list[dict]) -> list[dict]:
     return sorted(contracts, key=lambda c: -c.get("total_xp", 0))
 
 
+def _get_sponsor_income(supabase: Client, team_id: str) -> tuple[int, str]:
+    """
+    Fetch active sponsors for a team and return (total_income, description).
+    Falls back to DEFAULT_SPONSOR_AMOUNT if no active sponsors.
+    """
+    sponsors = supabase.table("team_sponsors").select(
+        "sponsors(name, monthly_budget)"
+    ).eq("team_id", team_id).eq("status", "active").execute()
+
+    if not sponsors.data:
+        return DEFAULT_SPONSOR_AMOUNT, "Default sponsor (L'Auto)"
+
+    total = 0
+    names = []
+    for s in sponsors.data:
+        sponsor_data = s.get("sponsors") or {}
+        if isinstance(sponsor_data, list):
+            sponsor_data = sponsor_data[0] if sponsor_data else {}
+        budget = sponsor_data.get("monthly_budget", 0) or 0
+        name = sponsor_data.get("name", "Unknown")
+        total += budget
+        names.append(name)
+
+    if total == 0:
+        return DEFAULT_SPONSOR_AMOUNT, "Default sponsor (L'Auto)"
+
+    return total, ", ".join(names)
+
+
 async def run_monthly_finance(supabase: Client) -> dict:
     """
-    Monthly finance cycle for all teams:
-      1. +300K sponsor
+    Monthly finance cycle for all teams in active leagues:
+      1. +sponsor income (from team_sponsors or default 200K)
       2. -salaries
       3. Bankruptcy check → release best scorers
     """
     today = date.today().isoformat()
     results = []
 
-    teams = supabase.table("teams").select("id, treasury, name").execute()
+    # Task 14: only process teams in active leagues
+    teams = supabase.table("teams").select(
+        "id, treasury, name, league_id, leagues(status)"
+    ).execute()
+
     if not teams.data:
         return {"status": "no_teams"}
 
-    for team in teams.data:
+    active_teams = [
+        t for t in teams.data
+        if (t.get("leagues") or {}).get("status") == "active"
+    ]
+
+    if not active_teams:
+        return {"status": "no_active_leagues", "total_teams": len(teams.data)}
+
+    for team in active_teams:
         team_id = team["id"]
         treasury = team["treasury"]
 
         try:
-            # 1. Sponsor payment
-            treasury += SPONSOR_AMOUNT
+            # 1. Sponsor payment (from team_sponsors)
+            sponsor_income, sponsor_desc = _get_sponsor_income(supabase, team_id)
+            treasury += sponsor_income
             supabase.table("treasury_log").insert({
                 "team_id": team_id,
                 "type": "sponsor_payment",
-                "amount": SPONSOR_AMOUNT,
-                "description": f"Sponsor mensuel {today}",
+                "amount": sponsor_income,
+                "description": f"Sponsor {today} — {sponsor_desc}",
             }).execute()
 
             # 2. Salary deduction (skip contracts already paid this month)
@@ -79,7 +125,7 @@ async def run_monthly_finance(supabase: Client) -> dict:
                     "team_id": team_id,
                     "type": "monthly_salary",
                     "amount": -total_salary,
-                    "description": f"Salaires {today} ({len(unpaid_contracts)} coureurs)",
+                    "description": f"Salaries {today} ({len(unpaid_contracts)} riders)",
                 }).execute()
 
                 # Mark contracts as paid for this month
@@ -130,7 +176,7 @@ async def run_monthly_finance(supabase: Client) -> dict:
                         "team_id": team_id,
                         "type": "bankruptcy_release",
                         "amount": 0,
-                        "description": f"Faillite — liberation coureur {contract['rider_id']}",
+                        "description": f"Bankruptcy — released rider {contract['rider_id']}",
                         "rider_id": contract["rider_id"],
                     }).execute()
 
@@ -144,7 +190,7 @@ async def run_monthly_finance(supabase: Client) -> dict:
 
             results.append({
                 "team_id": team_id,
-                "sponsor": SPONSOR_AMOUNT,
+                "sponsor": sponsor_income,
                 "salaries": total_salary,
                 "treasury_after": treasury,
                 "released": released,
@@ -154,4 +200,10 @@ async def run_monthly_finance(supabase: Client) -> dict:
             logger.error(f"Monthly finance failed for team {team_id}: {e}")
             results.append({"team_id": team_id, "error": str(e)})
 
-    return {"status": "completed", "teams": results}
+    # Treasury validation
+    from validation import validate_treasury
+    validation = await validate_treasury(supabase)
+    if validation.get("divergences"):
+        logger.warning(f"Treasury validation found {len(validation['divergences'])} divergences")
+
+    return {"status": "completed", "teams": results, "validation": validation}

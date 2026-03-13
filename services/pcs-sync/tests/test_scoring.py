@@ -43,7 +43,7 @@ async def test_no_active_contracts():
     import scoring
 
     sb = make_supabase(
-        [{"rider_id": RIDER_ID, "pcs_points": 50}],  # race_results
+        [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 50}],  # race_results
         [],  # contracts → empty
     )
     result = await scoring.calculate_daily_scores(sb)
@@ -66,20 +66,25 @@ async def test_nominal_processing():
 
         sb = make_supabase(
             # 1. race_results
-            [{"rider_id": RIDER_ID, "pcs_points": 20}],
-            # 2. contracts
-            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID}],
+            [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 20}],
+            # 2. contracts (with riders join for policy matching)
+            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+              "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
             # 3. team_policies (none active)
             [],
             # 4. rider_xp_daily upsert (result unused)
             [],
-            # 5. teams select — current cumulative_xp + treasury
-            {"id": TEAM_ID, "cumulative_xp": 0, "treasury": 500_000},
+            # 5. teams select — current cumulative_xp + treasury + level + league_id
+            {"id": TEAM_ID, "cumulative_xp": 0, "treasury": 500_000, "level": 1, "league_id": "lg-1"},
             # 6. teams update (result unused)
             [],
             # 7. treasury_log dedup select → empty → will insert
             [],
             # 8. treasury_log insert (result unused)
+            [],
+            # 9. league teams for snapshot
+            [{"id": TEAM_ID, "cumulative_xp": 20}],
+            # 10. team_ranking_daily upsert
             [],
         )
 
@@ -91,7 +96,7 @@ async def test_nominal_processing():
 
 
 async def test_nominal_processing_with_policy_bonus():
-    """Team with a 10% XP bonus policy → teams_processed=1, no errors."""
+    """Team with a matching policy bonus → teams_processed=1, no errors."""
     with pytest.MonkeyPatch.context() as mp:
         mp.setenv("CONVERSION_RATE_EUR_PER_PCS", "500")
         import scoring
@@ -99,20 +104,26 @@ async def test_nominal_processing_with_policy_bonus():
 
         sb = make_supabase(
             # 1. race_results
-            [{"rider_id": RIDER_ID, "pcs_points": 10}],
-            # 2. contracts
-            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID}],
-            # 3. team_policies — one policy with 10% XP bonus
-            [{"team_id": TEAM_ID, "policy_id": "p-1", "policies": {"xp_bonus": 0.1}}],
+            [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 10}],
+            # 2. contracts (rider is a GC specialist)
+            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+              "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
+            # 3. team_policies — specialist policy matching GC
+            [{"team_id": TEAM_ID, "config": {"specialty": "GC"},
+              "policies": {"slug": "specialist", "xp_bonus": 0.1}}],
             # 4. rider_xp_daily upsert
             [],
             # 5. teams select
-            {"id": TEAM_ID, "cumulative_xp": 0, "treasury": 500_000},
+            {"id": TEAM_ID, "cumulative_xp": 0, "treasury": 500_000, "level": 1, "league_id": "lg-1"},
             # 6. teams update
             [],
             # 7. treasury_log dedup → empty
             [],
             # 8. treasury_log insert
+            [],
+            # 9. league teams for snapshot
+            [{"id": TEAM_ID, "cumulative_xp": 11}],
+            # 10. team_ranking_daily upsert
             [],
         )
 
@@ -164,3 +175,53 @@ def test_bonus_positive_only():
 
     # Zero pts → bonus = 0
     assert calculate_rider_bonus(0, 5000, 500) == 0
+
+
+# ---------------------------------------------------------------------------
+# Level-up (Task 3)
+# ---------------------------------------------------------------------------
+
+
+def test_compute_level():
+    """compute_level returns correct level for various XP values."""
+    from scoring import compute_level
+
+    assert compute_level(0) == 1
+    assert compute_level(49) == 1
+    assert compute_level(50) == 2
+    assert compute_level(149) == 2
+    assert compute_level(150) == 3
+    assert compute_level(6400) == 10
+    assert compute_level(99999) == 10
+
+
+# ---------------------------------------------------------------------------
+# Per-rider policy matching (Task 2)
+# ---------------------------------------------------------------------------
+
+
+def test_rider_matches_specialist():
+    """specialist policy matches when rider specialty == config specialty."""
+    from scoring import _rider_matches_policy
+
+    assert _rider_matches_policy("specialist", {"specialty": "GC"}, {"specialty": "GC"})
+    assert _rider_matches_policy("specialist", {"specialty": "gc"}, {"specialty": "GC"})
+    assert not _rider_matches_policy("specialist", {"specialty": "Sprint"}, {"specialty": "GC"})
+
+
+def test_rider_matches_national_pride():
+    """national_pride matches when nationality matches."""
+    from scoring import _rider_matches_policy
+
+    assert _rider_matches_policy("national_pride", {"nationality": "BE"}, {"nationality": "BE"})
+    assert not _rider_matches_policy("national_pride", {"nationality": "FR"}, {"nationality": "BE"})
+
+
+def test_rider_matches_young_blood():
+    """young_blood matches when rider age <= max_age."""
+    from scoring import _rider_matches_policy
+
+    # Born in 2001, today is 2026 → age = 25
+    assert _rider_matches_policy("young_blood", {"max_age": 25}, {"birthdate": "2001-06-15"})
+    assert not _rider_matches_policy("young_blood", {"max_age": 24}, {"birthdate": "2001-01-01"})
+    assert not _rider_matches_policy("young_blood", {"max_age": 25}, {"birthdate": None})
