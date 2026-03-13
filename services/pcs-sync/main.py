@@ -20,7 +20,10 @@ load_dotenv()
 
 app = FastAPI(title="WattHunter PCS Sync", version="0.2.0")
 
-API_SECRET = os.getenv("SYNC_API_SECRET", "")
+API_SECRET = os.getenv("SYNC_API_SECRET")
+if not API_SECRET:
+    import warnings
+    warnings.warn("SYNC_API_SECRET not set — API authentication disabled. Set this in production!", stacklevel=2)
 
 # Supabase client (service role — never exposed to browser)
 _supabase = create_client(
@@ -31,7 +34,9 @@ _supabase = create_client(
 
 def _check_auth(x_api_secret: Optional[str]) -> None:
     """Simple secret-based auth for internal calls."""
-    if API_SECRET and x_api_secret != API_SECRET:
+    if not API_SECRET:
+        return  # Auth disabled (dev mode only)
+    if x_api_secret != API_SECRET:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 

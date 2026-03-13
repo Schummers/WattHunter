@@ -12,7 +12,9 @@ const SaveSponsorsSchema = z.object({
 });
 
 export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
-  const parsed = SaveSponsorsSchema.parse(input);
+  const result = SaveSponsorsSchema.safeParse(input);
+  if (!result.success) return { error: "Invalid sponsor data" };
+  const parsed = result.data;
   const supabase = await createClient();
 
   const {
@@ -55,7 +57,7 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
 
   // Upsert secondary slot
   if (parsed.secondary) {
-    await supabase
+    const { error: secErr } = await supabase
       .from("team_sponsors")
       .upsert(
         {
@@ -68,11 +70,12 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
         },
         { onConflict: "team_id,slot" },
       );
+    if (secErr) return { error: secErr.message };
   }
 
   // Upsert or remove principal slot
   if (parsed.principal) {
-    await supabase
+    const { error: priErr } = await supabase
       .from("team_sponsors")
       .upsert(
         {
@@ -85,12 +88,14 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
         },
         { onConflict: "team_id,slot" },
       );
+    if (priErr) return { error: priErr.message };
   } else {
-    await supabase
+    const { error: delErr } = await supabase
       .from("team_sponsors")
       .delete()
       .eq("team_id", parsed.teamId)
       .eq("slot", "principal");
+    if (delErr) return { error: delErr.message };
   }
 
   revalidatePath(`/league/${parsed.leagueId}/budget`);

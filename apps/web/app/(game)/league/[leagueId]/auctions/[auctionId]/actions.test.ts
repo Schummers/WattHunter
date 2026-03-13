@@ -174,12 +174,22 @@ describe("placeBid — RC-4 edge cases", () => {
     expect(result).toEqual({ error: "Not authenticated" });
   });
 
-  it("accepts large amount (999999999)", async () => {
+  it("rejects amount exceeding 100M", async () => {
+    const result = await placeBid({
+      auctionId: UUID_1,
+      riderId: UUID_2,
+      amount: 100_000_001,
+      round: 1,
+    });
+    expect(result).toEqual({ error: "Invalid data" });
+  });
+
+  it("accepts amount at 100M cap", async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: null } });
     const result = await placeBid({
       auctionId: UUID_1,
       riderId: UUID_2,
-      amount: 999_999_999,
+      amount: 100_000_000,
       round: 1,
     });
     expect(result).toEqual({ error: "Not authenticated" });
@@ -215,7 +225,7 @@ describe("placeBid — rider salary minimum", () => {
   it("returns error when bid is below rider monthly_salary", async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
     mockFrom
-      .mockReturnValueOnce(makeChain({ league_id: "league-1" }))           // auctions
+      .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))           // auctions
       .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 500_000 })) // teams
       .mockReturnValueOnce(makeChain({ monthly_salary: 10_000 }));          // riders
 
@@ -239,7 +249,7 @@ describe("placeBid — budget check", () => {
     // treasury = 1_000, other active bids = 800, new bid = 300 → 1_100 > 1_000
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
     mockFrom
-      .mockReturnValueOnce(makeChain({ league_id: "league-1" }))                   // auctions
+      .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))                   // auctions
       .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000 }))          // teams
       .mockReturnValueOnce(makeChain({ monthly_salary: 100 }))                     // riders
       .mockReturnValueOnce(makeChain(null))                                         // existingBid (maybeSingle → null)
@@ -259,7 +269,7 @@ describe("placeBid — budget check", () => {
     // treasury = 1_000, no other bids, new bid = 1_000 → 1_000 ≤ 1_000 → OK
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
     mockFrom
-      .mockReturnValueOnce(makeChain({ league_id: "league-1" }))                         // auctions
+      .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))                         // auctions
       .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 10 }))   // teams
       .mockReturnValueOnce(makeChain({ monthly_salary: 100, pcs_rank: 5, ever_in_top500: true })) // riders
       .mockReturnValueOnce(makeChain(null))                               // existingBid
@@ -283,20 +293,53 @@ describe("placeBid — budget check", () => {
 // ---------------------------------------------------------------------------
 
 describe("cancelBid", () => {
-  it("returns success when update succeeds", async () => {
-    mockFrom.mockReturnValueOnce(makeChain(null, null));
-
-    const result = await cancelBid("bid-uuid-001");
-
-    expect(result).toEqual({ success: true });
-    expect(mockFrom).toHaveBeenCalledWith("auction_bids");
+  it("rejects invalid UUID", async () => {
+    const result = await cancelBid("not-a-uuid");
+    expect(result).toEqual({ error: "Invalid bid ID" });
   });
 
-  it("returns error when Supabase update fails", async () => {
-    mockFrom.mockReturnValueOnce(makeChain(null, { message: "permission denied" }));
+  it("rejects unauthenticated user", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    const result = await cancelBid(UUID_1);
+    expect(result).toEqual({ error: "Not authenticated" });
+  });
 
-    const result = await cancelBid("bid-uuid-002");
+  it("returns success when all checks pass", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
+    mockFrom
+      .mockReturnValueOnce(makeChain({ id: UUID_1, team_id: "team-1", auction_id: UUID_2, status: "active", teams: { user_id: "user-1" } })) // bid lookup
+      .mockReturnValueOnce(makeChain({ status: "open", closes_at: null })) // auction check
+      .mockReturnValueOnce(makeChain(null, null)); // update
 
-    expect(result).toEqual({ error: "permission denied" });
+    const result = await cancelBid(UUID_1);
+    expect(result).toEqual({ success: true });
+  });
+
+  it("rejects when bid not owned by user", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
+    mockFrom
+      .mockReturnValueOnce(makeChain({ id: UUID_1, team_id: "team-1", auction_id: UUID_2, status: "active", teams: { user_id: "other-user" } }));
+
+    const result = await cancelBid(UUID_1);
+    expect(result).toEqual({ error: "Not authorized" });
+  });
+
+  it("rejects when bid is not active", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
+    mockFrom
+      .mockReturnValueOnce(makeChain({ id: UUID_1, team_id: "team-1", auction_id: UUID_2, status: "won", teams: { user_id: "user-1" } }));
+
+    const result = await cancelBid(UUID_1);
+    expect(result).toEqual({ error: "Bid is not active" });
+  });
+
+  it("rejects when auction is closed", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
+    mockFrom
+      .mockReturnValueOnce(makeChain({ id: UUID_1, team_id: "team-1", auction_id: UUID_2, status: "active", teams: { user_id: "user-1" } }))
+      .mockReturnValueOnce(makeChain({ status: "closed", closes_at: null }));
+
+    const result = await cancelBid(UUID_1);
+    expect(result).toEqual({ error: "Auction is no longer open" });
   });
 });

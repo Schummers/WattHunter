@@ -71,7 +71,10 @@ export async function GET(request: Request) {
   // Determine redirect destination
   let redirectTo = `${origin}/league/choose`;
 
-  if (next) {
+  // Validate next parameter to prevent open redirect
+  const isValidNext = next && next.startsWith("/") && !next.startsWith("//") && !next.includes(":");
+
+  if (isValidNext) {
     redirectTo = `${origin}${next}`;
   } else {
     const { data: membership } = await supabase

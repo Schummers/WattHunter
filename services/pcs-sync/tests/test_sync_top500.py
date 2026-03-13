@@ -5,20 +5,24 @@ from unittest.mock import MagicMock, AsyncMock, patch
 import pytest
 
 
-def test_rank_max_for_level():
-    """Level thresholds: L1=500, L5=100, L10=3 (podium)."""
-    from sync import rank_max_for_level
+def test_rank_min_for_level():
+    """Pool min values matching apps/web/lib/levels.ts poolMin."""
+    from sync import rank_min_for_level, rank_max_for_level
 
-    assert rank_max_for_level(1) == 500
-    assert rank_max_for_level(2) == 350
-    assert rank_max_for_level(3) == 250
-    assert rank_max_for_level(4) == 175
-    assert rank_max_for_level(5) == 100
-    assert rank_max_for_level(6) == 75
-    assert rank_max_for_level(7) == 50
-    assert rank_max_for_level(8) == 25
-    assert rank_max_for_level(9) == 10
-    assert rank_max_for_level(10) == 3
+    # rank_min_for_level is the canonical name
+    assert rank_min_for_level(1) == 351
+    assert rank_min_for_level(2) == 251
+    assert rank_min_for_level(3) == 176
+    assert rank_min_for_level(4) == 101
+    assert rank_min_for_level(5) == 76
+    assert rank_min_for_level(6) == 51
+    assert rank_min_for_level(7) == 26
+    assert rank_min_for_level(8) == 11
+    assert rank_min_for_level(9) == 4
+    assert rank_min_for_level(10) == 1
+
+    # rank_max_for_level is an alias for backward compat
+    assert rank_max_for_level(1) == rank_min_for_level(1)
 
 
 def test_format_rider_name():

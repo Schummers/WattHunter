@@ -3,20 +3,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
-import { getMaxSlots } from "@/lib/levels";
+import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
 
 function minRankForLevel(level: number): number {
-  const pools: Record<number, number> = {
-    1: 401, 2: 301, 3: 201, 4: 151, 5: 101,
-    6: 76, 7: 51, 8: 26, 9: 11, 10: 1,
-  };
-  return pools[Math.min(Math.max(level, 1), 10)] ?? 401;
+  return getLevelByNumber(level).poolMin;
 }
 
 const BidSchema = z.object({
   auctionId: z.string().uuid(),
   riderId: z.string().uuid(),
-  amount: z.number().int().positive(),
+  amount: z.number().int().positive().max(100_000_000),
   round: z.number().int().min(1).max(3),
 });
 
@@ -35,11 +31,15 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
   // Get auction's league_id to scope team lookup
   const { data: auction } = await supabase
     .from("auctions")
-    .select("league_id")
+    .select("league_id, status, closes_at")
     .eq("id", parsed.data.auctionId)
     .single();
 
   if (!auction) return { error: "Auction not found" };
+  if (auction.status !== "open") return { error: "Auction is not open" };
+  if (auction.closes_at && new Date(auction.closes_at) < new Date()) {
+    return { error: "Auction bidding period has ended" };
+  }
 
   const { data: team } = await supabase
     .from("teams")
@@ -142,11 +142,45 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
 }
 
 export async function cancelBid(bidId: string) {
+  // Validate UUID
+  const parsed = z.string().uuid().safeParse(bidId);
+  if (!parsed.success) return { error: "Invalid bid ID" };
+
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Verify ownership: bid belongs to a team owned by this user
+  const { data: bid } = await supabase
+    .from("auction_bids")
+    .select("id, team_id, auction_id, status, teams!inner(user_id)")
+    .eq("id", parsed.data)
+    .single();
+
+  if (!bid) return { error: "Bid not found" };
+  if ((bid.teams as any).user_id !== user.id) return { error: "Not authorized" };
+  if (bid.status !== "active") return { error: "Bid is not active" };
+
+  // Check auction is still open (can't cancel after closes_at)
+  const { data: auction } = await supabase
+    .from("auctions")
+    .select("status, closes_at")
+    .eq("id", bid.auction_id)
+    .single();
+
+  if (!auction || auction.status !== "open") {
+    return { error: "Auction is no longer open" };
+  }
+  if (auction.closes_at && new Date(auction.closes_at) < new Date()) {
+    return { error: "Auction bidding period has ended" };
+  }
+
   const { error } = await supabase
     .from("auction_bids")
     .update({ status: "cancelled" })
-    .eq("id", bidId);
+    .eq("id", parsed.data);
 
   if (error) return { error: error.message };
 

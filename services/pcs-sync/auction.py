@@ -161,10 +161,10 @@ async def resolve_current_round(
                     rider_pcs_rank = rider_data.data.get("pcs_rank") if rider_data.data else None
 
                     if rider_pcs_rank is not None:
-                        max_rank = rank_max_for_level(team_level)
-                        if rider_pcs_rank > max_rank:
+                        pool_min = rank_max_for_level(team_level)
+                        if rider_pcs_rank < pool_min:
                             logger.warning(
-                                f"  {rider_name}: PCS rank {rider_pcs_rank} exceeds max {max_rank} "
+                                f"  {rider_name}: PCS rank {rider_pcs_rank} below pool min {pool_min} "
                                 f"for team level {team_level} — cancelling all bids"
                             )
                             supabase.table("auction_bids").update(

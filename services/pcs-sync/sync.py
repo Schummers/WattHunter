@@ -20,14 +20,20 @@ RATE_LIMIT_MS = int(os.getenv("PCS_RATE_LIMIT_DELAY_MS", "4000"))
 
 SALARY_FLOOR = 5_000    # €/month (no upper cap)
 
-# Level gating thresholds: level → max PCS rank accessible
-LEVEL_RANK_THRESHOLDS = [500, 350, 250, 175, 100, 75, 50, 25, 10, 3]
+# Pool min rank per level — matches apps/web/lib/levels.ts poolMin
+LEVEL_POOL_MIN = [351, 251, 176, 101, 76, 51, 26, 11, 4, 1]
 
 
-def rank_max_for_level(level: int) -> int:
-    """Return the max PCS rank a player at this level can access."""
+def rank_min_for_level(level: int) -> int:
+    """Return the min (best) PCS rank accessible at this level.
+    E.g., level 1 → 351 means riders ranked 351-500 are accessible.
+    """
     idx = max(0, min(level, 10) - 1)
-    return LEVEL_RANK_THRESHOLDS[idx]
+    return LEVEL_POOL_MIN[idx]
+
+
+# Keep old name as alias for backward compat (used in auction.py)
+rank_max_for_level = rank_min_for_level
 
 
 def format_rider_name(raw_name: str) -> str:
