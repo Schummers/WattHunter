@@ -10,6 +10,7 @@ import {
   BadgeEuro,
   Trophy,
   Settings,
+  CircleHelp,
   ChevronDown,
   Check,
   type LucideIcon,
@@ -197,8 +198,15 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
         })}
       </nav>
 
-      {/* Settings at bottom */}
+      {/* Help + Settings at bottom */}
       <div className="border-t border-[var(--border-subtle)] p-2">
+        <Link
+          href={`/league/${leagueId}/help`}
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-[length:var(--type-body)] font-medium text-[var(--text-mid)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-high)]"
+        >
+          <CircleHelp size={16} className="shrink-0" />
+          Help
+        </Link>
         <Link
           href={`/league/${leagueId}/settings`}
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-[length:var(--type-body)] font-medium text-[var(--text-mid)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-high)]"

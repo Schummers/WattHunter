@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { InfoCard } from "@/components/info-card";
+import { OnboardingCards } from "@/components/onboarding-cards";
 import { Users, Wallet, Timer, ChevronRight, Trophy } from "lucide-react";
 
 function timeUntil(dateStr: string): string {
@@ -50,6 +51,9 @@ export function HomeFeed({
   return (
     <div className="min-h-full">
       <div className="px-4 pt-4 space-y-3">
+      {/* Onboarding */}
+      <OnboardingCards leagueId={leagueId} />
+
       {/* Team Overview */}
       <InfoCard className="p-4 space-y-3">
         <div className="flex items-center justify-between">

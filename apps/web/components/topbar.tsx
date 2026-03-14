@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Settings, ChevronDown, Check } from "lucide-react";
+import { Settings, CircleHelp, ChevronDown, Check } from "lucide-react";
 
 interface League {
   id: string;
@@ -104,9 +104,14 @@ export function TopBar({
         )}
       </div>
 
-      <Link href={settingsHref} className="flex items-center justify-center">
-        <Settings size={20} className="text-[var(--text-mid)] hover:text-[var(--text-high)] transition-colors" />
-      </Link>
+      <div className="flex items-center gap-3">
+        <Link href={`/league/${leagueId}/help`} className="flex items-center justify-center">
+          <CircleHelp size={20} className="text-[var(--text-mid)] hover:text-[var(--text-high)] transition-colors" />
+        </Link>
+        <Link href={settingsHref} className="flex items-center justify-center">
+          <Settings size={20} className="text-[var(--text-mid)] hover:text-[var(--text-high)] transition-colors" />
+        </Link>
+      </div>
     </header>
   );
 }
