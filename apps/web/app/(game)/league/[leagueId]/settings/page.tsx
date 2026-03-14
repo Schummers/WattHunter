@@ -1,13 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { BackHeader } from "@/components/back-header";
-import {
-  Trophy,
-  Coins,
-  Layers,
-  Gavel,
-  ChevronRight,
-  Plus,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import {
   CopyInviteCodeButton,
@@ -22,33 +15,6 @@ import {
   updateTeamName,
   updateLeagueName,
 } from "./actions";
-
-const DOC_ITEMS = [
-  {
-    slug: "points",
-    icon: Trophy,
-    title: "How points work",
-    subtitle: "PCS scoring, XP conversion, ranking",
-  },
-  {
-    slug: "money",
-    icon: Coins,
-    title: "Bonus & money",
-    subtitle: "Salaries, bonuses, treasury management",
-  },
-  {
-    slug: "levels",
-    icon: Layers,
-    title: "Team levels & unlocks",
-    subtitle: "XP thresholds, slots, policies, pool",
-  },
-  {
-    slug: "auctions",
-    icon: Gavel,
-    title: "Auctions & rounds",
-    subtitle: "Bidding, sealed rounds, schedule",
-  },
-];
 
 export default async function SettingsPage({
   params,
@@ -243,45 +209,6 @@ export default async function SettingsPage({
 
             {/* Leave league */}
             <LeaveLeagueButton leagueId={leagueId} />
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="border-t border-[var(--border-subtle)]" />
-
-        {/* Section 3: Documentation */}
-        <div className="space-y-3">
-          <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-            Documentation
-          </span>
-
-          <div className="divide-y divide-[var(--border-subtle)]">
-            {DOC_ITEMS.map((item) => (
-              <Link
-                key={item.slug}
-                href={`/league/${leagueId}/settings/docs/${item.slug}`}
-                className="flex w-full items-center gap-3 py-3 text-left rounded-lg hover:bg-[var(--bg-subtle)] transition-colors -mx-2 px-2"
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface)]">
-                  <item.icon
-                    size={18}
-                    className="text-[var(--text-mid)]"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-                    {item.title}
-                  </p>
-                  <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-                    {item.subtitle}
-                  </p>
-                </div>
-                <ChevronRight
-                  size={16}
-                  className="shrink-0 text-[var(--text-ghost)]"
-                />
-              </Link>
-            ))}
           </div>
         </div>
 
