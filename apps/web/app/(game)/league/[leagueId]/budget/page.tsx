@@ -58,15 +58,27 @@ export default async function BudgetPage({
   // Income/outgoing totals
   const { data: phaseTotals } = await supabase
     .from("treasury_log")
-    .select("amount")
+    .select("amount, type")
     .eq("team_id", team.id)
     .gte("created_at", start.toISOString())
     .lte("created_at", end.toISOString());
 
-  const income = (phaseTotals ?? [])
+  const totals = phaseTotals ?? [];
+  const hasSponsorPayments = totals.some((t) => t.type === "sponsor_payment");
+
+  // Expected sponsor income from active team_sponsors
+  let expectedSponsorIncome = 0;
+  if (!hasSponsorPayments && teamSponsors && teamSponsors.length > 0) {
+    expectedSponsorIncome = teamSponsors.reduce((sum, ts) => {
+      const s = Array.isArray(ts.sponsors) ? ts.sponsors[0] : ts.sponsors;
+      return sum + ((s as { monthly_budget: number })?.monthly_budget ?? 0);
+    }, 0);
+  }
+
+  const income = totals
     .filter((t) => t.amount > 0)
-    .reduce((sum, t) => sum + t.amount, 0);
-  const outgoing = (phaseTotals ?? [])
+    .reduce((sum, t) => sum + t.amount, 0) + expectedSponsorIncome;
+  const outgoing = totals
     .filter((t) => t.amount < 0)
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 

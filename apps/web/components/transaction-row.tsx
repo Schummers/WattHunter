@@ -31,7 +31,7 @@ function getSubtitle(props: TransactionRowProps): string {
   if (props.type === "monthly_bonus" || props.type === "rider_revenue") {
     return props.description?.split(" — ")[1] ?? "Bonus";
   }
-  if (props.type === "auction_purchase") return "Auction";
+  if (props.type === "auction_purchase") return "Salary";
   if (props.type === "starting_fund") return "Starting fund";
   if (props.type === "bankruptcy_release") return "Bankruptcy release";
   return props.description ?? "";
@@ -40,6 +40,7 @@ function getSubtitle(props: TransactionRowProps): string {
 function getName(props: TransactionRowProps): string {
   if (props.type === "sponsor_payment") return props.description ?? "Sponsor";
   if (props.type === "starting_fund") return "Initial treasury";
+  if (props.type === "auction_purchase") return props.description?.split(" — ")[1] ?? props.description ?? "Contract";
   if (props.type === "bankruptcy_release") return props.description ?? "Auto-release";
   return props.description?.split(" — ")[0] ?? "Unknown";
 }

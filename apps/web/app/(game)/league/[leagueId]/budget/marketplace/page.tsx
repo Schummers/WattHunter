@@ -22,6 +22,20 @@ async function checkSponsorEligibility(
 
   const riderIds = (contracts ?? []).map((c) => c.rider_id);
 
+  // Fetch active specialist policy for specialty eligibility
+  const { data: teamPolicies } = await supabase
+    .from("team_policies")
+    .select("config, policies!policy_id(slug)")
+    .eq("team_id", teamId)
+    .eq("is_active", true);
+
+  const activeSpecialty = (teamPolicies ?? [])
+    .find((p) => {
+      const pol = p.policies as unknown as { slug: string } | null;
+      return pol?.slug === "specialist";
+    })
+    ?.config?.specialty as string | null ?? null;
+
   if (riderIds.length === 0) {
     return sponsors.map((s) => ({
       sponsorId: s.id,
@@ -71,12 +85,12 @@ async function checkSponsorEligibility(
       nationalityMet = count >= sponsor.nationality_count;
     }
 
-    // Check specialty (OR logic)
+    // Check specialty — compare against team's active Specialist policy
     let specialtyMet: boolean | null = null;
     if (sponsor.specialty.length > 0) {
-      specialtyMet = riderList.some(
-        (r) => r.specialty && sponsor.specialty.includes(r.specialty),
-      );
+      specialtyMet = activeSpecialty
+        ? sponsor.specialty.some((s) => s.toLowerCase() === activeSpecialty.toLowerCase())
+        : false;
     }
 
     // Check result condition

@@ -57,7 +57,7 @@ const FILTER_SEGMENTS = ["All", "Bonuses", "Salaries", "Sponsors"];
 function filterTransactions(transactions: Transaction[], filterIndex: number): Transaction[] {
   if (filterIndex === 0) return transactions;
   if (filterIndex === 1) return transactions.filter((t) => t.type === "rider_revenue" || t.type === "monthly_bonus");
-  if (filterIndex === 2) return transactions.filter((t) => t.type === "monthly_salary");
+  if (filterIndex === 2) return transactions.filter((t) => t.type === "monthly_salary" || t.type === "auction_purchase");
   if (filterIndex === 3) return transactions.filter((t) => t.type === "sponsor_payment");
   return transactions;
 }
@@ -168,7 +168,17 @@ export function BudgetClient({
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             Sponsors
           </span>
+          <Link
+            href={`/league/${leagueId}/budget/marketplace`}
+            className="text-[length:var(--type-caption)] font-medium text-[var(--accent-default)]"
+          >
+            Change &rarr;
+          </Link>
         </div>
+
+        <p className="px-4 mb-2 text-[length:var(--type-caption)] text-[var(--text-ghost)]">
+          Change will take effect after the next auction phase.
+        </p>
 
         <div className="space-y-3 px-4">
           {/* Secondary sponsor */}
