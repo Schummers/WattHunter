@@ -87,7 +87,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - Politiques actives max : 1 (Niveau 1) → 2 (Niveau 3+) → 3 (Niveau 9+)
 - 4 types de policies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)
 - Pool = Top 500 PCS global (12 mois glissants), gating par rang selon niveau
-- XP Niveau 2 = 75 | XP Niveau 3 = 200 | XP Niveau 5 = 700 | XP Niveau 10 = 6 400
+- XP Niveau 2 = 50 | XP Niveau 3 = 150 | XP Niveau 5 = 500 | XP Niveau 10 = 2 500
 
 
 ## Blockers ouverts (résoudre avant alpha)

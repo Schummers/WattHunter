@@ -196,15 +196,15 @@ XP equipe = Σ XP de tous les coureurs du roster
 | Niveau | XP cumule | Slots | Politiques actives | Rang PCS debloque | Policy debloquee | Sponsor debloque |
 |--------|-----------|-------|--------------------|-------------------|------------------|------------------|
 | 1 | 0 | 6 | 1 | #351-500 | Speciality | Secondary T1 (200k→300k) |
-| 2 | 75 | 8 | 1 | #251-500 | — | — |
-| 3 | 200 | 8 | 2 | #176-500 | Nationality | Secondary T2 (400k) |
-| 4 | 350 | 9 | 2 | #101-500 | — | — |
-| 5 | 700 | 10 | 2 | #76-500 | Teams | Principal T3 (550k) |
-| 6 | 1 200 | 10 | 2 | #51-500 | — | — |
-| 7 | 1 900 | 11 | 2 | #26-500 | Age | Principal T4 (750k) |
-| 8 | 2 900 | 12 | 2 | #11-500 | — | Principal T5 (1M) |
-| 9 | 4 400 | 12 | 3 | #4-500 | — | — |
-| 10 | 6 400 | 12 | 3 | #1-500 | — | — |
+| 2 | 50 | 8 | 1 | #251-500 | — | — |
+| 3 | 150 | 8 | 2 | #176-500 | Nationality | Secondary T2 (400k) |
+| 4 | 300 | 9 | 2 | #101-500 | — | — |
+| 5 | 500 | 10 | 2 | #76-500 | Teams | Principal T3 (550k) |
+| 6 | 700 | 10 | 2 | #51-500 | — | — |
+| 7 | 1 000 | 11 | 2 | #26-500 | Age | Principal T4 (750k) |
+| 8 | 1 400 | 12 | 2 | #11-500 | — | Principal T5 (1M) |
+| 9 | 1 900 | 12 | 3 | #4-500 | — | — |
+| 10 | 2 500 | 12 | 3 | #1-500 | — | — |
 
 ---
 
@@ -281,7 +281,7 @@ Le boost s'applique individuellement : chaque rider matche reçoit +5% sur ses p
 | Slots max | 6 (Niv 1) → 12 (Niv 8) | Non |
 | Politiques max | 1 (Nv.1-2) → 2 (Nv.3-8) → 3 (Nv.9-10) | Non |
 | Pool coureurs | Top 500 PCS global (12 mois glissants) | Non |
-| XP Niveau 5 | 700 | Non |
-| XP Niveau 10 | 6 400 | Non |
+| XP Niveau 5 | 500 | Non |
+| XP Niveau 10 | 2 500 | Non |
 | Contrat sponsor | 2 mois (post-beta) | Non |
 | Joueurs max par ligue | 20 | Non |

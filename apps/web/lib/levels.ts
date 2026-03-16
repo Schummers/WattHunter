@@ -1,14 +1,14 @@
 export const LEVELS = [
   { level: 1, xp: 0, slots: 6, pool: "#351-500", poolMin: 351, policy: "Speciality", maxActive: 1, sponsor: "Sponsor T1 · 200k→300k€" },
-  { level: 2, xp: 75, slots: 8, pool: "#251-500", poolMin: 251, policy: null, maxActive: 1, sponsor: null },
-  { level: 3, xp: 200, slots: 8, pool: "#176-500", poolMin: 176, policy: "Nationality", maxActive: 2, sponsor: "Sponsor T2 · 400k€" },
-  { level: 4, xp: 350, slots: 9, pool: "#101-500", poolMin: 101, policy: null, maxActive: 2, sponsor: null },
-  { level: 5, xp: 700, slots: 10, pool: "#76-500", poolMin: 76, policy: "Teams", maxActive: 2, sponsor: "Sponsor T3 · 550k€" },
-  { level: 6, xp: 1200, slots: 10, pool: "#51-500", poolMin: 51, policy: null, maxActive: 2, sponsor: null },
-  { level: 7, xp: 1900, slots: 11, pool: "#26-500", poolMin: 26, policy: "Age", maxActive: 2, sponsor: "Sponsor T4 · 750k€" },
-  { level: 8, xp: 2900, slots: 12, pool: "#11-500", poolMin: 11, policy: null, maxActive: 2, sponsor: "Sponsor T5 · 1M€" },
-  { level: 9, xp: 4400, slots: 12, pool: "#4-500", poolMin: 4, policy: null, maxActive: 3, sponsor: null },
-  { level: 10, xp: 6400, slots: 12, pool: "#1-500", poolMin: 1, policy: null, maxActive: 3, sponsor: null },
+  { level: 2, xp: 50, slots: 8, pool: "#251-500", poolMin: 251, policy: null, maxActive: 1, sponsor: null },
+  { level: 3, xp: 150, slots: 8, pool: "#176-500", poolMin: 176, policy: "Nationality", maxActive: 2, sponsor: "Sponsor T2 · 400k€" },
+  { level: 4, xp: 300, slots: 9, pool: "#101-500", poolMin: 101, policy: null, maxActive: 2, sponsor: null },
+  { level: 5, xp: 500, slots: 10, pool: "#76-500", poolMin: 76, policy: "Teams", maxActive: 2, sponsor: "Sponsor T3 · 550k€" },
+  { level: 6, xp: 700, slots: 10, pool: "#51-500", poolMin: 51, policy: null, maxActive: 2, sponsor: null },
+  { level: 7, xp: 1000, slots: 11, pool: "#26-500", poolMin: 26, policy: "Age", maxActive: 2, sponsor: "Sponsor T4 · 750k€" },
+  { level: 8, xp: 1400, slots: 12, pool: "#11-500", poolMin: 11, policy: null, maxActive: 2, sponsor: "Sponsor T5 · 1M€" },
+  { level: 9, xp: 1900, slots: 12, pool: "#4-500", poolMin: 4, policy: null, maxActive: 3, sponsor: null },
+  { level: 10, xp: 2500, slots: 12, pool: "#1-500", poolMin: 1, policy: null, maxActive: 3, sponsor: null },
 ] as const;
 
 export type LevelData = (typeof LEVELS)[number];
