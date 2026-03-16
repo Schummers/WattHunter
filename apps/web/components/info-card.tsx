@@ -9,11 +9,11 @@ interface InfoCardProps {
 
 export function InfoCard({ children, className, href }: InfoCardProps) {
   const base =
-    "rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)]/80 backdrop-blur-sm";
+    "rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)]";
 
   if (href) {
     return (
-      <Link href={href} className={cn(base, "block", className)}>
+      <Link href={href} className={cn(base, "block transition-colors hover:bg-[var(--bg-surface-hover)] hover:border-[var(--border-hover)]", className)}>
         {children}
       </Link>
     );

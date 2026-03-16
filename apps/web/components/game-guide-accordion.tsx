@@ -344,7 +344,7 @@ const HELP_SECTIONS: HelpSection[] = [
           ]}
         />
         <Formula>
-          <p>Max active policies: 1 (Level 1-4) | 2 (Level 5+)</p>
+          <p>Max active policies: 1 (Level 1-2) | 2 (Level 3-8) | 3 (Level 9+)</p>
           <p>Bonuses are additive across policies</p>
         </Formula>
         <p>
@@ -368,15 +368,15 @@ const HELP_SECTIONS: HelpSection[] = [
           headers={["Level", "XP required", "Slots", "Policies", "Rider pool", "New unlock"]}
           rows={[
             ["1", "0", "6", "1", "#351–500", "Speciality policy"],
-            ["2", "50", "7", "1", "#251–500", "—"],
-            ["3", "150", "7", "1", "#176–500", "Nationality policy"],
-            ["4", "350", "8", "1", "#101–500", "—"],
-            ["5", "700", "9", "2", "#76–500", "Teams policy"],
-            ["6", "1,200", "9", "2", "#51–500", "—"],
-            ["7", "1,900", "10", "2", "#26–500", "Age policies"],
-            ["8", "2,900", "11", "2", "#11–500", "—"],
-            ["9", "4,400", "11", "2", "#4–500", "—"],
-            ["10", "6,400", "12", "2", "#1–500", "—"],
+            ["2", "50", "8", "1", "#251–500", "—"],
+            ["3", "150", "8", "2", "#176–500", "Nationality policy"],
+            ["4", "350", "9", "2", "#101–500", "—"],
+            ["5", "700", "10", "2", "#76–500", "Teams policy"],
+            ["6", "1,200", "10", "2", "#51–500", "—"],
+            ["7", "1,900", "11", "2", "#26–500", "Age policies"],
+            ["8", "2,900", "12", "2", "#11–500", "—"],
+            ["9", "4,400", "12", "3", "#4–500", "—"],
+            ["10", "6,400", "12", "3", "#1–500", "—"],
           ]}
         />
         <Formula>
@@ -514,7 +514,7 @@ export function GameGuideAccordion() {
             <button
               type="button"
               onClick={() => toggle(section.id)}
-              className="flex w-full items-center gap-3 py-3 -mx-4 px-4 text-left transition-colors hover:bg-[var(--bg-subtle)]"
+              className="flex w-[calc(100%+2rem)] items-center gap-3 py-3 -mx-4 px-4 text-left transition-colors hover:bg-[var(--bg-subtle)]"
             >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface)]">
                 <Icon size={18} className="text-[var(--text-mid)]" />

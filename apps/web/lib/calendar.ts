@@ -53,6 +53,25 @@ export function getUpcomingRaces(count: number): UpcomingRace[] {
   return races;
 }
 
+export function getPhaseRaces(phaseStartDate: string, phaseEndDate: string): UpcomingRace[] {
+  const today = new Date().toISOString().slice(0, 10);
+  return (calendarData as Race[])
+    .filter((race) => {
+      const start = getRaceStartDate(race);
+      const end = race.type === "stage-race" ? race.end_date : race.date;
+      // Race starts within phase range AND hasn't fully finished
+      return start >= phaseStartDate && start <= phaseEndDate && end >= today;
+    })
+    .sort((a, b) => getRaceStartDate(a).localeCompare(getRaceStartDate(b)))
+    .map((race) => ({
+      slug: race.slug,
+      name: race.name,
+      startDate: getRaceStartDate(race),
+      endDate: getRaceEndDate(race),
+      type: race.type,
+    }));
+}
+
 export function formatRaceDate(startDate: string, endDate: string | null): string {
   const start = new Date(startDate + "T12:00:00");
   const startStr = start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
