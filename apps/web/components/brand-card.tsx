@@ -46,9 +46,14 @@ export function BrandCard({
         {/* ::after = SVG noise (via CSS) */}
         <div className="xp-content">
           {/* Top label */}
-          <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-            Total XP Season
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+              Total XP Season
+            </span>
+            <span className="text-[length:var(--type-caption)] font-medium link-tertiary">
+              All levels &rarr;
+            </span>
+          </div>
 
           {/* XP hero number + ranking pill */}
           <div className="flex items-center gap-2 mt-1">

@@ -455,8 +455,8 @@ const HELP_SECTIONS: HelpSection[] = [
             avoid bankruptcy
           </li>
           <li>
-            Releasing a rider requires a <strong>1-month notice period</strong> — the rider stays
-            on your roster (and you pay their salary) for one more phase before the slot is freed
+            You can release riders <strong>during the auction window</strong>. The rider enters
+            notice and leaves your roster at the start of the next phase.
           </li>
         </ul>
         <p>

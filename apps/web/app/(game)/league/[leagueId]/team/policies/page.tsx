@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { BackHeader } from "@/components/back-header";
 import { POLICY_TYPES } from "@/lib/policies";
 import { PoliciesClient } from "./policies-client";
+import { getCurrentPhase, getNextPhase } from "@/lib/phases";
 
 export default async function PoliciesPage({
   params,
@@ -43,10 +44,10 @@ export default async function PoliciesPage({
     .from("policies")
     .select("id, slug");
 
-  // Current team_policies
+  // Current team_policies (including pending state)
   const { data: teamPolicies } = await supabase
     .from("team_policies")
-    .select("policy_id, is_active, config")
+    .select("policy_id, is_active, config, pending_is_active, pending_config, effective_phase_id")
     .eq("team_id", teamId);
 
   // Build initial policies map
@@ -55,7 +56,16 @@ export default async function PoliciesPage({
     policyIdToSlug[p.id] = p.slug;
   }
 
-  const initialPolicies: Record<string, { isActive: boolean; config: Record<string, string> | null }> = {};
+  const nextPhase = getNextPhase(getCurrentPhase());
+  const nextPhaseName = nextPhase?.label ?? null;
+
+  const initialPolicies: Record<string, {
+    isActive: boolean;
+    config: Record<string, string> | null;
+    hasPending?: boolean;
+    pendingIsActive?: boolean;
+    pendingConfig?: Record<string, string> | null;
+  }> = {};
   for (const pt of POLICY_TYPES) {
     initialPolicies[pt.slug] = { isActive: false, config: null };
   }
@@ -65,6 +75,9 @@ export default async function PoliciesPage({
       initialPolicies[slug] = {
         isActive: tp.is_active,
         config: tp.config as Record<string, string> | null,
+        hasPending: tp.pending_is_active != null,
+        pendingIsActive: tp.pending_is_active ?? undefined,
+        pendingConfig: tp.pending_config as Record<string, string> | null ?? undefined,
       };
     }
   }
@@ -118,6 +131,7 @@ export default async function PoliciesPage({
           nationalities={nationalities}
           teams={teams}
           rosterRiders={rosterRiders}
+          nextPhaseName={nextPhaseName}
         />
       </div>
     </div>

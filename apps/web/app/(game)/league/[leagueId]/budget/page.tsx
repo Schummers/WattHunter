@@ -35,12 +35,12 @@ export default async function BudgetPage({
   const phaseIndex = rawPhase >= 0 && rawPhase < AUCTION_PHASES.length ? rawPhase : (defaultIndex >= 0 ? defaultIndex : 0);
   const selectedPhase = AUCTION_PHASES[phaseIndex];
 
-  // Active sponsors with details
+  // Active sponsors with details (include pending_change status)
   const { data: teamSponsors } = await supabase
     .from("team_sponsors")
-    .select("id, slot, status, sponsor_id, payments_count, sponsors!sponsor_id(id, name, abbreviation, tier, slot, monthly_budget, first_phase_budget, nationality, nationality_count, specialty, result_condition)")
+    .select("id, slot, status, sponsor_id, payments_count, pending_sponsor_id, effective_phase_id, sponsors!sponsor_id(id, name, abbreviation, tier, slot, monthly_budget, first_phase_budget, nationality, nationality_count, specialty, result_condition)")
     .eq("team_id", team.id)
-    .eq("status", "active");
+    .in("status", ["active", "pending_change"]);
 
   // Transactions for selected phase
   const year = new Date().getFullYear();

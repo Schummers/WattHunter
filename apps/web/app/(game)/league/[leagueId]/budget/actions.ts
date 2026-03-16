@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod/v4";
 import { revalidatePath } from "next/cache";
+import { getCurrentPhase, getNextPhase } from "@/lib/phases";
 
 const SaveSponsorsSchema = z.object({
   teamId: z.uuid(),
@@ -31,6 +32,13 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
 
   if (!team) return { error: "Team not found" };
 
+  const maybeNextPhase = getNextPhase(getCurrentPhase());
+  if (!maybeNextPhase) {
+    return { error: "Cannot change sponsors during the last phase of the season." };
+  }
+  const nextPhaseId = maybeNextPhase.id;
+  const nextPhaseLabel = maybeNextPhase.label;
+
   // Validate secondary sponsor
   if (parsed.secondary) {
     const { data: sponsor } = await supabase
@@ -55,72 +63,87 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
     }
   }
 
-  // Fetch current active sponsors to detect changes
+  // Fetch current sponsors (active or already pending)
   const { data: currentSponsors } = await supabase
     .from("team_sponsors")
-    .select("slot, sponsor_id")
-    .eq("team_id", parsed.teamId)
-    .eq("status", "active");
+    .select("slot, sponsor_id, status, pending_sponsor_id")
+    .eq("team_id", parsed.teamId);
 
-  const currentSecondaryId = currentSponsors?.find((s) => s.slot === "secondary")?.sponsor_id ?? null;
-  const currentPrincipalId = currentSponsors?.find((s) => s.slot === "principal")?.sponsor_id ?? null;
+  const currentSecondary = currentSponsors?.find((s) => s.slot === "secondary");
+  const currentPrincipal = currentSponsors?.find((s) => s.slot === "principal");
 
-  // Upsert or remove secondary slot
-  if (parsed.secondary) {
-    if (parsed.secondary !== currentSecondaryId) {
-      const { error: secErr } = await supabase
-        .from("team_sponsors")
-        .upsert(
-          {
-            team_id: parsed.teamId,
-            sponsor_id: parsed.secondary,
-            slot: "secondary",
-            status: "active",
-            payments_count: 0,
-            activated_at: new Date().toISOString(),
+  // Helper: upsert a slot with pending state
+  async function upsertSlotPending(
+    slot: "secondary" | "principal",
+    newSponsorId: string | null,
+    current: { sponsor_id: string; status: string; pending_sponsor_id: string | null } | undefined,
+  ) {
+    if (!newSponsorId) {
+      // Removing sponsor — set pending to null (will clear at transition)
+      if (current) {
+        return supabase
+          .from("team_sponsors")
+          .update({
+            status: "pending_change",
+            pending_sponsor_id: null,
+            effective_phase_id: nextPhaseId,
             updated_at: new Date().toISOString(),
-          },
-          { onConflict: "team_id,slot" },
-        );
-      if (secErr) return { error: secErr.message };
+          })
+          .eq("team_id", parsed.teamId)
+          .eq("slot", slot);
+      }
+      return { error: null };
     }
-  } else {
-    const { error: delErr } = await supabase
-      .from("team_sponsors")
-      .delete()
-      .eq("team_id", parsed.teamId)
-      .eq("slot", "secondary");
-    if (delErr) return { error: delErr.message };
+
+    const activeSponsorId = current?.sponsor_id ?? null;
+    if (newSponsorId === activeSponsorId) {
+      // No change — clear any pending state
+      if (current?.status === "pending_change") {
+        return supabase
+          .from("team_sponsors")
+          .update({
+            status: "active",
+            pending_sponsor_id: null,
+            effective_phase_id: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("team_id", parsed.teamId)
+          .eq("slot", slot);
+      }
+      return { error: null };
+    }
+
+    // Different sponsor — set as pending
+    if (current) {
+      return supabase
+        .from("team_sponsors")
+        .update({
+          status: "pending_change",
+          pending_sponsor_id: newSponsorId,
+          effective_phase_id: nextPhaseId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("team_id", parsed.teamId)
+        .eq("slot", slot);
+    }
+
+    // No existing row — insert with pending
+    return supabase.from("team_sponsors").insert({
+      team_id: parsed.teamId,
+      sponsor_id: newSponsorId,
+      slot,
+      status: "active",
+      payments_count: 0,
+      activated_at: new Date().toISOString(),
+    });
   }
 
-  // Upsert or remove principal slot
-  if (parsed.principal) {
-    if (parsed.principal !== currentPrincipalId) {
-      const { error: priErr } = await supabase
-        .from("team_sponsors")
-        .upsert(
-          {
-            team_id: parsed.teamId,
-            sponsor_id: parsed.principal,
-            slot: "principal",
-            status: "active",
-            payments_count: 0,
-            activated_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "team_id,slot" },
-        );
-      if (priErr) return { error: priErr.message };
-    }
-  } else {
-    const { error: delErr } = await supabase
-      .from("team_sponsors")
-      .delete()
-      .eq("team_id", parsed.teamId)
-      .eq("slot", "principal");
-    if (delErr) return { error: delErr.message };
-  }
+  const { error: secErr } = await upsertSlotPending("secondary", parsed.secondary, currentSecondary ?? undefined);
+  if (secErr) return { error: secErr.message };
+
+  const { error: priErr } = await upsertSlotPending("principal", parsed.principal, currentPrincipal ?? undefined);
+  if (priErr) return { error: priErr.message };
 
   revalidatePath(`/league/${parsed.leagueId}/budget`);
-  return { success: true };
+  return { success: true, effectivePhaseName: nextPhaseLabel };
 }

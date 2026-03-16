@@ -72,7 +72,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - NEVER hardcoder CONVERSION_RATE — toujours lire depuis l'env.
 - NEVER autoriser une enchère si treasury < total des enchères actives.
 - NEVER skip la validation Zod sur les inputs d'API routes.
-- NEVER libérer un coureur sans le préavis d'1 mois (sauf auto-release faillite).
+- NEVER libérer un coureur hors de la fenêtre d'enchères — le release prend effet au début de la phase suivante (sauf auto-release faillite).
 
 ## Constantes du jeu (calibrer avant le lancement alpha)
 - Trésorerie départ : 200 000 €

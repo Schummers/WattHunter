@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getCurrentPhase, getNextPhase, isInAuctionWindow, getPhaseRange } from "@/lib/phases";
 
 export async function releaseRider(contractId: string) {
   const supabase = await createClient();
@@ -9,6 +10,18 @@ export async function releaseRider(contractId: string) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  // Release only allowed during auction window
+  const now = new Date();
+  if (!isInAuctionWindow(now)) {
+    return { error: "Riders can only be released during the auction window." };
+  }
+
+  const currentPhase = getCurrentPhase(now);
+  const nextPhase = getNextPhase(currentPhase);
+  if (!nextPhase) {
+    return { error: "Cannot release riders during the last phase of the season." };
+  }
 
   // Verify ownership
   const { data: contract } = await supabase
@@ -28,9 +41,8 @@ export async function releaseRider(contractId: string) {
     return { error: "Contract is not active" };
   }
 
-  const now = new Date();
-  const releaseDate = new Date(now);
-  releaseDate.setDate(releaseDate.getDate() + 30);
+  // Release date = start of next phase
+  const { start: releaseDate } = getPhaseRange(nextPhase, now.getFullYear());
 
   const { error } = await supabase
     .from("contracts")
@@ -38,11 +50,12 @@ export async function releaseRider(contractId: string) {
       status: "notice",
       notice_date: now.toISOString(),
       release_date: releaseDate.toISOString(),
+      effective_phase_id: nextPhase.id,
     })
     .eq("id", contractId);
 
   if (error) return { error: error.message };
 
   revalidatePath("/league");
-  return { success: true };
+  return { success: true, releasePhaseName: nextPhase.label };
 }

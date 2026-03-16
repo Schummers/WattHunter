@@ -168,7 +168,7 @@ export function HomeFeed({
               return (
                 <InfoCard key={race.slug} className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface)]">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface-hover)]">
                       <Calendar size={18} className="text-[var(--text-mid)]" />
                     </div>
                     <div className="flex-1 min-w-0">

@@ -67,7 +67,7 @@ export function TopBar({
           {hasMultiple && (
             <ChevronDown
               size={12}
-              className={`shrink-0 text-[var(--text-low)] transition-transform ${open ? "rotate-180" : ""}`}
+              className={`-ml-0.5 shrink-0 text-[var(--text-low)] transition-transform ${open ? "rotate-180" : ""}`}
             />
           )}
         </button>

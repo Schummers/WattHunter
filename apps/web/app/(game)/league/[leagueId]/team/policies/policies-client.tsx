@@ -21,6 +21,9 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: 
 interface PolicyState {
   isActive: boolean;
   config: Record<string, string> | null;
+  hasPending?: boolean;
+  pendingIsActive?: boolean;
+  pendingConfig?: Record<string, string> | null;
 }
 
 interface RosterRider {
@@ -38,6 +41,7 @@ interface PoliciesClientProps {
   nationalities: string[];
   teams: string[];
   rosterRiders: RosterRider[];
+  nextPhaseName?: string | null;
 }
 
 export function PoliciesClient({
@@ -48,6 +52,7 @@ export function PoliciesClient({
   nationalities,
   teams,
   rosterRiders,
+  nextPhaseName,
 }: PoliciesClientProps) {
   const [localPolicies, setLocalPolicies] = useState<Record<string, PolicyState>>(initialPolicies);
   const [savedPolicies, setSavedPolicies] = useState<Record<string, PolicyState>>(initialPolicies);
@@ -132,7 +137,7 @@ export function PoliciesClient({
           <div className="flex items-center gap-2">
             <Save size={14} className="shrink-0 text-[var(--text-high)]" />
             <p className="text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
-              Saved for next round
+              Changes saved — active from {nextPhaseName ?? "next phase"}
             </p>
           </div>
           <ul className="mt-1.5 space-y-0.5">
@@ -152,7 +157,7 @@ export function PoliciesClient({
       ) : (
         <div className="rounded-lg bg-[var(--bg-subtle)] px-4 py-3">
           <p className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
-            Changes apply to the next round. Current policies active until round closes.
+            Change will take effect after the next auction phase.
           </p>
         </div>
       )}
@@ -178,6 +183,7 @@ export function PoliciesClient({
           const isForced = level === 1 && policy.slug === "specialist" && maxActive === 1;
           const maxReached = !isActive && activeCount >= maxActive;
           const config = localPolicies[policy.slug]?.config;
+          const hasPending = initialPolicies[policy.slug]?.hasPending ?? false;
           const IconComp = ICON_MAP[policy.icon];
 
           return (
@@ -201,6 +207,11 @@ export function PoliciesClient({
                       <Tag variant="default">
                         <Lock size={10} className="inline mr-0.5" />
                         Lv.{policy.unlockLevel}
+                      </Tag>
+                    )}
+                    {hasPending && !savedBanner && (
+                      <Tag variant="warning">
+                        Pending
                       </Tag>
                     )}
                   </div>

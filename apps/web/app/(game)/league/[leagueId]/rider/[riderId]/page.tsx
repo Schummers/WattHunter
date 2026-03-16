@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { RiderDetailClient } from "./rider-detail-client";
 import { getMaxSlots } from "@/lib/levels";
 import { calcMinSalary } from "@/lib/format";
+import { isInAuctionWindow, getNextPhase, getCurrentPhase, getPhaseById } from "@/lib/phases";
 
 type RiderContext = "recruts" | "team" | "ranking";
 
@@ -68,7 +69,7 @@ export default async function RiderDetailPage({
   } = await supabase.auth.getUser();
 
   let context: RiderContext = (from as RiderContext) ?? "ranking";
-  let contractData: { locked_salary: number; status: string } | null = null;
+  let contractData: { locked_salary: number; status: string; contractId?: string; effectivePhaseName?: string } | null = null;
   let currentBidAmount: number | null = null;
   let currentBidId: string | null = null;
   let activeAuctionId: string | null = null;
@@ -86,7 +87,7 @@ export default async function RiderDetailPage({
       // Check if owned
       const { data: contract } = await supabase
         .from("contracts")
-        .select("id, locked_salary, status")
+        .select("id, locked_salary, status, effective_phase_id")
         .eq("team_id", member.team_id)
         .eq("rider_id", riderId)
         .in("status", ["active", "notice"])
@@ -94,7 +95,15 @@ export default async function RiderDetailPage({
 
       if (contract) {
         if (from !== "recruts" && from !== "team") context = "team";
-        contractData = { locked_salary: contract.locked_salary, status: contract.status };
+        const phaseName = contract.effective_phase_id
+          ? getPhaseById(contract.effective_phase_id)?.label
+          : undefined;
+        contractData = {
+          locked_salary: contract.locked_salary,
+          status: contract.status,
+          contractId: contract.id,
+          effectivePhaseName: phaseName,
+        };
       }
 
       // Check current bid (for recruts context)
@@ -159,6 +168,12 @@ export default async function RiderDetailPage({
   }
 
   const minSalary = calcMinSalary(rider.pcs_points_1yr ?? 0);
+
+  // Release availability (only during auction window)
+  const now = new Date();
+  const canRelease = isInAuctionWindow(now);
+  const nextPhase = getNextPhase(getCurrentPhase(now));
+  const nextPhaseName = nextPhase?.label ?? null;
 
   // Phase 1.3: Budget info for recruts context
   let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number } | undefined;
@@ -238,6 +253,8 @@ export default async function RiderDetailPage({
       activeAuctionId={activeAuctionId}
       contractData={contractData}
       ownerInfo={ownerInfo}
+      canRelease={canRelease}
+      nextPhaseName={nextPhaseName}
     />
   );
 }

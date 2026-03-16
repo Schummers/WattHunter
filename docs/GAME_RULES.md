@@ -175,9 +175,10 @@ Le bonus est calcule **individuellement par course** (pas cumule sur le mois). I
 > **Beta :** Le concept de `purchase_price` (achat unique) est supprime. L'enchere fixe uniquement le salaire mensuel — aucune somme n'est debitee a la signature du contrat.
 
 **Liberation d'un coureur :**
-- 1 mois de preavis, 1 mois de salaire supplementaire
-- Slot libere immediatement
-- Coureur retourne au pool general apres le preavis
+- Release uniquement pendant la fenetre d'encheres (auction window)
+- Le coureur passe en statut "notice" jusqu'au debut de la phase suivante
+- Slot libere au debut de la phase suivante (PAS immediatement)
+- Coureur retourne au pool general au debut de la phase suivante
 
 ---
 

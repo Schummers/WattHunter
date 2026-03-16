@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/segmented-control";
 import { BackHeader } from "@/components/back-header";
 import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
+import { releaseRider } from "./actions";
 import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
 
@@ -56,8 +57,10 @@ interface RiderDetailClientProps {
   currentBidId?: string;
   currentBidAmount: number | null;
   activeAuctionId: string | null;
-  contractData: { locked_salary: number; status: string } | null;
+  contractData: { locked_salary: number; status: string; contractId?: string; effectivePhaseName?: string } | null;
   ownerInfo: { display_name: string; team_name: string } | null;
+  canRelease?: boolean;
+  nextPhaseName?: string | null;
   budgetInfo?: {
     currentSlots: number;
     maxSlots: number;
@@ -106,6 +109,8 @@ export function RiderDetailClient({
   activeAuctionId,
   contractData,
   ownerInfo,
+  canRelease,
+  nextPhaseName,
   budgetInfo,
   inRail,
 }: RiderDetailClientProps) {
@@ -378,20 +383,44 @@ export function RiderDetailClient({
 
       {/* RD-6: Release button (team only) */}
       {context === "team" && contractData?.status === "active" && (
-        <div className="px-4">
+        <div className="px-4 space-y-2">
           <Button
             variant="outline"
             size="lg"
             className="w-full"
-            onClick={() => {
-              // Simple confirm — could be AlertDialog later
-              if (confirm("Release this rider? They will leave in 1 month.")) {
-                // Would need contractId passed down
+            disabled={!canRelease || saving || !contractData.contractId}
+            onClick={async () => {
+              if (!contractData?.contractId) return;
+              const phaseName = nextPhaseName ?? "next phase";
+              if (!confirm(`Release this rider? They will leave at the start of ${phaseName}.`)) return;
+              setSaving(true);
+              setError(null);
+              const result = await releaseRider(contractData.contractId);
+              if (result.error) {
+                setError(result.error);
+              } else {
+                router.refresh();
               }
+              setSaving(false);
             }}
           >
-            Release rider — 1 month notice
+            {saving ? "Releasing..." : canRelease
+              ? `Release rider — leaves ${nextPhaseName ?? "next phase"}`
+              : "Release only available during auctions"}
           </Button>
+          {error && (
+            <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
+          )}
+        </div>
+      )}
+      {/* Notice badge for riders in notice period */}
+      {context === "team" && contractData?.status === "notice" && (
+        <div className="px-4">
+          <div className="rounded-lg bg-[var(--status-warning-bg,rgba(251,191,36,0.15))] px-4 py-3 text-center">
+            <span className="text-[length:var(--type-body)] font-semibold text-[var(--status-warning,#fbbf24)]">
+              Leaving after {contractData.effectivePhaseName ?? "next phase"}
+            </span>
+          </div>
         </div>
       )}
 

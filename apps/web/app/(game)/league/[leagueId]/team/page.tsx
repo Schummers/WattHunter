@@ -8,6 +8,7 @@ import { getMaxSlots, getProgressPct, getNextLevel, getLevelByNumber } from "@/l
 import { formatThousands, smartCountdown, countryCodeToFlag } from "@/lib/format";
 import { calculateBoost, riderMatchesPolicy } from "@/lib/boost";
 import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
+import { getPhaseById } from "@/lib/phases";
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   Target,
@@ -68,7 +69,7 @@ export default async function MyTeamPage({
   const { data: teamRiders } = await supabase
     .from("contracts")
     .select(
-      "id, rider_id, locked_salary, status, riders(id, full_name, nationality, real_team, pcs_rank, photo_url, specialty, pcs_points_1yr, birthdate)"
+      "id, rider_id, locked_salary, status, effective_phase_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url, specialty, pcs_points_1yr, birthdate)"
     )
     .eq("team_id", team?.id)
     .in("status", ["active", "notice"]);
@@ -321,6 +322,9 @@ export default async function MyTeamPage({
           {teamRiders?.map((tr) => {
             const r = Array.isArray(tr.riders) ? tr.riders[0] : tr.riders;
             if (!r) return null;
+            const noticePhaseName = tr.status === "notice" && tr.effective_phase_id
+              ? getPhaseById(tr.effective_phase_id)?.label
+              : null;
             return (
               <RiderCard
                 key={tr.id}
@@ -335,6 +339,11 @@ export default async function MyTeamPage({
                 xp={xpByRider[r.id] ?? 0}
                 boostPct={riderBoosts[r.id] ?? 0}
                 href={`/league/${leagueId}/rider/${r.id}`}
+                rightContent={noticePhaseName ? (
+                  <span className="rounded-[var(--radius-pill)] bg-[var(--status-warning-bg,rgba(251,191,36,0.15))] px-2 py-0.5 text-[length:var(--type-caption)] font-semibold text-[var(--status-warning,#fbbf24)]">
+                    Leaving {noticePhaseName}
+                  </span>
+                ) : undefined}
               />
             );
           })}

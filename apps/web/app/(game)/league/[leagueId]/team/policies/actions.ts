@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
+import { getCurrentPhase, getNextPhase } from "@/lib/phases";
 
 const PolicyInputSchema = z.object({
   slug: z.string(),
@@ -21,7 +22,7 @@ export async function savePolicies(
   teamId: string,
   leagueId: string,
   policies: { slug: string; isActive: boolean; config: Record<string, string> | null }[]
-): Promise<{ success?: boolean; error?: string }> {
+): Promise<{ success?: boolean; error?: string; effectivePhaseName?: string }> {
   // Zod validation
   const parsed = SavePoliciesSchema.safeParse({ teamId, leagueId, policies });
   if (!parsed.success) {
@@ -83,30 +84,68 @@ export async function savePolicies(
     slugToId[p.slug] = p.id;
   }
 
-  // Upsert each policy
+  // Determine next phase for deferred activation
+  const nextPhase = getNextPhase(getCurrentPhase());
+  if (!nextPhase) {
+    return { error: "Cannot change policies during the last phase of the season." };
+  }
+
+  // Upsert each policy with pending state (changes take effect at next phase)
   for (const policy of policies) {
     const policyId = slugToId[policy.slug];
     if (!policyId) continue;
 
-    const { error } = await supabase
+    // Check if a row already exists for this team+policy
+    const { data: existing } = await supabase
       .from("team_policies")
-      .upsert(
-        {
+      .select("id, is_active, config")
+      .eq("team_id", teamId)
+      .eq("policy_id", policyId)
+      .single();
+
+    if (existing) {
+      // Only set pending if the value actually changed
+      const sameActive = existing.is_active === policy.isActive;
+      const sameConfig = JSON.stringify(existing.config) === JSON.stringify(policy.config);
+      if (sameActive && sameConfig) {
+        // No change — clear any previous pending state
+        await supabase
+          .from("team_policies")
+          .update({ pending_is_active: null, pending_config: null, effective_phase_id: null })
+          .eq("id", existing.id);
+        continue;
+      }
+
+      const { error } = await supabase
+        .from("team_policies")
+        .update({
+          pending_is_active: policy.isActive,
+          pending_config: policy.config,
+          effective_phase_id: nextPhase.id,
+        })
+        .eq("id", existing.id);
+
+      if (error) return { error: `Failed to save ${policy.slug}: ${error.message}` };
+    } else {
+      // New policy row — insert with pending state
+      const { error } = await supabase
+        .from("team_policies")
+        .insert({
           team_id: teamId,
           policy_id: policyId,
-          is_active: policy.isActive,
-          config: policy.config,
-        },
-        { onConflict: "team_id,policy_id" }
-      );
+          is_active: false,
+          config: null,
+          pending_is_active: policy.isActive,
+          pending_config: policy.config,
+          effective_phase_id: nextPhase.id,
+        });
 
-    if (error) {
-      return { error: `Failed to save ${policy.slug}: ${error.message}` };
+      if (error) return { error: `Failed to save ${policy.slug}: ${error.message}` };
     }
   }
 
   revalidatePath(`/league/${leagueId}/team`);
   revalidatePath(`/league/${leagueId}/team/policies`);
 
-  return { success: true };
+  return { success: true, effectivePhaseName: nextPhase.label };
 }

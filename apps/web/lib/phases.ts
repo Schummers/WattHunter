@@ -68,3 +68,25 @@ export function getNextAuctionDate(from: Date = new Date()): NextAuction | null 
 export function formatAuctionDate(date: Date): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
+
+export function getNextPhase(current?: AuctionPhase): AuctionPhase | null {
+  const phase = current ?? getCurrentPhase();
+  const idx = AUCTION_PHASES.findIndex((p) => p.id === phase.id);
+  return idx < AUCTION_PHASES.length - 1 ? AUCTION_PHASES[idx + 1] : null;
+}
+
+export function getPhaseById(id: number): AuctionPhase | undefined {
+  return AUCTION_PHASES.find((p) => p.id === id);
+}
+
+/** True if the current date falls within the auction dates of the current phase */
+export function isInAuctionWindow(date: Date = new Date()): boolean {
+  const phase = getCurrentPhase(date);
+  if (!phase.auctionDates) return false;
+  const year = date.getFullYear();
+  const first = phase.auctionDates[0];
+  const last = phase.auctionDates[phase.auctionDates.length - 1];
+  const start = new Date(year, first.month - 1, first.day);
+  const end = new Date(year, last.month - 1, last.day, 23, 59, 59);
+  return date >= start && date <= end;
+}
