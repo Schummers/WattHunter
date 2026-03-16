@@ -176,10 +176,6 @@ export function BudgetClient({
           </Link>
         </div>
 
-        <p className="px-4 mb-2 text-[length:var(--type-caption)] text-[var(--text-ghost)]">
-          Change will take effect after the next auction phase.
-        </p>
-
         <div className="space-y-3 px-4">
           {/* Secondary sponsor */}
           {secondary ? (

@@ -83,8 +83,8 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - Salaire plancher (enchère min) : 5 000 €/mois
 - Taux de conversion bonus : 1 500 €/point PCS
 - Durée d'enchère : chaque round dure de sa date jusqu'à la date du round suivant (dernier round = fin de journée)
-- Slots coureurs : 6 (Niveau 1) → 12 (Niveau 10)
-- Politiques actives max : 1 (Niveau 1) → 2 (Niveau 5+)
+- Slots coureurs : 6 (Niveau 1) → 12 (Niveau 8)
+- Politiques actives max : 1 (Niveau 1) → 2 (Niveau 3+) → 3 (Niveau 9+)
 - 4 types de policies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)
 - Pool = Top 500 PCS global (12 mois glissants), gating par rang selon niveau
 - XP Niveau 5 = 700 | XP Niveau 10 = 6 400

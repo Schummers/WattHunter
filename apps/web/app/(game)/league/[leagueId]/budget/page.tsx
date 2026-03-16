@@ -82,6 +82,24 @@ export default async function BudgetPage({
     .filter((t) => t.amount < 0)
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
+  // Synthetic sponsor transactions when no real sponsor_payment exists yet
+  const realTransactions = transactions ?? [];
+  let allTransactions = realTransactions;
+  if (!hasSponsorPayments && teamSponsors && teamSponsors.length > 0) {
+    const syntheticSponsors = teamSponsors.map((ts) => {
+      const s = Array.isArray(ts.sponsors) ? ts.sponsors[0] : ts.sponsors;
+      const sponsor = s as { name: string; monthly_budget: number };
+      return {
+        id: `synthetic-sponsor-${ts.id}`,
+        type: "sponsor_payment",
+        amount: sponsor?.monthly_budget ?? 0,
+        description: `Sponsor — ${sponsor?.name ?? "Unknown"}`,
+        created_at: start.toISOString(),
+      };
+    });
+    allTransactions = [...syntheticSponsors, ...realTransactions];
+  }
+
   return (
     <BudgetClient
       leagueId={leagueId}
@@ -89,7 +107,7 @@ export default async function BudgetPage({
       level={team.level}
       income={income}
       outgoing={outgoing}
-      transactions={transactions ?? []}
+      transactions={allTransactions}
       phaseIndex={phaseIndex}
       teamSponsors={(teamSponsors ?? []).map((ts) => {
         const s = Array.isArray(ts.sponsors) ? ts.sponsors[0] : ts.sponsors;
