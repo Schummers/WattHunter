@@ -88,7 +88,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - 4 types de policies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)
 - Pool = Top 500 PCS global (12 mois glissants), gating par rang selon niveau
 - XP Niveau 2 = 100 | XP Niveau 3 = 200 | XP Niveau 5 = 700 | XP Niveau 10 = 6 400
-- Contrats sponsors : 2 mois
+
 
 ## Blockers ouverts (résoudre avant alpha)
 - [ ] Simulation Excel : calibrer taux de conversion (€/point PCS)

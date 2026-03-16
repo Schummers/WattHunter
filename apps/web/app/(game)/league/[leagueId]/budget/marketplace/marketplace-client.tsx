@@ -66,11 +66,11 @@ export function MarketplaceClient({
     let total = 0;
     if (selectedSecondary) {
       const s = sponsors.find((sp) => sp.id === selectedSecondary);
-      if (s) total += s.monthly_budget;
+      if (s) total += s.first_phase_budget ?? s.monthly_budget;
     }
     if (selectedPrincipal) {
       const s = sponsors.find((sp) => sp.id === selectedPrincipal);
-      if (s) total += s.monthly_budget;
+      if (s) total += s.first_phase_budget ?? s.monthly_budget;
     }
     return total;
   }, [selectedSecondary, selectedPrincipal, sponsors]);
@@ -231,7 +231,11 @@ function SponsorRowItem({
         </div>
 
         <span className="min-w-[60px] text-right font-mono text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)] tabular-nums">
-          {formatCompact(sponsor.monthly_budget)}
+          {sponsor.first_phase_budget ? (
+            <>{formatCompact(sponsor.first_phase_budget)} <span className="text-[var(--text-low)]">→</span> {formatCompact(sponsor.monthly_budget)}</>
+          ) : (
+            formatCompact(sponsor.monthly_budget)
+          )}
         </span>
 
         <div className="flex min-w-[56px] justify-end">

@@ -48,6 +48,7 @@ export interface SponsorRow {
   tier: number;
   slot: "secondary" | "principal";
   monthly_budget: number;
+  first_phase_budget: number | null;
   unlock_level: number;
   nationality: string | null;
   nationality_count: number;

@@ -55,40 +55,63 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
     }
   }
 
-  // Upsert secondary slot
+  // Fetch current active sponsors to detect changes
+  const { data: currentSponsors } = await supabase
+    .from("team_sponsors")
+    .select("slot, sponsor_id")
+    .eq("team_id", parsed.teamId)
+    .eq("status", "active");
+
+  const currentSecondaryId = currentSponsors?.find((s) => s.slot === "secondary")?.sponsor_id ?? null;
+  const currentPrincipalId = currentSponsors?.find((s) => s.slot === "principal")?.sponsor_id ?? null;
+
+  // Upsert or remove secondary slot
   if (parsed.secondary) {
-    const { error: secErr } = await supabase
+    if (parsed.secondary !== currentSecondaryId) {
+      const { error: secErr } = await supabase
+        .from("team_sponsors")
+        .upsert(
+          {
+            team_id: parsed.teamId,
+            sponsor_id: parsed.secondary,
+            slot: "secondary",
+            status: "active",
+            payments_count: 0,
+            activated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "team_id,slot" },
+        );
+      if (secErr) return { error: secErr.message };
+    }
+  } else {
+    const { error: delErr } = await supabase
       .from("team_sponsors")
-      .upsert(
-        {
-          team_id: parsed.teamId,
-          sponsor_id: parsed.secondary,
-          slot: "secondary",
-          status: "active",
-          activated_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "team_id,slot" },
-      );
-    if (secErr) return { error: secErr.message };
+      .delete()
+      .eq("team_id", parsed.teamId)
+      .eq("slot", "secondary");
+    if (delErr) return { error: delErr.message };
   }
 
   // Upsert or remove principal slot
   if (parsed.principal) {
-    const { error: priErr } = await supabase
-      .from("team_sponsors")
-      .upsert(
-        {
-          team_id: parsed.teamId,
-          sponsor_id: parsed.principal,
-          slot: "principal",
-          status: "active",
-          activated_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "team_id,slot" },
-      );
-    if (priErr) return { error: priErr.message };
+    if (parsed.principal !== currentPrincipalId) {
+      const { error: priErr } = await supabase
+        .from("team_sponsors")
+        .upsert(
+          {
+            team_id: parsed.teamId,
+            sponsor_id: parsed.principal,
+            slot: "principal",
+            status: "active",
+            payments_count: 0,
+            activated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "team_id,slot" },
+        );
+      if (priErr) return { error: priErr.message };
+    }
   } else {
     const { error: delErr } = await supabase
       .from("team_sponsors")
