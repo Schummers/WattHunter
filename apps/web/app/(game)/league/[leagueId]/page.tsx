@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { LobbyView } from "./lobby-view";
 import { HomeFeed } from "./home-feed";
+import { getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
 
 export default async function LeagueDashboardPage({
   params,
@@ -87,12 +88,30 @@ export default async function LeagueDashboardPage({
   const level = team?.level ?? 1;
   const maxSlots = [6, 7, 7, 8, 9, 9, 10, 11, 11, 12][Math.min(level, 10) - 1];
 
+  // If no active/scheduled auction, check if season started for calendar fallback
+  let nextAuctionLabel: string | null = null;
+  if (!activeAuction) {
+    const { count: closedCount } = await supabase
+      .from("auctions")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", leagueId)
+      .eq("status", "closed");
+
+    if (closedCount && closedCount > 0) {
+      const next = getNextAuctionDate();
+      if (next) {
+        nextAuctionLabel = formatAuctionDate(next.date);
+      }
+    }
+  }
+
   return (
     <HomeFeed
       leagueId={leagueId}
       rosterCount={rosterCount ?? 0}
       maxSlots={maxSlots}
       activeAuction={activeAuction}
+      nextAuctionLabel={nextAuctionLabel}
     />
   );
 }

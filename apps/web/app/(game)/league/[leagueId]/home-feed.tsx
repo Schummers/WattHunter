@@ -31,6 +31,7 @@ interface HomeFeedProps {
   rosterCount: number;
   maxSlots: number;
   activeAuction: ActiveAuction | null;
+  nextAuctionLabel: string | null;
 }
 
 export function HomeFeed({
@@ -38,6 +39,7 @@ export function HomeFeed({
   rosterCount,
   maxSlots,
   activeAuction,
+  nextAuctionLabel,
 }: HomeFeedProps) {
   const upcomingRaces = getUpcomingRaces(3);
 
@@ -48,14 +50,14 @@ export function HomeFeed({
         <OnboardingCards leagueId={leagueId} />
 
         {/* What's Next */}
-        {(activeAuction || upcomingRaces.length > 0) && (
+        {(activeAuction || nextAuctionLabel || upcomingRaces.length > 0) && (
           <div className="space-y-2">
             <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
               What&apos;s Next
             </span>
 
-            {/* Auction Card */}
-            {activeAuction && (
+            {/* Auction Card — from DB or calendar fallback */}
+            {activeAuction ? (
               <InfoCard
                 href={
                   activeAuction.status === "open"
@@ -95,7 +97,23 @@ export function HomeFeed({
                   <ChevronRight size={16} className="shrink-0 text-[var(--text-ghost)]" />
                 </div>
               </InfoCard>
-            )}
+            ) : nextAuctionLabel ? (
+              <InfoCard className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--badge-bg)]">
+                    <Timer size={18} className="text-[var(--accent-label)]" />
+                  </div>
+                  <div>
+                    <p className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+                      Next auction
+                    </p>
+                    <p className="text-[length:var(--type-caption)] font-mono text-[var(--text-mid)]">
+                      {nextAuctionLabel}
+                    </p>
+                  </div>
+                </div>
+              </InfoCard>
+            ) : null}
 
             {/* Open Slots CTA */}
             {rosterCount < maxSlots && activeAuction?.status === "open" && (

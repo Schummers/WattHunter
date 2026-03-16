@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { RecrutsClient } from "./recruts-client";
 import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
+import { getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
 
 export default async function RecrutsPage({
   params,
@@ -101,6 +102,7 @@ export default async function RecrutsPage({
 
   // If no active round, find next scheduled
   let nextRound: { id: string; name: string; opens_at: string } | null = null;
+  let nextAuctionLabel: string | null = null;
   if (!activeRound) {
     const { data } = await supabase
       .from("auctions")
@@ -111,6 +113,23 @@ export default async function RecrutsPage({
       .limit(1)
       .maybeSingle();
     nextRound = data;
+
+    // If no scheduled auction, check if season has started (any closed auction exists)
+    if (!nextRound) {
+      const { count } = await supabase
+        .from("auctions")
+        .select("id", { count: "exact", head: true })
+        .eq("league_id", leagueId)
+        .eq("status", "closed");
+
+      if (count && count > 0) {
+        // Season started — calculate next from calendar
+        const next = getNextAuctionDate();
+        if (next) {
+          nextAuctionLabel = `Next round · ${formatAuctionDate(next.date)}`;
+        }
+      }
+    }
   }
 
   // Load existing bids for this user's team in the active auction
@@ -136,6 +155,7 @@ export default async function RecrutsPage({
       riders={availableRiders}
       activeRound={activeRound}
       nextRound={nextRound}
+      nextAuctionLabel={nextAuctionLabel}
       maxSlots={getMaxSlots(level)}
       currentSlots={ownTeamSlots}
       initialBids={initialBids}
