@@ -240,16 +240,18 @@ function SponsorCard({
           </div>
         </div>
         <div className="text-right">
-          <div className="font-mono text-[length:var(--type-stat)] font-extrabold text-[var(--text-high)] tabular-nums">
-            {formatCompact(currentBudget)}
+          <div className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] tabular-nums">
+            {isEscalating ? (
+              <>
+                {formatCompact(sponsor.first_phase_budget!)}
+                <span className="mx-1 text-[var(--text-low)]">→</span>
+                {formatCompact(sponsor.monthly_budget)}
+              </>
+            ) : (
+              formatCompact(currentBudget)
+            )}
           </div>
-          {isEscalating ? (
-            <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">
-              / month{isFirstPhase ? ` · ${formatCompact(sponsor.monthly_budget)} next` : ""}
-            </div>
-          ) : (
-            <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">/ month</div>
-          )}
+          <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">/ month</div>
         </div>
       </div>
 
