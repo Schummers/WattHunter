@@ -42,6 +42,7 @@ interface PoliciesClientProps {
   teams: string[];
   rosterRiders: RosterRider[];
   nextPhaseName?: string | null;
+  isInAuctionWindow: boolean;
 }
 
 export function PoliciesClient({
@@ -53,14 +54,16 @@ export function PoliciesClient({
   teams,
   rosterRiders,
   nextPhaseName,
+  isInAuctionWindow,
 }: PoliciesClientProps) {
   const [localPolicies, setLocalPolicies] = useState<Record<string, PolicyState>>(initialPolicies);
   const [savedPolicies, setSavedPolicies] = useState<Record<string, PolicyState>>(initialPolicies);
   const [saving, setSaving] = useState(false);
-  const [savedBanner, setSavedBanner] = useState(false);
+  const [savedBanner, setSavedBanner] = useState<"immediate" | "pending" | false>(false);
 
   const maxActive = getMaxActivePolicies(level);
   const activeCount = Object.values(localPolicies).filter((p) => p.isActive).length;
+  const hasPendingOnLoad = Object.values(initialPolicies).some((p) => p.hasPending);
 
   const hasChanges = useMemo(() => {
     return JSON.stringify(localPolicies) !== JSON.stringify(savedPolicies);
@@ -123,7 +126,7 @@ export function PoliciesClient({
     setSaving(false);
     if (result.success) {
       setSavedPolicies({ ...localPolicies });
-      setSavedBanner(true);
+      setSavedBanner(result.immediate ? "immediate" : "pending");
     } else if (result.error) {
       alert(result.error);
     }
@@ -131,8 +134,17 @@ export function PoliciesClient({
 
   return (
     <div className="space-y-4 pb-24">
-      {/* PO-6: Pending banner */}
-      {savedBanner ? (
+      {/* PO-6: Pending / saved banner */}
+      {savedBanner === "immediate" ? (
+        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Save size={14} className="shrink-0 text-[var(--text-high)]" />
+            <p className="text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
+              Changes applied
+            </p>
+          </div>
+        </div>
+      ) : savedBanner === "pending" || (!savedBanner && hasPendingOnLoad) ? (
         <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3">
           <div className="flex items-center gap-2">
             <Save size={14} className="shrink-0 text-[var(--text-high)]" />
@@ -157,7 +169,9 @@ export function PoliciesClient({
       ) : (
         <div className="rounded-lg bg-[var(--bg-subtle)] px-4 py-3">
           <p className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
-            Change will take effect after the next auction phase.
+            {isInAuctionWindow
+              ? "Changes apply immediately during auction window."
+              : "Change will take effect after the next auction phase."}
           </p>
         </div>
       )}
@@ -180,7 +194,6 @@ export function PoliciesClient({
         {POLICY_TYPES.map((policy) => {
           const isUnlocked = level >= policy.unlockLevel;
           const isActive = localPolicies[policy.slug]?.isActive ?? false;
-          const isForced = level === 1 && policy.slug === "specialist" && maxActive === 1;
           const maxReached = !isActive && activeCount >= maxActive;
           const config = localPolicies[policy.slug]?.config;
           const hasPending = initialPolicies[policy.slug]?.hasPending ?? false;
@@ -227,11 +240,9 @@ export function PoliciesClient({
                 {/* PO-2: Toggle on RIGHT */}
                 <Switch
                   checked={isActive}
-                  disabled={!isUnlocked || (isForced && isActive) || maxReached}
+                  disabled={!isUnlocked || maxReached}
                   onCheckedChange={(checked) => handleToggle(policy.slug, checked)}
-                  className={`shrink-0 ${
-                    isForced && isActive ? "opacity-50" : ""
-                  } ${!isUnlocked ? "opacity-30" : ""}`}
+                  className={`shrink-0 ${!isUnlocked ? "opacity-30" : ""}`}
                 />
               </div>
 

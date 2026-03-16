@@ -25,6 +25,7 @@ interface MarketplaceClientProps {
   eligibility: SponsorEligibility[];
   activeSecondary: string | null;
   activePrincipal: string | null;
+  isInAuctionWindow: boolean;
 }
 
 function formatCompact(amount: number): string {
@@ -41,6 +42,7 @@ export function MarketplaceClient({
   eligibility,
   activeSecondary: initialSecondary,
   activePrincipal: initialPrincipal,
+  isInAuctionWindow,
 }: MarketplaceClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -111,7 +113,9 @@ export function MarketplaceClient({
 
       <div className="mx-4 mb-5 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-subtle)] px-4 py-3">
         <p className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
-          Change will take effect after the next auction phase.
+          {isInAuctionWindow
+            ? "Changes apply immediately during auction window."
+            : "Change will take effect after the next auction phase."}
         </p>
       </div>
 

@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 CONVERSION_RATE = int(os.getenv("CONVERSION_RATE_EUR_PER_PCS", "1500"))
 
 # Level thresholds — must match apps/web/lib/levels.ts
-LEVEL_THRESHOLDS = [0, 100, 200, 350, 700, 1200, 1900, 2900, 4400, 6400]
+LEVEL_THRESHOLDS = [0, 75, 200, 350, 700, 1200, 1900, 2900, 4400, 6400]
 
 
 def compute_level(xp: int) -> int:

@@ -1,6 +1,6 @@
 export const LEVELS = [
   { level: 1, xp: 0, slots: 6, pool: "#351-500", poolMin: 351, policy: "Speciality", maxActive: 1, sponsor: "Sponsor T1 · 200k→300k€" },
-  { level: 2, xp: 100, slots: 8, pool: "#251-500", poolMin: 251, policy: null, maxActive: 1, sponsor: null },
+  { level: 2, xp: 75, slots: 8, pool: "#251-500", poolMin: 251, policy: null, maxActive: 1, sponsor: null },
   { level: 3, xp: 200, slots: 8, pool: "#176-500", poolMin: 176, policy: "Nationality", maxActive: 2, sponsor: "Sponsor T2 · 400k€" },
   { level: 4, xp: 350, slots: 9, pool: "#101-500", poolMin: 101, policy: null, maxActive: 2, sponsor: null },
   { level: 5, xp: 700, slots: 10, pool: "#76-500", poolMin: 76, policy: "Teams", maxActive: 2, sponsor: "Sponsor T3 · 550k€" },

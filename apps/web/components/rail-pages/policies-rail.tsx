@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { POLICY_TYPES } from "@/lib/policies";
+import { isInAuctionWindow as checkAuctionWindow } from "@/lib/phases";
 import { PoliciesClient } from "@/app/(game)/league/[leagueId]/team/policies/policies-client";
 
 interface Props {
@@ -124,6 +125,7 @@ export default function PoliciesRail({ leagueId }: Props) {
         nationalities={data.nationalities}
         teams={data.teams}
         rosterRiders={data.rosterRiders}
+        isInAuctionWindow={checkAuctionWindow()}
       />
     </div>
   );

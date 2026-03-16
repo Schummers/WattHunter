@@ -55,10 +55,12 @@ describe("Level progression", () => {
     }
   });
 
-  it("maxActive policies: 1 at level 1, 2 at level 5+", () => {
+  it("maxActive policies: 1 at level 1-2, 2 at level 3-8, 3 at level 9-10", () => {
     expect(getLevelByNumber(1).maxActive).toBe(1);
-    expect(getLevelByNumber(4).maxActive).toBe(1);
+    expect(getLevelByNumber(2).maxActive).toBe(1);
+    expect(getLevelByNumber(3).maxActive).toBe(2);
+    expect(getLevelByNumber(4).maxActive).toBe(2);
     expect(getLevelByNumber(5).maxActive).toBe(2);
-    expect(getLevelByNumber(10).maxActive).toBe(2);
+    expect(getLevelByNumber(10).maxActive).toBe(3);
   });
 });

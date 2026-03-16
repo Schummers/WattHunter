@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod/v4";
 import { revalidatePath } from "next/cache";
-import { getCurrentPhase, getNextPhase } from "@/lib/phases";
+import { getCurrentPhase, getNextPhase, isInAuctionWindow } from "@/lib/phases";
 
 const SaveSponsorsSchema = z.object({
   teamId: z.uuid(),
@@ -12,7 +12,7 @@ const SaveSponsorsSchema = z.object({
   principal: z.uuid().nullable(),
 });
 
-export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
+export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>): Promise<{ success?: boolean; error?: string; effectivePhaseName?: string; immediate?: boolean }> {
   const result = SaveSponsorsSchema.safeParse(input);
   if (!result.success) return { error: "Invalid sponsor data" };
   const parsed = result.data;
@@ -32,12 +32,11 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
 
   if (!team) return { error: "Team not found" };
 
-  const maybeNextPhase = getNextPhase(getCurrentPhase());
-  if (!maybeNextPhase) {
+  const inAuction = isInAuctionWindow();
+  const maybeNextPhase = inAuction ? null : getNextPhase(getCurrentPhase());
+  if (!inAuction && !maybeNextPhase) {
     return { error: "Cannot change sponsors during the last phase of the season." };
   }
-  const nextPhaseId = maybeNextPhase.id;
-  const nextPhaseLabel = maybeNextPhase.label;
 
   // Validate secondary sponsor
   if (parsed.secondary) {
@@ -72,14 +71,89 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
   const currentSecondary = currentSponsors?.find((s) => s.slot === "secondary");
   const currentPrincipal = currentSponsors?.find((s) => s.slot === "principal");
 
-  // Helper: upsert a slot with pending state
+  if (inAuction) {
+    // IMMEDIATE mode: apply sponsor changes directly
+    async function upsertSlotImmediate(
+      slot: "secondary" | "principal",
+      newSponsorId: string | null,
+      current: { sponsor_id: string; status: string; pending_sponsor_id: string | null } | undefined,
+    ) {
+      if (!newSponsorId) {
+        if (current) {
+          return supabase
+            .from("team_sponsors")
+            .delete()
+            .eq("team_id", parsed.teamId)
+            .eq("slot", slot);
+        }
+        return { error: null };
+      }
+
+      const activeSponsorId = current?.sponsor_id ?? null;
+      if (newSponsorId === activeSponsorId) {
+        // Same sponsor — just clear any pending state
+        if (current?.status === "pending_change") {
+          return supabase
+            .from("team_sponsors")
+            .update({
+              status: "active",
+              pending_sponsor_id: null,
+              effective_phase_id: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("team_id", parsed.teamId)
+            .eq("slot", slot);
+        }
+        return { error: null };
+      }
+
+      // Different sponsor — apply immediately
+      if (current) {
+        return supabase
+          .from("team_sponsors")
+          .update({
+            sponsor_id: newSponsorId,
+            status: "active",
+            pending_sponsor_id: null,
+            effective_phase_id: null,
+            payments_count: 0,
+            activated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("team_id", parsed.teamId)
+          .eq("slot", slot);
+      }
+
+      return supabase.from("team_sponsors").insert({
+        team_id: parsed.teamId,
+        sponsor_id: newSponsorId,
+        slot,
+        status: "active",
+        payments_count: 0,
+        activated_at: new Date().toISOString(),
+      });
+    }
+
+    const { error: secErr } = await upsertSlotImmediate("secondary", parsed.secondary, currentSecondary ?? undefined);
+    if (secErr) return { error: secErr.message };
+
+    const { error: priErr } = await upsertSlotImmediate("principal", parsed.principal, currentPrincipal ?? undefined);
+    if (priErr) return { error: priErr.message };
+
+    revalidatePath(`/league/${parsed.leagueId}/budget`);
+    return { success: true, immediate: true };
+  }
+
+  // PENDING mode: changes take effect at next phase
+  const nextPhaseId = maybeNextPhase!.id;
+  const nextPhaseLabel = maybeNextPhase!.label;
+
   async function upsertSlotPending(
     slot: "secondary" | "principal",
     newSponsorId: string | null,
     current: { sponsor_id: string; status: string; pending_sponsor_id: string | null } | undefined,
   ) {
     if (!newSponsorId) {
-      // Removing sponsor — set pending to null (will clear at transition)
       if (current) {
         return supabase
           .from("team_sponsors")
@@ -97,7 +171,6 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
 
     const activeSponsorId = current?.sponsor_id ?? null;
     if (newSponsorId === activeSponsorId) {
-      // No change — clear any pending state
       if (current?.status === "pending_change") {
         return supabase
           .from("team_sponsors")
@@ -113,7 +186,6 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
       return { error: null };
     }
 
-    // Different sponsor — set as pending
     if (current) {
       return supabase
         .from("team_sponsors")
@@ -127,7 +199,6 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>) {
         .eq("slot", slot);
     }
 
-    // No existing row — insert with pending
     return supabase.from("team_sponsors").insert({
       team_id: parsed.teamId,
       sponsor_id: newSponsorId,

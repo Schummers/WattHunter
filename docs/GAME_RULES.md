@@ -196,7 +196,7 @@ XP equipe = Σ XP de tous les coureurs du roster
 | Niveau | XP cumule | Slots | Politiques actives | Rang PCS debloque | Policy debloquee | Sponsor debloque |
 |--------|-----------|-------|--------------------|-------------------|------------------|------------------|
 | 1 | 0 | 6 | 1 | #351-500 | Speciality | Secondary T1 (200k→300k) |
-| 2 | 100 | 8 | 1 | #251-500 | — | — |
+| 2 | 75 | 8 | 1 | #251-500 | — | — |
 | 3 | 200 | 8 | 2 | #176-500 | Nationality | Secondary T2 (400k) |
 | 4 | 350 | 9 | 2 | #101-500 | — | — |
 | 5 | 700 | 10 | 2 | #76-500 | Teams | Principal T3 (550k) |

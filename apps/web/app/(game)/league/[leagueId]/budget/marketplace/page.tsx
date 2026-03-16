@@ -6,6 +6,7 @@ import {
   type SponsorEligibility,
   type SponsorRow,
 } from "@/lib/sponsors";
+import { isInAuctionWindow } from "@/lib/phases";
 import { MarketplaceClient } from "./marketplace-client";
 
 async function checkSponsorEligibility(
@@ -175,6 +176,7 @@ export default async function MarketplacePage({
       eligibility={eligibility}
       activeSecondary={activeSecondary}
       activePrincipal={activePrincipal}
+      isInAuctionWindow={isInAuctionWindow()}
     />
   );
 }
