@@ -89,14 +89,20 @@ def race_meta(slug: str) -> Tuple[str, str]:
 
 
 def find_races_for_today() -> List[Dict]:
-    """Find all races/stages in the calendar whose date matches today."""
+    """Find all races/stages in the calendar whose date matches today.
+
+    For stage races without explicit stages arrays, checks if today falls
+    within [start_date, end_date] and computes the stage number from the
+    day offset.
+    """
     today_str = date.today().isoformat()
     calendar = load_calendar()
     matches = []
     for race in calendar:
         race_type = race.get("type", "one-day")
         if race_type == "stage-race":
-            # Check each stage
+            # First try explicit stages array
+            found_explicit = False
             for stage in race.get("stages", []):
                 if stage.get("date") == today_str:
                     matches.append({
@@ -104,6 +110,20 @@ def find_races_for_today() -> List[Dict]:
                         "name": race.get("name"),
                         "date": stage.get("date"),
                         "stage_url": stage.get("url"),
+                        "type": "stage-race",
+                    })
+                    found_explicit = True
+            # Fallback: check if today is within [start_date, end_date]
+            if not found_explicit:
+                start = race.get("start_date", "")
+                end = race.get("end_date", "")
+                if start and end and start <= today_str <= end:
+                    day_offset = (date.fromisoformat(today_str) - date.fromisoformat(start)).days + 1
+                    matches.append({
+                        "slug": race.get("slug"),
+                        "name": race.get("name"),
+                        "date": start,
+                        "stage_num": day_offset,
                         "type": "stage-race",
                     })
         else:
@@ -156,8 +176,12 @@ async def run_init_riders() -> None:
 # Pipeline B — post-race
 # ---------------------------------------------------------------------------
 
-async def _import_single_race(supabase, browser, race_slug: str, race_name: str, race_date: str, with_ranking: bool = False) -> list[str]:
-    """Import results for a single race/stage. Returns list of imported race_slugs."""
+async def _import_single_race(supabase, browser, race_slug: str, race_name: str, race_date: str, with_ranking: bool = False, target_stage: int | None = None) -> list[str]:
+    """Import results for a single race/stage. Returns list of imported race_slugs.
+
+    If target_stage is set (auto mode), only import that specific stage number
+    instead of all stages.
+    """
     from sync_race import get_stage_urls, import_race_results, update_global_ranking
     from enrich import enrich_single_rider
 
@@ -174,31 +198,58 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
         await ctx1.close()
         print(f"  Stage race — {len(stage_urls)} stage(s) found.")
 
-        for i, stage_entry in enumerate(stage_urls):
-            stage_url = stage_entry.get("stage_url") or stage_entry.get("url", "")
-            print(f"\n--- Stage {i + 1}/{len(stage_urls)}: {stage_url} ---")
-            ctx = await browser.new_context(user_agent=USER_AGENT)
-            page = await ctx.new_page()
-            try:
-                result = await import_race_results(
-                    supabase, page,
-                    race_slug=race_slug,
-                    race_name=race_name,
-                    race_date=race_date,
-                    stage_url=stage_url,
-                )
-                print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
-                # Collect actual race_slugs imported
-                if result.get("race_slug"):
-                    imported_slugs.append(result["race_slug"])
-                else:
-                    imported_slugs.append(stage_url)
-            except Exception as exc:
-                print(f"  Skipped (no results yet): {exc}")
-            await ctx.close()
-            if i < len(stage_urls) - 1:
-                print("  Waiting 15s before next stage...")
-                await asyncio.sleep(15)
+        # In auto mode, only import the target stage
+        if target_stage is not None:
+            if target_stage <= len(stage_urls):
+                stage_entry = stage_urls[target_stage - 1]
+                stage_url = stage_entry.get("stage_url") or stage_entry.get("url", "")
+                print(f"\n--- Stage {target_stage}/{len(stage_urls)}: {stage_url} ---")
+                ctx = await browser.new_context(user_agent=USER_AGENT)
+                page = await ctx.new_page()
+                try:
+                    result = await import_race_results(
+                        supabase, page,
+                        race_slug=race_slug,
+                        race_name=race_name,
+                        race_date=race_date,
+                        stage_url=stage_url,
+                    )
+                    print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
+                    if result.get("race_slug"):
+                        imported_slugs.append(result["race_slug"])
+                    else:
+                        imported_slugs.append(stage_url)
+                except Exception as exc:
+                    print(f"  Skipped (no results yet): {exc}")
+                await ctx.close()
+            else:
+                print(f"  WARNING: target stage {target_stage} > {len(stage_urls)} stages found. Skipping.")
+        else:
+            # Manual mode: import all stages
+            for i, stage_entry in enumerate(stage_urls):
+                stage_url = stage_entry.get("stage_url") or stage_entry.get("url", "")
+                print(f"\n--- Stage {i + 1}/{len(stage_urls)}: {stage_url} ---")
+                ctx = await browser.new_context(user_agent=USER_AGENT)
+                page = await ctx.new_page()
+                try:
+                    result = await import_race_results(
+                        supabase, page,
+                        race_slug=race_slug,
+                        race_name=race_name,
+                        race_date=race_date,
+                        stage_url=stage_url,
+                    )
+                    print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
+                    if result.get("race_slug"):
+                        imported_slugs.append(result["race_slug"])
+                    else:
+                        imported_slugs.append(stage_url)
+                except Exception as exc:
+                    print(f"  Skipped (no results yet): {exc}")
+                await ctx.close()
+                if i < len(stage_urls) - 1:
+                    print("  Waiting 15s before next stage...")
+                    await asyncio.sleep(15)
     else:
         print("--- One-day race — importing result ---")
         ctx = await browser.new_context(user_agent=USER_AGENT)
@@ -274,16 +325,25 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             try:
-                for r in today_races:
+                for i, r in enumerate(today_races):
                     race_name = r["name"]
                     r_slug = r["slug"]
                     r_date = r.get("date", "")
-                    print(f"\n--- Processing: {race_name} ---")
+                    stage_num = r.get("stage_num")  # set for stage races detected by date range
+                    if stage_num:
+                        print(f"\n--- Processing: {race_name} (stage {stage_num}) ---")
+                    else:
+                        print(f"\n--- Processing: {race_name} ---")
                     slugs = await _import_single_race(
                         supabase, browser, r_slug, race_name, r_date,
                         with_ranking=False,  # auto mode skips ranking (use pre-auction)
+                        target_stage=stage_num,
                     )
                     all_imported_slugs.extend(slugs)
+                    # Wait between races
+                    if i < len(today_races) - 1:
+                        print("  Waiting 15s before next race...")
+                        await asyncio.sleep(15)
             finally:
                 await browser.close()
     else:

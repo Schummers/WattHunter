@@ -76,7 +76,7 @@ def _rider_matches_policy(
             birth = datetime.fromisoformat(str(birthdate)).date()
             today = date.today()
             age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
-            return age > 30
+            return age > 32
         except (ValueError, TypeError):
             return False
     return False

@@ -42,9 +42,10 @@ export function riderMatchesPolicy(rider: RiderForBoost, policy: PolicyWithConfi
       const maxAge = cfg?.max_age ? parseInt(cfg.max_age, 10) : 25;
       return age !== null && age <= maxAge;
     }
-    case "road_warriors":
-      // All riders qualify for road_warriors (general XP boost)
-      return true;
+    case "road_warriors": {
+      const rwAge = getAge(rider.birthdate);
+      return rwAge !== null && rwAge > 32;
+    }
     default:
       return false;
   }

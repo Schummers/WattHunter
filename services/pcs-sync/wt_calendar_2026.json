@@ -59,6 +59,12 @@
     "type": "stage-race"
   },
   {
+    "slug": "race/ronde-van-brugge/2026",
+    "name": "Ronde Van Brugge - Tour of Bruges",
+    "date": "2026-03-25",
+    "type": "one-day"
+  },
+  {
     "slug": "race/e3-harelbeke/2026",
     "name": "E3 Saxo Classic",
     "date": "2026-03-27",
@@ -146,6 +152,12 @@
     "start_date": "2026-06-17",
     "end_date": "2026-06-21",
     "type": "stage-race"
+  },
+  {
+    "slug": "race/copenhagen-sprint/2026",
+    "name": "Copenhagen Sprint",
+    "date": "2026-06-14",
+    "type": "one-day"
   },
   {
     "slug": "race/tour-de-france/2026",

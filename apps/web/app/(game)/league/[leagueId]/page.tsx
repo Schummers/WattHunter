@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LobbyView } from "./lobby-view";
 import { HomeFeed } from "./home-feed";
@@ -91,14 +90,9 @@ export default async function LeagueDashboardPage({
   return (
     <HomeFeed
       leagueId={leagueId}
-      teamName={team?.name ?? "My Team"}
-      treasury={team?.treasury ?? 0}
-      xp={team?.cumulative_xp ?? 0}
-      level={level}
       rosterCount={rosterCount ?? 0}
       maxSlots={maxSlots}
       activeAuction={activeAuction}
-      memberCount={memberCount ?? 0}
     />
   );
 }

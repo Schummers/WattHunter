@@ -81,11 +81,11 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 
 ### 4.2 Entrees
 - Bonus des coureurs : par course (voir §4.5)
-- Paiements sponsors : mensuel le 1er du mois
-- **Sponsor par defaut :** 200 000 €/mois (flat, aucun tier en beta — automatiquement actif des le debut)
+- Paiements sponsors : au debut de chaque phase d'enchere
+- **Sponsor par defaut :** 200 000 €/phase (flat, aucun tier en beta — automatiquement actif des le debut)
 
 ### 4.3 Sorties
-- Salaires des coureurs : mensuel le 1er du mois
+- Salaires des coureurs : au debut de chaque phase d'enchere (apres paiement sponsor)
 - Encheres gagnees : deduction immediate
 
 ### 4.4 Formule de salaire
@@ -215,7 +215,7 @@ Types debloques par niveau : Speciality (Nv.1) → Nationality (Nv.3) → Teams 
 | Politique | Bonus | Configuration |
 |-----------|-------|---------------|
 | Young Blood | +5% coureurs < 23 ans | Automatique |
-| Road Warriors | +5% coureurs > 30 ans | Automatique |
+| Road Warriors | +5% coureurs > 32 ans | Automatique |
 | National Pride | +5% coureurs d'une nationalite | Choix du joueur |
 | Team Chemistry | +5% coureurs d'une equipe UCI | Choix du joueur |
 | Specialist | +5% coureurs d'une specialite | Choix du joueur |

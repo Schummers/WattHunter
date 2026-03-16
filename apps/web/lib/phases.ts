@@ -8,13 +8,15 @@ export interface AuctionPhase {
 }
 
 export const AUCTION_PHASES: AuctionPhase[] = [
-  { id: 1, label: "Season Start",   startMonth: 1,  startDay: 1,  endMonth: 2,  endDay: 28 },
-  { id: 2, label: "The Flandrians", startMonth: 3,  startDay: 1,  endMonth: 4,  endDay: 12 },
-  { id: 3, label: "The Ardennes",   startMonth: 4,  startDay: 13, endMonth: 5,  endDay: 10 },
-  { id: 4, label: "Giro d'Italia",  startMonth: 5,  startDay: 11, endMonth: 6,  endDay: 14 },
-  { id: 5, label: "Tour de France", startMonth: 6,  startDay: 15, endMonth: 8,  endDay: 2  },
-  { id: 6, label: "La Vuelta",      startMonth: 8,  startDay: 3,  endMonth: 9,  endDay: 21 },
-  { id: 7, label: "End of Season",  startMonth: 9,  startDay: 22, endMonth: 11, endDay: 2  },
+  { id: 1, label: "Season Start",     startMonth: 1,  startDay: 15, endMonth: 3,  endDay: 1  },
+  { id: 2, label: "Classics Part 1",  startMonth: 3,  startDay: 5,  endMonth: 4,  endDay: 1  },
+  { id: 3, label: "Classics Part 2",  startMonth: 4,  startDay: 5,  endMonth: 5,  endDay: 1  },
+  { id: 4, label: "Giro d'Italia",    startMonth: 5,  startDay: 5,  endMonth: 6,  endDay: 1  },
+  { id: 5, label: "Pre-Tour",         startMonth: 6,  startDay: 5,  endMonth: 7,  endDay: 1  },
+  { id: 6, label: "Tour de France",   startMonth: 7,  startDay: 4,  endMonth: 7,  endDay: 27 },
+  { id: 7, label: "Post-Tour",        startMonth: 7,  startDay: 31, endMonth: 8,  endDay: 18 },
+  { id: 8, label: "La Vuelta",        startMonth: 8,  startDay: 22, endMonth: 9,  endDay: 15 },
+  { id: 9, label: "End of Season",    startMonth: 9,  startDay: 19, endMonth: 10, endDay: 18 },
 ];
 
 export function getCurrentPhase(date: Date = new Date()): AuctionPhase {
