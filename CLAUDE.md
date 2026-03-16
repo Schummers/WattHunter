@@ -82,8 +82,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - Bonus coureur par course = max(0, pts_course × 1 500 - salaire_mensuel)
 - Salaire plancher (enchère min) : 5 000 €/mois
 - Taux de conversion bonus : 1 500 €/point PCS
-- Incrément minimum d'enchère : 100 €
-- Durée d'enchère : 72 heures
+- Durée d'enchère : chaque round dure de sa date jusqu'à la date du round suivant (dernier round = fin de journée)
 - Slots coureurs : 6 (Niveau 1) → 12 (Niveau 10)
 - Politiques actives max : 1 (Niveau 1) → 2 (Niveau 5+)
 - 4 types de policies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)

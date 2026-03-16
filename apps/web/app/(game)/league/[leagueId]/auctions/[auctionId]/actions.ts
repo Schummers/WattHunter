@@ -160,7 +160,8 @@ export async function cancelBid(bidId: string) {
     .single();
 
   if (!bid) return { error: "Bid not found" };
-  if ((bid.teams as any).user_id !== user.id) return { error: "Not authorized" };
+  const bidTeam = Array.isArray(bid.teams) ? bid.teams[0] : bid.teams;
+  if (!bidTeam || bidTeam.user_id !== user.id) return { error: "Not authorized" };
   if (bid.status !== "active") return { error: "Bid is not active" };
 
   // Check auction is still open (can't cancel after closes_at)

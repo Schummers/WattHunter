@@ -182,7 +182,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
     If target_stage is set (auto mode), only import that specific stage number
     instead of all stages.
     """
-    from sync_race import get_stage_urls, import_race_results, update_global_ranking
+    from sync_race import get_stage_urls, import_race_results, import_gc_results, update_global_ranking
     from enrich import enrich_single_rider
 
     imported_slugs = []
@@ -250,6 +250,29 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
                 if i < len(stage_urls) - 1:
                     print("  Waiting 15s before next stage...")
                     await asyncio.sleep(15)
+
+        # Import GC results for stage races — always attempt.
+        # PCS /gc page assigns pcs_points only after the final stage,
+        # so intermediate fetches harmlessly upsert 0-point rows that
+        # get overwritten on the last day.
+        if True:
+            print("\n--- Importing GC results ---")
+            print("  Waiting 15s before GC page...")
+            await asyncio.sleep(15)
+            ctx_gc = await browser.new_context(user_agent=USER_AGENT)
+            gc_page = await ctx_gc.new_page()
+            try:
+                gc_result = await import_gc_results(
+                    supabase, gc_page,
+                    race_slug=race_slug,
+                    race_name=race_name,
+                    race_date=race_date,
+                )
+                print(f"  GC imported: {gc_result['imported']}, skipped: {gc_result['skipped']}")
+                imported_slugs.append(f"{race_slug}/gc")
+            except Exception as exc:
+                print(f"  GC import failed: {exc}")
+            await ctx_gc.close()
     else:
         print("--- One-day race — importing result ---")
         ctx = await browser.new_context(user_agent=USER_AGENT)

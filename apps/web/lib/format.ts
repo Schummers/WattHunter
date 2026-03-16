@@ -33,6 +33,15 @@ export function formatShortDate(date: Date | string): string {
   });
 }
 
+/** Salary coefficient: pts_PCS × SALARY_COEFFICIENT / 12, floor at SALARY_FLOOR. */
+export const SALARY_COEFFICIENT = 2000;
+export const SALARY_FLOOR = 5000;
+
+/** Calculate minimum monthly salary for a rider based on PCS points. */
+export function calcMinSalary(pcsPoints: number): number {
+  return Math.max(SALARY_FLOOR, Math.round((pcsPoints * SALARY_COEFFICIENT) / 12));
+}
+
 /** Smart countdown: "in X days" or "in X hours" depending on remaining time. */
 export function smartCountdown(target: Date | string): string {
   const end = typeof target === "string" ? new Date(target) : target;

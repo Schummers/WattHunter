@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { LobbyView } from "./lobby-view";
 import { HomeFeed } from "./home-feed";
 import { getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
+import { getMaxSlots } from "@/lib/levels";
 
 export default async function LeagueDashboardPage({
   params,
@@ -86,7 +87,7 @@ export default async function LeagueDashboardPage({
     .in("status", ["active", "notice"]);
 
   const level = team?.level ?? 1;
-  const maxSlots = [6, 7, 7, 8, 9, 9, 10, 11, 11, 12][Math.min(level, 10) - 1];
+  const maxSlots = getMaxSlots(level);
 
   // If no active/scheduled auction, check if season started for calendar fallback
   let nextAuctionLabel: string | null = null;

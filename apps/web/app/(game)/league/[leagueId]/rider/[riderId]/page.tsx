@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { RiderDetailClient } from "./rider-detail-client";
+import { getMaxSlots } from "@/lib/levels";
+import { calcMinSalary } from "@/lib/format";
 
 type RiderContext = "recruts" | "team" | "ranking";
 
@@ -156,7 +158,7 @@ export default async function RiderDetailPage({
     }
   }
 
-  const minSalary = Math.max(5000, Math.round(((rider.pcs_points_1yr ?? 0) * 2000) / 12));
+  const minSalary = calcMinSalary(rider.pcs_points_1yr ?? 0);
 
   // Phase 1.3: Budget info for recruts context
   let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number } | undefined;
@@ -171,7 +173,7 @@ export default async function RiderDetailPage({
     if (memberForBudget?.team_id) {
       const budgetTeam = Array.isArray(memberForBudget.teams) ? memberForBudget.teams[0] : memberForBudget.teams;
       const level = budgetTeam?.level ?? 1;
-      const maxSlots = [6, 7, 7, 8, 9, 9, 10, 11, 11, 12][Math.min(level, 10) - 1];
+      const maxSlots = getMaxSlots(level);
 
       const { count: contractCount } = await supabase
         .from("contracts")

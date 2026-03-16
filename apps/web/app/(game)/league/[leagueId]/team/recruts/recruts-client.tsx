@@ -8,7 +8,7 @@ import { RiderCard } from "@/components/rider-card";
 import { SegmentedControl } from "@/components/segmented-control";
 import { StickyBar } from "@/components/sticky-bar";
 import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
-import { smartCountdown, formatThousands, countryCodeToFlag } from "@/lib/format";
+import { smartCountdown, formatThousands, countryCodeToFlag, calcMinSalary } from "@/lib/format";
 
 interface Rider {
   id: string;
@@ -369,10 +369,7 @@ export function RecrutsClient({
                 </button>
                 {expanded &&
                   groupRiders.map((r) => {
-                    const minSalary = Math.max(
-                      5000,
-                      Math.round(((r.pcs_points_1yr ?? 0) * 2000) / 12)
-                    );
+                    const minSalary = calcMinSalary(r.pcs_points_1yr ?? 0);
                     const currentBid = bids[r.id];
                     return (
                       <RiderCard
@@ -436,10 +433,7 @@ export function RecrutsClient({
         ) : (
           /* Flat list view */
           filteredRiders.map((r) => {
-            const minSalary = Math.max(
-              5000,
-              Math.round(((r.pcs_points_1yr ?? 0) * 2000) / 12)
-            );
+            const minSalary = calcMinSalary(r.pcs_points_1yr ?? 0);
             const currentBid = bids[r.id];
             return (
               <RiderCard

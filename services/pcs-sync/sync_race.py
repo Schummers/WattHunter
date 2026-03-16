@@ -146,6 +146,78 @@ async def import_race_results(
     }
 
 
+async def import_gc_results(
+    supabase: Client,
+    page,
+    race_slug: str,
+    race_name: str,
+    race_date: str,
+) -> Dict[str, Any]:
+    """Fetch GC (General Classification) results for a stage race and upsert.
+
+    Uses the dedicated /gc page URL and Stage.gc() to get final GC standings
+    with pcs_points. Falls back to empty if GC is unavailable.
+    """
+    gc_url = f"{race_slug}/gc"
+
+    html = await fetch_html(page, gc_url)
+    stage = Stage(gc_url, html=html, update_html=False)
+    gc_entries = stage.gc()
+
+    if not gc_entries:
+        logger.warning("No GC results found for %s", gc_url)
+        return {"race": gc_url, "imported": 0, "skipped": 0, "total_in_race": 0, "errors": []}
+
+    # Build lookup map from pcs_slug → rider_id
+    riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+    rider_map: Dict[str, str] = {
+        r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+    }
+
+    imported = 0
+    skipped = 0
+    errors: List[str] = []
+
+    for entry in gc_entries:
+        rider_url = entry.get("rider_url", "")
+        if rider_url not in rider_map:
+            skipped += 1
+            continue
+
+        try:
+            rider_id = rider_map[rider_url]
+
+            row = {
+                "rider_id": rider_id,
+                "race_slug": gc_url,
+                "race_name": f"{race_name} - GC",
+                "stage": "gc",
+                "race_date": race_date,
+                "pcs_points": int(entry.get("pcs_points") or 0),
+                "rank": entry.get("rank"),
+            }
+            race_class = _classify_race(race_slug)
+            if race_class:
+                row["race_class"] = race_class
+
+            supabase.table("race_results").upsert(
+                row,
+                on_conflict="rider_id,race_slug",
+            ).execute()
+            imported += 1
+        except Exception as exc:
+            logger.error("Failed to upsert GC result for %s: %s", rider_url, exc)
+            errors.append(str(exc))
+
+    return {
+        "race": gc_url,
+        "imported": imported,
+        "skipped": skipped,
+        "total_in_race": len(gc_entries),
+        "errors": errors,
+    }
+
+
 async def update_global_ranking(supabase: Client, browser, *, pages: int = 5) -> Dict[str, Any]:
     """Fetch the PCS individual ranking (top N×100) and update matching riders.
 

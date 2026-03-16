@@ -51,12 +51,16 @@ export async function launchFirstAuction(
 
   const auctionRows = roundDates.map((dateStr, i) => {
     const offset = getParisOffset(dateStr);
+    const nextDate = roundDates[i + 1];
+    const closesAt = nextDate
+      ? `${nextDate}T00:00:00${getParisOffset(nextDate)}`
+      : `${dateStr}T23:59:59${offset}`;
     return {
       league_id: leagueId,
       name: `Round ${i + 1}`,
       status: i === 0 ? "open" : "scheduled",
       opens_at: `${dateStr}T00:00:00${offset}`,
-      closes_at: `${dateStr}T23:59:59${offset}`,
+      closes_at: closesAt,
     };
   });
 
