@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { BackHeader } from "@/components/back-header";
 import { POLICY_TYPES } from "@/lib/policies";
 import { PoliciesClient } from "./policies-client";
-import { getCurrentPhase, getNextPhase, isInAuctionWindow } from "@/lib/phases";
+import { getCurrentPhase, getNextPhase, isInAuctionWindow, isLeagueFirstCycle } from "@/lib/phases";
 
 export default async function PoliciesPage({
   params,
@@ -132,7 +132,7 @@ export default async function PoliciesPage({
           teams={teams}
           rosterRiders={rosterRiders}
           nextPhaseName={nextPhaseName}
-          isInAuctionWindow={isInAuctionWindow()}
+          isInAuctionWindow={isInAuctionWindow() || await isLeagueFirstCycle(supabase, leagueId)}
         />
       </div>
     </div>

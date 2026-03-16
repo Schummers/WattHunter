@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
-import { getCurrentPhase, getNextPhase, isInAuctionWindow } from "@/lib/phases";
+import { getCurrentPhase, getNextPhase, isInAuctionWindow, isLeagueFirstCycle } from "@/lib/phases";
 
 const PolicyInputSchema = z.object({
   slug: z.string(),
@@ -84,7 +84,8 @@ export async function savePolicies(
     slugToId[p.slug] = p.id;
   }
 
-  const inAuction = isInAuctionWindow();
+  const firstCycle = await isLeagueFirstCycle(supabase, leagueId);
+  const inAuction = isInAuctionWindow() || firstCycle;
 
   // Only require nextPhase when outside auction window (pending mode)
   const nextPhase = inAuction ? null : getNextPhase(getCurrentPhase());

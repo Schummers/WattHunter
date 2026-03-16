@@ -1,3 +1,17 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+export async function isLeagueFirstCycle(
+  supabase: SupabaseClient,
+  leagueId: string
+): Promise<boolean> {
+  const { count } = await supabase
+    .from("auctions")
+    .select("id", { count: "exact", head: true })
+    .eq("league_id", leagueId)
+    .eq("status", "closed");
+  return (count ?? 0) < 3;
+}
+
 export interface AuctionPhase {
   id: number;
   label: string;

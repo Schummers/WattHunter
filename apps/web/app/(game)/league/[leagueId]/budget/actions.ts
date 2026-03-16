@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod/v4";
 import { revalidatePath } from "next/cache";
-import { getCurrentPhase, getNextPhase, isInAuctionWindow } from "@/lib/phases";
+import { getCurrentPhase, getNextPhase, isInAuctionWindow, isLeagueFirstCycle } from "@/lib/phases";
 
 const SaveSponsorsSchema = z.object({
   teamId: z.uuid(),
@@ -32,7 +32,8 @@ export async function saveSponsors(input: z.infer<typeof SaveSponsorsSchema>): P
 
   if (!team) return { error: "Team not found" };
 
-  const inAuction = isInAuctionWindow();
+  const firstCycle = await isLeagueFirstCycle(supabase, parsed.leagueId);
+  const inAuction = isInAuctionWindow() || firstCycle;
   const maybeNextPhase = inAuction ? null : getNextPhase(getCurrentPhase());
   if (!inAuction && !maybeNextPhase) {
     return { error: "Cannot change sponsors during the last phase of the season." };
