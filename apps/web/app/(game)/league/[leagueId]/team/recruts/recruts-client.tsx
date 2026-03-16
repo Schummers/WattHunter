@@ -286,9 +286,7 @@ export function RecrutsClient({
       {activeRound ? (
         <div className="flex items-center justify-between px-4 pt-4 pb-0">
           <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-            {activeRound.name} &middot; Round{" "}
-            {Math.min(Math.max(Math.floor((Date.now() - new Date(activeRound.opens_at).getTime()) / 86400000) + 1, 1), 3)}{" "}
-            &middot; {smartCountdown(activeRound.closes_at)}
+            {activeRound.name} &middot; {smartCountdown(activeRound.closes_at)}
           </span>
           <Link href={`/league/${leagueId}/team/recruts/history`} className="text-[length:var(--type-body)] link-tertiary">
             History &rarr;

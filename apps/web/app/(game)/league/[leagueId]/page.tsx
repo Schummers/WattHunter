@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { LobbyView } from "./lobby-view";
 import { HomeFeed } from "./home-feed";
 import { getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
-import { getMaxSlots } from "@/lib/levels";
+
 
 export default async function LeagueDashboardPage({
   params,
@@ -58,16 +58,6 @@ export default async function LeagueDashboardPage({
   }
 
   // --- Active league: fetch home feed data ---
-  const { data: member } = await supabase
-    .from("league_members")
-    .select("id, team_id, teams:team_id(id, name, treasury, cumulative_xp, level)")
-    .eq("league_id", leagueId)
-    .eq("user_id", user.id)
-    .single();
-
-  const team = member?.teams
-    ? Array.isArray(member.teams) ? member.teams[0] : member.teams
-    : null;
 
   // Active / upcoming auction
   const { data: activeAuction } = await supabase
@@ -78,16 +68,6 @@ export default async function LeagueDashboardPage({
     .order("opens_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-
-  // Roster count
-  const { count: rosterCount } = await supabase
-    .from("contracts")
-    .select("id", { count: "exact", head: true })
-    .eq("team_id", team?.id)
-    .in("status", ["active", "notice"]);
-
-  const level = team?.level ?? 1;
-  const maxSlots = getMaxSlots(level);
 
   // If no active/scheduled auction, check if season started for calendar fallback
   let nextAuctionLabel: string | null = null;
@@ -109,8 +89,6 @@ export default async function LeagueDashboardPage({
   return (
     <HomeFeed
       leagueId={leagueId}
-      rosterCount={rosterCount ?? 0}
-      maxSlots={maxSlots}
       activeAuction={activeAuction}
       nextAuctionLabel={nextAuctionLabel}
     />

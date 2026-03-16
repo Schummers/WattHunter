@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { InfoCard } from "@/components/info-card";
 import { OnboardingCards } from "@/components/onboarding-cards";
 import { getPhaseRaces, formatRaceDate, type UpcomingRace } from "@/lib/calendar";
 import { getCurrentPhase, getPhaseRange } from "@/lib/phases";
-import { Users, Timer, ChevronRight, Calendar } from "lucide-react";
+import { Timer, ChevronRight, Calendar } from "lucide-react";
 
 function timeUntil(dateStr: string): string {
   const target = new Date(dateStr);
@@ -29,8 +28,6 @@ interface ActiveAuction {
 
 interface HomeFeedProps {
   leagueId: string;
-  rosterCount: number;
-  maxSlots: number;
   activeAuction: ActiveAuction | null;
   nextAuctionLabel: string | null;
 }
@@ -42,8 +39,6 @@ type FeedItem =
 
 export function HomeFeed({
   leagueId,
-  rosterCount,
-  maxSlots,
   activeAuction,
   nextAuctionLabel,
 }: HomeFeedProps) {
@@ -90,17 +85,6 @@ export function HomeFeed({
             <span className="mb-3 block text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
               What&apos;s Next
             </span>
-
-            {/* Open Slots CTA */}
-            {rosterCount < maxSlots && activeAuction?.status === "open" && (
-              <Link
-                href={`/league/${leagueId}/team/recruts`}
-                className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--accent-default)] bg-[var(--badge-bg)] px-4 py-3 text-[length:var(--type-emphasis)] font-semibold text-[var(--accent-default)]"
-              >
-                <Users size={16} />
-                {maxSlots - rosterCount} open slot{maxSlots - rosterCount > 1 ? "s" : ""} — Browse recruits
-              </Link>
-            )}
 
             {/* Chronological feed items */}
             {feedItems.map((item) => {
