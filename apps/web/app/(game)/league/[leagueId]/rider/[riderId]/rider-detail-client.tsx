@@ -66,6 +66,7 @@ interface RiderDetailClientProps {
     maxSlots: number;
     treasury: number;
     totalBidAmount: number;
+    activeBidCount: number;
   };
   inRail?: boolean;
 }
@@ -331,7 +332,7 @@ export function RiderDetailClient({
                   else if (raw === "") setBidAmount(null);
                 }}
                 disabled={!activeAuctionId}
-                className={`w-full bg-transparent text-center text-[length:var(--type-body)] font-semibold font-mono outline-none ${
+                className={`w-full bg-transparent text-center text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
                   bidAmount !== null
                     ? "text-[var(--accent-default)]"
                     : "text-[var(--text-low)]"
@@ -352,11 +353,19 @@ export function RiderDetailClient({
               <Plus className="size-4" />
             </Button>
           </div>
-          {budgetInfo && (
-            <div className="text-center font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-mid)]">
-              {budgetInfo.currentSlots}/{budgetInfo.maxSlots} slots &middot; {formatThousands(budgetInfo.treasury - budgetInfo.totalBidAmount)} €
-            </div>
-          )}
+          {budgetInfo && (() => {
+            const serverBid = currentBidAmount ?? 0;
+            const localBid = bidAmount ?? 0;
+            const bidDelta = localBid - serverBid;
+            const isNewBid = currentBidAmount === null && bidAmount !== null;
+            const slotsUsed = budgetInfo.currentSlots + budgetInfo.activeBidCount + (isNewBid ? 1 : 0);
+            const remainingBudget = budgetInfo.treasury - budgetInfo.totalBidAmount - bidDelta;
+            return (
+              <div className="text-center font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-mid)]">
+                {slotsUsed}/{budgetInfo.maxSlots} slots &middot; {formatThousands(remainingBudget)} €
+              </div>
+            );
+          })()}
           <Button
             variant="cta"
             size="lg"

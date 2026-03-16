@@ -176,7 +176,7 @@ export default async function RiderDetailPage({
   const nextPhaseName = nextPhase?.label ?? null;
 
   // Phase 1.3: Budget info for recruts context
-  let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number } | undefined;
+  let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number; activeBidCount: number } | undefined;
   if (context === "recruts" && user) {
     const { data: memberForBudget } = await supabase
       .from("league_members")
@@ -203,12 +203,14 @@ export default async function RiderDetailPage({
         .eq("status", "active");
 
       const totalBidAmount = (activeBids ?? []).reduce((sum, b) => sum + b.amount, 0);
+      const activeBidCount = (activeBids ?? []).length;
 
       budgetInfo = {
         currentSlots: contractCount ?? 0,
         maxSlots,
         treasury: budgetTeam?.treasury ?? 200000,
         totalBidAmount,
+        activeBidCount,
       };
     }
   }

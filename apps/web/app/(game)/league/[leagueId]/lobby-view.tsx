@@ -204,7 +204,7 @@ export function LobbyView({
                   type="date"
                   value={dateStr}
                   onChange={(e) => handleRoundDateChange(i, e.target.value)}
-                  className="flex-1 bg-transparent text-[length:var(--type-body)] text-[var(--text-high)] outline-none [color-scheme:dark]"
+                  className="flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] outline-none [color-scheme:dark]"
                 />
               ) : (
                 <span className="flex-1 text-[length:var(--type-body)] text-[var(--text-high)]">

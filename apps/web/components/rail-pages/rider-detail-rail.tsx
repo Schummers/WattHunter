@@ -29,7 +29,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
     activeAuctionId: string | null;
     contractData: { locked_salary: number; status: string } | null;
     ownerInfo: { display_name: string; team_name: string } | null;
-    budgetInfo?: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number };
+    budgetInfo?: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number; activeBidCount: number };
   } | null>(null);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
       let currentBidAmount: number | null = null;
       let activeAuctionId: string | null = null;
       let ownerInfo: { display_name: string; team_name: string } | null = null;
-      let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number } | undefined;
+      let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number; activeBidCount: number } | undefined;
 
       if (user) {
         const { data: member } = await supabase
@@ -165,12 +165,14 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
                 .eq("status", "active");
 
               const totalBidAmount = (allActiveBids ?? []).reduce((sum, b) => sum + b.amount, 0);
+              const activeBidCount = (allActiveBids ?? []).length;
 
               budgetInfo = {
                 currentSlots: contractCount ?? 0,
                 maxSlots,
                 treasury: teamData.treasury ?? 200000,
                 totalBidAmount,
+                activeBidCount,
               };
             }
           }

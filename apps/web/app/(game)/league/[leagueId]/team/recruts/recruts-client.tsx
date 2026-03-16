@@ -316,7 +316,7 @@ export function RecrutsClient({
             placeholder="Search rider, team, country..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
+            className="flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
           />
         </div>
       </div>
@@ -405,7 +405,7 @@ export function RecrutsClient({
                                   handleBidChange(r.id, isNaN(val) ? 0 : val);
                                 }}
                                 onClick={(e) => { if (window.innerWidth < 1024) e.stopPropagation(); }}
-                                className={`w-20 bg-transparent text-right text-[length:var(--type-body)] font-semibold font-mono outline-none ${
+                                className={`w-20 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
                                   currentBid
                                     ? "text-[var(--accent-default)]"
                                     : "text-[var(--text-low)]"
@@ -468,7 +468,7 @@ export function RecrutsClient({
                           handleBidChange(r.id, isNaN(val) ? 0 : val);
                         }}
                         onClick={(e) => e.preventDefault()}
-                        className={`w-20 bg-transparent text-right text-[length:var(--type-body)] font-semibold font-mono outline-none ${
+                        className={`w-20 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
                           currentBid
                             ? "text-[var(--accent-default)]"
                             : "text-[var(--text-low)]"

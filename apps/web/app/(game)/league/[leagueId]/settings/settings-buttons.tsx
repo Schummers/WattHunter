@@ -48,7 +48,7 @@ export function EditableField({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           disabled={disabled}
-          className="flex h-9 flex-1 items-center rounded-lg border border-[var(--border-default)] bg-transparent px-3 text-[length:var(--type-body)] text-[var(--text-high)] outline-none focus:border-[var(--accent-default)] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex h-9 flex-1 items-center rounded-lg border border-[var(--border-default)] bg-transparent px-3 text-base md:text-[length:var(--type-body)] text-[var(--text-high)] outline-none focus:border-[var(--accent-default)] disabled:opacity-50 disabled:cursor-not-allowed"
         />
         {!disabled && (
           <button
