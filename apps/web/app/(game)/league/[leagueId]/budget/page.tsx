@@ -38,7 +38,7 @@ export default async function BudgetPage({
   // Active sponsors with details
   const { data: teamSponsors } = await supabase
     .from("team_sponsors")
-    .select("id, slot, status, sponsor_id, sponsors!sponsor_id(id, name, abbreviation, tier, slot, monthly_budget, nationality, nationality_count, specialty, result_condition)")
+    .select("id, slot, status, sponsor_id, payments_count, sponsors!sponsor_id(id, name, abbreviation, tier, slot, monthly_budget, first_phase_budget, nationality, nationality_count, specialty, result_condition)")
     .eq("team_id", team.id)
     .eq("status", "active");
 
@@ -71,7 +71,12 @@ export default async function BudgetPage({
   if (!hasSponsorPayments && teamSponsors && teamSponsors.length > 0) {
     expectedSponsorIncome = teamSponsors.reduce((sum, ts) => {
       const s = Array.isArray(ts.sponsors) ? ts.sponsors[0] : ts.sponsors;
-      return sum + ((s as { monthly_budget: number })?.monthly_budget ?? 0);
+      const sponsor = s as { monthly_budget: number; first_phase_budget: number | null };
+      const paymentsCount = ts.payments_count ?? 0;
+      const budget = (sponsor?.first_phase_budget && paymentsCount === 0)
+        ? sponsor.first_phase_budget
+        : (sponsor?.monthly_budget ?? 0);
+      return sum + budget;
     }, 0);
   }
 
@@ -88,11 +93,15 @@ export default async function BudgetPage({
   if (!hasSponsorPayments && teamSponsors && teamSponsors.length > 0) {
     const syntheticSponsors = teamSponsors.map((ts) => {
       const s = Array.isArray(ts.sponsors) ? ts.sponsors[0] : ts.sponsors;
-      const sponsor = s as { name: string; monthly_budget: number };
+      const sponsor = s as { name: string; monthly_budget: number; first_phase_budget: number | null };
+      const paymentsCount = ts.payments_count ?? 0;
+      const budget = (sponsor?.first_phase_budget && paymentsCount === 0)
+        ? sponsor.first_phase_budget
+        : (sponsor?.monthly_budget ?? 0);
       return {
         id: `synthetic-sponsor-${ts.id}`,
         type: "sponsor_payment",
-        amount: sponsor?.monthly_budget ?? 0,
+        amount: budget,
         description: `Sponsor — ${sponsor?.name ?? "Unknown"}`,
         created_at: start.toISOString(),
       };
@@ -114,6 +123,7 @@ export default async function BudgetPage({
         return {
           id: ts.id,
           slot: ts.slot as "secondary" | "principal",
+          paymentsCount: ts.payments_count ?? 0,
           sponsor: s as {
             id: string;
             name: string;
@@ -121,6 +131,7 @@ export default async function BudgetPage({
             tier: number;
             slot: string;
             monthly_budget: number;
+            first_phase_budget: number | null;
             nationality: string | null;
             nationality_count: number;
             specialty: string[];

@@ -187,10 +187,10 @@ def test_compute_level():
     from scoring import compute_level
 
     assert compute_level(0) == 1
-    assert compute_level(49) == 1
-    assert compute_level(50) == 2
-    assert compute_level(149) == 2
-    assert compute_level(150) == 3
+    assert compute_level(99) == 1
+    assert compute_level(100) == 2
+    assert compute_level(199) == 2
+    assert compute_level(200) == 3
     assert compute_level(6400) == 10
     assert compute_level(99999) == 10
 

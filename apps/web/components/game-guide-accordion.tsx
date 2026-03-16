@@ -368,8 +368,8 @@ const HELP_SECTIONS: HelpSection[] = [
           headers={["Level", "XP required", "Slots", "Policies", "Rider pool", "New unlock"]}
           rows={[
             ["1", "0", "6", "1", "#351–500", "Speciality policy"],
-            ["2", "50", "8", "1", "#251–500", "—"],
-            ["3", "150", "8", "2", "#176–500", "Nationality policy"],
+            ["2", "100", "8", "1", "#251–500", "—"],
+            ["3", "200", "8", "2", "#176–500", "Nationality policy"],
             ["4", "350", "9", "2", "#101–500", "—"],
             ["5", "700", "10", "2", "#76–500", "Teams policy"],
             ["6", "1,200", "10", "2", "#51–500", "—"],
@@ -407,8 +407,8 @@ const HELP_SECTIONS: HelpSection[] = [
         <Table
           headers={["Sponsor tier", "Payment per phase", "Unlock level"]}
           rows={[
-            ["Default (Tier 1)", "200,000 EUR", "Level 1 (active from start)"],
-            ["Tier 2", "350,000 EUR", "Level 3"],
+            ["Default (Tier 1)", "200,000 → 300,000 EUR", "Level 1 (active from start)"],
+            ["Tier 2", "400,000 EUR", "Level 3"],
             ["Tier 3", "550,000 EUR", "Level 5"],
             ["Tier 4", "750,000 EUR", "Level 7"],
             ["Tier 5", "1,000,000 EUR", "Level 8"],

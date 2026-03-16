@@ -126,7 +126,7 @@ export function MarketplaceClient({
           </span>
         </div>
         <p className="text-[length:var(--type-caption)] text-[var(--text-ghost)]">
-          T1 – T2 · Budget up to €350k/month
+          T1 – T2 · Budget up to €400k/month
         </p>
       </div>
 

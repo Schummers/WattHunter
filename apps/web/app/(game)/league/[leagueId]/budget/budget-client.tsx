@@ -21,6 +21,7 @@ interface SponsorInfo {
   tier: number;
   slot: string;
   monthly_budget: number;
+  first_phase_budget: number | null;
   nationality: string | null;
   nationality_count: number;
   specialty: string[];
@@ -30,6 +31,7 @@ interface SponsorInfo {
 interface TeamSponsorEntry {
   id: string;
   slot: "secondary" | "principal";
+  paymentsCount: number;
   sponsor: SponsorInfo;
 }
 
@@ -181,6 +183,7 @@ export function BudgetClient({
           {secondary ? (
             <SponsorCard
               sponsor={secondary.sponsor}
+              paymentsCount={secondary.paymentsCount}
               slotLabel="Secondary"
               leagueId={leagueId}
             />
@@ -193,6 +196,7 @@ export function BudgetClient({
             principal ? (
               <SponsorCard
                 sponsor={principal.sponsor}
+                paymentsCount={principal.paymentsCount}
                 slotLabel="Main"
                 leagueId={leagueId}
               />
@@ -208,13 +212,19 @@ export function BudgetClient({
 
 function SponsorCard({
   sponsor,
+  paymentsCount,
   slotLabel,
   leagueId,
 }: {
   sponsor: SponsorInfo;
+  paymentsCount: number;
   slotLabel: string;
   leagueId: string;
 }) {
+  const isEscalating = sponsor.first_phase_budget != null;
+  const isFirstPhase = isEscalating && paymentsCount === 0;
+  const currentBudget = isFirstPhase ? sponsor.first_phase_budget! : sponsor.monthly_budget;
+
   return (
     <Link
       href={`/league/${leagueId}/budget/marketplace`}
@@ -231,9 +241,15 @@ function SponsorCard({
         </div>
         <div className="text-right">
           <div className="font-mono text-[length:var(--type-stat)] font-extrabold text-[var(--text-high)] tabular-nums">
-            {formatCompact(sponsor.monthly_budget)}
+            {formatCompact(currentBudget)}
           </div>
-          <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">/ month</div>
+          {isEscalating ? (
+            <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">
+              / month{isFirstPhase ? ` · ${formatCompact(sponsor.monthly_budget)} next` : ""}
+            </div>
+          ) : (
+            <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">/ month</div>
+          )}
         </div>
       </div>
 

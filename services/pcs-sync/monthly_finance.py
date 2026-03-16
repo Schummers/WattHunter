@@ -37,10 +37,11 @@ def get_release_order(contracts: list[dict]) -> list[dict]:
 def _get_sponsor_income(supabase: Client, team_id: str) -> tuple[int, str]:
     """
     Fetch active sponsors for a team and return (total_income, description).
+    Supports escalating sponsors (first_phase_budget for first payment).
     Falls back to DEFAULT_SPONSOR_AMOUNT if no active sponsors.
     """
     sponsors = supabase.table("team_sponsors").select(
-        "sponsors(name, monthly_budget)"
+        "id, payments_count, sponsors(name, monthly_budget, first_phase_budget)"
     ).eq("team_id", team_id).eq("status", "active").execute()
 
     if not sponsors.data:
@@ -53,14 +54,33 @@ def _get_sponsor_income(supabase: Client, team_id: str) -> tuple[int, str]:
         if isinstance(sponsor_data, list):
             sponsor_data = sponsor_data[0] if sponsor_data else {}
         budget = sponsor_data.get("monthly_budget", 0) or 0
+        first_phase = sponsor_data.get("first_phase_budget")
+        payments_count = s.get("payments_count", 0) or 0
         name = sponsor_data.get("name", "Unknown")
-        total += budget
+
+        # Use first_phase_budget for the very first payment if set
+        if first_phase and payments_count == 0:
+            total += first_phase
+        else:
+            total += budget
         names.append(name)
 
     if total == 0:
         return DEFAULT_SPONSOR_AMOUNT, "Default sponsor (L'Auto)"
 
     return total, ", ".join(names)
+
+
+def _increment_payments_count(supabase: Client, team_id: str) -> None:
+    """Increment payments_count on each active team_sponsor after a payment."""
+    rows = supabase.table("team_sponsors").select("id, payments_count").eq(
+        "team_id", team_id
+    ).eq("status", "active").execute()
+    for row in rows.data or []:
+        new_count = (row.get("payments_count", 0) or 0) + 1
+        supabase.table("team_sponsors").update({
+            "payments_count": new_count,
+        }).eq("id", row["id"]).execute()
 
 
 async def run_monthly_finance(supabase: Client) -> dict:
@@ -103,6 +123,9 @@ async def run_monthly_finance(supabase: Client) -> dict:
                 "amount": sponsor_income,
                 "description": f"Sponsor {today} — {sponsor_desc}",
             }).execute()
+
+            # Increment payments_count on each active team_sponsor
+            _increment_payments_count(supabase, team_id)
 
             # 2. Salary deduction (skip contracts already paid this month)
             contracts = supabase.table("contracts").select(

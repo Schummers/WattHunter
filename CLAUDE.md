@@ -76,7 +76,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 
 ## Constantes du jeu (calibrer avant le lancement alpha)
 - Trésorerie départ : 200 000 €
-- Sponsor par défaut : 200 000 €/mois (beta flat, sans tiers)
+- Sponsor par défaut (Lotto) : 200 000 € (1ere phase) → 300 000 € (phases suivantes)
 - Enchère = salaire mensuel récurrent (pas un achat unique)
 - Salaire mensuel = pts_PCS × 2 000 / 12 (pas de plafond)
 - Bonus coureur par course = max(0, pts_course × 1 500 - salaire_mensuel)
@@ -87,7 +87,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - Politiques actives max : 1 (Niveau 1) → 2 (Niveau 3+) → 3 (Niveau 9+)
 - 4 types de policies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)
 - Pool = Top 500 PCS global (12 mois glissants), gating par rang selon niveau
-- XP Niveau 5 = 700 | XP Niveau 10 = 6 400
+- XP Niveau 2 = 100 | XP Niveau 3 = 200 | XP Niveau 5 = 700 | XP Niveau 10 = 6 400
 - Contrats sponsors : 2 mois
 
 ## Blockers ouverts (résoudre avant alpha)

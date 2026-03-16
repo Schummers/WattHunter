@@ -2,7 +2,7 @@
 
 > **Document vivant** — Mis a jour a chaque changement de regle.
 > Source de verite pour les mecaniques de jeu implementees et prevues.
-> Derniere mise a jour : 2026-03-05
+> Derniere mise a jour : 2026-03-16
 
 ## Vue d'ensemble
 
@@ -82,7 +82,7 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 ### 4.2 Entrees
 - Bonus des coureurs : par course (voir §4.5)
 - Paiements sponsors : au debut de chaque phase d'enchere
-- **Sponsor par defaut :** 200 000 €/phase (flat, aucun tier en beta — automatiquement actif des le debut)
+- **Sponsor par defaut (Lotto) :** 200 000 € (1ere phase) → 300 000 € (phases suivantes) — automatiquement actif des le debut
 
 ### 4.3 Sorties
 - Salaires des coureurs : au debut de chaque phase d'enchere (apres paiement sponsor)
@@ -194,22 +194,22 @@ XP equipe = Σ XP de tous les coureurs du roster
 
 | Niveau | XP cumule | Slots | Politiques actives | Rang PCS debloque | Policy debloquee | Sponsor debloque |
 |--------|-----------|-------|--------------------|-------------------|------------------|------------------|
-| 1 | 0 | 6 | 1 | #351-500 | Speciality | Secondary T1 |
-| 2 | 50 | 7 | 1 | #251-500 | — | — |
-| 3 | 150 | 7 | 1 | #176-500 | Nationality | Secondary T2 |
-| 4 | 350 | 8 | 1 | #101-500 | — | — |
-| 5 | 700 | 9 | 2 | #76-500 | Teams | Principal T3 |
-| 6 | 1 200 | 9 | 2 | #51-500 | — | — |
-| 7 | 1 900 | 10 | 2 | #26-500 | Age | Principal T4 |
-| 8 | 2 900 | 11 | 2 | #11-500 | — | Principal T5 |
-| 9 | 4 400 | 11 | 2 | #4-500 | — | — |
-| 10 | 6 400 | 12 | 2 | #1-500 | — | — |
+| 1 | 0 | 6 | 1 | #351-500 | Speciality | Secondary T1 (200k→300k) |
+| 2 | 100 | 8 | 1 | #251-500 | — | — |
+| 3 | 200 | 8 | 2 | #176-500 | Nationality | Secondary T2 (400k) |
+| 4 | 350 | 9 | 2 | #101-500 | — | — |
+| 5 | 700 | 10 | 2 | #76-500 | Teams | Principal T3 (550k) |
+| 6 | 1 200 | 10 | 2 | #51-500 | — | — |
+| 7 | 1 900 | 11 | 2 | #26-500 | Age | Principal T4 (750k) |
+| 8 | 2 900 | 12 | 2 | #11-500 | — | Principal T5 (1M) |
+| 9 | 4 400 | 12 | 3 | #4-500 | — | — |
+| 10 | 6 400 | 12 | 3 | #1-500 | — | — |
 
 ---
 
 ## 8. Politiques
 
-4 types, +5% XP chacun, max 2 actives (debloquees au Niveau 5).
+4 types, +5% XP chacun. Max actives : 1 (Nv.1-2) → 2 (Nv.3-8) → 3 (Nv.9-10).
 Types debloques par niveau : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7).
 
 | Politique | Bonus | Configuration |
@@ -240,28 +240,26 @@ Le boost s'applique individuellement : chaque rider matche reçoit +5% sur ses p
 
 ## 9. Sponsors
 
-> **Beta — systeme de tiers desactive.** En beta, tous les joueurs beneficient d'un **sponsor par defaut unique** : 200 000 €/mois, flat, sans condition, actif des le debut de la ligue. Le systeme de tiers (Tier 1–5 lies aux niveaux) est preserve dans le code mais desactive pour simplifier l'onboarding beta.
+2 slots : Secondary (petit sponsor passif) + Principal (sponsor majeur avec conditions). Tier limite par le niveau (voir §7). Voir `docs/prd et wireframe/watthunter-prd-budget-sponsors.md` pour le detail complet (14 sponsors, marketplace, conditions).
 
-**Sponsor par defaut (beta) :**
+**Sponsor par defaut (Lotto, T1) :**
 
 | Regle | Valeur |
 |-------|--------|
-| Montant | 200 000 €/mois |
+| Montant 1ere phase | 200 000 € |
+| Montant phases suivantes | 300 000 € |
 | Conditions | Aucune |
 | Activation | Automatique a la creation d'equipe |
-| Tier | N/A (beta flat) |
 
-**Systeme de tiers (post-beta, reference) :**
-
-2 slots : Secondary (petit sponsor passif) + Principal (sponsor majeur avec conditions). Tier limite par le niveau (voir §7). Voir `docs/prd et wireframe/watthunter-prd-budget-sponsors.md` pour le detail complet (14 sponsors, marketplace, conditions).
+**Systeme de tiers :**
 
 | Type | Tier | Niveau | Montant/mois |
 |------|------|--------|--------------|
-| Secondary | T1 | 1 | ~40 000 € |
-| Secondary | T2 | 3 | ~60 000 € |
-| Principal | T3 | 5 | ~125 000 € |
-| Principal | T4 | 7 | ~200 000 € |
-| Principal | T5 | 8 | ~400 000 € |
+| Secondary | T1 (Lotto) | 1 | 200 000 → 300 000 € |
+| Secondary | T2 | 3 | 400 000 € |
+| Principal | T3 | 5 | 550 000 € |
+| Principal | T4 | 7 | 750 000 € |
+| Principal | T5 | 8 | 1 000 000 € |
 
 ---
 
@@ -270,7 +268,7 @@ Le boost s'applique individuellement : chaque rider matche reçoit +5% sur ses p
 | Constante | Valeur | A calibrer ? |
 |-----------|--------|-------------|
 | Tresorerie depart | **200 000 €** | Non |
-| Sponsor par defaut | **200 000 €/mois** (beta flat) | Non |
+| Sponsor par defaut (Lotto) | **200k (1ere phase) → 300k (suivantes)** | Non |
 | Enchère = salaire mensuel | Oui — pas d'achat unique | Non |
 | Salaire mensuel | pts_PCS × 2 000 / 12 (pas de plafond) | Non |
 | Bonus par course | max(0, pts_course × 1 500 − salaire) | Non |
@@ -279,8 +277,8 @@ Le boost s'applique individuellement : chaque rider matche reçoit +5% sur ses p
 | Faillite : libere en premier | Meilleur scoreur (beta) | Non |
 | Duree d'enchere | 72 heures | Non |
 | Increment d'enchere | 100 € | Non |
-| Slots max | 6 (Niv 1) → 12 (Niv 10) | Non |
-| Politiques max | 1 (Niv 1) → 2 (Niv 5+) | Non |
+| Slots max | 6 (Niv 1) → 12 (Niv 8) | Non |
+| Politiques max | 1 (Nv.1-2) → 2 (Nv.3-8) → 3 (Nv.9-10) | Non |
 | Pool coureurs | Top 500 PCS global (12 mois glissants) | Non |
 | XP Niveau 5 | 700 | Non |
 | XP Niveau 10 | 6 400 | Non |
