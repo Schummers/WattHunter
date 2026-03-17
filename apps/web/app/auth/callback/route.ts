@@ -6,6 +6,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next");
+  const type = searchParams.get("type");
 
   const cookieStore = await cookies();
 
@@ -66,6 +67,15 @@ export async function GET(request: Request) {
         "Player",
       avatar_url: user.user_metadata?.avatar_url ?? null,
     });
+  }
+
+  // Recovery flow: redirect to reset-password page
+  if (type === "recovery") {
+    const response = NextResponse.redirect(`${origin}/reset-password`);
+    for (const { name, value, options } of pendingCookies) {
+      response.cookies.set(name, value, options);
+    }
+    return response;
   }
 
   // Determine redirect destination

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/browser";
@@ -14,6 +14,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [passwordUpdated, setPasswordUpdated] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("message") === "password_updated") {
+      setPasswordUpdated(true);
+    }
+  }, []);
 
   const supabase = createClient();
 
@@ -59,6 +68,12 @@ export default function LoginPage() {
         </p>
       </div>
 
+      {passwordUpdated && (
+        <p className="w-full text-center text-[length:var(--type-caption)] text-[var(--status-success)]">
+          Password updated successfully. Sign in with your new password.
+        </p>
+      )}
+
       <Button
         variant="outline"
         className="w-full gap-3"
@@ -95,6 +110,12 @@ export default function LoginPage() {
             required
           />
         </FormField>
+        <Link
+          href="/forgot-password"
+          className="self-end text-[length:var(--type-caption)] text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors -mt-2"
+        >
+          Forgot password?
+        </Link>
 
         {error && <p className="text-[length:var(--type-caption)] text-[var(--status-danger)]">{error}</p>}
 
