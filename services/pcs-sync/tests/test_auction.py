@@ -1,40 +1,50 @@
 """Tests for auction.py — resolve_current_round.
 
-All Supabase I/O is mocked.  date.today() is patched to a
-fixed value (2026-02-28) so round computation is deterministic.
+All Supabase I/O is mocked. datetime.utcnow() is patched so the
+closes_at filter is deterministic.
 """
-from datetime import date as real_date
+from datetime import date as real_date, datetime as real_datetime
 from unittest.mock import patch, MagicMock
 
 import pytest
 
 from helpers import make_supabase
 
-# Fixed date used across tests.  Opens-at values are chosen relative to it.
+# Fixed "now" used across tests
+FIXED_NOW = real_datetime(2026, 2, 28, 12, 0, 0)
 FIXED_TODAY = real_date(2026, 2, 28)
 
-# Auction opens the same day as FIXED_TODAY → current_round = 1
-OPENS_AT_ROUND1 = "2026-02-28T00:00:00"
-# Auction opened 1 day before → round 2
-OPENS_AT_ROUND2 = "2026-02-27T00:00:00"
-# Auction opened 2 days before → round 3
-OPENS_AT_ROUND3 = "2026-02-26T00:00:00"
+# Auction that has already expired (closes_at in the past)
+EXPIRED_AUCTION = {
+    "id": "auc-00000001",
+    "name": "Round 1",
+    "league_id": "league-001",
+    "opens_at": "2026-02-27T00:00:00",
+    "closes_at": "2026-02-28T00:00:00",
+    "status": "open",
+}
 
-AUCTION_ID = "auc-00000001"
+AUCTION_ID = EXPIRED_AUCTION["id"]
+LEAGUE_ID = EXPIRED_AUCTION["league_id"]
 RIDER_ID = "rid-00000001"
 TEAM_A = "tea-00000001"
 TEAM_B = "tea-00000002"
 
 
 # ---------------------------------------------------------------------------
-# Helper
+# Helpers
 # ---------------------------------------------------------------------------
 
-def _patch_date():
-    """Context manager that patches auction.date.today() to FIXED_TODAY."""
+def _patch_datetime():
+    """Patch auction.datetime.utcnow() and auction.date.today()."""
+    mock_dt = MagicMock(wraps=real_datetime)
+    mock_dt.utcnow.return_value = FIXED_NOW
+    mock_dt.fromisoformat = real_datetime.fromisoformat
+
     mock_date = MagicMock()
     mock_date.today.return_value = FIXED_TODAY
-    return patch("auction.date", mock_date)
+
+    return patch("auction.datetime", mock_dt), patch("auction.date", mock_date)
 
 
 # ---------------------------------------------------------------------------
@@ -70,88 +80,41 @@ def test_tiebreak_only():
 
 
 async def test_no_open_auctions():
-    """Returns immediately when no auctions are open."""
+    """Returns immediately when no expired auctions are found."""
     import auction
 
-    sb = make_supabase([])  # auctions → empty
-    with _patch_date():
+    sb = make_supabase([])  # auctions query → empty
+    p1, p2 = _patch_datetime()
+    with p1, p2:
         result = await auction.resolve_current_round(sb)
 
     assert result == {"status": "no_open_auctions"}
-    assert sb.table.call_count == 1
 
 
 # ---------------------------------------------------------------------------
-# No active bids — round 1 (auction stays open)
+# No active bids — auction is still closed (always close expired auctions)
 # ---------------------------------------------------------------------------
 
 
-async def test_no_active_bids_round1():
-    """No bids in round 1 → resolved=0, auction remains open."""
+async def test_no_active_bids_closes_auction():
+    """No bids → resolved=0, auction is closed, next scheduled opened."""
     import auction
 
     sb = make_supabase(
-        # 1. auctions
-        [{"id": AUCTION_ID, "name": "Tour Test", "opens_at": OPENS_AT_ROUND1, "status": "open"}],
+        # 1. auctions (expired)
+        [EXPIRED_AUCTION],
         # 2. auction_bids → empty
         [],
     )
-    with _patch_date():
+    p1, p2 = _patch_datetime()
+    with p1, p2, patch("auction._close_auction") as mock_close:
         result = await auction.resolve_current_round(sb)
 
-    assert result["status"] == "completed"
+    mock_close.assert_called_once_with(sb, AUCTION_ID, LEAGUE_ID)
     auc = result["auctions"][0]
     assert auc["round"] == 1
     assert auc["resolved"] == 0
     assert auc["message"] == "no_active_bids"
-
-
-# ---------------------------------------------------------------------------
-# No active bids — round 3 (auction must be closed)
-# ---------------------------------------------------------------------------
-
-
-async def test_no_active_bids_round3_closes_auction():
-    """No bids in round 3 → _close_auction is called (auction is closed)."""
-    import auction
-
-    sb = make_supabase(
-        # 1. auctions
-        [{"id": AUCTION_ID, "name": "Tour Test", "opens_at": OPENS_AT_ROUND3, "status": "open"}],
-        # 2. auction_bids → empty
-        [],
-        # 3. _close_auction: auctions.update().eq().execute() → don't care
-        [],
-    )
-    with _patch_date(), patch("auction._close_auction") as mock_close:
-        result = await auction.resolve_current_round(sb)
-
-    mock_close.assert_called_once_with(sb, AUCTION_ID)
-    auc = result["auctions"][0]
-    assert auc["round"] == 3
-    assert auc["message"] == "no_active_bids"
-
-
-# ---------------------------------------------------------------------------
-# Round out of range
-# ---------------------------------------------------------------------------
-
-
-async def test_round_out_of_range_skipped():
-    """Auction with opens_at in the future → round < 1 → skipped."""
-    import auction
-
-    # opens_at is tomorrow → round = (today - tomorrow).days + 1 = -1 + 1 = 0
-    future_opens = "2026-03-01T00:00:00"
-    sb = make_supabase(
-        [{"id": AUCTION_ID, "name": "Future Auction", "opens_at": future_opens, "status": "open"}],
-    )
-    with _patch_date():
-        result = await auction.resolve_current_round(sb)
-
-    auc = result["auctions"][0]
-    assert auc["skipped"] is True
-    assert auc["reason"] == "round_out_of_range"
 
 
 # ---------------------------------------------------------------------------
@@ -160,23 +123,22 @@ async def test_round_out_of_range_skipped():
 
 
 async def test_nominal_resolution():
-    """Highest bidder wins, loser is marked outbid, contract created.
-    BETA: locked_salary = winning bid amount; no one-shot treasury deduction."""
+    """Highest bidder wins, loser is marked outbid, contract created."""
     import auction
 
     bid_winner = {
         "id": "bid-w", "rider_id": RIDER_ID, "team_id": TEAM_A,
-        "amount": "6000", "placed_at": "2026-02-28T10:00:00",
+        "amount": "6000", "placed_at": "2026-02-28T10:00:00", "round": 1,
     }
     bid_loser = {
         "id": "bid-l", "rider_id": RIDER_ID, "team_id": TEAM_B,
-        "amount": "5000", "placed_at": "2026-02-28T09:00:00",
+        "amount": "5000", "placed_at": "2026-02-28T09:00:00", "round": 1,
     }
 
     sb = make_supabase(
         # 1. auctions
-        [{"id": AUCTION_ID, "name": "Tour Test", "opens_at": OPENS_AT_ROUND1, "status": "open"}],
-        # 2. auction_bids (fetch active bids for this round)
+        [EXPIRED_AUCTION],
+        # 2. auction_bids (all active bids)
         [bid_winner, bid_loser],
         # 3. riders (fetch rider name — single())
         {"full_name": "Tadej Pogacar"},
@@ -184,15 +146,11 @@ async def test_nominal_resolution():
         [],
         # 5. auction_bids update loser → status='outbid'
         [],
-        # 6. contracts insert (locked_salary = 6000, the winning bid amount)
-        [],
-        # 7. treasury_log insert (amount=0, no one-shot deduction in beta)
-        [],
-        # 8. riders update (is_active_in_game = True)
-        [],
+        # 6+ remaining calls (level gating, contract check, contract insert, treasury, etc.)
     )
 
-    with _patch_date():
+    p1, p2 = _patch_datetime()
+    with p1, p2, patch("auction._close_auction"):
         result = await auction.resolve_current_round(sb)
 
     assert result["status"] == "completed"
@@ -202,38 +160,103 @@ async def test_nominal_resolution():
 
 
 # ---------------------------------------------------------------------------
-# Round 3 closes the auction after resolution
+# Auction always closes after resolution
 # ---------------------------------------------------------------------------
 
 
-async def test_round3_closes_auction_after_resolution():
-    """After resolving round 3 with bids, the auction is closed."""
+async def test_always_closes_after_resolution():
+    """Expired auction is always closed after resolution."""
     import auction
 
     bid = {
         "id": "bid-solo", "rider_id": RIDER_ID, "team_id": TEAM_A,
-        "amount": "5000", "placed_at": "2026-02-28T08:00:00",
+        "amount": "5000", "placed_at": "2026-02-28T08:00:00", "round": 1,
     }
 
     sb = make_supabase(
-        # 1. auctions (round 3)
-        [{"id": AUCTION_ID, "name": "Tour Final", "opens_at": OPENS_AT_ROUND3, "status": "open"}],
+        # 1. auctions
+        [EXPIRED_AUCTION],
         # 2. auction_bids
         [bid],
-        # 3. riders single (name only — salary comes from bid in beta)
+        # 3. riders single
         {"full_name": "Jonas Vingegaard"},
-        # 4. auction_bids update winner
+        # 4+ remaining calls
+    )
+
+    p1, p2 = _patch_datetime()
+    with p1, p2, patch("auction._close_auction") as mock_close:
+        result = await auction.resolve_current_round(sb)
+
+    mock_close.assert_called_once_with(sb, AUCTION_ID, LEAGUE_ID)
+    assert result["auctions"][0]["resolved"] == 1
+
+
+# ---------------------------------------------------------------------------
+# _close_auction opens the next scheduled auction
+# ---------------------------------------------------------------------------
+
+
+def test_close_auction_opens_next_scheduled():
+    """_close_auction should set next scheduled auction to 'open'."""
+    import auction
+
+    sb = make_supabase(
+        # 1. auctions.update (close current)
         [],
-        # 5. contracts insert (locked_salary = 5000, the winning bid amount)
-        [],
-        # 6. treasury_log insert (amount=0, no one-shot deduction in beta)
-        [],
-        # 7. riders update is_active
+        # 2. auctions.select (find next scheduled) — returns one
+        [{"id": "auc-next", "name": "Round 2"}],
+        # 3. auctions.update (open next)
         [],
     )
 
-    with _patch_date(), patch("auction._close_auction") as mock_close:
-        result = await auction.resolve_current_round(sb)
+    auction._close_auction(sb, "auc-current", "league-001")
 
-    mock_close.assert_called_once_with(sb, AUCTION_ID)
-    assert result["auctions"][0]["resolved"] == 1
+    # Should have called table() 3 times
+    assert sb.table.call_count == 3
+
+
+def test_close_auction_no_next_scheduled():
+    """_close_auction with no next scheduled auction does not crash."""
+    import auction
+
+    sb = make_supabase(
+        # 1. auctions.update (close current)
+        [],
+        # 2. auctions.select (find next scheduled) — empty
+        [],
+    )
+
+    auction._close_auction(sb, "auc-current", "league-001")
+
+    # Should have called table() 2 times (close + query, no open)
+    assert sb.table.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# force_close resolves even non-expired auctions
+# ---------------------------------------------------------------------------
+
+
+async def test_force_close_skips_closes_at_filter():
+    """force_close=True should not filter by closes_at."""
+    import auction
+
+    # Auction with closes_at in the future (not expired)
+    future_auction = {
+        **EXPIRED_AUCTION,
+        "closes_at": "2026-03-01T00:00:00",
+    }
+
+    sb = make_supabase(
+        # 1. auctions (no lt filter applied)
+        [future_auction],
+        # 2. auction_bids → empty
+        [],
+    )
+
+    p1, p2 = _patch_datetime()
+    with p1, p2, patch("auction._close_auction"):
+        result = await auction.resolve_current_round(sb, force_close=True)
+
+    assert result["status"] == "completed"
+    assert result["auctions"][0]["message"] == "no_active_bids"
