@@ -74,15 +74,32 @@ export default async function MyTeamPage({
     .eq("team_id", team?.id)
     .in("status", ["active", "notice"]);
 
-  // Pending bids from active auctions (exclude bids from closed auctions)
-  const { data: pendingBids } = await supabase
-    .from("auction_bids")
-    .select(
-      "id, amount, status, rider_id, auction_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url), auctions!inner(status)"
-    )
-    .eq("team_id", team?.id)
-    .in("status", ["active", "outbid", "lost"])
-    .in("auctions.status", ["open", "scheduled"]);
+  // Check if any auction round is still open in this league
+  const { count: openRoundCount } = await supabase
+    .from("auctions")
+    .select("id", { count: "exact", head: true })
+    .eq("league_id", leagueId)
+    .in("status", ["open", "scheduled"]);
+
+  const hasOpenRounds = (openRoundCount ?? 0) > 0;
+
+  // Fetch pending bids — include outbid from recent rounds (7-day window)
+  const sevenDaysAgo = new Date(
+    Date.now() - 7 * 24 * 60 * 60 * 1000
+  ).toISOString();
+
+  const { data: pendingBids } = hasOpenRounds
+    ? await supabase
+        .from("auction_bids")
+        .select(
+          "id, amount, status, rider_id, auction_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url), auctions!inner(status, league_id, opens_at)"
+        )
+        .eq("team_id", team?.id)
+        .eq("auctions.league_id", leagueId)
+        .in("auctions.status", ["open", "scheduled"])
+        .gte("auctions.opens_at", sevenDaysAgo)
+        .in("status", ["active", "outbid"])
+    : { data: [] };
 
   // Fetch active auction for round info
   const auctionIds = [...new Set(pendingBids?.map((b) => b.auction_id) ?? [])];

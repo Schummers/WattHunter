@@ -54,6 +54,7 @@ export default async function AuctionHistoryPage({
         "id, amount, status, auction_id, rider_id, riders(full_name), teams:team_id(name)"
       )
       .in("auction_id", roundIds)
+      .in("status", ["won", "outbid"])
       .order("amount", { ascending: false });
 
     for (const bid of bids ?? []) {
