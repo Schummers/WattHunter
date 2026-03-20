@@ -11,6 +11,8 @@ import { riderMatchesPolicy } from "@/lib/boost";
 import { countryCodeToFlag } from "@/lib/format";
 import { savePolicies } from "./actions";
 
+const SPECIALTY_LABELS: Record<string, string> = { GC: "GC", Sprint: "Sprint", TT: "TT", OneDay: "One-day" };
+
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   Target,
   Globe,
@@ -259,7 +261,7 @@ export function PoliciesClient({
                       </SelectTrigger>
                       <SelectContent>
                         {policy.options!.map((opt) => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          <SelectItem key={opt} value={opt}>{SPECIALTY_LABELS[opt] ?? opt}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

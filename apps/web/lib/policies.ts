@@ -6,7 +6,7 @@ export const POLICY_TYPES = [
     description: "Boost riders matching a specific specialty.",
     unlockLevel: 1,
     paramKey: "specialty",
-    options: ["GC", "Sprint", "TT", "One Day"],
+    options: ["GC", "Sprint", "TT", "OneDay"],
   },
   {
     slug: "national_pride",
