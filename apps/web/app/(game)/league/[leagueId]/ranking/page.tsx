@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import { RankingClient } from "./ranking-client";
 
 export default async function RankingPage({
@@ -10,9 +11,7 @@ export default async function RankingPage({
   const { leagueId } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) {
     redirect("/login");
@@ -43,11 +42,25 @@ export default async function RankingPage({
 
   // Get owner display_name for each team via league_members
   const teamIds = teams.map((t) => t.id);
-  const { data: membersRaw } = await supabase
-    .from("league_members")
-    .select("team_id, user_id, users(display_name)")
-    .eq("league_id", leagueId)
-    .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]);
+
+  // Parallelize: members, contracts, xpData all depend only on teamIds
+  const [{ data: membersRaw }, { data: contractsRaw }, { data: xpDataRaw }] =
+    await Promise.all([
+      supabase
+        .from("league_members")
+        .select("team_id, user_id, users(display_name)")
+        .eq("league_id", leagueId)
+        .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]),
+      supabase
+        .from("contracts")
+        .select("id, team_id, rider_id, status, riders:rider_id(id, full_name, nationality, photo_url, pcs_rank)")
+        .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"])
+        .in("status", ["active", "notice"]),
+      supabase
+        .from("rider_xp_daily")
+        .select("rider_id, team_id, race_slug, xp_gained, date")
+        .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]),
+    ]);
 
   const ownerByTeamId: Record<string, string> = {};
   for (const m of membersRaw ?? []) {
@@ -58,22 +71,10 @@ export default async function RankingPage({
   }
 
   // All active/notice contracts in league, join riders
-  const { data: contractsRaw } = await supabase
-    .from("contracts")
-    .select("id, team_id, rider_id, status, riders:rider_id(id, full_name, nationality, photo_url, pcs_rank)")
-    .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"])
-    .in("status", ["active", "notice"]);
-
   const contracts = contractsRaw ?? [];
 
   // Get all rider IDs in league
   const riderIds = [...new Set(contracts.map((c) => c.rider_id))];
-
-  // Task 6: Use rider_xp_daily (game XP with policy boost) instead of raw race_results
-  const { data: xpDataRaw } = await supabase
-    .from("rider_xp_daily")
-    .select("rider_id, team_id, race_slug, xp_gained, date")
-    .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]);
 
   const xpData = xpDataRaw ?? [];
 
@@ -148,17 +149,19 @@ export default async function RankingPage({
   const today = new Date().toISOString().split("T")[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
-  const { data: todayRanks } = await supabase
-    .from("team_ranking_daily")
-    .select("team_id, rank")
-    .eq("date", today)
-    .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]);
-
-  const { data: yesterdayRanks } = await supabase
-    .from("team_ranking_daily")
-    .select("team_id, rank")
-    .eq("date", yesterday)
-    .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]);
+  // Parallelize: today and yesterday snapshots are independent
+  const [{ data: todayRanks }, { data: yesterdayRanks }] = await Promise.all([
+    supabase
+      .from("team_ranking_daily")
+      .select("team_id, rank")
+      .eq("date", today)
+      .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]),
+    supabase
+      .from("team_ranking_daily")
+      .select("team_id, rank")
+      .eq("date", yesterday)
+      .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]),
+  ]);
 
   const todayRankMap: Record<string, number> = {};
   for (const r of todayRanks ?? []) {

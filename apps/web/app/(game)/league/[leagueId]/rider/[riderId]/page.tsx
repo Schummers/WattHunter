@@ -17,12 +17,39 @@ export default async function RiderDetailPage({
   const { from } = await searchParams;
   const supabase = await createClient();
 
-  // Get rider
-  const { data: rider } = await supabase
-    .from("riders")
-    .select("*")
-    .eq("id", riderId)
-    .single();
+  // Run rider data fetches and auth in parallel
+  const [
+    { data: rider },
+    { data: rankings },
+    { data: riderTeams },
+    { data: startlists },
+    { data: raceResults },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    supabase.from("riders").select("*").eq("id", riderId).single(),
+    supabase
+      .from("rider_season_rankings")
+      .select("*")
+      .eq("rider_id", riderId)
+      .order("season", { ascending: false }),
+    supabase
+      .from("rider_teams")
+      .select("season, team_name")
+      .eq("rider_id", riderId),
+    supabase
+      .from("race_startlists")
+      .select("race_slug, race_name, race_date")
+      .eq("rider_id", riderId)
+      .order("race_date", { ascending: true }),
+    supabase
+      .from("race_results")
+      .select("race_name, race_date, pcs_points, rider_id")
+      .eq("rider_id", riderId)
+      .order("race_date", { ascending: false }),
+    supabase.auth.getUser(),
+  ]);
 
   if (!rider) {
     return (
@@ -32,41 +59,12 @@ export default async function RiderDetailPage({
     );
   }
 
-  // Get season rankings + teams for table
-  const { data: rankings } = await supabase
-    .from("rider_season_rankings")
-    .select("*")
-    .eq("rider_id", riderId)
-    .order("season", { ascending: false });
-
-  const { data: riderTeams } = await supabase
-    .from("rider_teams")
-    .select("season, team_name")
-    .eq("rider_id", riderId);
-
   const teamBySeason: Record<number, string> = {};
   for (const rt of riderTeams ?? []) {
     teamBySeason[rt.season] = rt.team_name;
   }
 
-  // Get race startlists for programme
-  const { data: startlists } = await supabase
-    .from("race_startlists")
-    .select("race_slug, race_name, race_date")
-    .eq("rider_id", riderId)
-    .order("race_date", { ascending: true });
-
-  // Get race results for game stats
-  const { data: raceResults } = await supabase
-    .from("race_results")
-    .select("race_name, race_date, pcs_points, rider_id")
-    .eq("rider_id", riderId)
-    .order("race_date", { ascending: false });
-
   // Auth + team check
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   let context: RiderContext = (from as RiderContext) ?? "ranking";
   let contractData: { locked_salary: number; status: string; contractId?: string; effectivePhaseName?: string } | null = null;
@@ -84,14 +82,23 @@ export default async function RiderDetailPage({
       .single();
 
     if (member?.team_id) {
-      // Check if owned
-      const { data: contract } = await supabase
-        .from("contracts")
-        .select("id, locked_salary, status, effective_phase_id")
-        .eq("team_id", member.team_id)
-        .eq("rider_id", riderId)
-        .in("status", ["active", "notice"])
-        .maybeSingle();
+      // Check if owned and current bid in parallel
+      const [{ data: contract }, { data: activeBid }] = await Promise.all([
+        supabase
+          .from("contracts")
+          .select("id, locked_salary, status, effective_phase_id")
+          .eq("team_id", member.team_id)
+          .eq("rider_id", riderId)
+          .in("status", ["active", "notice"])
+          .maybeSingle(),
+        supabase
+          .from("auction_bids")
+          .select("id, amount, auction_id")
+          .eq("team_id", member.team_id)
+          .eq("rider_id", riderId)
+          .eq("status", "active")
+          .maybeSingle(),
+      ]);
 
       if (contract) {
         if (from !== "recruts" && from !== "team") context = "team";
@@ -105,15 +112,6 @@ export default async function RiderDetailPage({
           effectivePhaseName: phaseName,
         };
       }
-
-      // Check current bid (for recruts context)
-      const { data: activeBid } = await supabase
-        .from("auction_bids")
-        .select("id, amount, auction_id")
-        .eq("team_id", member.team_id)
-        .eq("rider_id", riderId)
-        .eq("status", "active")
-        .maybeSingle();
 
       if (activeBid) {
         currentBidId = activeBid.id;
@@ -190,17 +188,18 @@ export default async function RiderDetailPage({
       const level = budgetTeam?.level ?? 1;
       const maxSlots = getMaxSlots(level);
 
-      const { count: contractCount } = await supabase
-        .from("contracts")
-        .select("id", { count: "exact", head: true })
-        .eq("team_id", memberForBudget.team_id)
-        .in("status", ["active", "notice"]);
-
-      const { data: activeBids } = await supabase
-        .from("auction_bids")
-        .select("amount")
-        .eq("team_id", memberForBudget.team_id)
-        .eq("status", "active");
+      const [{ count: contractCount }, { data: activeBids }] = await Promise.all([
+        supabase
+          .from("contracts")
+          .select("id", { count: "exact", head: true })
+          .eq("team_id", memberForBudget.team_id)
+          .in("status", ["active", "notice"]),
+        supabase
+          .from("auction_bids")
+          .select("amount")
+          .eq("team_id", memberForBudget.team_id)
+          .eq("status", "active"),
+      ]);
 
       const totalBidAmount = (activeBids ?? []).reduce((sum, b) => sum + b.amount, 0);
       const activeBidCount = (activeBids ?? []).length;

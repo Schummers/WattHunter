@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import { RecrutsClient } from "./recruts-client";
 import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
 import { getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
@@ -11,9 +12,7 @@ export default async function RecrutsPage({
   const { leagueId } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) {
     return (
@@ -46,22 +45,22 @@ export default async function RecrutsPage({
   const level = team?.level ?? 1;
   const minRank = getLevelByNumber(level).poolMin;
 
-  // Fetch available riders within pool range
-  const { data: riders } = await supabase
-    .from("riders")
-    .select(
-      "id, full_name, nationality, real_team, pcs_rank, pcs_rank_prev, photo_url, specialty, pcs_points_1yr"
-    )
-    .gte("pcs_rank", minRank)
-    .lte("pcs_rank", 500)
-    .order("pcs_rank", { ascending: true })
-    .limit(500);
-
-  // Fetch ALL league teams, then all their contracts to exclude owned riders
-  const { data: leagueTeams } = await supabase
-    .from("teams")
-    .select("id")
-    .eq("league_id", leagueId);
+  // Parallelize: riders and leagueTeams are independent of each other
+  const [{ data: riders }, { data: leagueTeams }] = await Promise.all([
+    supabase
+      .from("riders")
+      .select(
+        "id, full_name, nationality, real_team, pcs_rank, pcs_rank_prev, photo_url, specialty, pcs_points_1yr"
+      )
+      .gte("pcs_rank", minRank)
+      .lte("pcs_rank", 500)
+      .order("pcs_rank", { ascending: true })
+      .limit(500),
+    supabase
+      .from("teams")
+      .select("id")
+      .eq("league_id", leagueId),
+  ]);
 
   const leagueTeamIds = (leagueTeams ?? []).map((t) => t.id);
 
@@ -90,39 +89,44 @@ export default async function RecrutsPage({
           : null,
     }));
 
-  // Get current active auction (if any)
-  const { data: activeRound } = await supabase
-    .from("auctions")
-    .select("id, name, opens_at, closes_at")
-    .eq("league_id", leagueId)
-    .eq("status", "open")
-    .order("opens_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  // If no active round, find next scheduled
-  let nextRound: { id: string; name: string; opens_at: string } | null = null;
-  let nextAuctionLabel: string | null = null;
-  if (!activeRound) {
-    const { data } = await supabase
+  // Parallelize: all three auction-status queries are independent of each other
+  const [
+    { data: activeRound },
+    { data: scheduledRoundData },
+    { count: closedCount },
+  ] = await Promise.all([
+    supabase
+      .from("auctions")
+      .select("id, name, opens_at, closes_at")
+      .eq("league_id", leagueId)
+      .eq("status", "open")
+      .order("opens_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
       .from("auctions")
       .select("id, name, opens_at")
       .eq("league_id", leagueId)
       .eq("status", "scheduled")
       .order("opens_at", { ascending: true })
       .limit(1)
-      .maybeSingle();
-    nextRound = data;
+      .maybeSingle(),
+    supabase
+      .from("auctions")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", leagueId)
+      .eq("status", "closed"),
+  ]);
+
+  // If no active round, find next scheduled
+  let nextRound: { id: string; name: string; opens_at: string } | null = null;
+  let nextAuctionLabel: string | null = null;
+  if (!activeRound) {
+    nextRound = scheduledRoundData;
 
     // If no scheduled auction, check if season has started (any closed auction exists)
     if (!nextRound) {
-      const { count } = await supabase
-        .from("auctions")
-        .select("id", { count: "exact", head: true })
-        .eq("league_id", leagueId)
-        .eq("status", "closed");
-
-      if (count && count > 0) {
+      if (closedCount && closedCount > 0) {
         // Season started — calculate next from calendar
         const next = getNextAuctionDate();
         if (next) {

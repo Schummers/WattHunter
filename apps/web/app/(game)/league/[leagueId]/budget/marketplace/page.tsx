@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import {
   expandNationality,
   RESULT_CONDITION_FILTERS,
@@ -14,21 +15,21 @@ async function checkSponsorEligibility(
   teamId: string,
   sponsors: SponsorRow[],
 ): Promise<SponsorEligibility[]> {
-  // Get active contracts → rider IDs
-  const { data: contracts } = await supabase
-    .from("contracts")
-    .select("rider_id")
-    .eq("team_id", teamId)
-    .in("status", ["active", "notice"]);
+  // contracts + teamPolicies are independent — run in parallel
+  const [{ data: contracts }, { data: teamPolicies }] = await Promise.all([
+    supabase
+      .from("contracts")
+      .select("rider_id")
+      .eq("team_id", teamId)
+      .in("status", ["active", "notice"]),
+    supabase
+      .from("team_policies")
+      .select("config, policies!policy_id(slug)")
+      .eq("team_id", teamId)
+      .eq("is_active", true),
+  ]);
 
   const riderIds = (contracts ?? []).map((c) => c.rider_id);
-
-  // Fetch active specialist policy for specialty eligibility
-  const { data: teamPolicies } = await supabase
-    .from("team_policies")
-    .select("config, policies!policy_id(slug)")
-    .eq("team_id", teamId)
-    .eq("is_active", true);
 
   const activeSpecialty = (teamPolicies ?? [])
     .find((p) => {
@@ -134,9 +135,7 @@ export default async function MarketplacePage({
   const { leagueId } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) redirect("/login");
 
   const { data: team } = await supabase
@@ -148,18 +147,18 @@ export default async function MarketplacePage({
 
   if (!team) redirect(`/league/${leagueId}`);
 
-  // Fetch all sponsors
-  const { data: allSponsors } = await supabase
-    .from("sponsors")
-    .select("*")
-    .order("sort_order", { ascending: true });
-
-  // Current team sponsors
-  const { data: teamSponsors } = await supabase
-    .from("team_sponsors")
-    .select("id, slot, sponsor_id, status")
-    .eq("team_id", team.id)
-    .eq("status", "active");
+  // allSponsors + teamSponsors are independent — run in parallel
+  const [{ data: allSponsors }, { data: teamSponsors }] = await Promise.all([
+    supabase
+      .from("sponsors")
+      .select("*")
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("team_sponsors")
+      .select("id, slot, sponsor_id, status")
+      .eq("team_id", team.id)
+      .eq("status", "active"),
+  ]);
 
   const sponsors = (allSponsors ?? []) as SponsorRow[];
   const eligibility = await checkSponsorEligibility(supabase, team.id, sponsors);

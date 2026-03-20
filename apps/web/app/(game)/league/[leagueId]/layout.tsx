@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import { Sidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/topbar";
 import { BottomNav } from "@/components/bottom-nav";
@@ -16,21 +17,30 @@ export default async function LeagueLayout({
   const { leagueId } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) {
     redirect("/login");
   }
 
-  // Fetch league membership (with league name via join)
-  const { data: membership } = await supabase
-    .from("league_members")
-    .select("team_id, leagues:league_id(name), teams:team_id(name)")
-    .eq("league_id", leagueId)
-    .eq("user_id", user.id)
-    .single();
+  // Fetch league membership, all user leagues, and auctions in parallel
+  const [{ data: membership }, { data: allMemberships }, { data: auctions }] =
+    await Promise.all([
+      supabase
+        .from("league_members")
+        .select("team_id, leagues:league_id(name), teams:team_id(name)")
+        .eq("league_id", leagueId)
+        .eq("user_id", user.id)
+        .single(),
+      supabase
+        .from("league_members")
+        .select("league_id, leagues:league_id(id, name)")
+        .eq("user_id", user.id),
+      supabase
+        .from("auctions")
+        .select("id, status")
+        .eq("league_id", leagueId),
+    ]);
 
   if (!membership) {
     redirect("/league/choose");
@@ -39,12 +49,6 @@ export default async function LeagueLayout({
   const leagueName =
     (membership.leagues as unknown as { name: string } | null)?.name ?? "League";
 
-  // Fetch all user leagues for switcher
-  const { data: allMemberships } = await supabase
-    .from("league_members")
-    .select("league_id, leagues:league_id(id, name)")
-    .eq("user_id", user.id);
-
   const leagues = (allMemberships ?? []).map((m) => {
     const league = m.leagues as unknown as { id: string; name: string };
     return { id: league.id, name: league.name };
@@ -52,12 +56,6 @@ export default async function LeagueLayout({
 
   // Determine unlocked tabs based on league state
   const unlockedTabs: ("home" | "team" | "budget" | "ranking")[] = ["home"];
-
-  // Check if any auction exists (means first auction was launched)
-  const { data: auctions } = await supabase
-    .from("auctions")
-    .select("id, status")
-    .eq("league_id", leagueId);
 
   if (auctions && auctions.length > 0) {
     unlockedTabs.push("team", "budget", "ranking");

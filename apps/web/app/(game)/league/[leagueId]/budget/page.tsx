@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import { AUCTION_PHASES, getCurrentPhase, getPhaseRange } from "@/lib/phases";
 import { BudgetClient } from "./budget-client";
 
@@ -14,9 +15,7 @@ export default async function BudgetPage({
   const sp = await searchParams;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) redirect("/login");
 
   const { data: team } = await supabase
@@ -35,33 +34,35 @@ export default async function BudgetPage({
   const phaseIndex = rawPhase >= 0 && rawPhase < AUCTION_PHASES.length ? rawPhase : (defaultIndex >= 0 ? defaultIndex : 0);
   const selectedPhase = AUCTION_PHASES[phaseIndex];
 
-  // Active sponsors with details (include pending_change status)
-  const { data: teamSponsors } = await supabase
-    .from("team_sponsors")
-    .select("id, slot, status, sponsor_id, payments_count, pending_sponsor_id, effective_phase_id, sponsors!sponsor_id(id, name, abbreviation, tier, slot, monthly_budget, first_phase_budget, nationality, nationality_count, specialty, result_condition)")
-    .eq("team_id", team.id)
-    .in("status", ["active", "pending_change"]);
-
-  // Transactions for selected phase
   const year = new Date().getFullYear();
   const { start, end } = getPhaseRange(selectedPhase, year);
 
-  const { data: transactions } = await supabase
-    .from("treasury_log")
-    .select("*")
-    .eq("team_id", team.id)
-    .gte("created_at", start.toISOString())
-    .lte("created_at", end.toISOString())
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  // Income/outgoing totals
-  const { data: phaseTotals } = await supabase
-    .from("treasury_log")
-    .select("amount, type")
-    .eq("team_id", team.id)
-    .gte("created_at", start.toISOString())
-    .lte("created_at", end.toISOString());
+  // Active sponsors + transactions + totals — all depend only on team.id, run in parallel
+  const [
+    { data: teamSponsors },
+    { data: transactions },
+    { data: phaseTotals },
+  ] = await Promise.all([
+    supabase
+      .from("team_sponsors")
+      .select("id, slot, status, sponsor_id, payments_count, pending_sponsor_id, effective_phase_id, sponsors!sponsor_id(id, name, abbreviation, tier, slot, monthly_budget, first_phase_budget, nationality, nationality_count, specialty, result_condition)")
+      .eq("team_id", team.id)
+      .in("status", ["active", "pending_change"]),
+    supabase
+      .from("treasury_log")
+      .select("*")
+      .eq("team_id", team.id)
+      .gte("created_at", start.toISOString())
+      .lte("created_at", end.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("treasury_log")
+      .select("amount, type")
+      .eq("team_id", team.id)
+      .gte("created_at", start.toISOString())
+      .lte("created_at", end.toISOString()),
+  ]);
 
   const totals = phaseTotals ?? [];
   const hasSponsorPayments = totals.some((t) => t.type === "sponsor_payment");

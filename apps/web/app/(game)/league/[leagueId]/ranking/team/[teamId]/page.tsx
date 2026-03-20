@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import { BackHeader } from "@/components/back-header";
 import { MetricBox } from "@/components/metric-box";
 import { MovementTag } from "@/components/movement-tag";
@@ -26,9 +27,7 @@ export default async function TeamDetailPage({
   const { leagueId, teamId } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) redirect("/login");
 
@@ -47,25 +46,25 @@ export default async function TeamDetailPage({
     );
   }
 
-  // Owner display_name
-  const { data: ownerMember } = await supabase
-    .from("league_members")
-    .select("user_id, users(display_name)")
-    .eq("team_id", teamId)
-    .eq("league_id", leagueId)
-    .maybeSingle();
+  // Parallelize: owner member lookup and ranking count are independent
+  const [{ data: ownerMember }, { count: higherCount }] = await Promise.all([
+    supabase
+      .from("league_members")
+      .select("user_id, users(display_name)")
+      .eq("team_id", teamId)
+      .eq("league_id", leagueId)
+      .maybeSingle(),
+    supabase
+      .from("teams")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", leagueId)
+      .gt("cumulative_xp", team.cumulative_xp),
+  ]);
 
   const ownerUser = ownerMember
     ? (Array.isArray(ownerMember.users) ? ownerMember.users[0] : ownerMember.users)
     : null;
   const ownerDisplayName = (ownerUser as { display_name?: string })?.display_name ?? "Unknown";
-
-  // Compute ranking: count teams with higher XP in same league
-  const { count: higherCount } = await supabase
-    .from("teams")
-    .select("id", { count: "exact", head: true })
-    .eq("league_id", leagueId)
-    .gt("cumulative_xp", team.cumulative_xp);
 
   const rankPosition = (higherCount ?? 0) + 1;
 
@@ -83,11 +82,17 @@ export default async function TeamDetailPage({
   // Get all rider IDs
   const allRiderIds = contracts.map((c) => c.rider_id);
 
-  // Per-rider game XP from race_results
-  const { data: resultsRaw } = await supabase
-    .from("race_results")
-    .select("rider_id, pcs_points")
-    .in("rider_id", allRiderIds.length > 0 ? allRiderIds : ["__none__"]);
+  // Parallelize: race results for team riders and league teams are independent
+  const [{ data: resultsRaw }, { data: leagueTeamsRaw }] = await Promise.all([
+    supabase
+      .from("race_results")
+      .select("rider_id, pcs_points")
+      .in("rider_id", allRiderIds.length > 0 ? allRiderIds : ["__none__"]),
+    supabase
+      .from("teams")
+      .select("id")
+      .eq("league_id", leagueId),
+  ]);
 
   const riderXpTotal: Record<string, number> = {};
   for (const r of resultsRaw ?? []) {
@@ -95,11 +100,6 @@ export default async function TeamDetailPage({
   }
 
   // Per-rider ranking in league: need all league riders' XP
-  // Get all teams in league
-  const { data: leagueTeamsRaw } = await supabase
-    .from("teams")
-    .select("id")
-    .eq("league_id", leagueId);
 
   const leagueTeamIds = (leagueTeamsRaw ?? []).map((t) => t.id);
 

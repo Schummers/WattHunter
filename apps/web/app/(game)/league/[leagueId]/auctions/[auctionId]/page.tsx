@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 import { TreasuryWidget } from "./treasury-widget";
 import { AuctionClient } from "./auction-client";
@@ -17,15 +18,13 @@ export default async function AuctionDetailPage({
   const { leagueId, auctionId } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) redirect("/login");
 
   // Fetch team first so we can use its level to gate the riders query
   const { data: team } = await supabase
     .from("teams")
-    .select("*")
+    .select("id, treasury, level, league_id, user_id")
     .eq("user_id", user.id)
     .eq("league_id", leagueId)
     .single();
@@ -36,14 +35,21 @@ export default async function AuctionDetailPage({
     { data: myBids },
     { data: contracts },
   ] = await Promise.all([
-    supabase.from("auctions").select("*").eq("id", auctionId).single(),
+    supabase
+      .from("auctions")
+      .select("id, name, opens_at")
+      .eq("id", auctionId)
+      .single(),
     supabase
       .from("riders")
-      .select("*")
+      .select("id, full_name, nationality, photo_url, pcs_rank, pcs_points_1yr, specialty, real_team, monthly_salary, age")
       .eq("ever_in_top500", true)
       .lte("pcs_rank", rankMaxForLevel(team?.level ?? 1))
       .order("pcs_points_1yr", { ascending: false }),
-    supabase.from("auction_bids").select("*").eq("auction_id", auctionId),
+    supabase
+      .from("auction_bids")
+      .select("id, rider_id, team_id, amount, round, status")
+      .eq("auction_id", auctionId),
     supabase.from("contracts").select("rider_id").in("status", ["active", "notice"]),
   ]);
 

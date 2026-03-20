@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import { BackHeader } from "@/components/back-header";
 import { POLICY_TYPES } from "@/lib/policies";
 import { PoliciesClient } from "./policies-client";
@@ -12,9 +13,7 @@ export default async function PoliciesPage({
   const { leagueId } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) {
     return (
@@ -39,16 +38,37 @@ export default async function PoliciesPage({
   const level = team?.level ?? 1;
   const teamId = (team as { id: string })?.id ?? "";
 
-  // Fetch all policies from DB (to get policy_id per slug)
-  const { data: dbPolicies } = await supabase
-    .from("policies")
-    .select("id, slug");
-
-  // Current team_policies (including pending state)
-  const { data: teamPolicies } = await supabase
-    .from("team_policies")
-    .select("policy_id, is_active, config, pending_is_active, pending_config, effective_phase_id")
-    .eq("team_id", teamId);
+  // All remaining queries depend only on teamId — run in parallel
+  const [
+    { data: dbPolicies },
+    { data: teamPolicies },
+    { data: nationalitiesData },
+    { data: teamsData },
+    { data: contracts },
+  ] = await Promise.all([
+    supabase
+      .from("policies")
+      .select("id, slug"),
+    supabase
+      .from("team_policies")
+      .select("policy_id, is_active, config, pending_is_active, pending_config, effective_phase_id")
+      .eq("team_id", teamId),
+    supabase
+      .from("riders")
+      .select("nationality")
+      .not("nationality", "is", null)
+      .order("nationality"),
+    supabase
+      .from("riders")
+      .select("real_team")
+      .not("real_team", "is", null)
+      .order("real_team"),
+    supabase
+      .from("contracts")
+      .select("riders(nationality, real_team, specialty, birthdate)")
+      .eq("team_id", teamId)
+      .in("status", ["active", "notice"]),
+  ]);
 
   // Build initial policies map
   const policyIdToSlug: Record<string, string> = {};
@@ -82,27 +102,8 @@ export default async function PoliciesPage({
     }
   }
 
-  // Dynamic select options
-  const { data: nationalitiesData } = await supabase
-    .from("riders")
-    .select("nationality")
-    .not("nationality", "is", null)
-    .order("nationality");
   const nationalities = [...new Set((nationalitiesData ?? []).map((r) => r.nationality).filter(Boolean))] as string[];
-
-  const { data: teamsData } = await supabase
-    .from("riders")
-    .select("real_team")
-    .not("real_team", "is", null)
-    .order("real_team");
   const teams = [...new Set((teamsData ?? []).map((r) => r.real_team).filter(Boolean))] as string[];
-
-  // Roster riders for coverage
-  const { data: contracts } = await supabase
-    .from("contracts")
-    .select("riders(nationality, real_team, specialty, birthdate)")
-    .eq("team_id", teamId)
-    .in("status", ["active", "notice"]);
 
   const rosterRiders = (contracts ?? []).map((c) => {
     const r = Array.isArray(c.riders) ? c.riders[0] : c.riders;

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import { BackHeader } from "@/components/back-header";
 import { Plus } from "lucide-react";
 import Link from "next/link";
@@ -24,9 +25,7 @@ export default async function SettingsPage({
   const { leagueId } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) {
     return (
@@ -38,18 +37,20 @@ export default async function SettingsPage({
     );
   }
 
-  const { data: member } = await supabase
-    .from("league_members")
-    .select("id, team_id, teams:team_id(id, name)")
-    .eq("league_id", leagueId)
-    .eq("user_id", user.id)
-    .single();
-
-  const { data: league } = await supabase
-    .from("leagues")
-    .select("id, name, invite_code, commissioner_id")
-    .eq("id", leagueId)
-    .single();
+  // member + league are independent — run in parallel
+  const [{ data: member }, { data: league }] = await Promise.all([
+    supabase
+      .from("league_members")
+      .select("id, team_id, teams:team_id(id, name)")
+      .eq("league_id", leagueId)
+      .eq("user_id", user.id)
+      .single(),
+    supabase
+      .from("leagues")
+      .select("id, name, invite_code, commissioner_id")
+      .eq("id", leagueId)
+      .single(),
+  ]);
 
   // Fetch commissioner name via league_members → teams
   let commissionerName = "Race Director";
