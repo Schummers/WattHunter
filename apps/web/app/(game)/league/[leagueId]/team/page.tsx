@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight, Target, Globe, Users, Clock } from "lucide-react";
 import { RailLink } from "@/components/rail-link";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/get-user";
 import { RiderCard } from "@/components/rider-card";
 import { BrandCard } from "@/components/brand-card";
 import { getMaxSlots, getProgressPct, getNextLevel, getLevelByNumber } from "@/lib/levels";
@@ -33,9 +34,7 @@ export default async function MyTeamPage({
   const { leagueId } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) {
     return (
@@ -66,20 +65,42 @@ export default async function MyTeamPage({
 
   const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
 
-  const { data: teamRiders } = await supabase
-    .from("contracts")
-    .select(
-      "id, rider_id, locked_salary, status, effective_phase_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url, specialty, pcs_points_1yr, birthdate)"
-    )
-    .eq("team_id", team?.id)
-    .in("status", ["active", "notice"]);
-
-  // Check if any auction round is still open in this league
-  const { count: openRoundCount } = await supabase
-    .from("auctions")
-    .select("id", { count: "exact", head: true })
-    .eq("league_id", leagueId)
-    .in("status", ["open", "scheduled"]);
+  // Group 1: parallel queries — all depend only on team.id / leagueId
+  const xp = team?.cumulative_xp ?? 0;
+  const [
+    { data: teamRiders },
+    { count: openRoundCount },
+    { count: teamsAbove },
+    { count: totalTeams },
+    { data: activePolicies },
+  ] = await Promise.all([
+    supabase
+      .from("contracts")
+      .select(
+        "id, rider_id, locked_salary, status, effective_phase_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url, specialty, pcs_points_1yr, birthdate)"
+      )
+      .eq("team_id", team?.id)
+      .in("status", ["active", "notice"]),
+    supabase
+      .from("auctions")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", leagueId)
+      .in("status", ["open", "scheduled"]),
+    supabase
+      .from("teams")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", leagueId)
+      .gt("cumulative_xp", xp),
+    supabase
+      .from("teams")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", leagueId),
+    supabase
+      .from("team_policies")
+      .select("policy_id, config, policies:policy_id(slug, xp_bonus)")
+      .eq("team_id", team?.id)
+      .eq("is_active", true),
+  ]);
 
   const hasOpenRounds = (openRoundCount ?? 0) > 0;
 
@@ -87,56 +108,63 @@ export default async function MyTeamPage({
   const sevenDaysAgo = new Date(
     Date.now() - 7 * 24 * 60 * 60 * 1000
   ).toISOString();
+  const riderIds = (teamRiders ?? []).map((tr) => tr.rider_id);
 
-  const { data: pendingBids } = hasOpenRounds
-    ? await supabase
-        .from("auction_bids")
-        .select(
-          "id, amount, status, rider_id, auction_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url), auctions!inner(status, league_id, opens_at)"
-        )
-        .eq("team_id", team?.id)
-        .eq("auctions.league_id", leagueId)
-        .in("auctions.status", ["open", "scheduled"])
-        .gte("auctions.opens_at", sevenDaysAgo)
-        .in("status", ["active", "outbid"])
-    : { data: [] };
+  // Group 2: parallel queries — depend on Group 1 results
+  const [{ data: pendingBids }, { data: xpData }] = await Promise.all([
+    hasOpenRounds
+      ? supabase
+          .from("auction_bids")
+          .select(
+            "id, amount, status, rider_id, auction_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url), auctions!inner(status, league_id, opens_at)"
+          )
+          .eq("team_id", team?.id)
+          .eq("auctions.league_id", leagueId)
+          .gte("auctions.opens_at", sevenDaysAgo)
+          .in("status", ["active", "outbid"])
+      : Promise.resolve({ data: [] as never[] }),
+    riderIds.length > 0
+      ? supabase
+          .from("rider_xp_daily")
+          .select("rider_id, xp_gained")
+          .eq("team_id", team?.id)
+          .in("rider_id", riderIds)
+      : Promise.resolve({ data: [] as never[] }),
+  ]);
 
-  // Fetch active auction for round info
+  // Filter bids
+  const activeBids = pendingBids?.filter((b) => b.status === "active") ?? [];
+  const outbidBids = pendingBids?.filter((b) => b.status === "outbid") ?? [];
+  const allBids = [...activeBids, ...outbidBids];
+
   const auctionIds = [...new Set(pendingBids?.map((b) => b.auction_id) ?? [])];
-  let activeAuction: { name: string; closes_at: string } | null = null;
-  if (auctionIds.length > 0) {
-    const { data: auction } = await supabase
-      .from("auctions")
-      .select("name, closes_at")
-      .eq("id", auctionIds[0])
-      .single();
-    activeAuction = auction;
-  }
+  const outbidRiderIds = outbidBids.map((b) => b.rider_id);
 
-  // Ranking
-  const xp = team?.cumulative_xp ?? 0;
-  const level = team?.level ?? 1;
-  const { count: teamsAbove } = await supabase
-    .from("teams")
-    .select("id", { count: "exact", head: true })
-    .eq("league_id", leagueId)
-    .gt("cumulative_xp", xp);
-  const { count: totalTeams } = await supabase
-    .from("teams")
-    .select("id", { count: "exact", head: true })
-    .eq("league_id", leagueId);
+  // Group 3: parallel queries — depend on Group 2 results
+  const [activeAuctionResult, winningBidsResult] = await Promise.all([
+    auctionIds.length > 0
+      ? supabase
+          .from("auctions")
+          .select("name, closes_at")
+          .eq("id", auctionIds[0])
+          .single()
+      : Promise.resolve({ data: null }),
+    outbidRiderIds.length > 0
+      ? supabase
+          .from("auction_bids")
+          .select("rider_id, amount, teams:team_id(name)")
+          .eq("status", "won")
+          .in("rider_id", outbidRiderIds)
+      : Promise.resolve({ data: [] as never[] }),
+  ]);
+
+  const activeAuction = activeAuctionResult.data as { name: string; closes_at: string } | null;
 
   const rank = (teamsAbove ?? 0) + 1;
   const teamCount = totalTeams ?? 0;
+  const level = team?.level ?? 1;
   const maxSlots = getMaxSlots(level);
   const riderCount = teamRiders?.length ?? 0;
-
-  // Active policies
-  const { data: activePolicies } = await supabase
-    .from("team_policies")
-    .select("policy_id, config, policies:policy_id(slug, xp_bonus)")
-    .eq("team_id", team?.id)
-    .eq("is_active", true);
 
   const boostPolicies = (activePolicies ?? []).map((tp) => {
     const p = Array.isArray(tp.policies) ? tp.policies[0] : tp.policies;
@@ -180,43 +208,19 @@ export default async function MyTeamPage({
     }
   }
 
-  // Game XP per rider
-  const riderIds = (teamRiders ?? []).map((tr) => tr.rider_id);
-  const { data: xpData } = riderIds.length > 0
-    ? await supabase
-        .from("rider_xp_daily")
-        .select("rider_id, xp_gained")
-        .eq("team_id", team?.id)
-        .in("rider_id", riderIds)
-    : { data: [] };
-
   const xpByRider: Record<string, number> = {};
   for (const row of xpData ?? []) {
     xpByRider[row.rider_id] = (xpByRider[row.rider_id] ?? 0) + row.xp_gained;
   }
 
-  // Filter bids
-  const activeBids = pendingBids?.filter((b) => b.status === "active") ?? [];
-  const outbidBids = pendingBids?.filter((b) => b.status === "outbid") ?? [];
-  const allBids = [...activeBids, ...outbidBids];
-
   // Winning bids for outbid riders
-  const outbidRiderIds = outbidBids.map((b) => b.rider_id);
   let winnerMap: Record<string, { team_name: string; amount: number }> = {};
-  if (outbidRiderIds.length > 0) {
-    const { data: winningBids } = await supabase
-      .from("auction_bids")
-      .select("rider_id, amount, teams:team_id(name)")
-      .eq("status", "won")
-      .in("rider_id", outbidRiderIds);
-
-    for (const wb of winningBids ?? []) {
-      const t = Array.isArray(wb.teams) ? wb.teams[0] : wb.teams;
-      winnerMap[wb.rider_id] = {
-        team_name: (t as { name: string })?.name ?? "Unknown",
-        amount: wb.amount,
-      };
-    }
+  for (const wb of (winningBidsResult.data ?? []) as Array<{ rider_id: string; amount: number; teams: unknown }>) {
+    const t = Array.isArray(wb.teams) ? wb.teams[0] : wb.teams;
+    winnerMap[wb.rider_id] = {
+      team_name: (t as { name: string })?.name ?? "Unknown",
+      amount: wb.amount,
+    };
   }
 
   // Level progress
