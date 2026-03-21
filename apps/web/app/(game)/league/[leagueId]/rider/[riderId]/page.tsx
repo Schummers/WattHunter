@@ -23,7 +23,7 @@ export default async function RiderDetailPage({
     { data: rankings },
     { data: riderTeams },
     { data: startlists },
-    { data: raceResults },
+    { data: xpDailyRaw },
     {
       data: { user },
     },
@@ -43,13 +43,45 @@ export default async function RiderDetailPage({
       .select("race_slug, race_name, race_date")
       .eq("rider_id", riderId)
       .order("race_date", { ascending: true }),
+    // Game results only: rider_xp_daily (races under contract)
     supabase
-      .from("race_results")
-      .select("race_name, race_date, pcs_points, rider_id")
+      .from("rider_xp_daily")
+      .select("race_slug, xp_gained, raw_pcs_points, date, team_id")
       .eq("rider_id", riderId)
-      .order("race_date", { ascending: false }),
+      .order("date", { ascending: false }),
     supabase.auth.getUser(),
   ]);
+
+  // Fetch race metadata (name, date, rank) for game results
+  const gameRaceSlugs = [...new Set((xpDailyRaw ?? []).map((x) => x.race_slug).filter(Boolean))];
+  const { data: raceMetaRaw } = gameRaceSlugs.length > 0
+    ? await supabase
+        .from("race_results")
+        .select("race_slug, race_name, race_date, rank")
+        .eq("rider_id", riderId)
+        .in("race_slug", gameRaceSlugs)
+    : { data: [] };
+
+  // Build lookup: race_slug → metadata
+  const raceMeta: Record<string, { race_name: string; race_date: string | null; rank: number | null }> = {};
+  for (const r of raceMetaRaw ?? []) {
+    if (!raceMeta[r.race_slug]) {
+      raceMeta[r.race_slug] = { race_name: r.race_name, race_date: r.race_date, rank: r.rank };
+    }
+  }
+
+  // Merge XP data + metadata into race results
+  const raceResults = (xpDailyRaw ?? []).map((x) => {
+    const meta = raceMeta[x.race_slug] ?? { race_name: x.race_slug, race_date: x.date, rank: null };
+    return {
+      race_name: meta.race_name,
+      race_date: meta.race_date ?? x.date,
+      xp_gained: x.xp_gained,
+      pcs_points: x.raw_pcs_points,
+      rank: meta.rank,
+      team_id: x.team_id,
+    };
+  });
 
   if (!rider) {
     return (
@@ -243,11 +275,7 @@ export default async function RiderDetailPage({
         race_name: s.race_name,
         race_date: s.race_date,
       }))}
-      raceResults={(raceResults ?? []).map((r) => ({
-        race_name: r.race_name,
-        race_date: r.race_date,
-        pcs_points: r.pcs_points,
-      }))}
+      raceResults={raceResults}
       context={context}
       minSalary={minSalary}
       currentBidAmount={currentBidAmount}

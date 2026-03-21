@@ -43,7 +43,10 @@ interface Startlist {
 interface RaceResult {
   race_name: string;
   race_date: string | null;
+  xp_gained: number | null;
   pcs_points: number | null;
+  rank: number | null;
+  team_id: string | null;
 }
 
 interface RiderDetailClientProps {
@@ -585,9 +588,14 @@ function GameResultsSection({ raceResults }: { raceResults: RaceResult[] }) {
                   )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  {r.pcs_points != null && (
+                  {r.rank != null && (
+                    <span className="font-mono text-[length:var(--type-caption)] text-[var(--text-low)]">
+                      #{r.rank}
+                    </span>
+                  )}
+                  {r.xp_gained != null && (
                     <span className="font-mono text-[length:var(--type-body)] font-bold text-[var(--text-high)]">
-                      {r.pcs_points} PCS
+                      {r.xp_gained} XP
                     </span>
                   )}
                 </div>

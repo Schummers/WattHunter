@@ -66,9 +66,10 @@ async def test_nominal_processing():
 
         sb = make_supabase(
             # 1. race_results
-            [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 20}],
+            [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 20, "race_date": "2026-03-15"}],
             # 2. contracts (with riders join for policy matching)
             [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+              "purchased_at": "2026-01-01T00:00:00Z", "release_date": None,
               "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
             # 3. team_policies (none active)
             [],
@@ -104,9 +105,10 @@ async def test_nominal_processing_with_policy_bonus():
 
         sb = make_supabase(
             # 1. race_results
-            [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 10}],
+            [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 10, "race_date": "2026-03-15"}],
             # 2. contracts (rider is a GC specialist)
             [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+              "purchased_at": "2026-01-01T00:00:00Z", "release_date": None,
               "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
             # 3. team_policies — specialist policy matching GC
             [{"team_id": TEAM_ID, "config": {"specialty": "GC"},
@@ -225,3 +227,98 @@ def test_rider_matches_young_blood():
     assert _rider_matches_policy("young_blood", {"max_age": 25}, {"birthdate": "2001-06-15"})
     assert not _rider_matches_policy("young_blood", {"max_age": 24}, {"birthdate": "2001-01-01"})
     assert not _rider_matches_policy("young_blood", {"max_age": 25}, {"birthdate": None})
+
+
+# ---------------------------------------------------------------------------
+# Contract-date boundary tests
+# ---------------------------------------------------------------------------
+
+
+async def test_race_before_contract_is_skipped():
+    """Race before purchased_at → no XP, teams_processed=0."""
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv("CONVERSION_RATE_EUR_PER_PCS", "500")
+        import scoring
+        importlib.reload(scoring)
+
+        sb = make_supabase(
+            # 1. race_results — race on March 5
+            [{"rider_id": RIDER_ID, "race_slug": "race/strade/2026", "pcs_points": 30, "race_date": "2026-03-05"}],
+            # 2. contracts — purchased on March 10 (AFTER the race)
+            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+              "purchased_at": "2026-03-10T00:00:00Z", "release_date": None,
+              "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
+            # 3. team_policies
+            [],
+        )
+
+        result = await scoring.calculate_daily_scores(sb, race_slugs=["race/strade/2026"])
+
+    assert result["status"] == "completed"
+    # No XP should be created — race was before contract
+    assert result["teams_processed"] == 0
+    assert result["errors"] == []
+
+
+async def test_race_after_release_is_skipped():
+    """Race after release_date → no XP, teams_processed=0."""
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv("CONVERSION_RATE_EUR_PER_PCS", "500")
+        import scoring
+        importlib.reload(scoring)
+
+        sb = make_supabase(
+            # 1. race_results — race on March 15
+            [{"rider_id": RIDER_ID, "race_slug": "race/tirreno/2026/stage-5", "pcs_points": 20, "race_date": "2026-03-15"}],
+            # 2. contracts — released on March 10 (BEFORE the race)
+            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+              "purchased_at": "2026-01-01T00:00:00Z", "release_date": "2026-03-10",
+              "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
+            # 3. team_policies
+            [],
+        )
+
+        result = await scoring.calculate_daily_scores(sb, race_slugs=["race/tirreno/2026/stage-5"])
+
+    assert result["status"] == "completed"
+    assert result["teams_processed"] == 0
+    assert result["errors"] == []
+
+
+async def test_race_on_purchase_day_is_scored():
+    """Race on same day as purchased_at → IS scored (boundary: >=)."""
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv("CONVERSION_RATE_EUR_PER_PCS", "500")
+        import scoring
+        importlib.reload(scoring)
+
+        sb = make_supabase(
+            # 1. race_results — race on March 5
+            [{"rider_id": RIDER_ID, "race_slug": "race/msr/2026", "pcs_points": 15, "race_date": "2026-03-05"}],
+            # 2. contracts — purchased later on March 5 (same day, afternoon)
+            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+              "purchased_at": "2026-03-05T15:00:00Z", "release_date": None,
+              "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
+            # 3. team_policies
+            [],
+            # 4. rider_xp_daily upsert
+            [],
+            # 5. teams select
+            {"id": TEAM_ID, "cumulative_xp": 0, "treasury": 500_000, "level": 1, "league_id": "lg-1"},
+            # 6. teams update
+            [],
+            # 7. treasury_log dedup → empty
+            [],
+            # 8. treasury_log insert
+            [],
+            # 9. league teams for snapshot
+            [{"id": TEAM_ID, "cumulative_xp": 15}],
+            # 10. team_ranking_daily upsert
+            [],
+        )
+
+        result = await scoring.calculate_daily_scores(sb, race_slugs=["race/msr/2026"])
+
+    assert result["status"] == "completed"
+    assert result["teams_processed"] == 1
+    assert result["errors"] == []

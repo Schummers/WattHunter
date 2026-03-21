@@ -124,11 +124,11 @@ async def calculate_daily_scores(
     # Task 1: filter by race_slugs if provided, else fallback to today's date
     if race_slugs:
         history = supabase.table("race_results").select(
-            "rider_id, race_slug, pcs_points"
+            "rider_id, race_slug, pcs_points, race_date"
         ).in_("race_slug", race_slugs).gt("pcs_points", 0).execute()
     else:
         history = supabase.table("race_results").select(
-            "rider_id, race_slug, pcs_points"
+            "rider_id, race_slug, pcs_points, race_date"
         ).eq("race_date", today).gt("pcs_points", 0).execute()
 
     if not history.data:
@@ -144,11 +144,12 @@ async def calculate_daily_scores(
         rider_race_points.setdefault(h["rider_id"], []).append({
             "race_slug": h["race_slug"],
             "pcs_points": h["pcs_points"],
+            "race_date": h.get("race_date"),
         })
 
     # --- Step 2: Get all active/notice contracts with rider info for policy matching ---
     contracts = supabase.table("contracts").select(
-        "id, team_id, rider_id, locked_salary, "
+        "id, team_id, rider_id, locked_salary, purchased_at, release_date, "
         "riders:rider_id(specialty, nationality, real_team, birthdate)"
     ).in_("status", ["active", "notice"]).execute()
 
@@ -214,6 +215,21 @@ async def calculate_daily_scores(
             contract_salary = contract.get("locked_salary", 0)
 
             for entry in race_entries:
+                # Contract-date guard: only score races during contract period
+                race_date_str = entry.get("race_date")
+                if race_date_str:
+                    race_dt = date.fromisoformat(str(race_date_str))
+                    purchased_at_raw = contract.get("purchased_at")
+                    if purchased_at_raw:
+                        purchased_dt = date.fromisoformat(str(purchased_at_raw)[:10])
+                        if race_dt < purchased_dt:
+                            continue
+                    release_date_raw = contract.get("release_date")
+                    if release_date_raw:
+                        release_dt = date.fromisoformat(str(release_date_raw))
+                        if race_dt > release_dt:
+                            continue
+
                 raw_points = entry["pcs_points"]
                 race_slug = entry["race_slug"]
                 xp = raw_points * (1 + bonus)
