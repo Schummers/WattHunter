@@ -13,6 +13,13 @@ export const LEVELS = [
 
 export type LevelData = (typeof LEVELS)[number];
 
+export function getLevelForXp(xp: number): number {
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (xp >= LEVELS[i].xp) return LEVELS[i].level;
+  }
+  return 1;
+}
+
 export function getLevelByNumber(level: number): LevelData {
   return LEVELS[Math.max(0, Math.min(level - 1, LEVELS.length - 1))];
 }

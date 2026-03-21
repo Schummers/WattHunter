@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { LevelsTimeline } from "@/app/(game)/league/[leagueId]/levels/levels-timeline";
-import { getProgressPct, getNextLevel } from "@/lib/levels";
+import { getProgressPct, getNextLevel, getLevelForXp } from "@/lib/levels";
 
 interface Props {
   leagueId: string;
@@ -31,8 +31,9 @@ export default function LevelsRail({ leagueId }: Props) {
 
       if (!cancelled && member) {
         const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
-        setCurrentLevel((team as any)?.level ?? 1);
-        setCurrentXp((team as any)?.cumulative_xp ?? 0);
+        const xp = (team as any)?.cumulative_xp ?? 0;
+        setCurrentXp(xp);
+        setCurrentLevel(getLevelForXp(xp));
       }
       if (!cancelled) setLoading(false);
     }

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { RecrutsClient } from "./recruts-client";
-import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
+import { getLevelByNumber, getMaxSlots, getLevelForXp } from "@/lib/levels";
 import { getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
 
 export default async function RecrutsPage({
@@ -42,7 +42,8 @@ export default async function RecrutsPage({
   }
 
   const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
-  const level = team?.level ?? 1;
+  const xp = team?.cumulative_xp ?? 0;
+  const level = getLevelForXp(xp);
   const minRank = getLevelByNumber(level).poolMin;
 
   // Parallelize: riders and leagueTeams are independent of each other

@@ -8,6 +8,7 @@ import { MetricBox } from "@/components/metric-box";
 import { MovementTag } from "@/components/movement-tag";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatThousands, countryCodeToFlag } from "@/lib/format";
+import { getLevelForXp } from "@/lib/levels";
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -252,7 +253,7 @@ export default async function TeamDetailPage({
       <div className="flex gap-2 px-4">
         <MetricBox value={formatThousands(team.cumulative_xp)} label="Season XP" highlight />
         <MetricBox value={`${rankPosition}${ordinalSuffix(rankPosition)}`} label="Ranking" />
-        <MetricBox value={team.level} label="Level" />
+        <MetricBox value={getLevelForXp(team.cumulative_xp)} label="Level" />
       </div>
 
       {/* Active Roster */}

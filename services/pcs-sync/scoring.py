@@ -27,7 +27,7 @@ CONVERSION_RATE = int(os.getenv("CONVERSION_RATE_EUR_PER_PCS", "1500"))
 LEVEL_THRESHOLDS = [0, 50, 150, 300, 500, 700, 1000, 1400, 1900, 2500]
 
 
-def compute_level(xp: int) -> int:
+def compute_level(xp: float) -> int:
     """Compute team level from cumulative XP."""
     for i in range(len(LEVEL_THRESHOLDS) - 1, -1, -1):
         if xp >= LEVEL_THRESHOLDS[i]:
