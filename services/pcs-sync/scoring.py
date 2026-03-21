@@ -228,7 +228,7 @@ async def calculate_daily_scores(
                         "date": today,
                         "raw_pcs_points": raw_points,
                         "policy_bonus": bonus,
-                        "xp_gained": int(xp),
+                        "xp_gained": round(xp, 2),
                         "race_slug": race_slug,
                         "revenue_earned": revenue,
                     }, on_conflict="team_id,rider_id,race_slug").execute()
@@ -253,7 +253,7 @@ async def calculate_daily_scores(
                 logger.warning(f"Team {team_id} not found — skipping treasury update")
                 continue
 
-            new_xp = team_row.data["cumulative_xp"] + int(total_xp)
+            new_xp = team_row.data["cumulative_xp"] + round(total_xp, 2)
             new_treasury = team_row.data["treasury"] + total_revenue
 
             # Task 3: auto level-up

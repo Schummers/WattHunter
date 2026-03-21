@@ -137,8 +137,10 @@ async def import_race_results(
             logger.error("Failed to upsert race result for %s: %s", rider_url, exc)
             errors.append(str(exc))
 
+    race_result_slug = stage_url if stage_url else f"{race_slug}/result"
     return {
         "race": fetch_url,
+        "race_slug": race_result_slug,
         "imported": imported,
         "skipped": skipped,
         "total_in_race": len(results),

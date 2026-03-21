@@ -285,7 +285,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
         )
         await ctx.close()
         print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
-        imported_slugs.append(race_slug)
+        imported_slugs.append(result.get("race_slug", race_slug))
 
     # Optional: update global ranking
     if with_ranking:
