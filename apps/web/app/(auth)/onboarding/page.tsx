@@ -90,11 +90,11 @@ export default function OnboardingPage() {
 
         {/* Legal links */}
         <p className="text-center text-[length:var(--type-caption)] text-[var(--text-low)]">
-          <Link href="/terms" className="underline hover:text-[var(--text-mid)] transition-colors">
+          <Link href="/terms" className="hover:text-[var(--text-mid)] transition-colors">
             Terms of Service
           </Link>
           {" · "}
-          <Link href="/privacy" className="underline hover:text-[var(--text-mid)] transition-colors">
+          <Link href="/privacy" className="hover:text-[var(--text-mid)] transition-colors">
             Privacy Policy
           </Link>
         </p>
