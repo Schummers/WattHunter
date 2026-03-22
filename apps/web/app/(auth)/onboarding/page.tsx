@@ -87,6 +87,17 @@ export default function OnboardingPage() {
             Already have an account? Log in
           </Link>
         </div>
+
+        {/* Legal links */}
+        <p className="text-center text-[length:var(--type-caption)] text-[var(--text-low)]">
+          <Link href="/terms" className="underline hover:text-[var(--text-mid)] transition-colors">
+            Terms of Service
+          </Link>
+          {" · "}
+          <Link href="/privacy" className="underline hover:text-[var(--text-mid)] transition-colors">
+            Privacy Policy
+          </Link>
+        </p>
       </div>
     </div>
   );
