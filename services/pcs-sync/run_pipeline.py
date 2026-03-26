@@ -64,20 +64,35 @@ def load_calendar() -> List[Dict]:
 
 
 def lookup_race(slug: str) -> Optional[Dict]:
-    """Return the calendar entry whose slug matches, or None."""
+    """Return the calendar entry whose slug matches, or None.
+
+    Also handles stage slugs (e.g. race/foo/2026/stage-3) by stripping the
+    stage suffix and matching the parent race.
+    """
     calendar = load_calendar()
     for race in calendar:
         if race.get("slug") == slug:
             return race
+    # Fallback: strip /stage-N and try parent slug
+    import re
+    m = re.match(r"^(.+)/stage-(\d+)$", slug)
+    if m:
+        parent_slug = m.group(1)
+        for race in calendar:
+            if race.get("slug") == parent_slug:
+                return race
     return None
 
 
 def race_meta(slug: str) -> Tuple[str, str]:
     """Return (race_name, race_date) for the given slug.
 
-    race_date is start_date for stage races, date for one-day races.
+    For stage races with /stage-N suffix, computes the stage date from
+    start_date + (N-1) days. Otherwise returns start_date for stage races
+    or date for one-day races.
     Falls back to slug as name with a warning if not found.
     """
+    import re
     entry = lookup_race(slug)
     if entry is None:
         print(f"WARNING: race '{slug}' not found in wt_calendar_2026.json — using slug as name.")
@@ -85,6 +100,17 @@ def race_meta(slug: str) -> Tuple[str, str]:
 
     name = entry.get("name", slug)
     date_val = entry.get("date") or entry.get("start_date") or ""
+
+    # For stage slugs, compute the actual stage date
+    m = re.match(r"^.+/stage-(\d+)$", slug)
+    if m and entry.get("start_date"):
+        from datetime import timedelta
+        stage_num = int(m.group(1))
+        start = date.fromisoformat(entry["start_date"])
+        stage_date = start + timedelta(days=stage_num - 1)
+        date_val = stage_date.isoformat()
+        name = f"{name} — Stage {stage_num}"
+
     return name, date_val
 
 

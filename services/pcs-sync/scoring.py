@@ -241,7 +241,7 @@ async def calculate_daily_scores(
                         "team_id": team_id,
                         "rider_id": rider_id,
                         "contract_id": contract["id"],
-                        "date": today,
+                        "date": entry.get("race_date", today),
                         "raw_pcs_points": raw_points,
                         "policy_bonus": bonus,
                         "xp_gained": round(xp, 2),

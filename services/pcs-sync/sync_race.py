@@ -120,7 +120,7 @@ async def import_race_results(
                     "race_slug": race_result_slug,
                     "race_name": race_name,
                     "stage": stage_label,
-                    "race_date": race_date,
+                    "race_date": race_date or None,
                     "pcs_points": int(entry.get("pcs_points") or entry.get("points", 0) or 0),
                     "rank": entry.get("rank"),
                 }
@@ -194,7 +194,7 @@ async def import_gc_results(
                 "race_slug": gc_url,
                 "race_name": f"{race_name} - GC",
                 "stage": "gc",
-                "race_date": race_date,
+                "race_date": race_date or None,
                 "pcs_points": int(entry.get("pcs_points") or 0),
                 "rank": entry.get("rank"),
             }
@@ -503,7 +503,7 @@ async def import_startlist(
                     "rider_id": rider_id,
                     "race_slug": race_slug,
                     "race_name": race_name,
-                    "race_date": race_date,
+                    "race_date": race_date or None,
                 },
                 on_conflict="rider_id,race_slug",
             ).execute()
