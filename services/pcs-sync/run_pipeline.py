@@ -202,6 +202,44 @@ async def run_init_riders() -> None:
 # Pipeline B — post-race
 # ---------------------------------------------------------------------------
 
+def _print_contracted_rider_points(supabase, race_slugs: list[str]) -> None:
+    """Print a verification table of contracted riders + their imported pcs_points.
+
+    Shows only riders that have an active/notice contract, sorted by race_slug then pcs_points desc.
+    Lets the operator cross-check imported values against the PCS website before trusting the scores.
+    """
+    # Get all contracted rider IDs
+    contracts = supabase.table("contracts").select("rider_id").in_("status", ["active", "notice"]).execute()
+    contracted_ids = {c["rider_id"] for c in (contracts.data or [])}
+    if not contracted_ids:
+        print("  (no contracted riders)")
+        return
+
+    # Fetch race_results for imported slugs, filter to contracted riders
+    results = supabase.table("race_results").select(
+        "race_slug, rank, pcs_points, riders:rider_id(full_name)"
+    ).in_("race_slug", race_slugs).gt("pcs_points", 0).in_("rider_id", list(contracted_ids)).order(
+        "race_slug"
+    ).order("pcs_points", desc=True).execute()
+
+    if not results.data:
+        print("  No contracted riders with pcs_points > 0 in these races.")
+        return
+
+    current_slug = None
+    for row in results.data:
+        slug = row["race_slug"]
+        if slug != current_slug:
+            current_slug = slug
+            short = slug.split("/")[-1]  # "result", "stage-4", "gc", etc.
+            print(f"  [{short.upper()}]")
+        rider = row.get("riders") or {}
+        name = rider.get("full_name", "?") if isinstance(rider, dict) else "?"
+        rank = row.get("rank") or "?"
+        pts = row["pcs_points"]
+        print(f"    #{rank:>3}  {name:<28}  {pts} pts")
+
+
 async def _import_single_race(supabase, browser, race_slug: str, race_name: str, race_date: str, with_ranking: bool = False, target_stage: int | None = None) -> list[str]:
     """Import results for a single race/stage. Returns list of imported race_slugs.
 
@@ -428,6 +466,13 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
     validation = await validate_treasury(supabase)
     if validation.get("divergences"):
         print(f"WARNING: {len(validation['divergences'])} treasury divergences detected")
+
+    # Post-import verification: show contracted riders + imported points for manual cross-check
+    if all_imported_slugs:
+        print()
+        print("--- Import verification (contracted riders) ---")
+        print("Cross-check these points against PCS before continuing.\n")
+        _print_contracted_rider_points(supabase, all_imported_slugs)
 
     print()
     print("Done — post-race complete.")

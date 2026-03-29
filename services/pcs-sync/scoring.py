@@ -147,6 +147,20 @@ async def calculate_daily_scores(
             "race_date": h.get("race_date"),
         })
 
+    # Pre-fetch existing rider_xp_daily for these race_slugs to compute deltas (idempotency).
+    # On first run prev=0 → delta=total (same as before).
+    # On re-run prev=total → delta=0 → teams unchanged (no double-count).
+    prev_team_xp: dict[str, float] = {}
+    prev_team_revenue: dict[str, int] = {}
+    if race_slugs:
+        prev_resp = supabase.table("rider_xp_daily").select(
+            "team_id, xp_gained, revenue_earned"
+        ).in_("race_slug", race_slugs).execute()
+        for row in (prev_resp.data or []):
+            tid = row["team_id"]
+            prev_team_xp[tid] = prev_team_xp.get(tid, 0.0) + float(row.get("xp_gained") or 0)
+            prev_team_revenue[tid] = prev_team_revenue.get(tid, 0) + int(row.get("revenue_earned") or 0)
+
     # --- Step 2: Get all active/notice contracts with rider info for policy matching ---
     contracts = supabase.table("contracts").select(
         "id, team_id, rider_id, locked_salary, purchased_at, release_date, "
@@ -269,8 +283,12 @@ async def calculate_daily_scores(
                 logger.warning(f"Team {team_id} not found — skipping treasury update")
                 continue
 
-            new_xp = team_row.data["cumulative_xp"] + round(total_xp, 2)
-            new_treasury = team_row.data["treasury"] + total_revenue
+            prev_xp = round(prev_team_xp.get(team_id, 0.0), 2)
+            prev_rev = prev_team_revenue.get(team_id, 0)
+            delta_xp = round(total_xp - prev_xp, 2)
+            delta_revenue = total_revenue - prev_rev
+            new_xp = team_row.data["cumulative_xp"] + delta_xp
+            new_treasury = team_row.data["treasury"] + delta_revenue
 
             # Task 3: auto level-up
             current_level = team_row.data.get("level", 1)
@@ -297,11 +315,11 @@ async def calculate_daily_scores(
                 "created_at", f"{today}T00:00:00"
             ).execute()
 
-            if not existing_log.data:
+            if delta_revenue != 0 and not existing_log.data:
                 supabase.table("treasury_log").insert({
                     "team_id": team_id,
                     "type": "rider_revenue",
-                    "amount": total_revenue,
+                    "amount": delta_revenue,
                     "description": f"Rider revenue {today}",
                 }).execute()
 
