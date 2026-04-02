@@ -52,15 +52,40 @@ export async function savePolicies(
 
   const level = team.level ?? 1;
 
-  // Validate level unlocks and max active count
-  const activePolicies = policies.filter((p) => p.isActive);
+  const firstCycle = await isLeagueFirstCycle(supabase, leagueId);
+  const inAuction = isInAuctionWindow() || firstCycle;
+
+  // Fetch existing state to project total active policies
+  const { data: existingPolicies } = await supabase
+    .from("team_policies")
+    .select("is_active, pending_is_active, policies(slug)")
+    .eq("team_id", teamId);
+
+  const projectedState: Record<string, boolean> = {};
+
+  if (existingPolicies) {
+    for (const ep of existingPolicies) {
+      const slug = Array.isArray(ep.policies) ? ep.policies[0]?.slug : (ep.policies as any)?.slug;
+      if (slug) {
+        projectedState[slug] = inAuction ? ep.is_active : (ep.pending_is_active ?? ep.is_active);
+      }
+    }
+  }
+
+  // Override with incoming state
+  for (const p of policies) {
+    projectedState[p.slug] = p.isActive;
+  }
+
+  const projectedActiveCount = Object.values(projectedState).filter(Boolean).length;
   const maxActive = getMaxActivePolicies(level);
 
-  if (activePolicies.length > maxActive) {
+  if (projectedActiveCount > maxActive) {
     return { error: `You can only have ${maxActive} active policies at your level.` };
   }
 
-  for (const policy of activePolicies) {
+  // Validate unlocks for incoming policies
+  for (const policy of policies.filter((p) => p.isActive)) {
     const policyType = POLICY_TYPES.find((pt) => pt.slug === policy.slug);
     if (!policyType) {
       return { error: `Unknown policy type: ${policy.slug}` };
@@ -83,9 +108,6 @@ export async function savePolicies(
   for (const p of dbPolicies) {
     slugToId[p.slug] = p.id;
   }
-
-  const firstCycle = await isLeagueFirstCycle(supabase, leagueId);
-  const inAuction = isInAuctionWindow() || firstCycle;
 
   // Only require nextPhase when outside auction window (pending mode)
   const nextPhase = inAuction ? null : getNextPhase(getCurrentPhase());
