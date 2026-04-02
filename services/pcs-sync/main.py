@@ -89,18 +89,6 @@ async def job_daily_scoring(
     return JSONResponse(content=result)
 
 
-@app.post("/jobs/phase-finance")
-async def job_phase_finance(
-    request: Request,
-    x_api_secret: Optional[str] = Header(default=None),
-):
-    """Phase finance: +sponsor base income, -salaries, bankruptcy check. Run once per WT phase."""
-    from phase_finance import run_phase_finance
-    _check_auth(x_api_secret)
-    result = await run_phase_finance(_supabase)
-    return JSONResponse(content=result)
-
-
 @app.post("/jobs/resolve-auction")
 async def job_resolve_auction(
     request: Request,
