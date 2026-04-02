@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PhaseNavigator } from "@/components/phase-navigator";
-import { SegmentedControl } from "@/components/segmented-control";
+import { FilterChips } from "@/components/filter-chips";
 import { TransactionRow } from "@/components/transaction-row";
 import { formatEuro } from "@/lib/format";
 import { formatBudget } from "@/lib/sponsors";
@@ -36,7 +36,12 @@ interface BudgetClientProps {
   phaseSalaries: number;
 }
 
-const FILTER_SEGMENTS = ["All", "Bonuses", "Salaries", "Sponsors"];
+const FILTER_OPTIONS = [
+  { label: "All" },
+  { label: "Bonuses" },
+  { label: "Salaries" },
+  { label: "Sponsors" },
+];
 
 function filterTransactions(transactions: Transaction[], filterIndex: number): Transaction[] {
   if (filterIndex === 0) return transactions;
@@ -70,9 +75,6 @@ export function BudgetClient({
     [transactions, filterIndex],
   );
 
-  const phaseIncome = currentSponsor?.monthly_budget ?? 0;
-  const netPerPhase = phaseIncome - phaseSalaries;
-
   function handlePhaseChange(newIndex: number) {
     router.replace(`?phase=${newIndex}`, { scroll: false });
   }
@@ -82,8 +84,8 @@ export function BudgetClient({
       {/* Phase Navigator */}
       <PhaseNavigator currentIndex={phaseIndex} onChange={handlePhaseChange} />
 
-      {/* Balance Hero Card */}
-      <div className="xp-card-body mx-4 mt-2 rounded-xl p-5">
+      {/* Balance Hero Card (Brand Card Style without hover states) */}
+      <div className="xp-card-body mx-4 mt-2 p-5 mb-6">
         <div className="xp-content">
           <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
             Balance
@@ -104,55 +106,72 @@ export function BudgetClient({
         </div>
       </div>
 
-      {/* Phase Financial Summary */}
-      <div className="mx-4 mt-3 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4">
-        <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-          This Phase
-        </span>
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">Sponsor income</span>
-            <span className="font-mono text-[length:var(--type-body)] font-semibold text-[var(--text-high)] tabular-nums">
-              +{formatCompact(phaseIncome)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">Salaries</span>
-            <span className="font-mono text-[length:var(--type-body)] font-semibold text-[var(--text-high)] tabular-nums">
-              -{formatCompact(phaseSalaries)}
-            </span>
-          </div>
-          <div className="mt-1 border-t border-[var(--border-subtle)] pt-2 flex items-center justify-between">
-            <span className="text-[length:var(--type-body)] font-semibold text-[var(--text-high)]">Net</span>
-            <span
-              className={
-                "font-mono text-[length:var(--type-body)] font-bold tabular-nums " +
-                (netPerPhase >= 0 ? "text-[var(--success)]" : "text-[var(--danger)]")
-              }
+      {/* Sponsor Section (Moved up) */}
+      <div className="mt-2 mb-6">
+        <div className="flex items-center justify-between px-4 mb-2">
+          <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
+            Sponsor
+          </span>
+          <Link
+            href={`/league/${leagueId}/budget/marketplace`}
+            className="text-[length:var(--type-caption)] font-medium text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors"
+          >
+            Change &rarr;
+          </Link>
+        </div>
+
+        <div className="px-4">
+          {currentSponsor ? (
+            <Link
+              href={`/league/${leagueId}/budget/marketplace`}
+              className="block rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 transition-colors hover:bg-[var(--bg-surface-hover)]"
             >
-              {netPerPhase >= 0 ? "+" : ""}{formatCompact(netPerPhase)}
-            </span>
-          </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+                    {currentSponsor.name}
+                  </div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="tag tag-default">Tier {currentSponsor.tier}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-[length:var(--type-stat-small)] font-semibold text-[var(--text-high)] tabular-nums">
+                    {formatCompact(currentSponsor.monthly_budget)}
+                  </div>
+                  <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">/ phase</div>
+                </div>
+              </div>
+            </Link>
+          ) : (
+            <Link href={`/league/${leagueId}/budget/marketplace`}>
+              <div className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-4 py-5 hover:bg-[var(--bg-surface-hover)] transition-colors">
+                <span className="text-[length:var(--type-caption)] font-medium text-[var(--accent-default)]">
+                  Select a sponsor &rarr;
+                </span>
+              </div>
+            </Link>
+          )}
         </div>
       </div>
 
       {/* Transactions Section */}
-      <div className="mt-6">
+      <div className="mt-2 mb-4">
         <div className="flex items-center justify-between px-4 mb-2">
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             Transactions
           </span>
           <Link
             href={`/league/${leagueId}/budget/transactions`}
-            className="text-[length:var(--type-caption)] font-medium text-[var(--accent-default)]"
+            className="text-[length:var(--type-caption)] font-medium text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition-colors"
           >
             See all &rarr;
           </Link>
         </div>
 
-        <div className="px-4 mb-3">
-          <SegmentedControl
-            segments={FILTER_SEGMENTS}
+        <div className="px-4 mb-3 border-b border-[var(--border-subtle)] pb-3">
+          <FilterChips
+            options={FILTER_OPTIONS}
             activeIndex={filterIndex}
             onChange={setFilterIndex}
           />
@@ -173,55 +192,6 @@ export function BudgetClient({
                 date={t.created_at}
               />
             ))
-          )}
-        </div>
-      </div>
-
-      {/* Sponsor Section */}
-      <div className="mt-6">
-        <div className="flex items-center justify-between px-4 mb-2">
-          <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-            Sponsor
-          </span>
-          <Link
-            href={`/league/${leagueId}/budget/marketplace`}
-            className="text-[length:var(--type-caption)] font-medium text-[var(--accent-default)]"
-          >
-            Change &rarr;
-          </Link>
-        </div>
-
-        <div className="px-4">
-          {currentSponsor ? (
-            <Link
-              href={`/league/${leagueId}/budget/marketplace`}
-              className="block rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 transition-colors hover:bg-[var(--bg-surface-hover)]"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-                    {currentSponsor.name}
-                  </div>
-                  <div className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-                    Tier {currentSponsor.tier}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] tabular-nums">
-                    {formatBudget(currentSponsor.monthly_budget)}
-                  </div>
-                  <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">/ phase</div>
-                </div>
-              </div>
-            </Link>
-          ) : (
-            <Link href={`/league/${leagueId}/budget/marketplace`}>
-              <div className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] px-4 py-5">
-                <span className="text-[length:var(--type-caption)] font-medium text-[var(--accent-default)]">
-                  Select a sponsor &rarr;
-                </span>
-              </div>
-            </Link>
           )}
         </div>
       </div>

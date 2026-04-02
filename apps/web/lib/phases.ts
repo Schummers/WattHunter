@@ -36,9 +36,16 @@ export const AUCTION_PHASES: AuctionPhase[] = [
 
 export function getCurrentPhase(date: Date = new Date()): AuctionPhase {
   const year = date.getFullYear();
-  for (const phase of AUCTION_PHASES) {
+  for (let i = 0; i < AUCTION_PHASES.length; i++) {
+    const phase = AUCTION_PHASES[i];
     const start = new Date(year, phase.startMonth - 1, phase.startDay);
-    const end = new Date(year, phase.endMonth - 1, phase.endDay, 23, 59, 59);
+    
+    // Determine the end of this phase logic segment (up to the start of the next phase)
+    const nextPhase = AUCTION_PHASES[i + 1];
+    const end = nextPhase 
+      ? new Date(year, nextPhase.startMonth - 1, nextPhase.startDay - 1, 23, 59, 59, 999)
+      : new Date(year, phase.endMonth - 1, phase.endDay, 23, 59, 59, 999);
+      
     if (date >= start && date <= end) return phase;
   }
   return AUCTION_PHASES[AUCTION_PHASES.length - 1];
