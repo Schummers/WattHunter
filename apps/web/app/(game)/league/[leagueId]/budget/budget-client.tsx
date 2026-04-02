@@ -3,18 +3,21 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import { PhaseNavigator } from "@/components/phase-navigator";
 import { FilterChips } from "@/components/filter-chips";
 import { TransactionRow } from "@/components/transaction-row";
-import { formatEuro } from "@/lib/format";
-import { formatBudget } from "@/lib/sponsors";
-
-interface SponsorInfo {
-  id: string;
-  name: string;
-  tier: number;
-  monthly_budget: number;
-}
+import { Tag } from "@/components/pill";
+import { SponsorBonusDetails } from "@/components/sponsor-bonus-details";
+import { formatEuro, countryCodeToFlag } from "@/lib/format";
+import {
+  formatBudget,
+  ORIENTATION_LABELS,
+  TRANSACTION_FILTER_OPTIONS,
+  filterTransactions,
+  type SponsorRow,
+} from "@/lib/sponsors";
+import { cn } from "@/lib/utils";
 
 interface Transaction {
   id: string;
@@ -22,6 +25,8 @@ interface Transaction {
   amount: number;
   description: string | null;
   created_at: string;
+  rider_photo_url?: string | null;
+  rider_name?: string | null;
 }
 
 interface BudgetClientProps {
@@ -32,23 +37,8 @@ interface BudgetClientProps {
   outgoing: number;
   transactions: Transaction[];
   phaseIndex: number;
-  currentSponsor: SponsorInfo | null;
+  currentSponsor: SponsorRow | null;
   phaseSalaries: number;
-}
-
-const FILTER_OPTIONS = [
-  { label: "All" },
-  { label: "Bonuses" },
-  { label: "Salaries" },
-  { label: "Sponsors" },
-];
-
-function filterTransactions(transactions: Transaction[], filterIndex: number): Transaction[] {
-  if (filterIndex === 0) return transactions;
-  if (filterIndex === 1) return transactions.filter((t) => ["rider_revenue", "monthly_bonus", "sponsor_bonus"].includes(t.type));
-  if (filterIndex === 2) return transactions.filter((t) => ["monthly_salary", "phase_salary", "auction_purchase"].includes(t.type));
-  if (filterIndex === 3) return transactions.filter((t) => ["sponsor_payment", "phase_sponsor_base"].includes(t.type));
-  return transactions;
 }
 
 function formatCompact(amount: number): string {
@@ -64,11 +54,11 @@ export function BudgetClient({
   outgoing,
   transactions,
   currentSponsor,
-  phaseSalaries,
   phaseIndex,
 }: BudgetClientProps) {
   const router = useRouter();
   const [filterIndex, setFilterIndex] = useState(0);
+  const [sponsorExpanded, setSponsorExpanded] = useState(false);
 
   const filtered = useMemo(
     () => filterTransactions(transactions, filterIndex),
@@ -79,12 +69,16 @@ export function BudgetClient({
     router.replace(`?phase=${newIndex}`, { scroll: false });
   }
 
+  const nationalities = currentSponsor?.nationality
+    ? currentSponsor.nationality.split("/").map((c) => c.trim())
+    : [];
+
   return (
     <div className="pb-24">
       {/* Phase Navigator */}
       <PhaseNavigator currentIndex={phaseIndex} onChange={handlePhaseChange} />
 
-      {/* Balance Hero Card (Brand Card Style without hover states) */}
+      {/* Balance Hero Card */}
       <div className="xp-card-body mx-4 mt-2 p-5 mb-6">
         <div className="xp-content">
           <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
@@ -106,7 +100,7 @@ export function BudgetClient({
         </div>
       </div>
 
-      {/* Sponsor Section (Moved up) */}
+      {/* Sponsor Section */}
       <div className="mt-2 mb-6">
         <div className="flex items-center justify-between px-4 mb-2">
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
@@ -122,27 +116,45 @@ export function BudgetClient({
 
         <div className="px-4">
           {currentSponsor ? (
-            <Link
-              href={`/league/${leagueId}/budget/marketplace`}
-              className="block rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 transition-colors hover:bg-[var(--bg-surface-hover)]"
+            <button
+              type="button"
+              onClick={() => setSponsorExpanded((v) => !v)}
+              className="block w-full rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
             >
+              {/* Line 1: chevron + name + budget */}
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+                <div className="flex items-center gap-2">
+                  <ChevronRight
+                    size={14}
+                    className={cn(
+                      "shrink-0 text-[var(--text-low)] transition-transform duration-200",
+                      sponsorExpanded && "rotate-90",
+                    )}
+                  />
+                  <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
                     {currentSponsor.name}
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="tag tag-default">Tier {currentSponsor.tier}</span>
-                  </div>
+                  </span>
                 </div>
-                <div className="text-right">
-                  <div className="font-mono text-[length:var(--type-stat-small)] font-semibold text-[var(--text-high)] tabular-nums">
-                    {formatCompact(currentSponsor.monthly_budget)}
-                  </div>
-                  <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">/ phase</div>
-                </div>
+                <span className="font-mono text-[length:var(--type-stat-small)] font-bold text-[var(--text-high)] tabular-nums">
+                  {formatBudget(currentSponsor.monthly_budget)}
+                </span>
               </div>
-            </Link>
+
+              {/* Line 2: tags */}
+              <div className="flex items-center gap-1.5 mt-1 pl-[22px]">
+                <Tag variant="highlighted">{ORIENTATION_LABELS[currentSponsor.orientation]}</Tag>
+                {nationalities.map((nat) => (
+                  <Tag key={nat} variant="default">{countryCodeToFlag(nat)}</Tag>
+                ))}
+              </div>
+
+              {/* Expanded bonus details */}
+              {sponsorExpanded && (
+                <div className="pl-[22px] mt-2">
+                  <SponsorBonusDetails sponsor={currentSponsor} />
+                </div>
+              )}
+            </button>
           ) : (
             <Link href={`/league/${leagueId}/budget/marketplace`}>
               <div className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-4 py-5 hover:bg-[var(--bg-surface-hover)] transition-colors">
@@ -171,7 +183,7 @@ export function BudgetClient({
 
         <div className="px-4 mb-3 border-b border-[var(--border-subtle)] pb-3">
           <FilterChips
-            options={FILTER_OPTIONS}
+            options={TRANSACTION_FILTER_OPTIONS}
             activeIndex={filterIndex}
             onChange={setFilterIndex}
           />
@@ -190,6 +202,8 @@ export function BudgetClient({
                 amount={t.amount}
                 description={t.description}
                 date={t.created_at}
+                riderPhotoUrl={t.rider_photo_url}
+                riderName={t.rider_name}
               />
             ))
           )}

@@ -71,3 +71,66 @@ export function thresholdLabel(threshold: number): string {
   if (threshold === 3) return "Podium";
   return `Top ${threshold}`;
 }
+
+/**
+ * Group sponsors by tier for marketplace display.
+ * Returns array of { tier, unlockLevel, sponsors[] } sorted by tier.
+ */
+export function groupByTier(sponsors: SponsorRow[]): {
+  tier: number;
+  unlockLevel: number;
+  sponsors: SponsorRow[];
+}[] {
+  const map = new Map<number, { tier: number; unlockLevel: number; sponsors: SponsorRow[] }>();
+
+  for (const s of sponsors) {
+    if (!map.has(s.tier)) {
+      map.set(s.tier, { tier: s.tier, unlockLevel: s.unlock_level, sponsors: [] });
+    }
+    map.get(s.tier)!.sponsors.push(s);
+  }
+
+  return Array.from(map.values())
+    .sort((a, b) => a.tier - b.tier)
+    .map((g) => ({
+      ...g,
+      sponsors: g.sponsors.sort((a, b) => a.sort_order - b.sort_order),
+    }));
+}
+
+/**
+ * Shared filter function for treasury_log transactions.
+ * Used by both budget-client and transactions-client.
+ */
+export const TRANSACTION_FILTER_OPTIONS = [
+  { label: "All" },
+  { label: "Bonuses" },
+  { label: "Salaries" },
+  { label: "Sponsors" },
+];
+
+export const ORIENTATION_LABELS: Record<string, string> = {
+  gc: "GC",
+  one_day: "One-Day",
+  neutral: "neutral",
+};
+
+export function filterTransactions<T extends { type: string }>(
+  transactions: T[],
+  filterIndex: number,
+): T[] {
+  if (filterIndex === 0) return transactions;
+  if (filterIndex === 1)
+    return transactions.filter((t) =>
+      ["sponsor_bonus", "transfer_bonus"].includes(t.type),
+    );
+  if (filterIndex === 2)
+    return transactions.filter((t) =>
+      ["payday_salary", "auction_purchase", "release_fee", "bankruptcy_release"].includes(t.type),
+    );
+  if (filterIndex === 3)
+    return transactions.filter((t) =>
+      ["sponsor_payment"].includes(t.type),
+    );
+  return transactions;
+}

@@ -5,6 +5,10 @@ import { BackHeader } from "@/components/back-header";
 import { SegmentedControl } from "@/components/segmented-control";
 import { TransactionRow } from "@/components/transaction-row";
 import { formatEuro } from "@/lib/format";
+import {
+  TRANSACTION_FILTER_OPTIONS,
+  filterTransactions,
+} from "@/lib/sponsors";
 
 interface Transaction {
   id: string;
@@ -12,21 +16,15 @@ interface Transaction {
   amount: number;
   description: string | null;
   created_at: string;
+  rider_photo_url?: string | null;
+  rider_name?: string | null;
 }
 
 interface TransactionsClientProps {
   transactions: Transaction[];
 }
 
-const FILTER_SEGMENTS = ["All", "Bonuses", "Salaries", "Sponsors"];
-
-function filterTransactions(transactions: Transaction[], filterIndex: number): Transaction[] {
-  if (filterIndex === 0) return transactions;
-  if (filterIndex === 1) return transactions.filter((t) => ["rider_revenue", "monthly_bonus", "sponsor_bonus"].includes(t.type));
-  if (filterIndex === 2) return transactions.filter((t) => ["monthly_salary", "phase_salary"].includes(t.type));
-  if (filterIndex === 3) return transactions.filter((t) => ["sponsor_payment", "phase_sponsor_base"].includes(t.type));
-  return transactions;
-}
+const FILTER_SEGMENTS = TRANSACTION_FILTER_OPTIONS.map((o) => o.label);
 
 function groupByMonth(transactions: Transaction[]): { label: string; net: number; items: Transaction[] }[] {
   const groups: Record<string, { label: string; net: number; items: Transaction[] }> = {};
@@ -96,6 +94,8 @@ export function TransactionsClient({ transactions }: TransactionsClientProps) {
                   amount={t.amount}
                   description={t.description}
                   date={t.created_at}
+                  riderPhotoUrl={t.rider_photo_url}
+                  riderName={t.rider_name}
                 />
               ))}
             </div>

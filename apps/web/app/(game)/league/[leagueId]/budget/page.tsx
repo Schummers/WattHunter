@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { AUCTION_PHASES, getCurrentPhase, getPhaseRange } from "@/lib/phases";
 import { BudgetClient } from "./budget-client";
+import type { SponsorRow } from "@/lib/sponsors";
 
 export default async function BudgetPage({
   params,
@@ -47,12 +48,12 @@ export default async function BudgetPage({
     // Simple single-sponsor query — new schema has no slot/status/pending fields
     supabase
       .from("team_sponsors")
-      .select("id, sponsor_id, activated_at, sponsors(id, name, tier, monthly_budget)")
+      .select("id, sponsor_id, activated_at, sponsors(*)")
       .eq("team_id", team.id)
       .maybeSingle(),
     supabase
       .from("treasury_log")
-      .select("*")
+      .select("*, riders:rider_id(photo_url, last_name, first_name)")
       .eq("team_id", team.id)
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString())
@@ -89,24 +90,24 @@ export default async function BudgetPage({
     0,
   );
 
-  // Sponsor info for display
-  const sponsorData = teamSponsor?.sponsors
-    ? (Array.isArray(teamSponsor.sponsors) ? teamSponsor.sponsors[0] : teamSponsor.sponsors) as {
-        id: string;
-        name: string;
-        tier: number;
-        monthly_budget: number;
-      }
+  // Sponsor info for display — pass full SponsorRow for expanded card
+  const sponsorRow = teamSponsor?.sponsors
+    ? (Array.isArray(teamSponsor.sponsors) ? teamSponsor.sponsors[0] : teamSponsor.sponsors)
     : null;
 
-  const currentSponsor = sponsorData
-    ? {
-        id: sponsorData.id,
-        name: sponsorData.name,
-        tier: sponsorData.tier,
-        monthly_budget: sponsorData.monthly_budget,
-      }
-    : null;
+  // Flatten rider join data for client component
+  const mappedTransactions = (transactions ?? []).map((t: Record<string, unknown>) => {
+    const rider = t.riders as { photo_url: string | null; last_name: string; first_name: string } | null;
+    return {
+      id: t.id as string,
+      type: t.type as string,
+      amount: t.amount as number,
+      description: t.description as string | null,
+      created_at: t.created_at as string,
+      rider_photo_url: rider?.photo_url ?? null,
+      rider_name: rider ? `${rider.first_name} ${rider.last_name}` : null,
+    };
+  });
 
   return (
     <BudgetClient
@@ -115,9 +116,9 @@ export default async function BudgetPage({
       level={team.level}
       income={income}
       outgoing={outgoing}
-      transactions={transactions ?? []}
+      transactions={mappedTransactions}
       phaseIndex={phaseIndex}
-      currentSponsor={currentSponsor}
+      currentSponsor={sponsorRow as SponsorRow | null}
       phaseSalaries={phaseSalaries}
     />
   );
