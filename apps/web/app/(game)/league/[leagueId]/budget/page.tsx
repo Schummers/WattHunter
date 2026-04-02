@@ -37,17 +37,19 @@ export default async function BudgetPage({
   const year = new Date().getFullYear();
   const { start, end } = getPhaseRange(selectedPhase, year);
 
-  // Active sponsors + transactions + totals — all depend only on team.id, run in parallel
+  // Fetch sponsor, transactions, totals, and active contracts in parallel
   const [
-    { data: teamSponsors },
+    { data: teamSponsor },
     { data: transactions },
     { data: phaseTotals },
+    { data: activeContracts },
   ] = await Promise.all([
+    // Simple single-sponsor query — new schema has no slot/status/pending fields
     supabase
       .from("team_sponsors")
-      .select("id, slot, status, sponsor_id, payments_count, pending_sponsor_id, effective_phase_id, sponsors!sponsor_id(id, name, abbreviation, tier, slot, monthly_budget, first_phase_budget, nationality, nationality_count, specialty, result_condition)")
+      .select("id, sponsor_id, activated_at, sponsors(id, name, tier, monthly_budget)")
       .eq("team_id", team.id)
-      .in("status", ["active", "pending_change"]),
+      .maybeSingle(),
     supabase
       .from("treasury_log")
       .select("*")
@@ -62,53 +64,49 @@ export default async function BudgetPage({
       .eq("team_id", team.id)
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString()),
+    // Phase salary total: sum of locked salaries on active contracts
+    supabase
+      .from("contracts")
+      .select("locked_salary")
+      .eq("team_id", team.id)
+      .eq("status", "active"),
   ]);
 
   const totals = phaseTotals ?? [];
-  const hasSponsorPayments = totals.some((t) => t.type === "sponsor_payment");
 
-  // Expected sponsor income from active team_sponsors
-  let expectedSponsorIncome = 0;
-  if (!hasSponsorPayments && teamSponsors && teamSponsors.length > 0) {
-    expectedSponsorIncome = teamSponsors.reduce((sum, ts) => {
-      const s = Array.isArray(ts.sponsors) ? ts.sponsors[0] : ts.sponsors;
-      const sponsor = s as { monthly_budget: number; first_phase_budget: number | null };
-      const paymentsCount = ts.payments_count ?? 0;
-      const budget = (sponsor?.first_phase_budget && paymentsCount === 0)
-        ? sponsor.first_phase_budget
-        : (sponsor?.monthly_budget ?? 0);
-      return sum + budget;
-    }, 0);
-  }
-
+  // Phase income from treasury_log (actual sponsor payments logged by finance job)
   const income = totals
     .filter((t) => t.amount > 0)
-    .reduce((sum, t) => sum + t.amount, 0) + expectedSponsorIncome;
+    .reduce((sum, t) => sum + t.amount, 0);
+
   const outgoing = totals
     .filter((t) => t.amount < 0)
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-  // Synthetic sponsor transactions when no real sponsor_payment exists yet
-  const realTransactions = transactions ?? [];
-  let allTransactions = realTransactions;
-  if (!hasSponsorPayments && teamSponsors && teamSponsors.length > 0) {
-    const syntheticSponsors = teamSponsors.map((ts) => {
-      const s = Array.isArray(ts.sponsors) ? ts.sponsors[0] : ts.sponsors;
-      const sponsor = s as { name: string; monthly_budget: number; first_phase_budget: number | null };
-      const paymentsCount = ts.payments_count ?? 0;
-      const budget = (sponsor?.first_phase_budget && paymentsCount === 0)
-        ? sponsor.first_phase_budget
-        : (sponsor?.monthly_budget ?? 0);
-      return {
-        id: `synthetic-sponsor-${ts.id}`,
-        type: "sponsor_payment",
-        amount: budget,
-        description: `Sponsor — ${sponsor?.name ?? "Unknown"}`,
-        created_at: start.toISOString(),
-      };
-    });
-    allTransactions = [...syntheticSponsors, ...realTransactions];
-  }
+  // Phase salary summary: sum of all active contract locked_salary values
+  const phaseSalaries = (activeContracts ?? []).reduce(
+    (sum, c) => sum + (c.locked_salary ?? 0),
+    0,
+  );
+
+  // Sponsor info for display
+  const sponsorData = teamSponsor?.sponsors
+    ? (Array.isArray(teamSponsor.sponsors) ? teamSponsor.sponsors[0] : teamSponsor.sponsors) as {
+        id: string;
+        name: string;
+        tier: number;
+        monthly_budget: number;
+      }
+    : null;
+
+  const currentSponsor = sponsorData
+    ? {
+        id: sponsorData.id,
+        name: sponsorData.name,
+        tier: sponsorData.tier,
+        monthly_budget: sponsorData.monthly_budget,
+      }
+    : null;
 
   return (
     <BudgetClient
@@ -117,29 +115,10 @@ export default async function BudgetPage({
       level={team.level}
       income={income}
       outgoing={outgoing}
-      transactions={allTransactions}
+      transactions={transactions ?? []}
       phaseIndex={phaseIndex}
-      teamSponsors={(teamSponsors ?? []).map((ts) => {
-        const s = Array.isArray(ts.sponsors) ? ts.sponsors[0] : ts.sponsors;
-        return {
-          id: ts.id,
-          slot: ts.slot as "secondary" | "principal",
-          paymentsCount: ts.payments_count ?? 0,
-          sponsor: s as {
-            id: string;
-            name: string;
-            abbreviation: string;
-            tier: number;
-            slot: string;
-            monthly_budget: number;
-            first_phase_budget: number | null;
-            nationality: string | null;
-            nationality_count: number;
-            specialty: string[];
-            result_condition: string | null;
-          },
-        };
-      })}
+      currentSponsor={currentSponsor}
+      phaseSalaries={phaseSalaries}
     />
   );
 }
