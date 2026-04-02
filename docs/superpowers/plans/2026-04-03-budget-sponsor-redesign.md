@@ -76,7 +76,11 @@ export const TRANSACTION_FILTER_OPTIONS = [
   { label: "Sponsors" },
 ];
 
-export import { ORIENTATION_LABELS } from "@/lib/sponsors";
+export const ORIENTATION_LABELS: Record<string, string> = {
+  gc: "GC",
+  one_day: "One-Day",
+  neutral: "neutral",
+};
 
 export function filterTransactions<T extends { type: string }>(
   transactions: T[],
@@ -352,6 +356,7 @@ import { cn } from "@/lib/utils";
 import {
   formatBudget,
   groupByTier,
+  ORIENTATION_LABELS,
   type SponsorRow,
   type TeamSponsor,
 } from "@/lib/sponsors";
@@ -368,8 +373,6 @@ interface MarketplaceClientProps {
   isImmediate: boolean;
   pendingSponsorId: string | null;
 }
-
-import { ORIENTATION_LABELS } from "@/lib/sponsors";
 
 function SponsorRow({
   sponsor,
@@ -680,17 +683,15 @@ import { FilterChips } from "@/components/filter-chips";
 import { TransactionRow } from "@/components/transaction-row";
 import { Tag } from "@/components/pill";
 import { SponsorBonusDetails } from "@/components/sponsor-bonus-details";
-import { formatEuro } from "@/lib/format";
-import { countryCodeToFlag } from "@/lib/format";
+import { formatEuro, countryCodeToFlag } from "@/lib/format";
 import {
   formatBudget,
+  ORIENTATION_LABELS,
   TRANSACTION_FILTER_OPTIONS,
   filterTransactions,
   type SponsorRow,
 } from "@/lib/sponsors";
 import { cn } from "@/lib/utils";
-
-import { ORIENTATION_LABELS } from "@/lib/sponsors";
 
 interface Transaction {
   id: string;
