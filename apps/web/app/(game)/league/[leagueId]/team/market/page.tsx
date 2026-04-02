@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
-import { RecrutsClient } from "./recruts-client";
+import { MarketClient } from "./market-client";
 import { PhaseSetup } from "./phase-setup";
 import { getLevelByNumber, getMaxSlots, getLevelForXp } from "@/lib/levels";
 import { getCurrentPhase, getPhaseRange, getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
 
-export default async function RecrutsPage({
+export default async function MarketPage({
   params,
 }: {
   params: Promise<{ leagueId: string }>;
@@ -18,7 +18,7 @@ export default async function RecrutsPage({
     return (
       <div className="px-4 py-8">
         <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-          Please sign in to view recruits.
+          Please sign in to view the market.
         </p>
       </div>
     );
@@ -147,7 +147,7 @@ export default async function RecrutsPage({
     supabase
       .from("riders")
       .select(
-        "id, full_name, nationality, real_team, pcs_rank, pcs_rank_prev, photo_url, specialty, pcs_points_1yr"
+        "id, full_name, nationality, real_team, pcs_rank, pcs_rank_prev, photo_url, specialty, pcs_points_1yr, birthdate"
       )
       .gte("pcs_rank", minRank)
       .lte("pcs_rank", 600)
@@ -241,7 +241,7 @@ export default async function RecrutsPage({
   }
 
   return (
-    <RecrutsClient
+    <MarketClient
       leagueId={leagueId}
       riders={availableRiders}
       activeRound={activeRound}

@@ -367,7 +367,7 @@ export default async function MyTeamPage({
               key={`open-${i}`}
               rider={{ id: "", name: "" }}
               isOpenSlot
-              href={`/league/${leagueId}/team/recruts`}
+              href={`/league/${leagueId}/team/market`}
             />
           ))}
         </div>
@@ -404,7 +404,7 @@ export default async function MyTeamPage({
                     photo_url: r.photo_url,
                   }}
                   bidState={isOutbid ? "outbid" : "active"}
-                  href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
+                  href={`/league/${leagueId}/rider/${r.id}?from=market`}
                   rightContent={
                     <div className="flex flex-col items-end">
                       <span className={`text-[length:var(--type-body)] font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--text-high)]"}`}>

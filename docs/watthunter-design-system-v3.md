@@ -823,25 +823,82 @@ Primary page-level navigation. Used to switch between top-level views within a p
 
 ---
 
-## Component: Filter Chips (Contained Light)
+## Component: Filter Chips
 
 ### Description
 
-In-section filtering control. Groups 2–5 chips inside a light container (border only, no background fill). Used to toggle between data subsets within a section without changing the page structure. **Option C: Contained Light** — the validated pattern.
+In-section filtering control. Used to toggle between data subsets within a section without changing the page structure.
+Il existe **deux patterns validés** selon le contexte :
 
-### When to use
+1. **Option B: Free Chips** — Chips individuels avec bordure, sans conteneur global. Utilisé pour naviguer dans des grosses listes (Market, Transatcions).
+2. **Option C: Contained Light** — Chips regroupés dans un outline neutre. Utilisé comme local toggle dans une zone définie (Stat toggles sur PRD).
 
-| Use Filter Chips | Use Underline Tabs instead |
-|-------------------|---------------------------|
-| Filtering within a section | Switching page-level views |
-| 2–5 options, same content structure | Different content structures per tab |
-| Inside cards, sections, or panels | Below app bar at page level |
+---
 
-### Spec
+### Option B: Free Chips (Pattern par défaut pour les data lists)
+
+Pattern flexible et aéré, qui permet l'overflow scroll horizontal sur mobile. Accepte des chips avec `variant="accent"` (ex: "My Bids").
+
+#### Spec Option B
 
 ```css
 /* Container */
-.filter-container {
+.filter-free-container {
+  display: flex;
+  gap: 8px; /* Tailwind: gap-2 */
+  overflow-x: auto;
+  /* Masquer la scrollbar : tailwind-scrollbar-hide */
+}
+
+/* Individual chip */
+.filter-chip-free {
+  padding: 6px 14px;
+  font: 500 13px var(--font-sans);
+  color: var(--text-low);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;  /* Interactive affordance */
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  white-space: nowrap;
+}
+
+/* Active state (Default) */
+.filter-chip-free.active {
+  background: var(--bg-surface-active);
+  border-color: var(--border-hover);
+  color: var(--text-high);
+  font-weight: 600;
+}
+
+/* Active state (Accent / Cyan) */
+.filter-chip-free.active.accent {
+  background: var(--badge-bg); /* rgba(14,165,233,0.10) */
+  border-color: var(--accent-default); /* cyan-500 */
+  color: var(--accent-default);
+  font-weight: 600;
+}
+
+/* Hover (desktop only) */
+@media (hover: hover) {
+  .filter-chip-free:hover:not(.active) {
+    color: var(--text-mid);
+    border-color: var(--border-hover);
+  }
+}
+```
+
+---
+
+### Option C: Contained Light (Local toggles)
+
+Groups 2–5 chips inside a light container (border only, no background fill). Utilisé pour des choix fermés (ex: PCS Stats / Game Stats).
+
+#### Spec Option C
+
+```css
+/* Container */
+.filter-contained {
   display: flex;
   gap: 6px;
   padding: 3px;
@@ -852,7 +909,7 @@ In-section filtering control. Groups 2–5 chips inside a light container (borde
 }
 
 /* Individual chip */
-.filter-chip {
+.filter-chip-contained {
   padding: 6px 14px;
   font: 500 var(--type-caption) var(--font-sans); /* 12px/500 */
   color: var(--text-low);
@@ -865,7 +922,7 @@ In-section filtering control. Groups 2–5 chips inside a light container (borde
 }
 
 /* Active state */
-.filter-chip.active {
+.filter-chip-contained.active {
   background: var(--bg-surface-active);     /* #1f292e */
   color: var(--text-high);                  /* #eaeff1 */
   font-weight: 600;
@@ -873,80 +930,70 @@ In-section filtering control. Groups 2–5 chips inside a light container (borde
 
 /* Hover (desktop only) */
 @media (hover: hover) {
-  .filter-chip:hover:not(.active) {
+  .filter-chip-contained:hover:not(.active) {
     color: var(--text-mid);
     background: rgba(255, 255, 255, 0.03);
   }
 }
 ```
 
-### Key design decisions
+### Key design decisions (Filter Chips Global)
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Container background | `transparent` | Light feel, doesn't compete with content |
-| Container border | `--border-default` | Groups chips visually without heaviness |
-| Container radius | `--radius-lg` (8px) | Structural container, same as cards |
-| Chip radius | `--radius-md` (6px) | **Interactive affordance** — squared = tappable |
-| Active indicator | `bg-surface-active` + `text-high` | No cyan — avoids hierarchy collision with page-level tabs |
+| Chip radius | `6px` | **Interactive affordance** — squared = tappable (vs pill 20px = statique) |
+| Active indicator (Def) | `bg-surface-active` + `text-high` | No cyan — avoids hierarchy collision with page-level tabs |
 | Active weight | 600 (semibold) | Reinforces selection without needing color |
+| Accent Variant | `--accent-default` bordure/texte | Permet de faire ressortir une option clé (ex: "My Bids") |
 
 ### States
 
 | State | Background | Text | Border | Interaction |
 |-------|-----------|------|--------|-------------|
-| **Inactive** | transparent | `--text-low` | none | Tappable |
-| **Active** | `--bg-surface-active` | `--text-high`, weight 600 | none | Current filter |
-| **Hover** | `rgba(255,255,255,0.03)` | `--text-mid` | none | Desktop only |
+| **Inactive** | transparent | `--text-low` | `border-default` (ou none) | Tappable |
+| **Active** | `--bg-surface-active` | `--text-high`, weight 600 | `border-hover` (ou none) | Current filter |
+| **Hover** | transparent (ou 3% white) | `--text-mid` | `border-hover` | Desktop only |
 | **Focused** | — | — | `--accent-focus-ring` | Keyboard nav |
-| **Disabled** | transparent | `--text-ghost` | none | `pointer-events: none` |
 
 ### Variants by option count
 
-| Count | Example | Container width | Notes |
+| Count | Example | Layout Pattern | Notes |
 |-------|---------|-----------------|-------|
-| **2 options** | PCS Stats / Game Stats | `fit-content` | Works as binary toggle |
-| **3 options** | Phase 1 / Phase 2 / Phase 3 | `fit-content` | Standard grouping |
-| **4 options** | Budget filters | `fit-content` | Still compact |
-| **5 options** | Recruits specialties | `fit-content` or `100%` | May need scroll on narrow screens |
+| **2 options** | PCS Stats / Game Stats | Option C: Contained | Works as binary toggle |
+| **3 options** | Phase 1 / Phase 2 / Phase 3 | Option B ou C | Standard grouping |
+| **5+ options** | Market specs | Option B: Free Chips | Scroll horizontal natif `overflow-x-auto` |
 
-### Tokens
+### Tokens Global
 
 | Category | Token |
 |----------|-------|
-| Typography | `--type-caption` (12px/500 inactive, 12px/600 active, Geist Sans) |
+| Typography | 13px/500 ou `--type-caption` (12px), Geist Sans |
 | Colors | `--text-low` (inactive), `--text-high` (active), `--text-mid` (hover) |
-| Backgrounds | transparent (container + inactive), `--bg-surface-active` (active chip) |
-| Border | `--border-default` (container only) |
-| Radius | `--radius-lg` (8px, container), `--radius-md` (6px, chips) |
-| Spacing | 3px container padding, 6px gap, 6px 14px chip padding |
-| Motion | `--duration-fast` (100ms) |
+| Focus | `--bg-surface-active` (active chip), `--badge-bg` (accent chip) |
+| Border | `--border-default` (inactif), `--border-hover` (actif natif), `--accent-default` (actif accent) |
 
 ### Accessibility
 
 - **Role:** `role="tablist"` on container, `role="tab"` on each chip
 - **Keyboard:** `Tab` to focus, `Arrow Left/Right` to navigate, `Enter/Space` to select
 - **ARIA:** `aria-selected="true"` on active chip
-- **Contrast:** text-low on bg-app = 5.73:1 AA ✅, text-high on bg-surface-active = 13.5:1 AAA ✅
 
 ### Usage in app
 
-| Page | Section | Options |
+| Page | Section | Pattern |
 |------|---------|---------|
-| Recruits | Specialty filter | Climber, Sprinter, Puncheur, Rouleur, Time Trial |
-| Budget | Transaction type | All, Income, Expenses, Transfers |
-| Rider Detail | Stats toggle | PCS Stats / Game Stats |
-| Budget | Auction phase | Phase 1 / Phase 2 / Phase 3 |
+| Market | All / Climber / Sprinter... / My Bids | **Option B: Free Chips** (w/ Accent) |
+| Budget | All / Income / Expenses / Transfers | **Option B: Free Chips** |
+| Rider Detail | Stats toggle (PCS vs Game) | **Option C: Contained Light** |
 
 ### Do's and Don'ts
 
 | ✅ Do | ❌ Don't |
 |------|---------|
-| Use `--radius-md` (6px) for chips | Use pill radius (20px) — that's for tags |
-| Active = `bg-surface-active` + `text-high` + weight 600 | Use cyan for active chip — causes hierarchy collision |
-| Container with `--border-default`, transparent bg | Use filled background on container |
-| `fit-content` width | Force full-width unless needed |
-| Max 5 options per group | 6+ options — consider a dropdown |
+| Use `6px` radius for chips | Use pill radius (20px) — that's for tags |
+| Active = `bg-surface-active` + `text-high` | Use cyan for default active chips |
+| `overflow-x-auto` pour les Option B (Free Chips) | Tronquer les labels sur mobile |
+| Un seul composant `FilterChips` avec prop variant | Dupliquer le code pour chaque style |
 | Single selection only | Multi-select (use checkboxes instead) |
 
 ---

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, ChevronDown } from "lucide-react";
 import { RiderCard } from "@/components/rider-card";
-import { SegmentedControl } from "@/components/segmented-control";
+import { BidAdjustCard } from "@/components/bid-adjust-card";
+import { FilterChips } from "@/components/filter-chips";
 import { StickyBar } from "@/components/sticky-bar";
 import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
 import { smartCountdown, formatThousands, countryCodeToFlag, calcMinSalary } from "@/lib/format";
@@ -20,6 +21,7 @@ interface Rider {
   photo_url: string | null;
   specialty: string | null;
   pcs_points_1yr: number | null;
+  birthdate: string | null;
 }
 
 interface ActiveRound {
@@ -41,7 +43,7 @@ interface NextRound {
   opens_at: string;
 }
 
-interface RecrutsClientProps {
+interface MarketClientProps {
   leagueId: string;
   riders: Rider[];
   activeRound: ActiveRound | null;
@@ -53,7 +55,32 @@ interface RecrutsClientProps {
   treasury: number;
 }
 
-const FILTER_OPTIONS = ["All", "Teams", "Speciality", "Nationality", "Age"];
+const FILTER_OPTIONS = [
+  { label: "All" },
+  { label: "Teams" },
+  { label: "Speciality" },
+  { label: "Nationality" },
+  { label: "Age" },
+  { label: "My Bids", variant: "accent" as const },
+];
+
+function getAge(birthdate: string | null): number | null {
+  if (!birthdate) return null;
+  const today = new Date();
+  const birth = new Date(birthdate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+function getAgeGroup(birthdate: string | null): string {
+  const age = getAge(birthdate);
+  if (age === null) return "Unknown";
+  if (age <= 23) return "Young Talents (≤23)";
+  if (age <= 32) return "24–32 yrs";
+  return "Veterans (>32)";
+}
 
 const COUNTRY_NAMES: Record<string, string> = {
   AF: "Afghanistan", AL: "Albania", DZ: "Algeria", AR: "Argentina", AM: "Armenia",
@@ -88,7 +115,7 @@ function formatName(fullName: string): string {
 }
 
 
-export function RecrutsClient({
+export function MarketClient({
   leagueId,
   riders,
   activeRound,
@@ -98,10 +125,11 @@ export function RecrutsClient({
   currentSlots,
   initialBids = [],
   treasury,
-}: RecrutsClientProps) {
+}: MarketClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeFilterIndex, setActiveFilterIndex] = useState(0);
+  const activeFilter = FILTER_OPTIONS[activeFilterIndex].label;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -184,8 +212,9 @@ export function RecrutsClient({
         key = r.specialty ?? "Unknown";
       } else if (activeFilter === "Nationality") {
         key = countryName(r.nationality);
+      } else if (activeFilter === "Age") {
+        key = getAgeGroup(r.birthdate);
       } else {
-        // Age filter — no birthdate available yet, group all as Unknown
         key = "Unknown";
       }
       if (!groups[key]) groups[key] = [];
@@ -288,7 +317,7 @@ export function RecrutsClient({
           <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
             {activeRound.name} &middot; {smartCountdown(activeRound.closes_at)}
           </span>
-          <Link href={`/league/${leagueId}/team/recruts/history`} className="text-[length:var(--type-body)] link-tertiary">
+          <Link href={`/league/${leagueId}/team/market/history`} className="text-[length:var(--type-body)] link-tertiary">
             History &rarr;
           </Link>
         </div>
@@ -301,41 +330,90 @@ export function RecrutsClient({
                 ? nextAuctionLabel
                 : "Waiting for first auction"}
           </span>
-          <Link href={`/league/${leagueId}/team/recruts/history`} className="text-[length:var(--type-body)] link-tertiary">
+          <Link href={`/league/${leagueId}/team/market/history`} className="text-[length:var(--type-body)] link-tertiary">
             History &rarr;
           </Link>
         </div>
       )}
 
-      {/* Search */}
-      <div className="px-4 pt-2 pb-3">
-        <div className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2 focus-within:ring-2 focus-within:ring-[var(--accent-focus-ring)]">
-          <Search size={16} className="shrink-0 text-[var(--text-ghost)]" />
-          <input
-            type="text"
-            placeholder="Search rider, team, country..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
-          />
+      {/* Search — hidden on My Bids */}
+      {activeFilter !== "My Bids" && (
+        <div className="px-4 pt-2 pb-3">
+          <div className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2 focus-within:ring-2 focus-within:ring-[var(--accent-focus-ring)]">
+            <Search size={16} className="shrink-0 text-[var(--text-ghost)]" />
+            <input
+              type="text"
+              placeholder="Search rider, team, country..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Filter chips */}
       <div className="px-4 pb-3">
-        <SegmentedControl
-          segments={FILTER_OPTIONS}
-          activeIndex={FILTER_OPTIONS.indexOf(activeFilter)}
-          onChange={(i) => setActiveFilter(FILTER_OPTIONS[i])}
+        <FilterChips
+          options={FILTER_OPTIONS}
+          activeIndex={activeFilterIndex}
+          onChange={(i) => setActiveFilterIndex(i)}
         />
       </div>
 
-      {/* Counter */}
-      <div className="px-4 pb-2">
-        <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-          {filteredRiders.length} available
-        </span>
-      </div>
+      {/* Counter — hidden on My Bids */}
+      {activeFilter !== "My Bids" && (
+        <div className="px-4 pb-2">
+          <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+            {filteredRiders.length} available
+          </span>
+        </div>
+      )}
+
+      {/* My Bids view */}
+      {activeFilter === "My Bids" && (() => {
+        const myBidRiders = riders.filter((r) => bids[r.id] != null);
+        return (
+          <div>
+            {myBidRiders.length === 0 ? (
+              <div className="px-4 py-12 text-center space-y-3">
+                <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+                  No active bids — browse the market to place your first bid.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setActiveFilterIndex(0); window.scrollTo({ top: 0, behavior: "instant" }); }}
+                  className="text-[length:var(--type-body)] font-semibold text-[var(--accent-default)] hover:underline"
+                >
+                  Browse market →
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="px-4 pb-2">
+                  <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+                    Your active bids
+                  </span>
+                </div>
+                {myBidRiders.map((r) => {
+                  const minSalary = calcMinSalary(r.pcs_points_1yr ?? 0);
+                  return (
+                    <BidAdjustCard
+                      key={r.id}
+                      rider={r}
+                      bidAmount={bids[r.id]}
+                      minSalary={minSalary}
+                      onBidChange={handleBidChange}
+                      hasUnsavedChanges={bids[r.id] !== savedBids[r.id]}
+                      leagueId={leagueId}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Rider list */}
       <div>
@@ -382,7 +460,7 @@ export function RecrutsClient({
                           photo_url: r.photo_url,
                         }}
                         bidState={currentBid ? "active" : "none"}
-                        href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
+                        href={`/league/${leagueId}/rider/${r.id}?from=market`}
                         rightContent={
                           <div className="flex flex-col items-end gap-0.5">
                             <div
@@ -445,7 +523,7 @@ export function RecrutsClient({
                   photo_url: r.photo_url,
                 }}
                 bidState={currentBid ? "active" : "none"}
-                href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
+                href={`/league/${leagueId}/rider/${r.id}?from=market`}
                 rightContent={
                   <div className="flex flex-col items-end gap-0.5">
                     <div

@@ -12,7 +12,7 @@ interface Props {
   from?: string;
 }
 
-type RiderContext = "recruts" | "team" | "ranking";
+type RiderContext = "market" | "team" | "ranking";
 
 export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
   const [loading, setLoading] = useState(true);
@@ -112,7 +112,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
             .maybeSingle();
 
           if (contract) {
-            if (from !== "recruts" && from !== "team") context = "team";
+            if (from !== "market" && from !== "team") context = "team";
             contractData = { locked_salary: contract.locked_salary, status: contract.status };
           }
 
@@ -141,7 +141,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
           }
 
           // Budget info for recruts context
-          if (context === "recruts") {
+          if (context === "market") {
             const { data: teamData } = await supabase
               .from("teams")
               .select("level, treasury")
@@ -276,6 +276,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
       contractData={data.contractData}
       ownerInfo={data.ownerInfo}
       budgetInfo={data.budgetInfo}
+      hideBidSection={from === "mybids"}
       inRail
     />
   );

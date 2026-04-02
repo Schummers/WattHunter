@@ -4,7 +4,7 @@ import { getMaxSlots } from "@/lib/levels";
 import { calcMinSalary } from "@/lib/format";
 import { getCurrentPhase } from "@/lib/phases";
 
-type RiderContext = "recruts" | "team" | "ranking";
+type RiderContext = "market" | "team" | "ranking";
 
 export default async function RiderDetailPage({
   params,
@@ -133,7 +133,7 @@ export default async function RiderDetailPage({
       ]);
 
       if (contract) {
-        if (from !== "recruts" && from !== "team") context = "team";
+        if (from !== "market" && from !== "team") context = "team";
         contractData = {
           locked_salary: contract.locked_salary,
           status: contract.status,
@@ -198,7 +198,7 @@ export default async function RiderDetailPage({
 
   // Phase 1.3: Budget info for recruts context
   let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number; activeBidCount: number } | undefined;
-  if (context === "recruts" && user) {
+  if (context === "market" && user) {
     const { data: memberForBudget } = await supabase
       .from("league_members")
       .select("team_id, teams:team_id(level, treasury)")

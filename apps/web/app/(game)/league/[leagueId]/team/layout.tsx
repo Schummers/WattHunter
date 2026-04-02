@@ -20,7 +20,7 @@ export default function TeamLayout({
         <SubTabs
           tabs={[
             { label: "My Team", href: `/league/${leagueId}/team` },
-            { label: "Recruts", href: `/league/${leagueId}/team/recruts` },
+            { label: "Market", href: `/league/${leagueId}/team/market` },
           ]}
         />
       )}

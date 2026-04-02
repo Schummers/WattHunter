@@ -93,7 +93,7 @@ export function HomeFeed({
                 return (
                   <InfoCard
                     key={`auction-${auction.id}`}
-                    href={`/league/${leagueId}/team/recruts`}
+                    href={`/league/${leagueId}/team/market`}
                     className="p-4"
                   >
                     <div className="flex items-center justify-between">
@@ -125,7 +125,7 @@ export function HomeFeed({
                         </div>
                       </div>
                       <span className="flex items-center gap-1 text-[length:var(--type-caption)] text-[var(--text-low)] transition-colors hover:text-[var(--text-mid)]">
-                        Recruts
+                        Market
                         <ChevronRight size={14} />
                       </span>
                     </div>
@@ -137,7 +137,7 @@ export function HomeFeed({
                 return (
                   <InfoCard
                     key="auction-next"
-                    href={`/league/${leagueId}/team/recruts`}
+                    href={`/league/${leagueId}/team/market`}
                     className="p-4"
                   >
                     <div className="flex items-center justify-between">
@@ -155,7 +155,7 @@ export function HomeFeed({
                         </div>
                       </div>
                       <span className="flex items-center gap-1 text-[length:var(--type-caption)] text-[var(--text-low)] transition-colors hover:text-[var(--text-mid)]">
-                        Recruts
+                        Market
                         <ChevronRight size={14} />
                       </span>
                     </div>

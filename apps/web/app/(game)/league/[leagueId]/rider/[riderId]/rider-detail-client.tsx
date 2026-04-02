@@ -11,7 +11,7 @@ import { releaseRider } from "./actions";
 import { formatThousands, formatEuro, countryCodeToFlag, calcTransferBonus, RELEASE_FEE } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
 
-type RiderContext = "recruts" | "team" | "ranking";
+type RiderContext = "market" | "team" | "ranking";
 
 interface Rider {
   id: string;
@@ -70,6 +70,7 @@ interface RiderDetailClientProps {
     activeBidCount: number;
   };
   inRail?: boolean;
+  hideBidSection?: boolean;
 }
 
 function getAge(birthdate: string | null): number | null {
@@ -93,7 +94,7 @@ function resolvePhoto(url: string | null): string | undefined {
 }
 
 const BACK_LABELS: Record<RiderContext, string> = {
-  recruts: "Recruts",
+  market: "Market",
   team: "My Team",
   ranking: "Ranking",
 };
@@ -113,6 +114,7 @@ export function RiderDetailClient({
   ownerInfo,
   budgetInfo,
   inRail,
+  hideBidSection,
 }: RiderDetailClientProps) {
   const router = useRouter();
   const [tabIndex, setTabIndex] = useState(0);
@@ -162,7 +164,7 @@ export function RiderDetailClient({
     const labelClass = "text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]";
     const valueClass = "text-[length:var(--type-stat)] font-extrabold font-mono text-[var(--text-high)]";
 
-    if (context === "recruts") {
+    if (context === "market") {
       return (
         <div className="flex gap-3 px-4">
           <div className={boxClass}>
@@ -293,21 +295,16 @@ export function RiderDetailClient({
       {renderMetrics()}
 
       {/* Action zone */}
-      {/* RD-5: Bid section (recruts only) */}
-      {context === "recruts" && (
+      {/* RD-5: Bid section (market only, hidden when hideBidSection=true) */}
+      {context === "market" && !hideBidSection && (
         <div className={`px-4 space-y-3 ${!activeAuctionId ? "opacity-50 pointer-events-none" : ""}`}>
-          {!activeAuctionId && (
-            <p className="text-center text-[length:var(--type-caption)] text-[var(--text-mid)] !opacity-100">
-              No active round
-            </p>
-          )}
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="icon-lg"
               className="size-11"
               onClick={() => {
-                if (bidAmount !== null) setBidAmount(Math.max(minSalary, bidAmount - 100));
+                if (bidAmount !== null) setBidAmount(Math.max(minSalary, bidAmount - 500));
               }}
               disabled={!activeAuctionId || bidAmount === null}
             >
@@ -331,7 +328,7 @@ export function RiderDetailClient({
                   else if (raw === "") setBidAmount(null);
                 }}
                 disabled={!activeAuctionId}
-                className={`w-full bg-transparent text-center text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
+                className={`w-full bg-transparent text-center text-base md:text-[length:var(--type-stat-small)] font-bold font-mono tabular-nums outline-none ${
                   bidAmount !== null
                     ? "text-[var(--accent-default)]"
                     : "text-[var(--text-low)]"
@@ -345,13 +342,17 @@ export function RiderDetailClient({
               className="size-11"
               onClick={() => {
                 if (bidAmount === null) setBidAmount(minSalary);
-                else setBidAmount(bidAmount + 100);
+                else setBidAmount(bidAmount + 500);
               }}
               disabled={!activeAuctionId}
             >
               <Plus className="size-4" />
             </Button>
           </div>
+          {/* Min salary hint */}
+          <p className="text-center text-[length:var(--type-micro)] text-[var(--text-ghost)]">
+            min {formatThousands(minSalary)} €
+          </p>
           {budgetInfo && (() => {
             const serverBid = currentBidAmount ?? 0;
             const localBid = bidAmount ?? 0;
