@@ -47,7 +47,7 @@ export default async function AuctionDetailPage({
       .from("auction_bids")
       .select("id, rider_id, team_id, amount, round, status")
       .eq("auction_id", auctionId),
-    supabase.from("contracts").select("rider_id").in("status", ["active", "notice"]),
+    supabase.from("contracts").select("rider_id").eq("status", "active"),
   ]);
 
   if (!auction || !team) {

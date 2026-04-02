@@ -82,7 +82,7 @@ async def job_daily_scoring(
 ):
     """
     Calculate daily XP for all teams with contracted riders who earned PCS points today.
-    Treasury is handled separately by /jobs/phase-finance and sponsor bonuses.
+    Treasury is handled by the in-app confirmPhaseSetup server action and sponsor bonuses.
     """
     _check_auth(x_api_secret)
     result = await calculate_daily_scores(_supabase)

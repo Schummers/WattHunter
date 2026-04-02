@@ -143,9 +143,20 @@ export async function confirmPhaseSetup(teamId: string) {
   const released: string[] = [];
 
   if (treasury < BANKRUPTCY_THRESHOLD && contracts && contracts.length > 0) {
-    // Sort by highest salary first (release most expensive first)
+    // Fetch cumulative XP per rider to determine release order (highest XP first per spec)
+    const { data: xpData } = await supabase
+      .from("rider_xp_daily")
+      .select("rider_id, xp_gained")
+      .eq("team_id", teamId);
+
+    const riderXp: Record<string, number> = {};
+    for (const row of xpData ?? []) {
+      riderXp[row.rider_id] = (riderXp[row.rider_id] ?? 0) + row.xp_gained;
+    }
+
+    // Sort by highest cumulative XP first (spec §6)
     const sortedContracts = [...contracts].sort(
-      (a, b) => (b.locked_salary ?? 0) - (a.locked_salary ?? 0)
+      (a, b) => (riderXp[b.rider_id] ?? 0) - (riderXp[a.rider_id] ?? 0)
     );
 
     for (const contract of sortedContracts) {
@@ -163,12 +174,21 @@ export async function confirmPhaseSetup(teamId: string) {
       // Release fee
       treasury -= RELEASE_FEE;
 
-      // Treasury log entries
+      // Treasury log: release fee
+      await supabase.from("treasury_log").insert({
+        team_id: teamId,
+        type: "release_fee",
+        amount: -RELEASE_FEE,
+        description: `Bankruptcy release fee — rider ${contract.rider_id}`,
+        rider_id: contract.rider_id,
+      });
+
+      // Treasury log: salary refund (bankruptcy_release)
       await supabase.from("treasury_log").insert({
         team_id: teamId,
         type: "bankruptcy_release",
-        amount: contract.locked_salary - RELEASE_FEE,
-        description: `Bankruptcy auto-release — rider ${contract.rider_id}`,
+        amount: contract.locked_salary,
+        description: `Bankruptcy salary refund — rider ${contract.rider_id}`,
         rider_id: contract.rider_id,
       });
 

@@ -167,7 +167,7 @@ export default async function RiderDetailPage({
       .from("contracts")
       .select("team_id, teams:team_id(name, league_id)")
       .eq("rider_id", riderId)
-      .in("status", ["active", "notice"])
+      .eq("status", "active")
       .maybeSingle();
 
     if (ownerContract) {

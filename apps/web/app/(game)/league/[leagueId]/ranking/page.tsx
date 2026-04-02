@@ -56,7 +56,7 @@ export default async function RankingPage({
         .from("contracts")
         .select("id, team_id, rider_id, status, riders:rider_id(id, full_name, nationality, photo_url, pcs_rank)")
         .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"])
-        .in("status", ["active", "notice"]),
+        .eq("status", "active"),
       supabase
         .from("rider_xp_daily")
         .select("rider_id, team_id, race_slug, xp_gained, date")

@@ -45,8 +45,7 @@ python3 run_pipeline.py post-race --race "race/omloop-het-nieuwsblad/2026"
 # Pipeline C — Startlists : programme prévisionnel
 python3 run_pipeline.py startlists --race "race/paris-nice/2026"
 
-# Pipeline D — Finance par phase (1x/phase) : sponsor income + salaires + faillite
-python3 run_pipeline.py phase-finance
+# Pipeline D — Finance par phase : SUPPRIMÉ — remplacé par confirmPhaseSetup server action (in-app)
 
 # Pipeline E — Enrichissement coureurs (1x/an) : photo, bio, spécialité, teams, résultats
 python3 run_pipeline.py enrich-riders
@@ -55,7 +54,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 - Pipeline A : ~5 min (top 600 riders + 3 rankings)
 - Pipeline B : ~30s (1 résultat + 1 ranking + scoring)
 - Pipeline C : ~15s (1 page startlist)
-- Pipeline D : ~5s (finance par phase, toutes ligues actives)
+- Pipeline D : SUPPRIMÉ (remplacé par server action confirmPhaseSetup)
 - Pipeline E : ~1h (100 coureurs) / ~6h (600 coureurs, batch de 5 + 1min pause)
 - Calendrier WT : `services/pcs-sync/wt_calendar_2026.json`
 
