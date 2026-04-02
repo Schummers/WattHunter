@@ -127,7 +127,7 @@ export function BudgetClient({
             <span
               className={
                 "font-mono text-[length:var(--type-body)] font-bold tabular-nums " +
-                (netPerPhase >= 0 ? "text-[var(--color-success)]" : "text-[var(--color-danger)]")
+                (netPerPhase >= 0 ? "text-[var(--success)]" : "text-[var(--danger)]")
               }
             >
               {netPerPhase >= 0 ? "+" : ""}{formatCompact(netPerPhase)}
@@ -217,7 +217,7 @@ export function BudgetClient({
           ) : (
             <Link href={`/league/${leagueId}/budget/marketplace`}>
               <div className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] px-4 py-5">
-                <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-ghost)]">
+                <span className="text-[length:var(--type-caption)] font-medium text-[var(--accent-default)]">
                   Select a sponsor &rarr;
                 </span>
               </div>

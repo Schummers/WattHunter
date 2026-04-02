@@ -172,7 +172,7 @@ function SponsorCard({
       className={cn(
         "rounded-[var(--radius-md)] border transition-colors",
         isSelected
-          ? "border-[var(--accent-default)] bg-[rgba(6,182,212,0.06)]"
+          ? "border-[var(--accent-default)] bg-[var(--bg-surface-active)]"
           : "border-[var(--border-default)] bg-[var(--bg-surface)]",
         isLocked && "opacity-60",
       )}
@@ -298,7 +298,7 @@ export function MarketplaceClient({
 
       {/* Header */}
       <div className="px-4 pb-1 pt-2">
-        <h1 className="text-[length:var(--type-title)] font-bold text-[var(--text-high)]">
+        <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
           Choose your Sponsor
         </h1>
         <p className="mt-0.5 text-[length:var(--type-caption)] text-[var(--text-mid)]">
@@ -310,7 +310,7 @@ export function MarketplaceClient({
       <div className="mt-4 space-y-6 px-4">
         {tiers.map((tier) => (
           <div key={tier}>
-            <p className="mb-2 text-[length:var(--type-caption)] font-semibold uppercase tracking-wide text-[var(--text-low)]">
+            <p className="mb-2 text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
               Tier {tier}
             </p>
             <div className="space-y-2">
