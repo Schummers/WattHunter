@@ -157,7 +157,8 @@ export function LeaveLeagueButton({ leagueId }: { leagueId: string }) {
 }
 
 export function InviteUrlDisplay({ inviteCode }: { inviteCode: string }) {
-  const inviteUrl = `${window.location.origin}/league/join?code=${inviteCode}`;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const inviteUrl = `${origin}/league/join?code=${inviteCode}`;
 
   return (
     <div className="space-y-1">

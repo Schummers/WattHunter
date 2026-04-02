@@ -502,7 +502,7 @@ export function RecrutsClient({
       {/* Sticky bar */}
       <StickyBar
         saveEnabled={hasPendingBids}
-        slotInfo={`${currentSlots + Object.keys(bids).length}/${maxSlots} slots`}
+        slotInfo={`${currentSlots + Object.keys(bids).filter((rid) => !(rid in savedBids)).length}/${maxSlots} slots`}
         budgetInfo={`${formatThousands(treasury - totalBidAmount)} €`}
         onSave={handleSave}
         saving={saving}

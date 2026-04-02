@@ -7,11 +7,12 @@ leagues. No /30 division — full monthly_budget amount per phase.
 Steps per team:
   1. +sponsor income (full monthly_budget from team's sponsor, fallback 250K Lotto)
      → treasury_log type: "phase_sponsor_base"
-  2. -salaries (sum of locked_salary from active/notice contracts)
+  2. -salaries (sum of locked_salary from active contracts)
      → treasury_log type: "phase_salary"
   3. Update team.treasury
-  4. Bankruptcy check — if treasury < 0, release best scorers (highest XP first)
+  4. Bankruptcy check — if treasury < -10 000, release best scorers (highest XP first)
      → treasury_log type: "bankruptcy_release"
+     → 5 000 EUR release fee per released rider
   5. Treasury validation
 
 Design doc: docs/plans/2026-04-02-game-simplification-backlog.md
@@ -24,7 +25,9 @@ from supabase import Client
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SPONSOR_INCOME = 250_000  # Lotto T1 fallback when no sponsors active
+DEFAULT_SPONSOR_INCOME = 250_000  # Lotto T1 fallback when no sponsor assigned
+BANKRUPTCY_THRESHOLD = -10_000    # Tolerance buffer before auto-release cascade
+RELEASE_FEE = 5_000               # Flat fee per released rider (voluntary or bankruptcy)
 
 
 def calculate_phase_salaries(contracts: list[dict]) -> int:
@@ -39,13 +42,13 @@ def get_release_order(contracts: list[dict]) -> list[dict]:
 
 def _get_sponsor_income(supabase: Client, team_id: str) -> tuple[int, str]:
     """
-    Fetch active sponsor for a team and return (income, description).
-    Uses full monthly_budget — no phase division.
-    Falls back to DEFAULT_SPONSOR_INCOME if no active sponsors.
+    Fetch sponsor for a team and return (income, description).
+    Uses full monthly_budget — one payment per phase.
+    Falls back to DEFAULT_SPONSOR_INCOME if no sponsor assigned.
     """
     sponsors = supabase.table("team_sponsors").select(
         "sponsor_id, sponsors(name, monthly_budget)"
-    ).eq("team_id", team_id).eq("status", "active").execute()
+    ).eq("team_id", team_id).execute()
 
     if not sponsors.data:
         return DEFAULT_SPONSOR_INCOME, "Default sponsor (Lotto)"
@@ -110,8 +113,8 @@ async def run_phase_finance(supabase: Client) -> dict:
             # Step 2: Salary deduction
             contracts = supabase.table("contracts").select(
                 "id, rider_id, locked_salary, status"
-            ).eq("team_id", team_id).in_(
-                "status", ["active", "notice"]
+            ).eq("team_id", team_id).eq(
+                "status", "active"
             ).execute()
 
             total_salary = calculate_phase_salaries(contracts.data or [])
@@ -132,7 +135,7 @@ async def run_phase_finance(supabase: Client) -> dict:
 
             # Step 4: Bankruptcy check
             released = []
-            if treasury < 0 and contracts.data:
+            if treasury < BANKRUPTCY_THRESHOLD and contracts.data:
                 xp_data = supabase.table("rider_xp_daily").select(
                     "rider_id, xp_gained"
                 ).eq("team_id", team_id).execute()
@@ -150,22 +153,23 @@ async def run_phase_finance(supabase: Client) -> dict:
                 release_order = get_release_order(enriched)
 
                 for contract in release_order:
-                    if treasury >= 0:
+                    if treasury >= BANKRUPTCY_THRESHOLD:
                         break
 
                     supabase.table("contracts").update({
                         "status": "released",
-                        "release_date": today,
+                        "released_at": today,
                     }).eq("id", contract["id"]).execute()
 
-                    treasury += contract["locked_salary"]
+                    refund = contract["locked_salary"] - RELEASE_FEE
+                    treasury += refund
                     released.append(contract["rider_id"])
 
                     supabase.table("treasury_log").insert({
                         "team_id": team_id,
                         "type": "bankruptcy_release",
-                        "amount": contract["locked_salary"],
-                        "description": f"Bankruptcy — released rider {contract['rider_id']}",
+                        "amount": refund,
+                        "description": f"Bankruptcy — released rider {contract['rider_id']} (salary refund {contract['locked_salary']} - fee {RELEASE_FEE})",
                         "rider_id": contract["rider_id"],
                     }).execute()
 
