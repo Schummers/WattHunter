@@ -83,11 +83,14 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - Salaire plancher (enchère min) : 5 000 €/mois
 - Taux de conversion bonus : 1 500 €/point PCS
 - Durée d'enchère : chaque round dure de sa date jusqu'à la date du round suivant (dernier round = fin de journée)
-- Slots coureurs : 6 (Niveau 1) → 12 (Niveau 8)
-- Politiques actives max : 1 (Niveau 1) → 2 (Niveau 3+) → 3 (Niveau 9+)
+- 8 niveaux alignés sur les 8 phases WT (Season Start → Vuelta)
+- Slots coureurs : 6 (Nv.1) → 7 → 8 → 9 → 10 → 11 → 12 (Nv.7-8)
+- Politiques actives max : 1 (Nv.1-2) → 2 (Nv.3-6) → 3 (Nv.7-8)
 - 4 types de policies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)
-- Pool = Top 500 PCS global (12 mois glissants), gating par rang selon niveau
-- XP Niveau 2 = 50 | XP Niveau 3 = 150 | XP Niveau 5 = 500 | XP Niveau 10 = 2 500
+- Pool = Top 600 PCS global (12 mois glissants), gating par rang selon niveau
+- Pool min : Nv.1=#300 | Nv.2=#200 | Nv.3=#100 | Nv.4=#30 | Nv.5=#20 | Nv.6=#10 | Nv.7=#4 | Nv.8=#1
+- XP : Nv.2=25 | Nv.3=150 | Nv.4=350 | Nv.5=600 | Nv.6=900 | Nv.7=1500 | Nv.8=2000
+- Sponsors : T1(Nv.1) T2(Nv.3) T3(Nv.4/Giro) T4(Nv.6/Tour) T5(Nv.8/Vuelta)
 
 
 ## Blockers ouverts (résoudre avant alpha)

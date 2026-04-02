@@ -54,9 +54,9 @@ export default async function RecrutsPage({
         "id, full_name, nationality, real_team, pcs_rank, pcs_rank_prev, photo_url, specialty, pcs_points_1yr"
       )
       .gte("pcs_rank", minRank)
-      .lte("pcs_rank", 500)
+      .lte("pcs_rank", 600)
       .order("pcs_rank", { ascending: true })
-      .limit(500),
+      .limit(600),
     supabase
       .from("teams")
       .select("id")

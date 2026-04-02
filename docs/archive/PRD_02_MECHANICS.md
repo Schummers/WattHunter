@@ -1,6 +1,10 @@
 # PRD 02 — Game Mechanics
 ## Cycling Fantasy Game MVP
 
+> **⚠️ OUTDATED (2026-04-02)** — This document reflects the original 10-level / top-500 design.
+> The game now uses **8 levels aligned with WT phases** and a **top-600 rider pool**.
+> See `CLAUDE.md` and `apps/web/lib/levels.ts` for current values.
+
 **Version:** 3.0
 **Date:** 21 février 2026
 **Author:** Jonathan Schummers

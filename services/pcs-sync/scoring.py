@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 # 1500 €/point PCS — intentionally below salary rate (2000) to create "pépite" dynamic.
 CONVERSION_RATE = int(os.getenv("CONVERSION_RATE_EUR_PER_PCS", "1500"))
 
-# Level thresholds — must match apps/web/lib/levels.ts
-LEVEL_THRESHOLDS = [0, 50, 150, 300, 500, 700, 1000, 1400, 1900, 2500]
+# Level thresholds — must match apps/web/lib/levels.ts (8 levels)
+LEVEL_THRESHOLDS = [0, 25, 150, 350, 600, 900, 1500, 2000]
 
 
 def compute_level(xp: float) -> int:

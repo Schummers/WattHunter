@@ -2,13 +2,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
+import { getLevelByNumber } from "@/lib/levels";
 import { TreasuryWidget } from "./treasury-widget";
 import { AuctionClient } from "./auction-client";
-
-function rankMaxForLevel(level: number): number {
-  const thresholds = [500, 350, 250, 175, 100, 75, 50, 25, 10, 3];
-  return thresholds[Math.min(Math.max(level, 1), 10) - 1];
-}
 
 export default async function AuctionDetailPage({
   params,
@@ -44,7 +40,8 @@ export default async function AuctionDetailPage({
       .from("riders")
       .select("id, full_name, nationality, photo_url, pcs_rank, pcs_points_1yr, specialty, real_team, monthly_salary, age")
       .eq("ever_in_top500", true)
-      .lte("pcs_rank", rankMaxForLevel(team?.level ?? 1))
+      .gte("pcs_rank", getLevelByNumber(team?.level ?? 1).poolMin)
+      .lte("pcs_rank", 600)
       .order("pcs_points_1yr", { ascending: false }),
     supabase
       .from("auction_bids")

@@ -31,7 +31,7 @@ SPECIALTY_MAP = {
 }
 
 BATCH_SIZE = 5
-BATCH_PAUSE_SECONDS = 180
+BATCH_PAUSE_SECONDS = 60
 
 
 def assign_specialty(points_per_speciality: Dict[str, int]) -> str:
@@ -137,6 +137,93 @@ def parse_race_program(html: str, current_year: int = 2026) -> List[Dict[str, An
     return results
 
 
+MONTHS = {
+    "january": "01", "february": "02", "march": "03", "april": "04",
+    "may": "05", "june": "06", "july": "07", "august": "08",
+    "september": "09", "october": "10", "november": "11", "december": "12",
+}
+
+
+def _fallback_parse_rider(html: str) -> Dict[str, Any]:
+    """Fallback parser using selectolax when procyclingstats lib parse() fails.
+
+    Extracts photo, birthdate, birth_place, height, and weight directly from
+    the PCS HTML structure.
+    """
+    tree = HTMLParser(html)
+    result: Dict[str, Any] = {
+        "image_url": None, "birthdate": None, "place_of_birth": None,
+        "height": None, "weight": None,
+    }
+
+    # Photo: <img src="images/riders/...">
+    for img in tree.css("img"):
+        src = img.attributes.get("src", "")
+        if "riders/" in src:
+            result["image_url"] = (
+                src if src.startswith("http")
+                else f"https://www.procyclingstats.com/{src}"
+            )
+            break
+
+    # Bio info: div.borderbox.left.w65 > ul.list > li
+    info_box = tree.css_first("div.borderbox.left.w65") or tree
+    for li in info_box.css("li"):
+        bold = li.css_first("div.bold")
+        if not bold:
+            continue
+        label = bold.text().strip().lower()
+        divs = [
+            d.text().strip() for d in li.css("div")
+            if d != bold and d.text().strip()
+        ]
+
+        if "date of birth" in label:
+            # PCS format: ["21st", "September", "1998", "(", "32", ")"]
+            # Day has ordinal suffix (st/nd/rd/th), age is in parentheses
+            year = month = day = None
+            for d in divs:
+                if re.match(r"^\d{4}$", d):
+                    year = d
+                if d.lower() in MONTHS:
+                    month = MONTHS[d.lower()]
+                # Day: must have ordinal suffix (1st, 2nd, 3rd, 4th, etc.)
+                m = re.match(r"^(\d{1,2})(st|nd|rd|th)$", d, re.IGNORECASE)
+                if m:
+                    day = m.group(1).zfill(2)
+            if year and month and day and int(day) <= 31:
+                result["birthdate"] = f"{year}-{month}-{day}"
+
+        elif "place of birth" in label:
+            result["place_of_birth"] = divs[0] if divs else None
+
+        elif "weight" in label:
+            # Weight and height can be on the same line:
+            # ["66", "kg", "Height:", "1.76", "m"]
+            for d in divs:
+                if re.match(r"^\d{2,3}$", d):
+                    result["weight"] = int(d)
+                    break
+            # Height on same line
+            for i, d in enumerate(divs):
+                if "height" in d.lower():
+                    for d2 in divs[i + 1:]:
+                        m = re.match(r"^(\d+\.?\d*)$", d2)
+                        if m:
+                            result["height"] = float(m.group(1))
+                            break
+                    break
+
+        elif "height" in label:
+            for d in divs:
+                m = re.match(r"^(\d+\.?\d*)$", d)
+                if m:
+                    result["height"] = float(m.group(1))
+                    break
+
+    return result
+
+
 def parse_rider_data(
     raw: Dict[str, Any],
     specialty_points: Dict[str, int],
@@ -174,8 +261,8 @@ async def enrich_single_rider(
         try:
             raw = rider_obj.parse()
         except (IndexError, ValueError, KeyError) as e:
-            logger.warning("parse() failed for %s: %s", pcs_slug, e)
-            raw = {}
+            logger.warning("parse() failed for %s, trying fallback: %s", pcs_slug, e)
+            raw = _fallback_parse_rider(html)
 
         try:
             specialty_points = rider_obj.points_per_speciality()
@@ -325,7 +412,7 @@ async def enrich_single_rider(
 async def enrich_riders(
     supabase: Optional[Client] = None,
     start_rank: int = 1,
-    end_rank: int = 500,
+    end_rank: int = 600,
 ) -> Dict[str, Any]:
     """Enrich riders ranked between start_rank and end_rank (inclusive).
 
@@ -352,6 +439,98 @@ async def enrich_riders(
         return {"status": "no_riders", "total": 0, "enriched": 0, "errors": []}
 
     print(f"  Found {total} riders (rank {start_rank}-{end_rank})")
+
+    results = []
+    errors = []
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+
+        try:
+            for batch_idx in range(0, total, BATCH_SIZE):
+                batch = riders[batch_idx : batch_idx + BATCH_SIZE]
+                batch_num = batch_idx // BATCH_SIZE + 1
+                total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
+
+                print(f"\n  --- Batch {batch_num}/{total_batches} ---")
+
+                for rider in batch:
+                    rider_id = rider["id"]
+                    pcs_slug = rider["pcs_slug"]
+                    pcs_rank = rider.get("pcs_rank", "?")
+
+                    print(f"    #{pcs_rank} {pcs_slug}...", end=" ", flush=True)
+
+                    context = await browser.new_context(
+                        user_agent=(
+                            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                            "AppleWebKit/537.36 (KHTML, like Gecko) "
+                            "Chrome/120.0.0.0 Safari/537.36"
+                        )
+                    )
+                    page = await context.new_page()
+
+                    try:
+                        result = await enrich_single_rider(supabase, page, rider_id, pcs_slug)
+                        results.append(result)
+                        if result["status"] == "ok":
+                            print("OK")
+                        else:
+                            print(f"ERROR: {result.get('error', '?')}")
+                            errors.append(result)
+                    finally:
+                        await context.close()
+
+                if batch_idx + BATCH_SIZE < total:
+                    print(f"\n  Pausing {BATCH_PAUSE_SECONDS}s before next batch...")
+                    await asyncio.sleep(BATCH_PAUSE_SECONDS)
+
+        finally:
+            await browser.close()
+
+    enriched = sum(1 for r in results if r["status"] == "ok")
+    return {
+        "status": "completed",
+        "total": total,
+        "enriched": enriched,
+        "errors": [e.get("error", "") for e in errors],
+    }
+
+
+async def enrich_missing_riders(
+    supabase: Optional[Client] = None,
+    start_rank: int = 1,
+    end_rank: int = 600,
+) -> Dict[str, Any]:
+    """Re-enrich only riders with missing data (photo_url or specialty NULL).
+
+    Same flow as enrich_riders() but filters to riders that need a retry.
+    """
+    from playwright.async_api import async_playwright
+
+    if supabase is None:
+        supabase = get_supabase()
+
+    resp = (
+        supabase.table("riders")
+        .select("id, pcs_slug, pcs_rank, photo_url, specialty")
+        .gte("pcs_rank", start_rank)
+        .lte("pcs_rank", end_rank)
+        .order("pcs_rank")
+        .execute()
+    )
+    all_riders = resp.data or []
+    riders = [
+        r for r in all_riders
+        if not r.get("photo_url") or not r.get("specialty")
+    ]
+    total = len(riders)
+
+    if total == 0:
+        print(f"  No riders with missing data in rank {start_rank}-{end_rank}")
+        return {"status": "no_missing", "total": 0, "enriched": 0, "errors": []}
+
+    print(f"  Found {total} riders with missing data (rank {start_rank}-{end_rank})")
 
     results = []
     errors = []

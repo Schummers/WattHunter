@@ -20,15 +20,15 @@ RATE_LIMIT_MS = int(os.getenv("PCS_RATE_LIMIT_DELAY_MS", "4000"))
 
 SALARY_FLOOR = 5_000    # €/month (no upper cap)
 
-# Pool min rank per level — matches apps/web/lib/levels.ts poolMin
-LEVEL_POOL_MIN = [351, 251, 176, 101, 76, 51, 26, 11, 4, 1]
+# Pool min rank per level — matches apps/web/lib/levels.ts poolMin (8 levels)
+LEVEL_POOL_MIN = [300, 200, 100, 30, 20, 10, 4, 1]
 
 
 def rank_min_for_level(level: int) -> int:
     """Return the min (best) PCS rank accessible at this level.
-    E.g., level 1 → 351 means riders ranked 351-500 are accessible.
+    E.g., level 1 → 300 means riders ranked 300-600 are accessible.
     """
-    idx = max(0, min(level, 10) - 1)
+    idx = max(0, min(level, 8) - 1)
     return LEVEL_POOL_MIN[idx]
 
 
@@ -76,11 +76,11 @@ async def fetch_html(page, url: str, delay: float = 4.0) -> str:
     return html
 
 
-async def sync_top500(supabase: Optional[Client] = None, pages: int = 5) -> dict:
+async def sync_top500(supabase: Optional[Client] = None, pages: int = 6) -> dict:
     """
     Scrape the PCS global individual ranking (top N×100) and upsert riders.
 
-    This replaces sync_all_riders() — the game pool is the top 500 PCS global,
+    This replaces sync_all_riders() — the game pool is the top 600 PCS global,
     not specific ProTeam rosters.
 
     Uses fresh browser context per page to avoid Cloudflare.

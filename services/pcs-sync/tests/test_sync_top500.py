@@ -6,20 +6,18 @@ import pytest
 
 
 def test_rank_min_for_level():
-    """Pool min values matching apps/web/lib/levels.ts poolMin."""
+    """Pool min values matching apps/web/lib/levels.ts poolMin (8 levels)."""
     from sync import rank_min_for_level, rank_max_for_level
 
     # rank_min_for_level is the canonical name
-    assert rank_min_for_level(1) == 351
-    assert rank_min_for_level(2) == 251
-    assert rank_min_for_level(3) == 176
-    assert rank_min_for_level(4) == 101
-    assert rank_min_for_level(5) == 76
-    assert rank_min_for_level(6) == 51
-    assert rank_min_for_level(7) == 26
-    assert rank_min_for_level(8) == 11
-    assert rank_min_for_level(9) == 4
-    assert rank_min_for_level(10) == 1
+    assert rank_min_for_level(1) == 300
+    assert rank_min_for_level(2) == 200
+    assert rank_min_for_level(3) == 100
+    assert rank_min_for_level(4) == 30
+    assert rank_min_for_level(5) == 20
+    assert rank_min_for_level(6) == 10
+    assert rank_min_for_level(7) == 4
+    assert rank_min_for_level(8) == 1
 
     # rank_max_for_level is an alias for backward compat
     assert rank_max_for_level(1) == rank_min_for_level(1)

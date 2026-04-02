@@ -3,9 +3,11 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getLevelByNumber } from "@/lib/levels";
 
 const createLeagueSchema = z.object({
   name: z.string().min(2, "League name must be at least 2 characters.").max(50),
+  starting_level: z.coerce.number().int().min(1).max(8).default(1),
 });
 
 function generateInviteCode(): string {
@@ -23,13 +25,15 @@ export async function createLeague(
 ) {
   const parsed = createLeagueSchema.safeParse({
     name: formData.get("name"),
+    starting_level: formData.get("starting_level"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { name } = parsed.data;
+  const { name, starting_level } = parsed.data;
+  const levelData = getLevelByNumber(starting_level);
 
   const supabase = await createClient();
   const {
@@ -85,6 +89,8 @@ export async function createLeague(
       user_id: user.id,
       league_id: league.id,
       name: displayName,
+      level: starting_level,
+      cumulative_xp: levelData.xp,
     })
     .select("id")
     .single();
@@ -94,7 +100,8 @@ export async function createLeague(
     return { error: "Failed to create team." };
   }
 
-  // Auto-assign Lotto (T1) as default secondary sponsor
+  // Auto-assign default sponsors based on starting level
+  // Always assign Lotto (T1) as secondary sponsor
   const { data: lotto } = await supabase
     .from("sponsors")
     .select("id")
@@ -105,6 +112,42 @@ export async function createLeague(
     await supabase
       .from("team_sponsors")
       .insert({ team_id: team.id, sponsor_id: lotto.id, slot: "secondary" });
+  }
+
+  // Assign the highest unlocked principal sponsor (if any available at this level)
+  const { data: principal } = await supabase
+    .from("sponsors")
+    .select("id")
+    .eq("slot", "principal")
+    .lte("unlock_level", starting_level)
+    .order("tier", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (principal) {
+    await supabase
+      .from("team_sponsors")
+      .insert({ team_id: team.id, sponsor_id: principal.id, slot: "principal" });
+  }
+
+  // Assign the best unlocked secondary sponsor (upgrade from Lotto if available)
+  if (starting_level >= 3) {
+    const { data: bestSecondary } = await supabase
+      .from("sponsors")
+      .select("id")
+      .eq("slot", "secondary")
+      .lte("unlock_level", starting_level)
+      .order("tier", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (bestSecondary && bestSecondary.id !== lotto?.id) {
+      await supabase
+        .from("team_sponsors")
+        .update({ sponsor_id: bestSecondary.id })
+        .eq("team_id", team.id)
+        .eq("slot", "secondary");
+    }
   }
 
   const { error: memberError } = await supabase.from("league_members").insert({

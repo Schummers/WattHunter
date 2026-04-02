@@ -336,8 +336,8 @@ async def update_global_ranking(supabase: Client, browser, *, pages: int = 5) ->
                         }
                     ).eq("id", rider_id).execute()
 
-                    # Also mark as ever_in_top500 if ranked
-                    if pcs_rank and pcs_rank <= 500:
+                    # Also mark as ever_in_top500 if ranked (covers top 600 pool)
+                    if pcs_rank and pcs_rank <= 600:
                         supabase.table("riders").update(
                             {"ever_in_top500": True}
                         ).eq("id", rider_id).execute()
@@ -356,14 +356,14 @@ async def update_global_ranking(supabase: Client, browser, *, pages: int = 5) ->
         if page_idx < pages - 1:
             await asyncio.sleep(11)
 
-    # Mark dropped riders (previously ranked ≤500 but no longer in top 500)
+    # Mark dropped riders (previously ranked ≤600 but no longer in top 600)
     dropped = 0
     if seen_ids:
         try:
             prev_top500_resp = (
                 supabase.table("riders")
                 .select("id")
-                .lte("pcs_rank", 500)
+                .lte("pcs_rank", 600)
                 .execute()
             )
             prev_top500_ids = {r["id"] for r in (prev_top500_resp.data or [])}
@@ -371,12 +371,12 @@ async def update_global_ranking(supabase: Client, browser, *, pages: int = 5) ->
 
             for rid in dropped_ids:
                 supabase.table("riders").update(
-                    {"pcs_rank": 501}
+                    {"pcs_rank": 601}
                 ).eq("id", rid).execute()
                 dropped += 1
 
             if dropped:
-                logger.info("Marked %d riders as dropped from top 500", dropped)
+                logger.info("Marked %d riders as dropped from top 600", dropped)
         except Exception as exc:
             logger.error("Failed to mark dropped riders: %s", exc)
             errors.append(str(exc))

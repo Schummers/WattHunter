@@ -344,7 +344,7 @@ const HELP_SECTIONS: HelpSection[] = [
           ]}
         />
         <Formula>
-          <p>Max active policies: 1 (Level 1-2) | 2 (Level 3-8) | 3 (Level 9+)</p>
+          <p>Max active policies: 1 (Level 1-2) | 2 (Level 3-6) | 3 (Level 7+)</p>
           <p>Bonuses are additive across policies</p>
         </Formula>
         <p>
@@ -360,33 +360,36 @@ const HELP_SECTIONS: HelpSection[] = [
   {
     id: "levels",
     title: "Team Levels & Unlocks",
-    subtitle: "10 levels of progression",
+    subtitle: "8 levels aligned with the racing calendar",
     icon: Layers,
     content: (
       <Prose>
         <Table
-          headers={["Level", "XP required", "Slots", "Policies", "Rider pool", "New unlock"]}
+          headers={["Level", "Phase", "XP", "Slots", "Policies", "Rider pool", "New unlock"]}
           rows={[
-            ["1", "0", "6", "1", "#351–500", "Speciality policy"],
-            ["2", "50", "8", "1", "#251–500", "—"],
-            ["3", "150", "8", "2", "#176–500", "Nationality policy"],
-            ["4", "300", "9", "2", "#101–500", "—"],
-            ["5", "500", "10", "2", "#76–500", "Teams policy"],
-            ["6", "700", "10", "2", "#51–500", "—"],
-            ["7", "1,000", "11", "2", "#26–500", "Age policies"],
-            ["8", "1,400", "12", "2", "#11–500", "—"],
-            ["9", "1,900", "12", "3", "#4–500", "—"],
-            ["10", "2,500", "12", "3", "#1–500", "—"],
+            ["1", "Season Start", "0", "6", "1", "#300–600", "Speciality policy"],
+            ["2", "Classics P1", "25", "7", "1", "#200–600", "—"],
+            ["3", "Classics P2", "150", "8", "2", "#100–600", "Nationality policy"],
+            ["4", "Giro", "350", "9", "2", "#30–600", "Sponsor T3"],
+            ["5", "Pre-Tour", "600", "10", "2", "#20–600", "Teams policy"],
+            ["6", "Tour", "900", "11", "2", "#10–600", "Sponsor T4"],
+            ["7", "Post-Tour", "1,500", "12", "3", "#4–600", "Age policies"],
+            ["8", "Vuelta", "2,000", "12", "3", "#1–600", "Podium unlocked"],
           ]}
         />
         <Formula>
           <p>Higher level = more roster slots + access to better-ranked riders + more policy slots</p>
         </Formula>
         <p>
-          <strong>Rider pool gating:</strong> The total rider pool is the Top 500 of the PCS
+          <strong>Rider pool gating:</strong> The total rider pool is the Top 600 of the PCS
           global ranking (rolling 12 months). At Level 1, you can only recruit riders ranked
-          #351-500. As you level up, higher-ranked (better) riders become available. At Level 10,
-          the entire top 500 is unlocked — including the podium top 3.
+          #300-600. As you level up, higher-ranked (better) riders become available. At Level 8,
+          the entire pool is unlocked — including the podium top 3.
+        </p>
+        <p>
+          <strong>Calendar-aligned progression:</strong> Levels are calibrated so an active
+          player naturally reaches the right level for each racing phase — e.g., Level 4 (top 30
+          riders) for the Giro d&apos;Italia, Level 6 (top 10) for the Tour de France.
         </p>
       </Prose>
     ),
@@ -409,8 +412,8 @@ const HELP_SECTIONS: HelpSection[] = [
           rows={[
             ["Default (Tier 1)", "200,000 → 300,000 EUR", "Level 1 (active from start)"],
             ["Tier 2", "400,000 EUR", "Level 3"],
-            ["Tier 3", "550,000 EUR", "Level 5"],
-            ["Tier 4", "750,000 EUR", "Level 7"],
+            ["Tier 3", "550,000 EUR", "Level 4 (Giro)"],
+            ["Tier 4", "750,000 EUR", "Level 6 (Tour)"],
             ["Tier 5", "1,000,000 EUR", "Level 8"],
           ]}
         />

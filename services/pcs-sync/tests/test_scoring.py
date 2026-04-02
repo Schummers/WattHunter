@@ -185,16 +185,18 @@ def test_bonus_positive_only():
 
 
 def test_compute_level():
-    """compute_level returns correct level for various XP values."""
+    """compute_level returns correct level for various XP values (8 levels)."""
     from scoring import compute_level
 
     assert compute_level(0) == 1
-    assert compute_level(49) == 1
-    assert compute_level(50) == 2
+    assert compute_level(24) == 1
+    assert compute_level(25) == 2
     assert compute_level(149) == 2
     assert compute_level(150) == 3
-    assert compute_level(2500) == 10
-    assert compute_level(99999) == 10
+    assert compute_level(349) == 3
+    assert compute_level(350) == 4
+    assert compute_level(2000) == 8
+    assert compute_level(99999) == 8
 
 
 # ---------------------------------------------------------------------------
@@ -244,11 +246,13 @@ async def test_race_before_contract_is_skipped():
         sb = make_supabase(
             # 1. race_results — race on March 5
             [{"rider_id": RIDER_ID, "race_slug": "race/strade/2026", "pcs_points": 30, "race_date": "2026-03-05"}],
-            # 2. contracts — purchased on March 10 (AFTER the race)
+            # 2. rider_xp_daily pre-fetch (idempotency) — empty on first run
+            [],
+            # 3. contracts — purchased on March 10 (AFTER the race)
             [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
               "purchased_at": "2026-03-10T00:00:00Z", "release_date": None,
               "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
-            # 3. team_policies
+            # 4. team_policies
             [],
         )
 
@@ -270,11 +274,13 @@ async def test_race_after_release_is_skipped():
         sb = make_supabase(
             # 1. race_results — race on March 15
             [{"rider_id": RIDER_ID, "race_slug": "race/tirreno/2026/stage-5", "pcs_points": 20, "race_date": "2026-03-15"}],
-            # 2. contracts — released on March 10 (BEFORE the race)
+            # 2. rider_xp_daily pre-fetch (idempotency) — empty on first run
+            [],
+            # 3. contracts — released on March 10 (BEFORE the race)
             [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
               "purchased_at": "2026-01-01T00:00:00Z", "release_date": "2026-03-10",
               "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
-            # 3. team_policies
+            # 4. team_policies
             [],
         )
 
@@ -295,25 +301,27 @@ async def test_race_on_purchase_day_is_scored():
         sb = make_supabase(
             # 1. race_results — race on March 5
             [{"rider_id": RIDER_ID, "race_slug": "race/msr/2026", "pcs_points": 15, "race_date": "2026-03-05"}],
-            # 2. contracts — purchased later on March 5 (same day, afternoon)
+            # 2. rider_xp_daily pre-fetch (idempotency) — empty on first run
+            [],
+            # 3. contracts — purchased later on March 5 (same day, afternoon)
             [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
               "purchased_at": "2026-03-05T15:00:00Z", "release_date": None,
               "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
-            # 3. team_policies
+            # 4. team_policies
             [],
-            # 4. rider_xp_daily upsert
+            # 5. rider_xp_daily upsert
             [],
-            # 5. teams select
+            # 7. teams select
             {"id": TEAM_ID, "cumulative_xp": 0, "treasury": 500_000, "level": 1, "league_id": "lg-1"},
-            # 6. teams update
+            # 8. teams update
             [],
-            # 7. treasury_log dedup → empty
+            # 9. treasury_log dedup → empty
             [],
-            # 8. treasury_log insert
+            # 10. treasury_log insert
             [],
-            # 9. league teams for snapshot
+            # 11. league teams for snapshot
             [{"id": TEAM_ID, "cumulative_xp": 15}],
-            # 10. team_ranking_daily upsert
+            # 12. team_ranking_daily upsert
             [],
         )
 

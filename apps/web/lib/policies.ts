@@ -40,7 +40,7 @@ export const POLICY_TYPES = [
 export type PolicyType = (typeof POLICY_TYPES)[number];
 
 export function getMaxActivePolicies(level: number): number {
-  return level >= 9 ? 3 : level >= 3 ? 2 : 1;
+  return level >= 7 ? 3 : level >= 3 ? 2 : 1;
 }
 
 export function getPolicyBySlug(slug: string): PolicyType | undefined {

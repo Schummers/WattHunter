@@ -10,7 +10,7 @@ Requires:
 Usage:
   cd services/pcs-sync
 
-  # Pipeline A — sync top 500 PCS riders (no season rankings — Pipeline E handles those)
+  # Pipeline A — sync top 600 PCS riders (no season rankings — Pipeline E handles those)
   python3 run_pipeline.py init-riders
 
   # Pipeline B — after each race/stage finishes (auto-detect or manual)
@@ -180,7 +180,7 @@ async def new_browser_page(p):
 # ---------------------------------------------------------------------------
 
 async def run_init_riders() -> None:
-    """Annual initialization: sync top 500 PCS riders."""
+    """Annual initialization: sync top 600 PCS riders."""
     from sync import get_supabase, sync_top500
 
     supabase = get_supabase()
@@ -188,9 +188,9 @@ async def run_init_riders() -> None:
     print("=== Pipeline A: init-riders ===")
     print()
 
-    # Sync top 500 PCS global ranking (season rankings handled by Pipeline E)
-    print("--- Sync top 500 PCS riders ---")
-    result = await sync_top500(supabase, pages=5)
+    # Sync top 600 PCS global ranking (season rankings handled by Pipeline E)
+    print("--- Sync top 600 PCS riders ---")
+    result = await sync_top500(supabase, pages=6)
     print(json.dumps(result, indent=2))
 
     print()
@@ -355,13 +355,13 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
     if with_ranking:
         print("\n--- Waiting 15s before updating global ranking ---")
         await asyncio.sleep(15)
-        print("--- Updating global PCS ranking (top 500) ---")
-        ranking_result = await update_global_ranking(supabase, browser, pages=5)
+        print("--- Updating global PCS ranking (top 600) ---")
+        ranking_result = await update_global_ranking(supabase, browser, pages=6)
         print(f"  Updated: {ranking_result['updated']} riders (from {ranking_result['total_in_ranking']} ranked)")
         if ranking_result.get("created"):
             print(f"  Created: {ranking_result['created']} new rider(s)")
         if ranking_result.get("dropped"):
-            print(f"  Dropped: {ranking_result['dropped']} rider(s) marked as >500")
+            print(f"  Dropped: {ranking_result['dropped']} rider(s) marked as >600")
 
         # Enrich new riders
         new_riders = ranking_result.get("new_riders", [])
@@ -540,17 +540,23 @@ async def run_monthly_finance_pipeline() -> None:
 # Pipeline E — enrich-riders
 # ---------------------------------------------------------------------------
 
-async def run_enrich_riders(start: int, end: int) -> None:
+async def run_enrich_riders(start: int, end: int, retry_missing: bool = False) -> None:
     """Pipeline E: enrich riders with individual PCS page data."""
     from sync import get_supabase
-    from enrich import enrich_riders
+    from enrich import enrich_riders, enrich_missing_riders
 
     supabase = get_supabase()
 
-    print("=== Pipeline E: enrich-riders ===")
-    print(f"Range: rank {start} to {end}")
-    print()
-    result = await enrich_riders(supabase, start_rank=start, end_rank=end)
+    if retry_missing:
+        print("=== Pipeline E: enrich-riders (retry missing only) ===")
+        print(f"Range: rank {start} to {end}")
+        print()
+        result = await enrich_missing_riders(supabase, start_rank=start, end_rank=end)
+    else:
+        print("=== Pipeline E: enrich-riders ===")
+        print(f"Range: rank {start} to {end}")
+        print()
+        result = await enrich_riders(supabase, start_rank=start, end_rank=end)
     print()
     print(json.dumps(result, indent=2))
     print()
@@ -574,16 +580,16 @@ async def run_pre_auction() -> None:
     print()
 
     # Step 1: Update global PCS ranking
-    print("--- Step 1: Updating global PCS ranking (top 500) ---")
+    print("--- Step 1: Updating global PCS ranking (top 600) ---")
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         try:
-            ranking_result = await update_global_ranking(supabase, browser, pages=5)
+            ranking_result = await update_global_ranking(supabase, browser, pages=6)
             print(f"  Updated: {ranking_result['updated']} riders (from {ranking_result['total_in_ranking']} ranked)")
             if ranking_result.get("created"):
                 print(f"  Created: {ranking_result['created']} new rider(s)")
             if ranking_result.get("dropped"):
-                print(f"  Dropped: {ranking_result['dropped']} rider(s) marked as >500")
+                print(f"  Dropped: {ranking_result['dropped']} rider(s) marked as >600")
         finally:
             await browser.close()
 
@@ -611,7 +617,7 @@ def build_parser() -> argparse.ArgumentParser:
     # init-riders
     subparsers.add_parser(
         "init-riders",
-        help="Pipeline A — sync top 500 PCS riders.",
+        help="Pipeline A — sync top 600 PCS riders.",
     )
 
     # post-race
@@ -669,9 +675,15 @@ def build_parser() -> argparse.ArgumentParser:
     enrich.add_argument(
         "--end",
         type=int,
-        default=500,
+        default=600,
         metavar="RANK",
-        help="End PCS rank (default: 500)",
+        help="End PCS rank (default: 600)",
+    )
+    enrich.add_argument(
+        "--retry-missing",
+        action="store_true",
+        default=False,
+        help="Only re-enrich riders with missing photo_url or specialty",
     )
 
     # pre-auction
@@ -709,7 +721,7 @@ async def main() -> None:
     elif args.command == "monthly-finance":
         await run_monthly_finance_pipeline()
     elif args.command == "enrich-riders":
-        await run_enrich_riders(args.start, args.end)
+        await run_enrich_riders(args.start, args.end, retry_missing=args.retry_missing)
     elif args.command == "pre-auction":
         await run_pre_auction()
     else:

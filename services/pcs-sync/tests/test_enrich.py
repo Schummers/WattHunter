@@ -101,11 +101,11 @@ def test_build_parser_accepts_enrich_riders():
     args = parser.parse_args(["enrich-riders"])
     assert args.command == "enrich-riders"
     assert args.start == 1
-    assert args.end == 500
+    assert args.end == 600
 
-    args2 = parser.parse_args(["enrich-riders", "--start", "401", "--end", "500"])
+    args2 = parser.parse_args(["enrich-riders", "--start", "401", "--end", "600"])
     assert args2.start == 401
-    assert args2.end == 500
+    assert args2.end == 600
 
 
 # --- Race program parsing tests ---

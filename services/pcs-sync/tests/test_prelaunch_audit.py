@@ -68,13 +68,13 @@ def test_bankruptcy_releases_multiple_until_solvent():
 # ---------------------------------------------------------------------------
 
 def test_level_gating_matches_levels_ts():
-    """Pool min values in Python must match TypeScript lib/levels.ts."""
+    """Pool min values in Python must match TypeScript lib/levels.ts (8 levels)."""
     from sync import rank_min_for_level
 
     # These are the poolMin values from apps/web/lib/levels.ts
     expected = {
-        1: 351, 2: 251, 3: 176, 4: 101, 5: 76,
-        6: 51, 7: 26, 8: 11, 9: 4, 10: 1,
+        1: 300, 2: 200, 3: 100, 4: 30, 5: 20,
+        6: 10, 7: 4, 8: 1,
     }
     for level, pool_min in expected.items():
         assert rank_min_for_level(level) == pool_min, (
@@ -83,11 +83,11 @@ def test_level_gating_matches_levels_ts():
 
 
 def test_level_gating_boundary_values():
-    """Clamp: level 0 → level 1 behavior, level 11 → level 10 behavior."""
+    """Clamp: level 0 → level 1 behavior, level 9 → level 8 behavior."""
     from sync import rank_min_for_level
 
     assert rank_min_for_level(0) == rank_min_for_level(1)
-    assert rank_min_for_level(11) == rank_min_for_level(10)
+    assert rank_min_for_level(9) == rank_min_for_level(8)
     assert rank_min_for_level(-1) == rank_min_for_level(1)
 
 

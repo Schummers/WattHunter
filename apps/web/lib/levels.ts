@@ -1,14 +1,12 @@
 export const LEVELS = [
-  { level: 1, xp: 0, slots: 6, pool: "#351-500", poolMin: 351, policy: "Speciality", maxActive: 1, sponsor: "Sponsor T1 · 200k→300k€" },
-  { level: 2, xp: 50, slots: 8, pool: "#251-500", poolMin: 251, policy: null, maxActive: 1, sponsor: null },
-  { level: 3, xp: 150, slots: 8, pool: "#176-500", poolMin: 176, policy: "Nationality", maxActive: 2, sponsor: "Sponsor T2 · 400k€" },
-  { level: 4, xp: 300, slots: 9, pool: "#101-500", poolMin: 101, policy: null, maxActive: 2, sponsor: null },
-  { level: 5, xp: 500, slots: 10, pool: "#76-500", poolMin: 76, policy: "Teams", maxActive: 2, sponsor: "Sponsor T3 · 550k€" },
-  { level: 6, xp: 700, slots: 10, pool: "#51-500", poolMin: 51, policy: null, maxActive: 2, sponsor: null },
-  { level: 7, xp: 1000, slots: 11, pool: "#26-500", poolMin: 26, policy: "Age", maxActive: 2, sponsor: "Sponsor T4 · 750k€" },
-  { level: 8, xp: 1400, slots: 12, pool: "#11-500", poolMin: 11, policy: null, maxActive: 2, sponsor: "Sponsor T5 · 1M€" },
-  { level: 9, xp: 1900, slots: 12, pool: "#4-500", poolMin: 4, policy: null, maxActive: 3, sponsor: null },
-  { level: 10, xp: 2500, slots: 12, pool: "#1-500", poolMin: 1, policy: null, maxActive: 3, sponsor: null },
+  { level: 1, xp: 0, slots: 6, pool: "#300-600", poolMin: 300, policy: "Speciality", maxActive: 1, sponsor: "Sponsor T1 · 200k→300k€" },
+  { level: 2, xp: 25, slots: 7, pool: "#200-600", poolMin: 200, policy: null, maxActive: 1, sponsor: null },
+  { level: 3, xp: 150, slots: 8, pool: "#100-600", poolMin: 100, policy: "Nationality", maxActive: 2, sponsor: "Sponsor T2 · 400k€" },
+  { level: 4, xp: 350, slots: 9, pool: "#30-600", poolMin: 30, policy: null, maxActive: 2, sponsor: "Sponsor T3 · 550k€" },
+  { level: 5, xp: 600, slots: 10, pool: "#20-600", poolMin: 20, policy: "Teams", maxActive: 2, sponsor: null },
+  { level: 6, xp: 900, slots: 11, pool: "#10-600", poolMin: 10, policy: null, maxActive: 2, sponsor: "Sponsor T4 · 750k€" },
+  { level: 7, xp: 1500, slots: 12, pool: "#4-600", poolMin: 4, policy: "Age", maxActive: 3, sponsor: null },
+  { level: 8, xp: 2000, slots: 12, pool: "#1-600", poolMin: 1, policy: null, maxActive: 3, sponsor: "Sponsor T5 · 1M€" },
 ] as const;
 
 export type LevelData = (typeof LEVELS)[number];
@@ -68,6 +66,20 @@ export function getNewUnlocks(level: number): string[] {
   }
 
   return pills;
+}
+
+export function getDefaultStartingLevel(date: Date = new Date()): number {
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  const md = m * 100 + d;
+  if (md < 305) return 1;   // Before Mar 5
+  if (md < 405) return 2;   // Mar 5 – Apr 4
+  if (md < 505) return 3;   // Apr 5 – May 4
+  if (md < 605) return 4;   // May 5 – Jun 4
+  if (md < 704) return 5;   // Jun 5 – Jul 3
+  if (md < 731) return 6;   // Jul 4 – Jul 30
+  if (md < 822) return 7;   // Jul 31 – Aug 21
+  return 8;                  // Aug 22+
 }
 
 export function getUnlockDescriptions(level: number): string[] {
