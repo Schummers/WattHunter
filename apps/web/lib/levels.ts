@@ -1,12 +1,12 @@
 export const LEVELS = [
-  { level: 1, xp: 0, slots: 6, pool: "#300-600", poolMin: 300, policy: "Speciality", maxActive: 1, sponsor: "Sponsor T1 · 200k→300k€" },
-  { level: 2, xp: 25, slots: 7, pool: "#200-600", poolMin: 200, policy: null, maxActive: 1, sponsor: null },
-  { level: 3, xp: 150, slots: 8, pool: "#100-600", poolMin: 100, policy: "Nationality", maxActive: 2, sponsor: "Sponsor T2 · 400k€" },
-  { level: 4, xp: 350, slots: 9, pool: "#30-600", poolMin: 30, policy: null, maxActive: 2, sponsor: "Sponsor T3 · 550k€" },
-  { level: 5, xp: 600, slots: 10, pool: "#20-600", poolMin: 20, policy: "Teams", maxActive: 2, sponsor: null },
-  { level: 6, xp: 900, slots: 11, pool: "#10-600", poolMin: 10, policy: null, maxActive: 2, sponsor: "Sponsor T4 · 750k€" },
-  { level: 7, xp: 1500, slots: 12, pool: "#4-600", poolMin: 4, policy: "Age", maxActive: 3, sponsor: null },
-  { level: 8, xp: 2000, slots: 12, pool: "#1-600", poolMin: 1, policy: null, maxActive: 3, sponsor: "Sponsor T5 · 1M€" },
+  { level: 1, xp: 0, slots: 6, pool: "#300-600", poolMin: 300, policy: "Speciality", maxActive: 1, sponsor: "Lotto · 250K" },
+  { level: 2, xp: 25, slots: 7, pool: "#200-600", poolMin: 200, policy: null, maxActive: 1, sponsor: "Astana · 350K" },
+  { level: 3, xp: 150, slots: 8, pool: "#100-600", poolMin: 100, policy: "Nationality", maxActive: 2, sponsor: "T3 · 450K (×4)" },
+  { level: 4, xp: 350, slots: 9, pool: "#30-600", poolMin: 30, policy: null, maxActive: 2, sponsor: null },
+  { level: 5, xp: 600, slots: 10, pool: "#20-600", poolMin: 20, policy: "Teams", maxActive: 2, sponsor: "T4 · 650K (×4)" },
+  { level: 6, xp: 900, slots: 11, pool: "#10-600", poolMin: 10, policy: null, maxActive: 2, sponsor: null },
+  { level: 7, xp: 1500, slots: 12, pool: "#4-600", poolMin: 4, policy: "Age", maxActive: 3, sponsor: "T5 · 1M (×2)" },
+  { level: 8, xp: 2000, slots: 12, pool: "#1-600", poolMin: 1, policy: null, maxActive: 3, sponsor: "T6 UAE · 1.25M" },
 ] as const;
 
 export type LevelData = (typeof LEVELS)[number];

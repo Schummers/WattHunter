@@ -1,110 +1,73 @@
-import { countryCodeToFlag } from "@/lib/format";
-
-/** Nationality aliases — sponsors accepting multiple nationalities */
-export const NATIONALITY_ALIASES: Record<string, string[]> = {
-  DK: ["DK", "NO"],
-  BE: ["BE", "NL"],
-};
-
-/** Resolve nationality to all accepted codes */
-export function expandNationality(code: string): string[] {
-  return NATIONALITY_ALIASES[code] ?? [code];
-}
-
-/** Human-readable result condition labels */
-export const RESULT_LABELS: Record<string, string> = {
-  top10_classic: "Top 10 classic",
-  top10_stage_race: "Top 10 stage race",
-  top10_gt_monument: "Top 10 GT/monument",
-  top5_gt_monument: "Top 5 GT/monument",
-};
-
-/** Human-readable specialty labels */
-export const SPECIALTY_LABELS: Record<string, string> = {
-  GC: "GC",
-  OneDay: "One-day",
-  Sprint: "Sprint",
-  TT: "TT",
-};
-
-/** Format specialty array as "One-day or Sprint" */
-export function formatSpecialties(specialties: string[]): string {
-  return specialties.map((s) => SPECIALTY_LABELS[s] ?? s).join(" or ");
-}
-
-/** Format nationality condition: "🇫🇷 2×" or "🇧🇪/🇳🇱 2×" */
-export function formatNationalityCondition(code: string, count: number): string {
-  const aliases = NATIONALITY_ALIASES[code];
-  if (aliases && aliases.length > 1) {
-    return `${aliases.map(countryCodeToFlag).join("/")} ${count}×`;
-  }
-  return `${countryCodeToFlag(code)} ${count}×`;
-}
+/**
+ * Sponsor types and helpers — v2 (simplified model).
+ *
+ * 1 sponsor per team, level-gated only, no eligibility conditions.
+ * Design spec: docs/superpowers/specs/2026-04-02-sponsors-rework-design.md
+ */
 
 export interface SponsorRow {
   id: string;
   name: string;
-  abbreviation: string;
+  slug: string;
   tier: number;
-  slot: "secondary" | "principal";
-  monthly_budget: number;
-  first_phase_budget: number | null;
   unlock_level: number;
+  monthly_budget: number;
+  orientation: "gc" | "one_day" | "neutral";
   nationality: string | null;
-  nationality_count: number;
-  specialty: string[];
-  result_condition: string | null;
+  bonus_gc: number;
+  bonus_one_day: number;
+  bonus_stage: number;
+  gc_threshold: number;
+  one_day_threshold: number;
+  stage_threshold: number;
+  has_explicit_prestige: boolean;
+  bonus_monument: number | null;
+  bonus_grand_tour: number | null;
+  monument_threshold: number | null;
+  grand_tour_threshold: number | null;
   sort_order: number;
 }
 
-/** Per-sponsor eligibility result */
-export interface SponsorEligibility {
-  sponsorId: string;
-  eligible: boolean;
-  conditions: {
-    nationality: boolean | null;
-    specialty: boolean | null;
-    result: boolean | null;
-  };
+export interface TeamSponsor {
+  id: string;
+  team_id: string;
+  sponsor_id: string;
+  activated_at: string;
+  sponsors?: SponsorRow;
 }
 
-/** Result condition → race_results query mapping */
-export const RESULT_CONDITION_FILTERS: Record<string, { race_class: string[]; max_position: number }> = {
-  top10_classic: { race_class: ["monument", "classic"], max_position: 10 },
-  top10_stage_race: { race_class: ["stage_race", "grand_tour"], max_position: 10 },
-  top10_gt_monument: { race_class: ["grand_tour", "monument"], max_position: 10 },
-  top5_gt_monument: { race_class: ["grand_tour", "monument"], max_position: 5 },
-};
+/**
+ * Expand compound nationality codes for display.
+ * 'BE/NL' → ['BE', 'NL'], 'FR' → ['FR'], null → []
+ */
+export function expandNationality(code: string | null): string[] {
+  if (!code) return [];
+  return code.split("/").map((c) => c.trim());
+}
 
-/** Race slug → race_class mapping for pipeline sync */
-export const RACE_CLASS_MAP: Record<string, string> = {
-  "milano-sanremo": "monument",
-  "ronde-van-vlaanderen": "monument",
-  "paris-roubaix": "monument",
-  "liege-bastogne-liege": "monument",
-  "il-lombardia": "monument",
-  "giro-d-italia": "grand_tour",
-  "tour-de-france": "grand_tour",
-  "vuelta-a-espana": "grand_tour",
-  "strade-bianche": "classic",
-  "e3-harelbeke": "classic",
-  "gent-wevelgem": "classic",
-  "amstel-gold-race": "classic",
-  "la-fleche-wallonne": "classic",
-  "san-sebastian": "classic",
-  "bretagne-classic": "classic",
-  "cyclassics-hamburg": "classic",
-  "gp-quebec": "classic",
-  "gp-montreal": "classic",
-  "omloop-het-nieuwsblad": "classic",
-  "dwars-door-vlaanderen": "classic",
-  "paris-nice": "stage_race",
-  "tirreno-adriatico": "stage_race",
-  "volta-a-catalunya": "stage_race",
-  "itzulia": "stage_race",
-  "tour-de-romandie": "stage_race",
-  "dauphine": "stage_race",
-  "tour-de-suisse": "stage_race",
-  "tour-de-pologne": "stage_race",
-  "renewi-tour": "stage_race",
-};
+/**
+ * Format sponsor tier label for display.
+ */
+export function tierLabel(tier: number): string {
+  return `Tier ${tier}`;
+}
+
+/**
+ * Format monthly budget as compact string: "250K", "1M", "1.25M"
+ */
+export function formatBudget(monthly: number): string {
+  if (monthly >= 1_000_000) {
+    const m = monthly / 1_000_000;
+    return m === Math.floor(m) ? `${m}M` : `${m}M`;
+  }
+  return `${Math.round(monthly / 1000)}K`;
+}
+
+/**
+ * Threshold label for display: 1 → "Victory", 3 → "Podium", N → "Top N"
+ */
+export function thresholdLabel(threshold: number): string {
+  if (threshold === 1) return "Victory";
+  if (threshold === 3) return "Podium";
+  return `Top ${threshold}`;
+}
