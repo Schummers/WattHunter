@@ -45,8 +45,8 @@ python3 run_pipeline.py post-race --race "race/omloop-het-nieuwsblad/2026"
 # Pipeline C — Startlists : programme prévisionnel
 python3 run_pipeline.py startlists --race "race/paris-nice/2026"
 
-# Pipeline D — Finances mensuelles (1x/mois, le 1er) : salaires + sponsor + bonus coureurs
-python3 run_pipeline.py monthly-finance
+# Pipeline D — Finance par phase (1x/phase) : sponsor income + salaires + faillite
+python3 run_pipeline.py phase-finance
 
 # Pipeline E — Enrichissement coureurs (1x/an) : photo, bio, spécialité, teams, résultats
 python3 run_pipeline.py enrich-riders
@@ -55,7 +55,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - Pipeline A : ~5 min (top 500 riders + 3 rankings)
 - Pipeline B : ~30s (1 résultat + 1 ranking + scoring)
 - Pipeline C : ~15s (1 page startlist)
-- Pipeline D : ~5s (calcul mensuel toutes ligues actives)
+- Pipeline D : ~5s (finance par phase, toutes ligues actives)
 - Pipeline E : ~1h (100 coureurs) / ~5h (500 coureurs, batch de 5 + 1min pause)
 - Calendrier WT : `services/pcs-sync/wt_calendar_2026.json`
 
@@ -69,19 +69,22 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - NEVER bypass le RLS. L'app web utilise toujours l'anon key.
 - NEVER exposer la service_role key au browser/client.
 - NEVER muter treasury_log directement — utiliser les fonctions helper.
-- NEVER hardcoder CONVERSION_RATE — toujours lire depuis l'env.
+- NEVER modifier les montants de bonus sponsor directement — ils sont définis dans la table `sponsors`.
 - NEVER autoriser une enchère si treasury < total des enchères actives.
 - NEVER skip la validation Zod sur les inputs d'API routes.
 - NEVER libérer un coureur hors de la fenêtre d'enchères — le release prend effet au début de la phase suivante (sauf auto-release faillite).
 
 ## Constantes du jeu (calibrer avant le lancement alpha)
 - Trésorerie départ : 200 000 €
-- Sponsor par défaut (Lotto) : 200 000 € (1ere phase) → 300 000 € (phases suivantes)
+- 1 sponsor par équipe, gating par niveau uniquement (pas de conditions d'éligibilité)
+- Sponsor par défaut (Lotto T1) : 250 000 € / phase (fixe)
+- 6 tiers sponsors : T1(Nv.1) T2(Nv.2) T3(Nv.3) T4(Nv.5) T5(Nv.7) T6(Nv.8)
+- Bonus sponsor = crédités sur résultats de course (voir design spec)
+- Multiplicateurs : ×2 Monument/Grand Tour, ×1.5 nationalité (T1-T4)
+- Finance par phase : income sponsor + salaires déductés 1x par phase WT
 - Enchère = salaire mensuel récurrent (pas un achat unique)
 - Salaire mensuel = pts_PCS × 2 000 / 12 (pas de plafond)
-- Bonus coureur par course = max(0, pts_course × 1 500 - salaire_mensuel)
 - Salaire plancher (enchère min) : 5 000 €/mois
-- Taux de conversion bonus : 1 500 €/point PCS
 - Durée d'enchère : chaque round dure de sa date jusqu'à la date du round suivant (dernier round = fin de journée)
 - 8 niveaux alignés sur les 8 phases WT (Season Start → Vuelta)
 - Slots coureurs : 6 (Nv.1) → 7 → 8 → 9 → 10 → 11 → 12 (Nv.7-8)
@@ -90,11 +93,10 @@ python3 run_pipeline.py enrich-riders --start 401 --end 500
 - Pool = Top 600 PCS global (12 mois glissants), gating par rang selon niveau
 - Pool min : Nv.1=#300 | Nv.2=#200 | Nv.3=#100 | Nv.4=#30 | Nv.5=#20 | Nv.6=#10 | Nv.7=#4 | Nv.8=#1
 - XP : Nv.2=25 | Nv.3=150 | Nv.4=350 | Nv.5=600 | Nv.6=900 | Nv.7=1500 | Nv.8=2000
-- Sponsors : T1(Nv.1) T2(Nv.3) T3(Nv.4/Giro) T4(Nv.6/Tour) T5(Nv.8/Vuelta)
 
 
 ## Blockers ouverts (résoudre avant alpha)
-- [ ] Simulation Excel : calibrer taux de conversion (€/point PCS)
+- [x] Simulation Excel : calibrer taux de conversion → remplacé par bonus sponsor fixes (voir design spec)
 - [x] Valider la tolérance au rate limit de procyclingstats → résolu : 15s pause entre équipes, fresh context par team
 - [ ] Valider l'exactitude des données PCS pour le calcul des salaires
 - [ ] Définir la stratégie de notifications in-app (pas d'emails)

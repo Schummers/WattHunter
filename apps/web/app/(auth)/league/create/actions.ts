@@ -100,53 +100,20 @@ export async function createLeague(
     return { error: "Failed to create team." };
   }
 
-  // Auto-assign default sponsors based on starting level
-  // Always assign Lotto (T1) as secondary sponsor
-  const { data: lotto } = await supabase
-    .from("sponsors")
-    .select("id")
-    .eq("name", "Lotto")
-    .single();
-
-  if (lotto) {
-    await supabase
-      .from("team_sponsors")
-      .insert({ team_id: team.id, sponsor_id: lotto.id, slot: "secondary" });
-  }
-
-  // Assign the highest unlocked principal sponsor (if any available at this level)
-  const { data: principal } = await supabase
-    .from("sponsors")
-    .select("id")
-    .eq("slot", "principal")
-    .lte("unlock_level", starting_level)
-    .order("tier", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (principal) {
-    await supabase
-      .from("team_sponsors")
-      .insert({ team_id: team.id, sponsor_id: principal.id, slot: "principal" });
-  }
-
-  // Assign the best unlocked secondary sponsor (upgrade from Lotto if available)
-  if (starting_level >= 3) {
-    const { data: bestSecondary } = await supabase
+  // Auto-assign default sponsor based on starting level (single sponsor per team)
+  // Level 1 → Lotto (T1), Level 2 → Astana (T2), Level 3+ → no auto-assign (player picks)
+  const defaultSlug = starting_level <= 1 ? "lotto" : starting_level === 2 ? "astana" : null;
+  if (defaultSlug) {
+    const { data: defaultSponsor } = await supabase
       .from("sponsors")
       .select("id")
-      .eq("slot", "secondary")
-      .lte("unlock_level", starting_level)
-      .order("tier", { ascending: false })
-      .limit(1)
+      .eq("slug", defaultSlug)
       .single();
 
-    if (bestSecondary && bestSecondary.id !== lotto?.id) {
+    if (defaultSponsor) {
       await supabase
         .from("team_sponsors")
-        .update({ sponsor_id: bestSecondary.id })
-        .eq("team_id", team.id)
-        .eq("slot", "secondary");
+        .insert({ team_id: team.id, sponsor_id: defaultSponsor.id, activated_at: new Date().toISOString() });
     }
   }
 

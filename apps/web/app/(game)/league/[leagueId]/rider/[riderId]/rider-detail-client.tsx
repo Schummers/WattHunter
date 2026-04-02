@@ -311,7 +311,7 @@ export function RiderDetailClient({
               size="icon-lg"
               className="size-11"
               onClick={() => {
-                if (bidAmount !== null) setBidAmount(Math.max(minSalary, bidAmount - 1000));
+                if (bidAmount !== null) setBidAmount(Math.max(minSalary, bidAmount - 100));
               }}
               disabled={!activeAuctionId || bidAmount === null}
             >
@@ -349,7 +349,7 @@ export function RiderDetailClient({
               className="size-11"
               onClick={() => {
                 if (bidAmount === null) setBidAmount(minSalary);
-                else setBidAmount(bidAmount + 1000);
+                else setBidAmount(bidAmount + 100);
               }}
               disabled={!activeAuctionId}
             >

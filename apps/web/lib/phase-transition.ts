@@ -7,12 +7,11 @@ import { createClient } from "@/lib/supabase/server";
  * Called at the start of a new phase to finalize:
  * - Rider releases (status: notice → released)
  * - Policy changes (pending → active)
- * - Sponsor swaps (pending_change → active)
  */
 export async function applyPhaseTransition(phaseId: number) {
   const supabase = await createClient();
 
-  const results = { riders: 0, policies: 0, sponsors: 0, errors: [] as string[] };
+  const results = { riders: 0, policies: 0, errors: [] as string[] };
 
   // 1. Release riders whose notice period ends at this phase
   const { data: noticedContracts, error: riderErr } = await supabase
@@ -60,43 +59,8 @@ export async function applyPhaseTransition(phaseId: number) {
     }
   }
 
-  // 3. Apply pending sponsor changes
-  const { data: pendingSponsors, error: sponsorErr } = await supabase
-    .from("team_sponsors")
-    .select("id, pending_sponsor_id")
-    .eq("status", "pending_change")
-    .lte("effective_phase_id", phaseId);
-
-  if (sponsorErr) {
-    results.errors.push(`Sponsors fetch: ${sponsorErr.message}`);
-  } else if (pendingSponsors && pendingSponsors.length > 0) {
-    for (const s of pendingSponsors) {
-      if (s.pending_sponsor_id) {
-        // Swap to new sponsor
-        const { error } = await supabase
-          .from("team_sponsors")
-          .update({
-            sponsor_id: s.pending_sponsor_id,
-            status: "active",
-            pending_sponsor_id: null,
-            effective_phase_id: null,
-            payments_count: 0,
-            activated_at: new Date().toISOString(),
-          })
-          .eq("id", s.id);
-        if (error) results.errors.push(`Sponsor ${s.id}: ${error.message}`);
-        else results.sponsors++;
-      } else {
-        // Removal — delete the row
-        const { error } = await supabase
-          .from("team_sponsors")
-          .delete()
-          .eq("id", s.id);
-        if (error) results.errors.push(`Sponsor delete ${s.id}: ${error.message}`);
-        else results.sponsors++;
-      }
-    }
-  }
+  // Note: sponsor changes are now immediate (no pending state).
+  // Sponsor is changed via saveSponsor action → upsert on team_id.
 
   return results;
 }

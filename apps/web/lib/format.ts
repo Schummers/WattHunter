@@ -37,9 +37,10 @@ export function formatShortDate(date: Date | string): string {
 export const SALARY_COEFFICIENT = 2000;
 export const SALARY_FLOOR = 5000;
 
-/** Calculate minimum monthly salary for a rider based on PCS points. */
+/** Calculate minimum monthly salary for a rider based on PCS points (floored to nearest 100). */
 export function calcMinSalary(pcsPoints: number): number {
-  return Math.max(SALARY_FLOOR, Math.round((pcsPoints * SALARY_COEFFICIENT) / 12));
+  const raw = (pcsPoints * SALARY_COEFFICIENT) / 12;
+  return Math.max(SALARY_FLOOR, Math.floor(raw / 100) * 100);
 }
 
 /** Smart countdown: "in X days" or "in X hours" depending on remaining time. */

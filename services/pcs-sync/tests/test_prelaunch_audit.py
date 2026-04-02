@@ -15,7 +15,7 @@ from helpers import make_supabase, make_chain
 
 def test_bankruptcy_stabilizes_treasury():
     """Release best scorers until treasury is non-negative."""
-    from monthly_finance import get_release_order
+    from phase_finance import get_release_order
 
     contracts = [
         {"rider_id": "a", "locked_salary": 20_000, "total_xp": 100},
@@ -41,7 +41,7 @@ def test_bankruptcy_stabilizes_treasury():
 
 def test_bankruptcy_releases_multiple_until_solvent():
     """Need to release multiple riders to reach solvency."""
-    from monthly_finance import get_release_order
+    from phase_finance import get_release_order
 
     contracts = [
         {"rider_id": "a", "locked_salary": 5_000, "total_xp": 10},
@@ -97,7 +97,7 @@ def test_level_gating_boundary_values():
 
 def test_salary_calculation_edge_cases():
     """Salary with zero/negative/missing locked_salary."""
-    from monthly_finance import calculate_monthly_salaries
+    from phase_finance import calculate_phase_salaries as calculate_monthly_salaries
 
     # Missing locked_salary key defaults to 0
     assert calculate_monthly_salaries([{"other": "field"}]) == 0
@@ -108,7 +108,7 @@ def test_salary_calculation_edge_cases():
 
 def test_release_order_with_zero_xp():
     """All riders with 0 XP — order doesn't matter but must not crash."""
-    from monthly_finance import get_release_order
+    from phase_finance import get_release_order
 
     contracts = [
         {"rider_id": "a", "locked_salary": 10_000, "total_xp": 0},
@@ -120,7 +120,7 @@ def test_release_order_with_zero_xp():
 
 def test_release_order_with_missing_xp():
     """Missing total_xp field defaults to 0."""
-    from monthly_finance import get_release_order
+    from phase_finance import get_release_order
 
     contracts = [
         {"rider_id": "a", "locked_salary": 10_000},

@@ -3,7 +3,6 @@
 All Supabase I/O is replaced by in-memory mocks (make_supabase / make_chain
 from conftest).  No real DB or network calls are made.
 """
-import os
 import importlib
 
 import pytest
@@ -59,37 +58,31 @@ async def test_no_active_contracts():
 
 async def test_nominal_processing():
     """One team with one rider scoring → teams_processed=1, no errors."""
-    with pytest.MonkeyPatch.context() as mp:
-        mp.setenv("CONVERSION_RATE_EUR_PER_PCS", "500")
-        import scoring
-        importlib.reload(scoring)  # pick up the patched env var
+    import scoring
+    importlib.reload(scoring)
 
-        sb = make_supabase(
-            # 1. race_results
-            [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 20, "race_date": "2026-03-15"}],
-            # 2. contracts (with riders join for policy matching)
-            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
-              "purchased_at": "2026-01-01T00:00:00Z", "release_date": None,
-              "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
-            # 3. team_policies (none active)
-            [],
-            # 4. rider_xp_daily upsert (result unused)
-            [],
-            # 5. teams select — current cumulative_xp + treasury + level + league_id
-            {"id": TEAM_ID, "cumulative_xp": 0, "treasury": 500_000, "level": 1, "league_id": "lg-1"},
-            # 6. teams update (result unused)
-            [],
-            # 7. treasury_log dedup select → empty → will insert
-            [],
-            # 8. treasury_log insert (result unused)
-            [],
-            # 9. league teams for snapshot
-            [{"id": TEAM_ID, "cumulative_xp": 20}],
-            # 10. team_ranking_daily upsert
-            [],
-        )
+    sb = make_supabase(
+        # 1. race_results
+        [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 20, "race_date": "2026-03-15"}],
+        # 2. contracts (with riders join for policy matching)
+        [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+          "purchased_at": "2026-01-01T00:00:00Z", "release_date": None,
+          "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
+        # 3. team_policies (none active)
+        [],
+        # 4. rider_xp_daily upsert (result unused)
+        [],
+        # 5. teams select — current cumulative_xp + level + league_id
+        {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": "lg-1"},
+        # 6. teams update (result unused)
+        [],
+        # 7. league teams for snapshot
+        [{"id": TEAM_ID, "cumulative_xp": 20}],
+        # 8. team_ranking_daily upsert
+        [],
+    )
 
-        result = await scoring.calculate_daily_scores(sb)
+    result = await scoring.calculate_daily_scores(sb)
 
     assert result["status"] == "completed"
     assert result["teams_processed"] == 1
@@ -98,38 +91,32 @@ async def test_nominal_processing():
 
 async def test_nominal_processing_with_policy_bonus():
     """Team with a matching policy bonus → teams_processed=1, no errors."""
-    with pytest.MonkeyPatch.context() as mp:
-        mp.setenv("CONVERSION_RATE_EUR_PER_PCS", "500")
-        import scoring
-        importlib.reload(scoring)
+    import scoring
+    importlib.reload(scoring)
 
-        sb = make_supabase(
-            # 1. race_results
-            [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 10, "race_date": "2026-03-15"}],
-            # 2. contracts (rider is a GC specialist)
-            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
-              "purchased_at": "2026-01-01T00:00:00Z", "release_date": None,
-              "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
-            # 3. team_policies — specialist policy matching GC
-            [{"team_id": TEAM_ID, "config": {"specialty": "GC"},
-              "policies": {"slug": "specialist", "xp_bonus": 0.1}}],
-            # 4. rider_xp_daily upsert
-            [],
-            # 5. teams select
-            {"id": TEAM_ID, "cumulative_xp": 0, "treasury": 500_000, "level": 1, "league_id": "lg-1"},
-            # 6. teams update
-            [],
-            # 7. treasury_log dedup → empty
-            [],
-            # 8. treasury_log insert
-            [],
-            # 9. league teams for snapshot
-            [{"id": TEAM_ID, "cumulative_xp": 11}],
-            # 10. team_ranking_daily upsert
-            [],
-        )
+    sb = make_supabase(
+        # 1. race_results
+        [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 10, "race_date": "2026-03-15"}],
+        # 2. contracts (rider is a GC specialist)
+        [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+          "purchased_at": "2026-01-01T00:00:00Z", "release_date": None,
+          "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
+        # 3. team_policies — specialist policy matching GC
+        [{"team_id": TEAM_ID, "config": {"specialty": "GC"},
+          "policies": {"slug": "specialist", "xp_bonus": 0.1}}],
+        # 4. rider_xp_daily upsert
+        [],
+        # 5. teams select
+        {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": "lg-1"},
+        # 6. teams update
+        [],
+        # 7. league teams for snapshot
+        [{"id": TEAM_ID, "cumulative_xp": 11}],
+        # 8. team_ranking_daily upsert
+        [],
+    )
 
-        result = await scoring.calculate_daily_scores(sb)
+    result = await scoring.calculate_daily_scores(sb)
 
     assert result["status"] == "completed"
     assert result["teams_processed"] == 1
@@ -154,29 +141,6 @@ def test_xp_formula_with_bonus():
     raw_points = 10
     bonus = 0.1
     assert int(raw_points * (1 + bonus)) == 11
-
-
-def test_revenue_formula():
-    """Revenue = raw_points * conversion_rate."""
-    assert 20 * 500 == 10_000
-    assert 100 * 300 == 30_000
-
-
-def test_bonus_positive_only():
-    """Bonus = max(0, pts * 500 - locked_salary). Never negative."""
-    from scoring import calculate_rider_bonus
-
-    # Star: 340 pts, salary 150K → bonus = max(0, 170K - 150K) = 20K
-    assert calculate_rider_bonus(340, 150000, 500) == 20000
-
-    # Star bad month: 128 pts, salary 150K → bonus = 0
-    assert calculate_rider_bonus(128, 150000, 500) == 0
-
-    # Pépite: 30 pts, salary 5K → bonus = max(0, 15K - 5K) = 10K
-    assert calculate_rider_bonus(30, 5000, 500) == 10000
-
-    # Zero pts → bonus = 0
-    assert calculate_rider_bonus(0, 5000, 500) == 0
 
 
 # ---------------------------------------------------------------------------
@@ -238,25 +202,23 @@ def test_rider_matches_young_blood():
 
 async def test_race_before_contract_is_skipped():
     """Race before purchased_at → no XP, teams_processed=0."""
-    with pytest.MonkeyPatch.context() as mp:
-        mp.setenv("CONVERSION_RATE_EUR_PER_PCS", "500")
-        import scoring
-        importlib.reload(scoring)
+    import scoring
+    importlib.reload(scoring)
 
-        sb = make_supabase(
-            # 1. race_results — race on March 5
-            [{"rider_id": RIDER_ID, "race_slug": "race/strade/2026", "pcs_points": 30, "race_date": "2026-03-05"}],
-            # 2. rider_xp_daily pre-fetch (idempotency) — empty on first run
-            [],
-            # 3. contracts — purchased on March 10 (AFTER the race)
-            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
-              "purchased_at": "2026-03-10T00:00:00Z", "release_date": None,
-              "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
-            # 4. team_policies
-            [],
-        )
+    sb = make_supabase(
+        # 1. race_results — race on March 5
+        [{"rider_id": RIDER_ID, "race_slug": "race/strade/2026", "pcs_points": 30, "race_date": "2026-03-05"}],
+        # 2. rider_xp_daily pre-fetch (idempotency) — empty on first run
+        [],
+        # 3. contracts — purchased on March 10 (AFTER the race)
+        [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+          "purchased_at": "2026-03-10T00:00:00Z", "release_date": None,
+          "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
+        # 4. team_policies
+        [],
+    )
 
-        result = await scoring.calculate_daily_scores(sb, race_slugs=["race/strade/2026"])
+    result = await scoring.calculate_daily_scores(sb, race_slugs=["race/strade/2026"])
 
     assert result["status"] == "completed"
     # No XP should be created — race was before contract
@@ -266,25 +228,23 @@ async def test_race_before_contract_is_skipped():
 
 async def test_race_after_release_is_skipped():
     """Race after release_date → no XP, teams_processed=0."""
-    with pytest.MonkeyPatch.context() as mp:
-        mp.setenv("CONVERSION_RATE_EUR_PER_PCS", "500")
-        import scoring
-        importlib.reload(scoring)
+    import scoring
+    importlib.reload(scoring)
 
-        sb = make_supabase(
-            # 1. race_results — race on March 15
-            [{"rider_id": RIDER_ID, "race_slug": "race/tirreno/2026/stage-5", "pcs_points": 20, "race_date": "2026-03-15"}],
-            # 2. rider_xp_daily pre-fetch (idempotency) — empty on first run
-            [],
-            # 3. contracts — released on March 10 (BEFORE the race)
-            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
-              "purchased_at": "2026-01-01T00:00:00Z", "release_date": "2026-03-10",
-              "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
-            # 4. team_policies
-            [],
-        )
+    sb = make_supabase(
+        # 1. race_results — race on March 15
+        [{"rider_id": RIDER_ID, "race_slug": "race/tirreno/2026/stage-5", "pcs_points": 20, "race_date": "2026-03-15"}],
+        # 2. rider_xp_daily pre-fetch (idempotency) — empty on first run
+        [],
+        # 3. contracts — released on March 10 (BEFORE the race)
+        [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+          "purchased_at": "2026-01-01T00:00:00Z", "release_date": "2026-03-10",
+          "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
+        # 4. team_policies
+        [],
+    )
 
-        result = await scoring.calculate_daily_scores(sb, race_slugs=["race/tirreno/2026/stage-5"])
+    result = await scoring.calculate_daily_scores(sb, race_slugs=["race/tirreno/2026/stage-5"])
 
     assert result["status"] == "completed"
     assert result["teams_processed"] == 0
@@ -293,39 +253,33 @@ async def test_race_after_release_is_skipped():
 
 async def test_race_on_purchase_day_is_scored():
     """Race on same day as purchased_at → IS scored (boundary: >=)."""
-    with pytest.MonkeyPatch.context() as mp:
-        mp.setenv("CONVERSION_RATE_EUR_PER_PCS", "500")
-        import scoring
-        importlib.reload(scoring)
+    import scoring
+    importlib.reload(scoring)
 
-        sb = make_supabase(
-            # 1. race_results — race on March 5
-            [{"rider_id": RIDER_ID, "race_slug": "race/msr/2026", "pcs_points": 15, "race_date": "2026-03-05"}],
-            # 2. rider_xp_daily pre-fetch (idempotency) — empty on first run
-            [],
-            # 3. contracts — purchased later on March 5 (same day, afternoon)
-            [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
-              "purchased_at": "2026-03-05T15:00:00Z", "release_date": None,
-              "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
-            # 4. team_policies
-            [],
-            # 5. rider_xp_daily upsert
-            [],
-            # 7. teams select
-            {"id": TEAM_ID, "cumulative_xp": 0, "treasury": 500_000, "level": 1, "league_id": "lg-1"},
-            # 8. teams update
-            [],
-            # 9. treasury_log dedup → empty
-            [],
-            # 10. treasury_log insert
-            [],
-            # 11. league teams for snapshot
-            [{"id": TEAM_ID, "cumulative_xp": 15}],
-            # 12. team_ranking_daily upsert
-            [],
-        )
+    sb = make_supabase(
+        # 1. race_results — race on March 5
+        [{"rider_id": RIDER_ID, "race_slug": "race/msr/2026", "pcs_points": 15, "race_date": "2026-03-05"}],
+        # 2. rider_xp_daily pre-fetch (idempotency) — empty on first run
+        [],
+        # 3. contracts — purchased later on March 5 (same day, afternoon)
+        [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+          "purchased_at": "2026-03-05T15:00:00Z", "release_date": None,
+          "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
+        # 4. team_policies
+        [],
+        # 5. rider_xp_daily upsert
+        [],
+        # 6. teams select
+        {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": "lg-1"},
+        # 7. teams update
+        [],
+        # 8. league teams for snapshot
+        [{"id": TEAM_ID, "cumulative_xp": 15}],
+        # 9. team_ranking_daily upsert
+        [],
+    )
 
-        result = await scoring.calculate_daily_scores(sb, race_slugs=["race/msr/2026"])
+    result = await scoring.calculate_daily_scores(sb, race_slugs=["race/msr/2026"])
 
     assert result["status"] == "completed"
     assert result["teams_processed"] == 1

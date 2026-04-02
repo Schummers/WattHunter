@@ -2,7 +2,7 @@
 
 > **Document vivant** — Mis a jour a chaque changement de regle.
 > Source de verite pour les mecaniques de jeu implementees et prevues.
-> Derniere mise a jour : 2026-03-16
+> Derniere mise a jour : 2026-04-02
 
 ## Vue d'ensemble
 
@@ -47,7 +47,7 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 
 ## 3. Coureurs
 
-**Univers total :** Top 500 coureurs du ranking PCS global individuel (12 mois glissants)
+**Univers total :** Top 600 coureurs du ranking PCS global individuel (12 mois glissants)
 
 **Donnees par coureur :**
 - Nom, nationalite, equipe reelle UCI, type d'equipe
@@ -58,16 +58,14 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 
 | Niveau | Rang PCS debloque |
 |--------|-------------------|
-| 1 | #351-500 |
-| 2 | #251-500 |
-| 3 | #176-500 |
-| 4 | #101-500 |
-| 5 | #76-500 |
-| 6 | #51-500 |
-| 7 | #26-500 |
-| 8 | #11-500 |
-| 9 | #4-500 |
-| 10 | #1-500 |
+| 1 | #300-600 |
+| 2 | #200-600 |
+| 3 | #100-600 |
+| 4 | #30-600 |
+| 5 | #20-600 |
+| 6 | #10-600 |
+| 7 | #4-600 |
+| 8 | #1-600 |
 
 ---
 
@@ -96,7 +94,7 @@ Plancher : 5 000 €/mois | Pas de plafond
 ```
 
 **Exemples :**
-- 114 pts PCS (#500) → 228k€/an → **19 000 €/mois**
+- 114 pts PCS (#600) → 228k€/an → **19 000 €/mois**
 - 400 pts PCS (#100) → 800k€/an → **66 667 €/mois**
 - 2 216 pts PCS (#5, Vingegaard) → 4.4M€/an → **369 333 €/mois**
 - 4 552 pts PCS (#1, Pogacar) → 9.1M€/an → **758 666 €/mois**
@@ -115,7 +113,7 @@ Le bonus est calcule **individuellement par course** (pas cumule sur le mois). I
 |-----------|--------|
 | Taux de conversion bonus | 1 500 €/point PCS |
 
-**Dynamique "pepite" :** Les stars (salaires eleves) ne generent quasi jamais de bonus. Les coureurs peu chers (#400-500) generent du bonus des qu'ils performent en course. C'est la mecanique strategique centrale du jeu.
+**Dynamique "pepite" :** Les stars (salaires eleves) ne generent quasi jamais de bonus. Les coureurs peu chers (#400-600) generent du bonus des qu'ils performent en course. C'est la mecanique strategique centrale du jeu.
 
 **Exemples :**
 - Rider #450 (salaire 21k), score 20 pts en course → 20 × 1500 = 30k → bonus = 9 000 €
@@ -193,24 +191,22 @@ XP equipe = Σ XP de tous les coureurs du roster
 
 ### Progression par niveaux
 
-| Niveau | XP cumule | Slots | Politiques actives | Rang PCS debloque | Policy debloquee | Sponsor debloque |
-|--------|-----------|-------|--------------------|-------------------|------------------|------------------|
-| 1 | 0 | 6 | 1 | #351-500 | Speciality | Secondary T1 (200k→300k) |
-| 2 | 50 | 8 | 1 | #251-500 | — | — |
-| 3 | 150 | 8 | 2 | #176-500 | Nationality | Secondary T2 (400k) |
-| 4 | 300 | 9 | 2 | #101-500 | — | — |
-| 5 | 500 | 10 | 2 | #76-500 | Teams | Principal T3 (550k) |
-| 6 | 700 | 10 | 2 | #51-500 | — | — |
-| 7 | 1 000 | 11 | 2 | #26-500 | Age | Principal T4 (750k) |
-| 8 | 1 400 | 12 | 2 | #11-500 | — | Principal T5 (1M) |
-| 9 | 1 900 | 12 | 3 | #4-500 | — | — |
-| 10 | 2 500 | 12 | 3 | #1-500 | — | — |
+| Niveau | Phase WT | XP cumule | Slots | Politiques actives | Rang PCS debloque | Policy debloquee | Sponsor debloque |
+|--------|----------|-----------|-------|--------------------|-------------------|------------------|------------------|
+| 1 | Season Start | 0 | 6 | 1 | #300-600 | Speciality | Secondary T1 (200k→300k) |
+| 2 | Classics | 25 | 7 | 1 | #200-600 | — | — |
+| 3 | Ardennes | 150 | 8 | 2 | #100-600 | Nationality | Secondary T2 (400k) |
+| 4 | Giro | 350 | 9 | 2 | #30-600 | — | Principal T3 (550k) |
+| 5 | Dauphine | 600 | 10 | 2 | #20-600 | Teams | — |
+| 6 | Tour | 900 | 11 | 2 | #10-600 | — | Principal T4 (750k) |
+| 7 | Olympics | 1 500 | 12 | 3 | #4-600 | Age | — |
+| 8 | Vuelta | 2 000 | 12 | 3 | #1-600 | — | Principal T5 (1M) |
 
 ---
 
 ## 8. Politiques
 
-4 types, +5% XP chacun. Max actives : 1 (Nv.1-2) → 2 (Nv.3-8) → 3 (Nv.9-10).
+4 types, +5% XP chacun. Max actives : 1 (Nv.1-2) → 2 (Nv.3-6) → 3 (Nv.7-8).
 Types debloques par niveau : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7).
 
 | Politique | Bonus | Configuration |
@@ -258,8 +254,8 @@ Le boost s'applique individuellement : chaque rider matche reçoit +5% sur ses p
 |------|------|--------|--------------|
 | Secondary | T1 (Lotto) | 1 | 200 000 → 300 000 € |
 | Secondary | T2 | 3 | 400 000 € |
-| Principal | T3 | 5 | 550 000 € |
-| Principal | T4 | 7 | 750 000 € |
+| Principal | T3 | 4 | 550 000 € |
+| Principal | T4 | 6 | 750 000 € |
 | Principal | T5 | 8 | 1 000 000 € |
 
 ---
@@ -278,10 +274,10 @@ Le boost s'applique individuellement : chaque rider matche reçoit +5% sur ses p
 | Faillite : libere en premier | Meilleur scoreur (beta) | Non |
 | Duree d'enchere | 72 heures | Non |
 | Increment d'enchere | 100 € | Non |
-| Slots max | 6 (Niv 1) → 12 (Niv 8) | Non |
-| Politiques max | 1 (Nv.1-2) → 2 (Nv.3-8) → 3 (Nv.9-10) | Non |
-| Pool coureurs | Top 500 PCS global (12 mois glissants) | Non |
-| XP Niveau 5 | 500 | Non |
-| XP Niveau 10 | 2 500 | Non |
+| Slots max | 6 (Nv.1) → 12 (Nv.7-8) | Non |
+| Politiques max | 1 (Nv.1-2) → 2 (Nv.3-6) → 3 (Nv.7-8) | Non |
+| Pool coureurs | Top 600 PCS global (12 mois glissants) | Non |
+| XP Niveau 5 | 600 | Non |
+| XP Niveau 8 (max) | 2 000 | Non |
 | Contrat sponsor | 2 mois (post-beta) | Non |
 | Joueurs max par ligue | 20 | Non |

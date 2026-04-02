@@ -54,10 +54,10 @@ def get_supabase() -> Client:
 
 
 def calculate_monthly_salary(pcs_points_1yr: int) -> int:
-    """Salary = pcs_points × 2000 / 12. No upper cap."""
+    """Salary = pcs_points × 2000 / 12, floored to nearest 100. No upper cap."""
     annual = pcs_points_1yr * 2_000
     monthly = annual / 12
-    return max(SALARY_FLOOR, int(monthly))
+    return max(SALARY_FLOOR, int(monthly // 100 * 100))
 
 
 CLOUDFLARE_MARKERS = ["Just a moment", "Checking your browser", "cf-browser-verification"]
@@ -153,7 +153,7 @@ async def sync_top500(supabase: Optional[Client] = None, pages: int = 6) -> dict
                             "pcs_points_1yr": pcs_points,
                             "pcs_rank": pcs_rank,
                             "monthly_salary": salary,
-                            "ever_in_top500": True,
+                            "ever_in_pool": True,
                             "last_synced_at": datetime.utcnow().isoformat(),
                         }
 

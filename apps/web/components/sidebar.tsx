@@ -93,7 +93,7 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
           disabled={!hasMultiple}
           className="flex items-center gap-1 text-[length:var(--type-caption)] text-[var(--text-low)] hover:text-[var(--text-mid)] transition-colors"
         >
-          <span>{leagueName}</span>
+          <span className="truncate">{leagueName}</span>
           {hasMultiple && (
             <ChevronDown
               size={10}
@@ -117,11 +117,11 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-[length:var(--type-body)] transition-colors hover:bg-[var(--bg-subtle)]"
               >
                 <span
-                  className={
+                  className={`truncate ${
                     league.id === leagueId
                       ? "font-medium text-[var(--accent-default)]"
                       : "text-[var(--text-high)]"
-                  }
+                  }`}
                 >
                   {league.name}
                 </span>

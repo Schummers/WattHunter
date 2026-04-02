@@ -98,7 +98,7 @@ export function LobbyView({
       {/* Header */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-3">
-          <h2 className="text-[length:var(--type-page-title)] font-semibold text-[var(--text-high)]">
+          <h2 className="text-[length:var(--type-page-title)] font-semibold text-[var(--text-high)] truncate">
             {league.name}
           </h2>
           <Badge variant="highlighted">Pending</Badge>
@@ -170,7 +170,7 @@ export function LobbyView({
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-[length:var(--type-body)] text-[var(--text-high)]">{name}</span>
+                <span className="text-[length:var(--type-body)] text-[var(--text-high)] truncate">{name}</span>
                 {member.user_id === league.commissioner_id && (
                   <Badge variant="default" className="ml-auto">
                     Race Director

@@ -93,17 +93,17 @@ export async function joinLeague(
     return { error: "Failed to create team." };
   }
 
-  // Auto-assign Lotto (T1) as default secondary sponsor
+  // Auto-assign Lotto (T1) as default sponsor (single sponsor per team)
   const { data: lotto } = await supabase
     .from("sponsors")
     .select("id")
-    .eq("name", "Lotto")
+    .eq("slug", "lotto")
     .single();
 
   if (lotto) {
     await supabase
       .from("team_sponsors")
-      .insert({ team_id: team.id, sponsor_id: lotto.id, slot: "secondary" });
+      .insert({ team_id: team.id, sponsor_id: lotto.id, activated_at: new Date().toISOString() });
   }
 
   const { error: joinError } = await supabase.from("league_members").insert({

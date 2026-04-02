@@ -93,29 +93,8 @@ export async function savePolicies(
     return { error: "Cannot change policies during the last phase of the season." };
   }
 
-  // Sponsor eligibility guard: block if deactivating/changing specialist would break a sponsor
-  const specialistPolicy = policies.find((p) => p.slug === "specialist");
-  if (specialistPolicy) {
-    const { data: teamSponsors } = await supabase
-      .from("team_sponsors")
-      .select("sponsor_id, sponsors!sponsor_id(name, specialty)")
-      .eq("team_id", teamId)
-      .eq("status", "active");
-
-    for (const ts of teamSponsors ?? []) {
-      const sponsor = ts.sponsors as unknown as { name: string; specialty: string[] } | null;
-      if (!sponsor || !sponsor.specialty || sponsor.specialty.length === 0) continue;
-
-      // Sponsor requires a specialty — check if the new policy still satisfies it
-      if (!specialistPolicy.isActive) {
-        return { error: `Cannot deactivate specialty — your sponsor ${sponsor.name} requires it.` };
-      }
-      const newSpecialty = specialistPolicy.config?.specialty ?? null;
-      if (newSpecialty && !sponsor.specialty.some((s) => s.toLowerCase() === newSpecialty.toLowerCase())) {
-        return { error: `Cannot change specialty to ${newSpecialty} — your sponsor ${sponsor.name} requires ${sponsor.specialty.join(" or ")}.` };
-      }
-    }
-  }
+  // Note: sponsors and policies are fully decoupled in the new model.
+  // No sponsor eligibility guard needed — sponsors are level-gated only.
 
   // Upsert each policy
   for (const policy of policies) {

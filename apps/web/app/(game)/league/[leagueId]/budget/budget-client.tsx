@@ -6,33 +6,14 @@ import { useRouter } from "next/navigation";
 import { PhaseNavigator } from "@/components/phase-navigator";
 import { SegmentedControl } from "@/components/segmented-control";
 import { TransactionRow } from "@/components/transaction-row";
-import { Tag } from "@/components/pill";
 import { formatEuro } from "@/lib/format";
-import {
-  formatNationalityCondition,
-  formatSpecialties,
-  RESULT_LABELS,
-} from "@/lib/sponsors";
+import { formatBudget } from "@/lib/sponsors";
 
 interface SponsorInfo {
   id: string;
   name: string;
-  abbreviation: string;
   tier: number;
-  slot: string;
   monthly_budget: number;
-  first_phase_budget: number | null;
-  nationality: string | null;
-  nationality_count: number;
-  specialty: string[];
-  result_condition: string | null;
-}
-
-interface TeamSponsorEntry {
-  id: string;
-  slot: "secondary" | "principal";
-  paymentsCount: number;
-  sponsor: SponsorInfo;
 }
 
 interface Transaction {
@@ -50,17 +31,18 @@ interface BudgetClientProps {
   income: number;
   outgoing: number;
   transactions: Transaction[];
-  teamSponsors: TeamSponsorEntry[];
   phaseIndex: number;
+  currentSponsor: SponsorInfo | null;
+  phaseSalaries: number;
 }
 
 const FILTER_SEGMENTS = ["All", "Bonuses", "Salaries", "Sponsors"];
 
 function filterTransactions(transactions: Transaction[], filterIndex: number): Transaction[] {
   if (filterIndex === 0) return transactions;
-  if (filterIndex === 1) return transactions.filter((t) => t.type === "rider_revenue" || t.type === "monthly_bonus");
-  if (filterIndex === 2) return transactions.filter((t) => t.type === "monthly_salary" || t.type === "auction_purchase");
-  if (filterIndex === 3) return transactions.filter((t) => t.type === "sponsor_payment");
+  if (filterIndex === 1) return transactions.filter((t) => ["rider_revenue", "monthly_bonus", "sponsor_bonus"].includes(t.type));
+  if (filterIndex === 2) return transactions.filter((t) => ["monthly_salary", "phase_salary", "auction_purchase"].includes(t.type));
+  if (filterIndex === 3) return transactions.filter((t) => ["sponsor_payment", "phase_sponsor_base"].includes(t.type));
   return transactions;
 }
 
@@ -73,11 +55,11 @@ function formatCompact(amount: number): string {
 export function BudgetClient({
   leagueId,
   treasury,
-  level,
   income,
   outgoing,
   transactions,
-  teamSponsors,
+  currentSponsor,
+  phaseSalaries,
   phaseIndex,
 }: BudgetClientProps) {
   const router = useRouter();
@@ -88,9 +70,8 @@ export function BudgetClient({
     [transactions, filterIndex],
   );
 
-  const secondary = teamSponsors.find((ts) => ts.slot === "secondary");
-  const principal = teamSponsors.find((ts) => ts.slot === "principal");
-  const hasPrincipalSlot = level >= 5;
+  const phaseIncome = currentSponsor?.monthly_budget ?? 0;
+  const netPerPhase = phaseIncome - phaseSalaries;
 
   function handlePhaseChange(newIndex: number) {
     router.replace(`?phase=${newIndex}`, { scroll: false });
@@ -118,6 +99,38 @@ export function BudgetClient({
             <span className="text-[var(--text-low)]">
               Outgoing{" "}
               <span className="font-mono font-semibold text-[var(--text-high)]">-{formatCompact(outgoing)}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Phase Financial Summary */}
+      <div className="mx-4 mt-3 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4">
+        <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+          This Phase
+        </span>
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">Sponsor income</span>
+            <span className="font-mono text-[length:var(--type-body)] font-semibold text-[var(--text-high)] tabular-nums">
+              +{formatCompact(phaseIncome)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">Salaries</span>
+            <span className="font-mono text-[length:var(--type-body)] font-semibold text-[var(--text-high)] tabular-nums">
+              -{formatCompact(phaseSalaries)}
+            </span>
+          </div>
+          <div className="mt-1 border-t border-[var(--border-subtle)] pt-2 flex items-center justify-between">
+            <span className="text-[length:var(--type-body)] font-semibold text-[var(--text-high)]">Net</span>
+            <span
+              className={
+                "font-mono text-[length:var(--type-body)] font-bold tabular-nums " +
+                (netPerPhase >= 0 ? "text-[var(--success)]" : "text-[var(--danger)]")
+              }
+            >
+              {netPerPhase >= 0 ? "+" : ""}{formatCompact(netPerPhase)}
             </span>
           </div>
         </div>
@@ -164,11 +177,11 @@ export function BudgetClient({
         </div>
       </div>
 
-      {/* Sponsors Section */}
+      {/* Sponsor Section */}
       <div className="mt-6">
         <div className="flex items-center justify-between px-4 mb-2">
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-            Sponsors
+            Sponsor
           </span>
           <Link
             href={`/league/${leagueId}/budget/marketplace`}
@@ -178,113 +191,40 @@ export function BudgetClient({
           </Link>
         </div>
 
-        <div className="space-y-3 px-4">
-          {/* Secondary sponsor */}
-          {secondary ? (
-            <SponsorCard
-              sponsor={secondary.sponsor}
-              paymentsCount={secondary.paymentsCount}
-              slotLabel="Secondary"
-              leagueId={leagueId}
-            />
+        <div className="px-4">
+          {currentSponsor ? (
+            <Link
+              href={`/league/${leagueId}/budget/marketplace`}
+              className="block rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 transition-colors hover:bg-[var(--bg-surface-hover)]"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+                    {currentSponsor.name}
+                  </div>
+                  <div className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+                    Tier {currentSponsor.tier}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] tabular-nums">
+                    {formatBudget(currentSponsor.monthly_budget)}
+                  </div>
+                  <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">/ phase</div>
+                </div>
+              </div>
+            </Link>
           ) : (
-            <EmptySponsorSlot label="Secondary" leagueId={leagueId} />
-          )}
-
-          {/* Principal sponsor — only show if level >= 5 */}
-          {hasPrincipalSlot && (
-            principal ? (
-              <SponsorCard
-                sponsor={principal.sponsor}
-                paymentsCount={principal.paymentsCount}
-                slotLabel="Main"
-                leagueId={leagueId}
-              />
-            ) : (
-              <EmptySponsorSlot label="Main" leagueId={leagueId} />
-            )
+            <Link href={`/league/${leagueId}/budget/marketplace`}>
+              <div className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] px-4 py-5">
+                <span className="text-[length:var(--type-caption)] font-medium text-[var(--accent-default)]">
+                  Select a sponsor &rarr;
+                </span>
+              </div>
+            </Link>
           )}
         </div>
       </div>
     </div>
-  );
-}
-
-function SponsorCard({
-  sponsor,
-  paymentsCount,
-  slotLabel,
-  leagueId,
-}: {
-  sponsor: SponsorInfo;
-  paymentsCount: number;
-  slotLabel: string;
-  leagueId: string;
-}) {
-  const isEscalating = sponsor.first_phase_budget != null;
-  const isFirstPhase = isEscalating && paymentsCount === 0;
-  const currentBudget = isFirstPhase ? sponsor.first_phase_budget! : sponsor.monthly_budget;
-
-  return (
-    <Link
-      href={`/league/${leagueId}/budget/marketplace`}
-      className="block rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 transition-colors hover:bg-[var(--bg-surface-hover)]"
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-            {sponsor.name}
-          </div>
-          <div className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-            {slotLabel} · T{sponsor.tier}
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] tabular-nums">
-            {isEscalating ? (
-              <>
-                {formatCompact(sponsor.first_phase_budget!)}
-                <span className="mx-1 text-[var(--text-low)]">→</span>
-                {formatCompact(sponsor.monthly_budget)}
-              </>
-            ) : (
-              formatCompact(currentBudget)
-            )}
-          </div>
-          <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">/ month</div>
-        </div>
-      </div>
-
-      {/* Condition tags */}
-      {(sponsor.nationality || sponsor.specialty.length > 0 || sponsor.result_condition) && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {sponsor.nationality && (
-            <Tag variant="default">
-              {formatNationalityCondition(sponsor.nationality, sponsor.nationality_count)}
-            </Tag>
-          )}
-          {sponsor.specialty.length > 0 && (
-            <Tag variant="default">{formatSpecialties(sponsor.specialty)}</Tag>
-          )}
-          {sponsor.result_condition && (
-            <Tag variant="default">
-              {RESULT_LABELS[sponsor.result_condition] ?? sponsor.result_condition}
-            </Tag>
-          )}
-        </div>
-      )}
-    </Link>
-  );
-}
-
-function EmptySponsorSlot({ label, leagueId }: { label: string; leagueId: string }) {
-  return (
-    <Link href={`/league/${leagueId}/budget/marketplace`}>
-      <div className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] px-4 py-5">
-        <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-ghost)]">
-          Choose a {label.toLowerCase()} sponsor
-        </span>
-      </div>
-    </Link>
   );
 }
