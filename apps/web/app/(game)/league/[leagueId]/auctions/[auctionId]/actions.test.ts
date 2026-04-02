@@ -256,7 +256,29 @@ describe("placeBid — budget check", () => {
       .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, phase_confirmed_id: 4 }))          // teams
       .mockReturnValueOnce(makeChain({ monthly_salary: 100 }))                     // riders
       .mockReturnValueOnce(makeChain(null))                                         // existingBid (maybeSingle → null)
+      .mockReturnValueOnce(makeChain([]))                                           // existing contracts
       .mockReturnValueOnce(makeChain([{ id: "other-bid", amount: 800 }]));         // activeBids
+
+    const result = await placeBid({
+      auctionId: UUID_1,
+      riderId: UUID_2,
+      amount: 300,
+      round: 1,
+    });
+
+    expect(result).toEqual({ error: "Insufficient budget" });
+  });
+
+  it("returns error when current salaries + bids + new bid exceed treasury", async () => {
+    // treasury = 1_000, salaries = 500, active bids = 300, new bid = 300 -> 1_100 > 1_000
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
+    mockFrom
+      .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))
+      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, phase_confirmed_id: 4 }))
+      .mockReturnValueOnce(makeChain({ monthly_salary: 100 }))
+      .mockReturnValueOnce(makeChain(null))
+      .mockReturnValueOnce(makeChain([{ locked_salary: 500 }])) // current salaries
+      .mockReturnValueOnce(makeChain([{ id: "other-bid", amount: 300 }])); // active bids
 
     const result = await placeBid({
       auctionId: UUID_1,
@@ -276,6 +298,7 @@ describe("placeBid — budget check", () => {
       .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 8, phase_confirmed_id: 4 }))   // teams
       .mockReturnValueOnce(makeChain({ monthly_salary: 100, pcs_rank: 5, ever_in_pool: true })) // riders
       .mockReturnValueOnce(makeChain(null))                               // existingBid
+      .mockReturnValueOnce(makeChain([]))                                 // existing contracts
       .mockReturnValueOnce(makeChain([]))                                 // activeBids (empty)
       .mockReturnValueOnce(makeChain(null, null, 0))                     // contracts count (slot check)
       .mockReturnValueOnce(makeChain(null, null));                        // insert success
@@ -297,13 +320,13 @@ describe("placeBid — budget check", () => {
 
 describe("cancelBid", () => {
   it("rejects invalid UUID", async () => {
-    const result = await cancelBid("not-a-uuid");
-    expect(result).toEqual({ error: "Invalid bid ID" });
+    const result = await cancelBid("not-a-uuid", UUID_2);
+    expect(result).toEqual({ error: "Invalid data" });
   });
 
   it("rejects unauthenticated user", async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: null } });
-    const result = await cancelBid(UUID_1);
+    const result = await cancelBid(UUID_1, UUID_2);
     expect(result).toEqual({ error: "Not authenticated" });
   });
 
@@ -314,7 +337,7 @@ describe("cancelBid", () => {
       .mockReturnValueOnce(makeChain({ status: "open", closes_at: null })) // auction check
       .mockReturnValueOnce(makeChain(null, null)); // update
 
-    const result = await cancelBid(UUID_1);
+    const result = await cancelBid(UUID_1, UUID_2);
     expect(result).toEqual({ success: true });
   });
 
@@ -323,7 +346,7 @@ describe("cancelBid", () => {
     mockFrom
       .mockReturnValueOnce(makeChain({ id: UUID_1, team_id: "team-1", auction_id: UUID_2, status: "active", teams: { user_id: "other-user" } }));
 
-    const result = await cancelBid(UUID_1);
+    const result = await cancelBid(UUID_1, UUID_2);
     expect(result).toEqual({ error: "Not authorized" });
   });
 
@@ -332,7 +355,7 @@ describe("cancelBid", () => {
     mockFrom
       .mockReturnValueOnce(makeChain({ id: UUID_1, team_id: "team-1", auction_id: UUID_2, status: "won", teams: { user_id: "user-1" } }));
 
-    const result = await cancelBid(UUID_1);
+    const result = await cancelBid(UUID_1, UUID_2);
     expect(result).toEqual({ error: "Bid is not active" });
   });
 
@@ -342,7 +365,7 @@ describe("cancelBid", () => {
       .mockReturnValueOnce(makeChain({ id: UUID_1, team_id: "team-1", auction_id: UUID_2, status: "active", teams: { user_id: "user-1" } }))
       .mockReturnValueOnce(makeChain({ status: "closed", closes_at: null }));
 
-    const result = await cancelBid(UUID_1);
+    const result = await cancelBid(UUID_1, UUID_2);
     expect(result).toEqual({ error: "Auction is no longer open" });
   });
 });

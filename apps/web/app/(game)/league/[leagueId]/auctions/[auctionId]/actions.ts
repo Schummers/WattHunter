@@ -83,8 +83,21 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
     .eq("status", "active")
     .maybeSingle();
 
-  // Budget check: sum of OTHER active bids + this new amount <= treasury
+  // Budget check: sum of existing contract salaries + OTHER active bids + this new amount <= treasury
   // NEVER authorize a bid if treasury < total active bids (CLAUDE.md rule)
+
+  // Fetch existing contract salaries
+  const { data: existingContracts } = await supabase
+    .from("contracts")
+    .select("locked_salary")
+    .eq("team_id", team.id)
+    .in("status", ["active", "notice"]);
+
+  const currentSalaries = (existingContracts ?? []).reduce(
+    (s, c) => s + (c.locked_salary || 0),
+    0
+  );
+
   const { data: activeBids } = await supabase
     .from("auction_bids")
     .select("id, amount")
@@ -97,7 +110,7 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
     .filter((b) => b.id !== existingBid?.id)
     .reduce((s, b) => s + b.amount, 0);
 
-  if (otherBidsTotal + parsed.data.amount > team.treasury) {
+  if (currentSalaries + otherBidsTotal + parsed.data.amount > team.treasury) {
     return { error: "Insufficient budget" };
   }
 
@@ -151,10 +164,15 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
   return { success: true };
 }
 
-export async function cancelBid(bidId: string) {
+const CancelBidSchema = z.object({
+  bidId: z.string().uuid(),
+  auctionId: z.string().uuid(),
+});
+
+export async function cancelBid(bidId: string, auctionId: string) {
   // Validate UUID
-  const parsed = z.string().uuid().safeParse(bidId);
-  if (!parsed.success) return { error: "Invalid bid ID" };
+  const parsed = CancelBidSchema.safeParse({ bidId, auctionId });
+  if (!parsed.success) return { error: "Invalid data" };
 
   const supabase = await createClient();
   const {
@@ -166,10 +184,12 @@ export async function cancelBid(bidId: string) {
   const { data: bid } = await supabase
     .from("auction_bids")
     .select("id, team_id, auction_id, status, teams!inner(user_id)")
-    .eq("id", parsed.data)
+    .eq("id", parsed.data.bidId)
     .single();
 
   if (!bid) return { error: "Bid not found" };
+  if (bid.auction_id !== parsed.data.auctionId) return { error: "Bid does not belong to this auction" };
+
   const bidTeam = Array.isArray(bid.teams) ? bid.teams[0] : bid.teams;
   if (!bidTeam || bidTeam.user_id !== user.id) return { error: "Not authorized" };
   if (bid.status !== "active") return { error: "Bid is not active" };
@@ -191,7 +211,7 @@ export async function cancelBid(bidId: string) {
   const { error } = await supabase
     .from("auction_bids")
     .update({ status: "cancelled" })
-    .eq("id", parsed.data);
+    .eq("id", parsed.data.bidId);
 
   if (error) return { error: error.message };
 

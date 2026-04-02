@@ -92,7 +92,7 @@ export function AuctionClient({
                     variant="ghost"
                     size="sm"
                     className="text-[var(--status-danger)]"
-                    onClick={() => cancelBid(bid.id)}
+                    onClick={() => cancelBid(bid.id, auctionId)}
                   >
                     Cancel
                   </Button>
