@@ -10,13 +10,11 @@ const SaveSponsorSchema = z.object({
 });
 
 /**
- * Save sponsor selection — one sponsor per team, immediate effect (next day).
+ * Save sponsor selection.
  *
- * Validates:
- *   1. Team belongs to current user
- *   2. Sponsor unlock_level ≤ team.level
- *
- * Upserts team_sponsors row (unique on team_id).
+ * Two modes:
+ *   - First sponsor (no existing team_sponsors row): immediate upsert + first payment
+ *   - Change sponsor (has existing): sets teams.pending_sponsor_id, effective at next payday
  */
 export async function saveSponsor(input: { teamId: string; sponsorId: string }) {
   const parsed = SaveSponsorSchema.safeParse(input);
@@ -35,7 +33,7 @@ export async function saveSponsor(input: { teamId: string; sponsorId: string }) 
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id, level, league_id")
+    .select("id, level, league_id, treasury")
     .eq("id", teamId)
     .eq("user_id", user.id)
     .single();
@@ -45,7 +43,7 @@ export async function saveSponsor(input: { teamId: string; sponsorId: string }) 
   // Verify sponsor exists and is unlocked
   const { data: sponsor } = await supabase
     .from("sponsors")
-    .select("id, name, unlock_level")
+    .select("id, name, unlock_level, monthly_budget")
     .eq("id", sponsorId)
     .single();
 
@@ -54,18 +52,50 @@ export async function saveSponsor(input: { teamId: string; sponsorId: string }) 
     return { success: false as const, error: `Requires level ${sponsor.unlock_level}` };
   }
 
-  // Upsert team_sponsors (one per team — conflict on team_id unique)
-  const { error } = await supabase.from("team_sponsors").upsert(
-    {
+  // Check if team already has a sponsor
+  const { data: existingSponsor } = await supabase
+    .from("team_sponsors")
+    .select("id, sponsor_id")
+    .eq("team_id", teamId)
+    .maybeSingle();
+
+  if (!existingSponsor) {
+    // --- First sponsor selection (onboarding) ---
+    // Immediate upsert + first payment (this IS the first payday)
+    await supabase.from("team_sponsors").insert({
       team_id: teamId,
       sponsor_id: sponsorId,
       activated_at: new Date().toISOString(),
-    },
-    { onConflict: "team_id" }
-  );
+    });
 
-  if (error) return { success: false as const, error: error.message };
+    // First sponsor payment
+    const newTreasury = team.treasury + sponsor.monthly_budget;
+    await supabase
+      .from("teams")
+      .update({ treasury: newTreasury })
+      .eq("id", teamId);
+
+    await supabase.from("treasury_log").insert({
+      team_id: teamId,
+      type: "sponsor_payment",
+      amount: sponsor.monthly_budget,
+      description: `First sponsor payment — ${sponsor.name}`,
+    });
+
+    revalidatePath(`/league/${team.league_id}`);
+    return { success: true as const, sponsorName: sponsor.name, immediate: true };
+  }
+
+  // --- Sponsor change (pending, effective next payday) ---
+  if (existingSponsor.sponsor_id === sponsorId) {
+    return { success: false as const, error: "Already your active sponsor" };
+  }
+
+  await supabase
+    .from("teams")
+    .update({ pending_sponsor_id: sponsorId })
+    .eq("id", teamId);
 
   revalidatePath(`/league/${team.league_id}`);
-  return { success: true as const, sponsorName: sponsor.name };
+  return { success: true as const, sponsorName: sponsor.name, pending: true };
 }
