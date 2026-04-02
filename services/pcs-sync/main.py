@@ -63,10 +63,10 @@ async def job_sync_riders(
     x_api_secret: Optional[str] = Header(default=None),
 ):
     """
-    Top 500 sync: fetches PCS global ranking pages via Playwright, upserts riders.
+    Top 600 sync: fetches PCS global ranking pages via Playwright, upserts riders.
     Race results are now handled by sync_race.py (separate pipeline).
 
-    Runtime: ~2 min (5 ranking pages fetched, 15s pause between pages).
+    Runtime: ~2 min (6 ranking pages fetched, 15s pause between pages).
     """
     _check_auth(x_api_secret)
 
@@ -81,13 +81,25 @@ async def job_daily_scoring(
     x_api_secret: Optional[str] = Header(default=None),
 ):
     """
-    Calculate daily XP and treasury revenue for all teams with contracted riders
-    who earned PCS points today.
+    Calculate daily XP for all teams with contracted riders who earned PCS points today.
+    Note: treasury is no longer updated here — treasury changes happen via phase-finance.
 
     CONVERSION_RATE is read from env (CONVERSION_RATE_EUR_PER_PCS) — never hardcoded.
     """
     _check_auth(x_api_secret)
     result = await calculate_daily_scores(_supabase)
+    return JSONResponse(content=result)
+
+
+@app.post("/jobs/phase-finance")
+async def job_phase_finance(
+    request: Request,
+    x_api_secret: Optional[str] = Header(default=None),
+):
+    """Phase finance: +sponsor base income, -salaries, bankruptcy check. Run once per WT phase."""
+    from phase_finance import run_phase_finance
+    _check_auth(x_api_secret)
+    result = await run_phase_finance(_supabase)
     return JSONResponse(content=result)
 
 

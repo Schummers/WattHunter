@@ -21,13 +21,13 @@ Usage:
   # Pipeline C — before auctions/races open
   python3 run_pipeline.py startlists --race "race/tour-de-france/2026"
 
-  # Pipeline D — monthly finance (sponsor + salaries + bankruptcy)
-  python3 run_pipeline.py monthly-finance
+  # Pipeline D — phase finance (sponsor base income + salaries + bankruptcy, once per WT phase)
+  python3 run_pipeline.py phase-finance
 
   # Pipeline E — enrich riders with individual PCS page data
   python3 run_pipeline.py enrich-riders
 
-  # Pre-auction — update global ranking + monthly finance
+  # Pre-auction — update global ranking + phase finance
   python3 run_pipeline.py pre-auction
 """
 from __future__ import annotations
@@ -461,6 +461,11 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
     scoring_result = await calculate_daily_scores(supabase, race_slugs=all_imported_slugs or None)
     print(json.dumps(scoring_result, indent=2))
 
+    # Sponsor bonuses for race results
+    from sponsor_bonus import process_race_bonuses
+    bonus_result = await process_race_bonuses(supabase, all_imported_slugs)
+    print(f"  Sponsor bonuses: {bonus_result.get('bonuses_created', 0)} bonuses credited")
+
     # Treasury validation
     from validation import validate_treasury
     validation = await validate_treasury(supabase)
@@ -518,22 +523,29 @@ async def run_startlists(race_slug: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Pipeline D — monthly-finance
+# Pipeline D — phase-finance (replaces monthly-finance)
 # ---------------------------------------------------------------------------
 
-async def run_monthly_finance_pipeline() -> None:
-    """Monthly finance: sponsor payment + salary deduction + bankruptcy check."""
+async def run_phase_finance_pipeline() -> None:
+    """Phase finance: sponsor base income + salary deduction + bankruptcy check. Run once per WT phase."""
     from sync import get_supabase
-    from monthly_finance import run_monthly_finance
+    from phase_finance import run_phase_finance
 
     supabase = get_supabase()
 
-    print("=== Pipeline D: monthly-finance ===")
+    print("=== Pipeline D: phase-finance ===")
     print()
-    result = await run_monthly_finance(supabase)
+    result = await run_phase_finance(supabase)
     print(json.dumps(result, indent=2))
     print()
-    print("Done — monthly-finance complete.")
+    print("Done — phase-finance complete.")
+
+
+async def run_monthly_finance_pipeline() -> None:
+    """Deprecated alias for phase-finance. Use 'phase-finance' instead."""
+    print("WARNING: 'monthly-finance' is deprecated. Use 'phase-finance' instead.")
+    print()
+    await run_phase_finance_pipeline()
 
 
 # ---------------------------------------------------------------------------
@@ -568,11 +580,11 @@ async def run_enrich_riders(start: int, end: int, retry_missing: bool = False) -
 # ---------------------------------------------------------------------------
 
 async def run_pre_auction() -> None:
-    """Pre-auction: update global ranking + run monthly finance."""
+    """Pre-auction: update global ranking + run phase finance."""
     from playwright.async_api import async_playwright
     from sync import get_supabase
     from sync_race import update_global_ranking
-    from monthly_finance import run_monthly_finance
+    from phase_finance import run_phase_finance
 
     supabase = get_supabase()
 
@@ -593,10 +605,10 @@ async def run_pre_auction() -> None:
         finally:
             await browser.close()
 
-    # Step 2: Monthly finance
+    # Step 2: Phase finance
     print()
-    print("--- Step 2: Running monthly finance ---")
-    finance_result = await run_monthly_finance(supabase)
+    print("--- Step 2: Running phase finance ---")
+    finance_result = await run_phase_finance(supabase)
     print(json.dumps(finance_result, indent=2))
 
     print()
@@ -654,10 +666,16 @@ def build_parser() -> argparse.ArgumentParser:
         help='PCS race slug, e.g. "race/tour-de-france/2026"',
     )
 
-    # monthly-finance
+    # phase-finance
+    subparsers.add_parser(
+        "phase-finance",
+        help="Pipeline D — once per WT phase: sponsor base income + salary deduction + bankruptcy.",
+    )
+
+    # monthly-finance (deprecated alias for phase-finance)
     subparsers.add_parser(
         "monthly-finance",
-        help="Pipeline D — monthly: sponsor payment + salary deduction + bankruptcy.",
+        help="[DEPRECATED] Use 'phase-finance' instead.",
     )
 
     # enrich-riders
@@ -718,6 +736,8 @@ async def main() -> None:
         )
     elif args.command == "startlists":
         await run_startlists(args.race)
+    elif args.command == "phase-finance":
+        await run_phase_finance_pipeline()
     elif args.command == "monthly-finance":
         await run_monthly_finance_pipeline()
     elif args.command == "enrich-riders":
