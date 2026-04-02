@@ -74,10 +74,10 @@ export default async function TeamDetailPage({
     .from("contracts")
     .select("id, rider_id, status, riders:rider_id(id, full_name, nationality, photo_url, pcs_rank)")
     .eq("team_id", teamId)
-    .in("status", ["active", "notice", "released"]);
+    .in("status", ["active", "released"]);
 
   const contracts = contractsRaw ?? [];
-  const activeContracts = contracts.filter((c) => c.status === "active" || c.status === "notice");
+  const activeContracts = contracts.filter((c) => c.status === "active");
   const formerContracts = contracts.filter((c) => c.status === "released");
 
   // Get all rider IDs
@@ -108,7 +108,7 @@ export default async function TeamDetailPage({
       .from("contracts")
       .select("rider_id")
       .in("team_id", leagueTeamIds.length > 0 ? leagueTeamIds : ["__none__"])
-      .in("status", ["active", "notice"]),
+      .eq("status", "active"),
     supabase
       .from("rider_xp_daily")
       .select("rider_id, xp_gained, race_slug")

@@ -22,7 +22,7 @@ Usage:
   python3 run_pipeline.py startlists --race "race/tour-de-france/2026"
 
   # Pipeline D — phase finance (sponsor base income + salaries + bankruptcy, once per WT phase)
-  python3 run_pipeline.py phase-finance
+  # phase-finance pipeline removed — replaced by confirmPhaseSetup server action
 
   # Pipeline E — enrich riders with individual PCS page data
   python3 run_pipeline.py enrich-riders
@@ -523,32 +523,6 @@ async def run_startlists(race_slug: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Pipeline D — phase-finance (replaces monthly-finance)
-# ---------------------------------------------------------------------------
-
-async def run_phase_finance_pipeline() -> None:
-    """Phase finance: sponsor base income + salary deduction + bankruptcy check. Run once per WT phase."""
-    from sync import get_supabase
-    from phase_finance import run_phase_finance
-
-    supabase = get_supabase()
-
-    print("=== Pipeline D: phase-finance ===")
-    print()
-    result = await run_phase_finance(supabase)
-    print(json.dumps(result, indent=2))
-    print()
-    print("Done — phase-finance complete.")
-
-
-async def run_monthly_finance_pipeline() -> None:
-    """Deprecated alias for phase-finance. Use 'phase-finance' instead."""
-    print("WARNING: 'monthly-finance' is deprecated. Use 'phase-finance' instead.")
-    print()
-    await run_phase_finance_pipeline()
-
-
-# ---------------------------------------------------------------------------
 # Pipeline E — enrich-riders
 # ---------------------------------------------------------------------------
 
@@ -580,19 +554,17 @@ async def run_enrich_riders(start: int, end: int, retry_missing: bool = False) -
 # ---------------------------------------------------------------------------
 
 async def run_pre_auction() -> None:
-    """Pre-auction: update global ranking + run phase finance."""
+    """Pre-auction: update global ranking."""
     from playwright.async_api import async_playwright
     from sync import get_supabase
     from sync_race import update_global_ranking
-    from phase_finance import run_phase_finance
 
     supabase = get_supabase()
 
     print("=== Pre-auction pipeline ===")
     print()
 
-    # Step 1: Update global PCS ranking
-    print("--- Step 1: Updating global PCS ranking (top 600) ---")
+    print("--- Updating global PCS ranking (top 600) ---")
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         try:
@@ -604,12 +576,6 @@ async def run_pre_auction() -> None:
                 print(f"  Dropped: {ranking_result['dropped']} rider(s) marked as >600")
         finally:
             await browser.close()
-
-    # Step 2: Phase finance
-    print()
-    print("--- Step 2: Running phase finance ---")
-    finance_result = await run_phase_finance(supabase)
-    print(json.dumps(finance_result, indent=2))
 
     print()
     print("Done — pre-auction complete.")
@@ -664,18 +630,6 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         metavar="SLUG",
         help='PCS race slug, e.g. "race/tour-de-france/2026"',
-    )
-
-    # phase-finance
-    subparsers.add_parser(
-        "phase-finance",
-        help="Pipeline D — once per WT phase: sponsor base income + salary deduction + bankruptcy.",
-    )
-
-    # monthly-finance (deprecated alias for phase-finance)
-    subparsers.add_parser(
-        "monthly-finance",
-        help="[DEPRECATED] Use 'phase-finance' instead.",
     )
 
     # enrich-riders
@@ -736,10 +690,6 @@ async def main() -> None:
         )
     elif args.command == "startlists":
         await run_startlists(args.race)
-    elif args.command == "phase-finance":
-        await run_phase_finance_pipeline()
-    elif args.command == "monthly-finance":
-        await run_monthly_finance_pipeline()
     elif args.command == "enrich-riders":
         await run_enrich_riders(args.start, args.end, retry_missing=args.retry_missing)
     elif args.command == "pre-auction":

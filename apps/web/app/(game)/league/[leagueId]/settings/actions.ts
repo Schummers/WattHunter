@@ -67,7 +67,7 @@ export async function leaveLeague(leagueId: string) {
     .from("contracts")
     .select("id", { count: "exact", head: true })
     .eq("team_id", team.id)
-    .in("status", ["active", "notice"]);
+    .eq("status", "active");
 
   if (activeContracts && activeContracts > 0) {
     return { error: "Release all riders before leaving the league" };

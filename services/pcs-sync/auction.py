@@ -25,6 +25,32 @@ from supabase import Client
 
 logger = logging.getLogger(__name__)
 
+# Phase calendar (mirrors apps/web/lib/phases.ts AUCTION_PHASES)
+_PHASES = [
+    (1, 1, 15, 3, 1),   # Season Start: Jan 15 – Mar 1
+    (2, 3, 5, 4, 1),    # Classics Part 1: Mar 5 – Apr 1
+    (3, 4, 5, 5, 1),    # Classics Part 2: Apr 5 – May 1
+    (4, 5, 5, 6, 1),    # Giro d'Italia: May 5 – Jun 1
+    (5, 6, 5, 7, 1),    # Pre-Tour: Jun 5 – Jul 1
+    (6, 7, 4, 7, 27),   # Tour de France: Jul 4 – Jul 27
+    (7, 7, 31, 8, 18),  # Post-Tour: Jul 31 – Aug 18
+    (8, 8, 22, 9, 15),  # La Vuelta: Aug 22 – Sep 15
+    (9, 9, 19, 10, 18), # End of Season: Sep 19 – Oct 18
+]
+
+def _get_current_phase_id(d: date | None = None) -> int:
+    """Return current phase ID (1-9) based on calendar date."""
+    from datetime import date as real_date
+    if d is None:
+        d = real_date.today()
+    year = d.year
+    for pid, sm, sd, em, ed in _PHASES:
+        start = real_date(year, sm, sd)
+        end = real_date(year, em, ed)
+        if start <= d <= end:
+            return pid
+    return _PHASES[-1][0]  # fallback: last phase
+
 
 def _log_treasury_debit(
     supabase: Client,
@@ -201,6 +227,7 @@ async def resolve_current_round(
                         "status": "active",
                         "purchased_at": datetime.utcnow().isoformat(),
                         "last_salary_paid": today.isoformat(),
+                        "phase_recruited_id": _get_current_phase_id(today),
                     }).execute()
 
                     # Debit first month's salary from team treasury

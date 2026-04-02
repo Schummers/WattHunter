@@ -75,7 +75,7 @@ export default function PoliciesRail({ leagueId }: Props) {
         .from("contracts")
         .select("riders(nationality, real_team, specialty, birthdate)")
         .eq("team_id", teamId)
-        .in("status", ["active", "notice"]);
+        .eq("status", "active");
 
       const rosterRiders = (contracts ?? []).map((c) => {
         const r = Array.isArray(c.riders) ? c.riders[0] : c.riders;

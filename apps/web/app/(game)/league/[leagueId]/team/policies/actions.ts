@@ -124,7 +124,6 @@ export async function savePolicies(
             activated_at: new Date().toISOString(),
             pending_is_active: null,
             pending_config: null,
-            effective_phase_id: null,
           })
           .eq("id", existing.id);
         if (error) return { error: `Failed to save ${policy.slug}: ${error.message}` };
@@ -149,7 +148,7 @@ export async function savePolicies(
           // No change — clear any previous pending state
           await supabase
             .from("team_policies")
-            .update({ pending_is_active: null, pending_config: null, effective_phase_id: null })
+            .update({ pending_is_active: null, pending_config: null })
             .eq("id", existing.id);
           continue;
         }
@@ -159,7 +158,6 @@ export async function savePolicies(
           .update({
             pending_is_active: policy.isActive,
             pending_config: policy.config,
-            effective_phase_id: nextPhase!.id,
           })
           .eq("id", existing.id);
         if (error) return { error: `Failed to save ${policy.slug}: ${error.message}` };
@@ -173,7 +171,6 @@ export async function savePolicies(
             config: null,
             pending_is_active: policy.isActive,
             pending_config: policy.config,
-            effective_phase_id: nextPhase!.id,
           });
         if (error) return { error: `Failed to save ${policy.slug}: ${error.message}` };
       }

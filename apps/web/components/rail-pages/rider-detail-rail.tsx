@@ -108,7 +108,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
             .select("id, locked_salary, status")
             .eq("team_id", member.team_id)
             .eq("rider_id", riderId)
-            .in("status", ["active", "notice"])
+            .eq("status", "active")
             .maybeSingle();
 
           if (contract) {
@@ -156,7 +156,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
                 .from("contracts")
                 .select("id", { count: "exact", head: true })
                 .eq("team_id", member.team_id)
-                .in("status", ["active", "notice"]);
+                .eq("status", "active");
 
               const { data: allActiveBids } = await supabase
                 .from("auction_bids")
@@ -184,7 +184,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
           .from("contracts")
           .select("team_id, teams:team_id(name, league_id)")
           .eq("rider_id", riderId)
-          .in("status", ["active", "notice"])
+          .eq("status", "active")
           .maybeSingle();
 
         if (ownerContract) {

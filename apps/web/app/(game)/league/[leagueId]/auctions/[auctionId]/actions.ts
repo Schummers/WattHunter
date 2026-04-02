@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
+import { getCurrentPhase } from "@/lib/phases";
 
 function minRankForLevel(level: number): number {
   return getLevelByNumber(level).poolMin;
@@ -43,12 +44,18 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id, treasury, level")
+    .select("id, treasury, level, phase_confirmed_id")
     .eq("user_id", user.id)
     .eq("league_id", auction.league_id)
     .single();
 
   if (!team) return { error: "Team not found" };
+
+  // Gate: must confirm phase setup before bidding
+  const currentPhase = getCurrentPhase();
+  if (team.phase_confirmed_id !== currentPhase.id) {
+    return { error: "You must confirm your phase setup before placing bids" };
+  }
 
   // Check rider min salary
   const { data: rider } = await supabase
@@ -110,7 +117,7 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
       .from("contracts")
       .select("id", { count: "exact", head: true })
       .eq("team_id", team.id)
-      .in("status", ["active", "notice"]);
+      .eq("status", "active");
     const bidCount = (activeBids ?? []).length;
     const used = (contractCount ?? 0) + bidCount;
     if (used >= maxSlots) {

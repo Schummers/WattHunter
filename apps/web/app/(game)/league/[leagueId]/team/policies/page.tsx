@@ -51,7 +51,7 @@ export default async function PoliciesPage({
       .select("id, slug"),
     supabase
       .from("team_policies")
-      .select("policy_id, is_active, config, pending_is_active, pending_config, effective_phase_id")
+      .select("policy_id, is_active, config, pending_is_active, pending_config")
       .eq("team_id", teamId),
     supabase
       .from("riders")
@@ -67,7 +67,7 @@ export default async function PoliciesPage({
       .from("contracts")
       .select("riders(nationality, real_team, specialty, birthdate)")
       .eq("team_id", teamId)
-      .in("status", ["active", "notice"]),
+      .eq("status", "active"),
   ]);
 
   // Build initial policies map

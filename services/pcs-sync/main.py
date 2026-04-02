@@ -82,22 +82,10 @@ async def job_daily_scoring(
 ):
     """
     Calculate daily XP for all teams with contracted riders who earned PCS points today.
-    Treasury is handled separately by /jobs/phase-finance and sponsor bonuses.
+    Treasury is handled by the in-app confirmPhaseSetup server action and sponsor bonuses.
     """
     _check_auth(x_api_secret)
     result = await calculate_daily_scores(_supabase)
-    return JSONResponse(content=result)
-
-
-@app.post("/jobs/phase-finance")
-async def job_phase_finance(
-    request: Request,
-    x_api_secret: Optional[str] = Header(default=None),
-):
-    """Phase finance: +sponsor base income, -salaries, bankruptcy check. Run once per WT phase."""
-    from phase_finance import run_phase_finance
-    _check_auth(x_api_secret)
-    result = await run_phase_finance(_supabase)
     return JSONResponse(content=result)
 
 

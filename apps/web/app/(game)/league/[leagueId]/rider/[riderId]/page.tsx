@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { RiderDetailClient } from "./rider-detail-client";
 import { getMaxSlots } from "@/lib/levels";
 import { calcMinSalary } from "@/lib/format";
-import { isInAuctionWindow, getNextPhase, getCurrentPhase, getPhaseById } from "@/lib/phases";
+import { getCurrentPhase } from "@/lib/phases";
 
 type RiderContext = "recruts" | "team" | "ranking";
 
@@ -99,7 +99,7 @@ export default async function RiderDetailPage({
   // Auth + team check
 
   let context: RiderContext = (from as RiderContext) ?? "ranking";
-  let contractData: { locked_salary: number; status: string; contractId?: string; effectivePhaseName?: string } | null = null;
+  let contractData: { locked_salary: number; status: string; contractId?: string; pcsPoints?: number } | null = null;
   let currentBidAmount: number | null = null;
   let currentBidId: string | null = null;
   let activeAuctionId: string | null = null;
@@ -118,10 +118,10 @@ export default async function RiderDetailPage({
       const [{ data: contract }, { data: activeBid }] = await Promise.all([
         supabase
           .from("contracts")
-          .select("id, locked_salary, status, effective_phase_id")
+          .select("id, locked_salary, status")
           .eq("team_id", member.team_id)
           .eq("rider_id", riderId)
-          .in("status", ["active", "notice"])
+          .eq("status", "active")
           .maybeSingle(),
         supabase
           .from("auction_bids")
@@ -134,14 +134,11 @@ export default async function RiderDetailPage({
 
       if (contract) {
         if (from !== "recruts" && from !== "team") context = "team";
-        const phaseName = contract.effective_phase_id
-          ? getPhaseById(contract.effective_phase_id)?.label
-          : undefined;
         contractData = {
           locked_salary: contract.locked_salary,
           status: contract.status,
           contractId: contract.id,
-          effectivePhaseName: phaseName,
+          pcsPoints: rider.pcs_points_1yr ?? undefined,
         };
       }
 
@@ -170,7 +167,7 @@ export default async function RiderDetailPage({
       .from("contracts")
       .select("team_id, teams:team_id(name, league_id)")
       .eq("rider_id", riderId)
-      .in("status", ["active", "notice"])
+      .eq("status", "active")
       .maybeSingle();
 
     if (ownerContract) {
@@ -199,12 +196,6 @@ export default async function RiderDetailPage({
 
   const minSalary = calcMinSalary(rider.pcs_points_1yr ?? 0);
 
-  // Release availability (only during auction window)
-  const now = new Date();
-  const canRelease = isInAuctionWindow(now);
-  const nextPhase = getNextPhase(getCurrentPhase(now));
-  const nextPhaseName = nextPhase?.label ?? null;
-
   // Phase 1.3: Budget info for recruts context
   let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number; activeBidCount: number } | undefined;
   if (context === "recruts" && user) {
@@ -225,7 +216,7 @@ export default async function RiderDetailPage({
           .from("contracts")
           .select("id", { count: "exact", head: true })
           .eq("team_id", memberForBudget.team_id)
-          .in("status", ["active", "notice"]),
+          .eq("status", "active"),
         supabase
           .from("auction_bids")
           .select("amount")
@@ -282,8 +273,6 @@ export default async function RiderDetailPage({
       activeAuctionId={activeAuctionId}
       contractData={contractData}
       ownerInfo={ownerInfo}
-      canRelease={canRelease}
-      nextPhaseName={nextPhaseName}
     />
   );
 }

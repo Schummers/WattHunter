@@ -55,3 +55,15 @@ export function smartCountdown(target: Date | string): string {
   const diffDays = Math.floor(diffHours / 24);
   return `in ${diffDays} day${diffDays > 1 ? "s" : ""}`;
 }
+
+/** Release fee constant — flat 5 000 EUR per release */
+export const RELEASE_FEE = 5_000;
+
+/**
+ * Calculate transfer bonus when releasing a rider.
+ * Bonus = max(0, current_min_salary - locked_salary)
+ */
+export function calcTransferBonus(pcsPoints: number, lockedSalary: number): number {
+  const currentMinSalary = calcMinSalary(pcsPoints);
+  return Math.max(0, currentMinSalary - lockedSalary);
+}
