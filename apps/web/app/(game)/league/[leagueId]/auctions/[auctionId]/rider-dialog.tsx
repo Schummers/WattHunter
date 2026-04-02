@@ -95,7 +95,7 @@ export function RiderDialog({
   function handleCancel() {
     if (!existingBid) return;
     startTransition(async () => {
-      const result = await cancelBid(existingBid.id);
+      const result = await cancelBid(existingBid.id, auctionId);
       if (result.error) {
         setError(result.error);
       } else {

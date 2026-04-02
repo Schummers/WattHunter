@@ -272,10 +272,9 @@ export function MarketClient({
     // Cancel bids that were removed (in savedBids but not in current bids)
     const removedRiderIds = Object.keys(savedBids).filter((rid) => !(rid in bids));
     if (removedRiderIds.length > 0) {
-      const bidIdsToCancel = initialBids
-        .filter((b) => removedRiderIds.includes(b.rider_id))
-        .map((b) => b.bid_id);
-      await Promise.all(bidIdsToCancel.map((id) => cancelBid(id)));
+      const bidsToCancel = initialBids
+        .filter((b) => removedRiderIds.includes(b.rider_id));
+      await Promise.all(bidsToCancel.map((b) => cancelBid(b.bid_id, activeRound.id)));
     }
 
     // Place or update bids

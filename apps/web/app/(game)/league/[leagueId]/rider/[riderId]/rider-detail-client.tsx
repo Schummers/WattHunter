@@ -141,10 +141,10 @@ export function RiderDetailClient({
   }
 
   async function handleRemoveBid() {
-    if (!currentBidId) return;
+    if (!currentBidId || !activeAuctionId) return;
     setSaving(true);
     setError(null);
-    const result = await cancelBid(currentBidId);
+    const result = await cancelBid(currentBidId, activeAuctionId);
     if (result.error) {
       setError(result.error);
       setSaving(false);
