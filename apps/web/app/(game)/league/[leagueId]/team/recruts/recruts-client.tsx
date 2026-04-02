@@ -396,7 +396,7 @@ export function RecrutsClient({
                                 type="text"
                                 inputMode="numeric"
                                 min={minSalary}
-                                step={1000}
+                                step={100}
                                 placeholder={formatThousands(minSalary)}
                                 value={currentBid ? formatThousands(currentBid) : ""}
                                 onChange={(e) => {
@@ -459,7 +459,7 @@ export function RecrutsClient({
                         type="text"
                         inputMode="numeric"
                         min={minSalary}
-                        step={1000}
+                        step={100}
                         placeholder={formatThousands(minSalary)}
                         value={currentBid ? formatThousands(currentBid) : ""}
                         onChange={(e) => {

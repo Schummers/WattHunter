@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 export async function updateTeamName(teamId: string, name: string) {
   if (!name.trim()) return { error: "Team name cannot be empty" };
+  if (name.trim().length < 2) return { error: "Team name must be at least 2 characters" };
   if (name.trim().length > 30) return { error: "Team name too long (max 30 chars)" };
 
   const supabase = await createClient();
@@ -110,7 +111,8 @@ export async function leaveLeague(leagueId: string) {
 
 export async function updateUserName(name: string) {
   if (!name.trim()) return { error: "Name cannot be empty" };
-  if (name.trim().length > 50) return { error: "Name too long (max 50 chars)" };
+  if (name.trim().length < 2) return { error: "Name must be at least 2 characters" };
+  if (name.trim().length > 30) return { error: "Name too long (max 30 chars)" };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({
@@ -137,6 +139,7 @@ export async function updateUserEmail(email: string) {
 
 export async function updateLeagueName(leagueId: string, name: string) {
   if (!name.trim()) return { error: "League name cannot be empty" };
+  if (name.trim().length < 2) return { error: "League name must be at least 2 characters" };
   if (name.trim().length > 50) return { error: "League name too long (max 50 chars)" };
 
   const supabase = await createClient();

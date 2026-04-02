@@ -113,6 +113,7 @@ export default async function SettingsPage({
               <EditableField
                 label="First name"
                 initialValue={userName}
+                maxLength={30}
                 onSave={async (value) => {
                   "use server";
                   return updateUserName(value);
@@ -156,6 +157,7 @@ export default async function SettingsPage({
             <EditableField
               label="League name"
               initialValue={league?.name ?? "League"}
+              maxLength={50}
               onSave={async (value) => {
                 "use server";
                 return updateLeagueName(leagueId, value);
@@ -181,6 +183,7 @@ export default async function SettingsPage({
               initialValue={
                 (memberTeam as { name: string })?.name ?? "My Team"
               }
+              maxLength={30}
               onSave={async (value) => {
                 "use server";
                 return updateTeamName(

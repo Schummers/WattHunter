@@ -181,8 +181,8 @@ alter table public.treasury_log
     'sponsor_payment',
     'bankruptcy_release',
     'monthly_bonus',
-    'daily_salary',
-    'daily_sponsor_base',
+    'phase_salary',
+    'phase_sponsor_base',
     'sponsor_bonus'
   ));
 

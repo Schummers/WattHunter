@@ -271,7 +271,7 @@ describe("placeBid — budget check", () => {
     mockFrom
       .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))                         // auctions
       .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 8 }))   // teams
-      .mockReturnValueOnce(makeChain({ monthly_salary: 100, pcs_rank: 5, ever_in_top500: true })) // riders
+      .mockReturnValueOnce(makeChain({ monthly_salary: 100, pcs_rank: 5, ever_in_pool: true })) // riders
       .mockReturnValueOnce(makeChain(null))                               // existingBid
       .mockReturnValueOnce(makeChain([]))                                 // activeBids (empty)
       .mockReturnValueOnce(makeChain(null, null, 0))                     // contracts count (slot check)

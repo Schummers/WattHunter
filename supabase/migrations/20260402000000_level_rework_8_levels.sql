@@ -1,6 +1,6 @@
 -- Level system rework: 10 levels → 8 levels, pool expansion 500 → 600
 -- Aligned with 8 WT calendar phases
--- NOTE: ever_in_top500 column name kept for compatibility (semantically covers top 600)
+-- NOTE: ever_in_top500 column renamed to ever_in_pool in migration 20260402200000
 
 -- 1. Recalculate all team levels using new 8-level XP thresholds
 -- Old thresholds: [0, 50, 150, 300, 500, 700, 1000, 1400, 1900, 2500]

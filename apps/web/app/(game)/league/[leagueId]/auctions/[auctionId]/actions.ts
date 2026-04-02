@@ -53,13 +53,16 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
   // Check rider min salary
   const { data: rider } = await supabase
     .from("riders")
-    .select("monthly_salary, pcs_rank, ever_in_top500")
+    .select("monthly_salary, pcs_rank, ever_in_pool")
     .eq("id", parsed.data.riderId)
     .single();
 
   if (!rider) return { error: "Rider not found" };
   if (parsed.data.amount < rider.monthly_salary) {
     return { error: `Minimum bid: ${rider.monthly_salary.toLocaleString("fr-FR")} €` };
+  }
+  if (parsed.data.amount % 100 !== 0) {
+    return { error: "Bid must be a multiple of 100 €" };
   }
 
   // Check if there's already an active bid for this rider/round (to update vs insert)
@@ -92,7 +95,7 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
   }
 
   // Level gating: verify rider is accessible at team's level
-  if (!rider.ever_in_top500) {
+  if (!rider.ever_in_pool) {
     return { error: "This rider is not in the playable pool" };
   }
 
