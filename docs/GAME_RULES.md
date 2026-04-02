@@ -12,20 +12,19 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 
 ## 1. Ligues
 
-| Regle | Valeur | Statut |
-|-------|--------|--------|
-| Joueurs max par ligue | 20 | Implemente |
-| Joueurs min pour lancer | 1 (pas de minimum) | Implemente |
-| Un joueur peut avoir plusieurs ligues | Oui | Implemente |
-| Code d'invitation | 6 caracteres alphanumeriques (sans 0/O/1/I/l) | Implemente |
-| Statuts de ligue | pending → active → completed | Implemente |
+| Regle | Valeur |
+|-------|--------|
+| Joueurs max par ligue | 20 |
+| Joueurs min pour lancer | 1 (pas de minimum) |
+| Un joueur peut avoir plusieurs ligues | Oui |
+| Code d'invitation | 6 caracteres alphanumeriques (sans 0/O/1/I/l) |
+| Statuts de ligue | pending → active → completed |
 
 **Regles de lancement :**
 - Seul le commissaire (createur) peut lancer la premiere enchere
 - Des que la ligue passe en `active`, plus aucune equipe ne peut rejoindre
 - Pas de nombre minimum de joueurs requis
-
-> **Deviation PRD :** Le PRD original prevoyait 6-12 joueurs et un minimum de 4 pour lancer. Simplifie a max 20, pas de minimum.
+- Le commissaire choisit un **niveau de depart** (par defaut : base sur la date actuelle et la phase WT)
 
 ---
 
@@ -34,10 +33,10 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 ### Team Score (XP)
 - XP cumule depuis la creation de l'equipe
 - Determine : classement de la ligue, niveau de l'equipe, deblocage de fonctionnalites
-- Calcule quotidiennement a 09:00 UTC
+- Calcule a chaque import de resultats de course
 
-### Tresorerie (€)
-- Solde cash : entrees − sorties
+### Tresorerie (EUR)
+- Solde cash : entrees - sorties
 - Determine : capacite d'achat aux encheres
 - Affiche en permanence dans le header
 
@@ -50,8 +49,8 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 **Univers total :** Top 600 coureurs du ranking PCS global individuel (12 mois glissants)
 
 **Donnees par coureur :**
-- Nom, nationalite, equipe reelle UCI, type d'equipe
-- Photo, age, specialite (grimpeur/sprinteur/rouleur/puncheur/contre-la-montre/polyvalent)
+- Nom, nationalite, equipe reelle UCI
+- Photo, age, specialite (GC/Sprint/TT/OneDay)
 - Points PCS glissants 365 jours, classement PCS, salaire mensuel calcule
 
 **Acces par niveau (gating PCS) :**
@@ -73,93 +72,69 @@ WattHunter est un fantasy game de cyclisme pour groupes d'amis. Les joueurs cons
 
 ### 4.1 Tresorerie de depart
 
-| Constante | Valeur |
-|-----------|--------|
-| Tresorerie initiale | 200 000 € |
+Les nouvelles equipes demarrent a **0 EUR**. Le premier paiement sponsor (a la selection du sponsor) remplace l'ancienne tresorerie de depart.
 
 ### 4.2 Entrees
-- Bonus des coureurs : par course (voir §4.5)
-- Paiements sponsors : au debut de chaque phase d'enchere
-- **Sponsor par defaut (Lotto) :** 200 000 € (1ere phase) → 300 000 € (phases suivantes) — automatiquement actif des le debut
+- **Paiement sponsor :** 1x par phase, au moment de la confirmation du joueur (payday)
+- **Bonus sponsor :** a chaque resultat de course qualifiant (voir §9)
 
 ### 4.3 Sorties
-- Salaires des coureurs : au debut de chaque phase d'enchere (apres paiement sponsor)
-- Encheres gagnees : deduction immediate
+- **Salaires des coureurs :** deduits au payday (1x par phase)
+- **Encheres gagnees :** deduction immediate du salaire verrouille
+- **Frais de liberation :** 5 000 EUR forfaitaire par coureur libere
 
 ### 4.4 Formule de salaire
 
 ```
-Salaire mensuel = points_PCS_1an × 2 000 / 12
-Plancher : 5 000 €/mois | Pas de plafond
+Salaire mensuel = max(5 000, floor(points_PCS_1an x 2 000 / 12 / 100) x 100)
+Plancher : 5 000 EUR/mois | Arrondi au 100 inferieur | Pas de plafond
 ```
 
 **Exemples :**
-- 114 pts PCS (#600) → 228k€/an → **19 000 €/mois**
-- 400 pts PCS (#100) → 800k€/an → **66 667 €/mois**
-- 2 216 pts PCS (#5, Vingegaard) → 4.4M€/an → **369 333 €/mois**
-- 4 552 pts PCS (#1, Pogacar) → 9.1M€/an → **758 666 €/mois**
+- 114 pts PCS (#600) → 228k/an → **19 000 EUR/mois**
+- 400 pts PCS (#100) → 800k/an → **66 600 EUR/mois**
+- 2 216 pts PCS (#5) → 4.4M/an → **369 300 EUR/mois**
 
-> **Note :** Le salaire formule ci-dessus determine la **mise minimum a l'enchere**. Le salaire reel du contrat est la mise gagnante de l'enchere (voir §5).
+> **Note :** Le salaire determine la **mise minimum a l'enchere**. Le salaire reel du contrat est la mise gagnante (= `locked_salary`).
 
-### 4.5 Bonus par course
+### 4.5 Faillite
 
-```
-Bonus = max(0, points_course × 1 500 − salaire_mensuel)
-```
-
-Le bonus est calcule **individuellement par course** (pas cumule sur le mois). Il est **toujours positif ou nul** — un coureur ne penalise jamais la tresorerie au-dela de son salaire.
-
-| Constante | Valeur |
-|-----------|--------|
-| Taux de conversion bonus | 1 500 €/point PCS |
-
-**Dynamique "pepite" :** Les stars (salaires eleves) ne generent quasi jamais de bonus. Les coureurs peu chers (#400-600) generent du bonus des qu'ils performent en course. C'est la mecanique strategique centrale du jeu.
-
-**Exemples :**
-- Rider #450 (salaire 21k), score 20 pts en course → 20 × 1500 = 30k → bonus = 9 000 €
-- Rider #100 (salaire 67k), score 30 pts en course → 30 × 1500 = 45k → bonus = 0 € (pas de malus)
-- Pogacar (salaire 759k), score 100 pts en course → 100 × 1500 = 150k → bonus = 0 €
-
-### 4.6 Faillite
-
-**Mois 1 de tresorerie negative :**
-- Statut "dette", tresorerie negative
-- Bloque aux encheres, mais peut jouer
-
-**Mois 2 consecutif de tresorerie negative :**
-- Liberation automatique des coureurs (**meilleur scoreur d'abord** — le plus rentable en points PCS)
-- Jusqu'a ce que la tresorerie redevienne positive
-- Pas de preavis pour les auto-liberations
-
-> **Beta :** La liberation par meilleur scoreur (et non par salaire le plus eleve) cree un dilemme strategique : perdre son meilleur coureur force le joueur a reflechir avant de se retrouver en faillite.
+Au payday, apres `tresorerie += sponsor_budget - salaires` :
+- Si tresorerie >= -10 000 EUR → pas d'action (tolerance)
+- Si tresorerie < -10 000 EUR → **cascade de faillite** :
+  1. Liberer le coureur avec le **plus haut XP cumule** de l'equipe
+  2. Rembourser son salaire, appliquer les frais de liberation (5 000 EUR)
+  3. Si toujours < -10 000 EUR → repeter avec le suivant
+  4. Jusqu'a tresorerie >= -10 000 EUR ou roster vide
 
 ---
 
 ## 5. Encheres
 
-| Regle | Valeur | Statut |
-|-------|--------|--------|
-| Duree | 72 heures (3 rounds de 24h) | Implemente |
-| Mise minimum | Salaire marche du coureur (formule §4.4) | Implemente |
-| Increment minimum | +100 € | Implemente |
-| Format | Sealed-bid 3 rounds | Implemente |
-| Calendrier | Aligne sur les Grands Tours | Non implemente |
+| Regle | Valeur |
+|-------|--------|
+| Format | Sealed-bid, 3 rounds par phase |
+| Mise minimum | Salaire marche du coureur (formule §4.4) |
+| Increment minimum | 100 EUR |
+| Multiples | Mises en multiples de 100 EUR uniquement |
+| Calendrier | 8 phases alignees sur le WT, 3 rounds chacune |
 
-> **Beta — enchere = salaire mensuel :** La mise gagnante n'est PAS un prix d'achat unique. Elle devient le **salaire mensuel recurrent** du coureur debite chaque mois. Enchérir haut = s'engager sur un salaire eleve pour toute la duree du contrat.
+> **Enchere = salaire mensuel recurrent :** La mise gagnante n'est PAS un prix d'achat unique. Elle devient le **salaire mensuel recurrent** (`locked_salary`) debite a chaque payday.
 
-**Resolution (auction.py) :**
+**Resolution :**
 1. Plus haute mise gagne
 2. Egalite : timestamp le plus ancien gagne (placed_at)
 3. Verification en cascade du budget (coureurs tries par montant decroissant)
-4. Mise gagnante = `contract_salary` mensuel (aucune deduction immediate de la tresorerie)
-5. Bids perdants → status `outbid`, bids annules → status `cancelled`
-6. Contrat cree (`contracts` table) avec `contract_salary` verrouille (= mise gagnante)
+4. Mise gagnante → contrat cree avec `locked_salary` = mise
+5. Salaire deduit immediatement de la tresorerie
 
-**Validation du budget :** `somme(mises actives autres) + nouvelle mise > tresorerie` → mise rejetee
+**Validation du budget :** `somme(mises actives) + nouvelle mise > tresorerie` → mise rejetee
+
+**Condition prealable :** Le joueur doit avoir **confirme le payday** de la phase en cours avant de pouvoir placer des mises.
 
 **Visibilite des mises :**
-- Pendant l'enchere : mises `won`/`outbid` visibles par tous les membres de la ligue
-- Mises `active` (prochain round) : secretes, visibles uniquement par leur equipe
+- Pendant l'enchere : mises `won`/`outbid` visibles par tous
+- Mises `active` (round en cours) : secretes
 - Enchere terminee : toutes les mises visibles
 
 ---
@@ -167,16 +142,19 @@ Le bonus est calcule **individuellement par course** (pas cumule sur le mois). I
 ## 6. Contrats
 
 **A la creation :**
-- `contract_salary` : mise gagnante de l'enchere (= salaire mensuel recurrent, verrouille)
-- `status` : active → notice → released
-
-> **Beta :** Le concept de `purchase_price` (achat unique) est supprime. L'enchere fixe uniquement le salaire mensuel — aucune somme n'est debitee a la signature du contrat.
+- `locked_salary` : mise gagnante (salaire mensuel recurrent, verrouille)
+- `status` : active | released
+- `phase_recruited_id` : phase de recrutement (verrouillage liberation)
 
 **Liberation d'un coureur :**
-- Release uniquement pendant la fenetre d'encheres (auction window)
-- Le coureur passe en statut "notice" jusqu'au debut de la phase suivante
-- Slot libere au debut de la phase suivante (PAS immediatement)
-- Coureur retourne au pool general au debut de la phase suivante
+- Liberable **a tout moment** (sauf pendant la phase de recrutement)
+- Frais forfaitaires : **5 000 EUR**, deduits immediatement
+- Bonus de transfert si le coureur a apprecie :
+  ```
+  transfer_bonus = max(0, salaire_marche_actuel - locked_salary)
+  ```
+- Effet immediat : coureur retourne au pool, slot libere
+- Aucun remboursement de salaire (deja paye au payday)
 
 ---
 
@@ -185,22 +163,22 @@ Le bonus est calcule **individuellement par course** (pas cumule sur le mois). I
 ### XP quotidien
 
 ```
-XP du coureur = points_PCS_du_jour × (1 + Σ bonus_politiques_actives)
-XP equipe = Σ XP de tous les coureurs du roster
+XP du coureur = points_PCS_du_jour x (1 + somme bonus_politiques_actives)
+XP equipe = somme XP de tous les coureurs du roster
 ```
 
-### Progression par niveaux
+### Progression par niveaux (8 niveaux alignes sur les phases WT)
 
-| Niveau | Phase WT | XP cumule | Slots | Politiques actives | Rang PCS debloque | Policy debloquee | Sponsor debloque |
-|--------|----------|-----------|-------|--------------------|-------------------|------------------|------------------|
-| 1 | Season Start | 0 | 6 | 1 | #300-600 | Speciality | Secondary T1 (200k→300k) |
-| 2 | Classics | 25 | 7 | 1 | #200-600 | — | — |
-| 3 | Ardennes | 150 | 8 | 2 | #100-600 | Nationality | Secondary T2 (400k) |
-| 4 | Giro | 350 | 9 | 2 | #30-600 | — | Principal T3 (550k) |
-| 5 | Dauphine | 600 | 10 | 2 | #20-600 | Teams | — |
-| 6 | Tour | 900 | 11 | 2 | #10-600 | — | Principal T4 (750k) |
-| 7 | Olympics | 1 500 | 12 | 3 | #4-600 | Age | — |
-| 8 | Vuelta | 2 000 | 12 | 3 | #1-600 | — | Principal T5 (1M) |
+| Niveau | Phase WT | XP cumule | Slots | Politiques max | Rang PCS | Policy debloquee | Sponsor debloque |
+|--------|----------|-----------|-------|----------------|----------|------------------|------------------|
+| 1 | Season Start | 0 | 6 | 1 | #300-600 | Speciality | Lotto T1 (250k) |
+| 2 | Classics P1 | 25 | 7 | 1 | #200-600 | — | Astana T2 (350k) |
+| 3 | Classics P2 | 150 | 8 | 2 | #100-600 | Nationality | T3 450k (x4) |
+| 4 | Giro | 350 | 9 | 2 | #30-600 | — | — |
+| 5 | Pre-Tour | 600 | 10 | 2 | #20-600 | Teams | T4 650k (x4) |
+| 6 | Tour | 900 | 11 | 2 | #10-600 | — | — |
+| 7 | Post-Tour | 1 500 | 12 | 3 | #4-600 | Age | T5 1M (x2) |
+| 8 | Vuelta | 2 000 | 12 | 3 | #1-600 | — | T6 UAE 1.25M |
 
 ---
 
@@ -211,73 +189,112 @@ Types debloques par niveau : Speciality (Nv.1) → Nationality (Nv.3) → Teams 
 
 | Politique | Bonus | Configuration |
 |-----------|-------|---------------|
-| Young Blood | +5% coureurs < 23 ans | Automatique |
-| Road Warriors | +5% coureurs > 32 ans | Automatique |
+| Specialist | +5% coureurs d'une specialite | Choix du joueur |
 | National Pride | +5% coureurs d'une nationalite | Choix du joueur |
 | Team Chemistry | +5% coureurs d'une equipe UCI | Choix du joueur |
-| Specialist | +5% coureurs d'une specialite | Choix du joueur |
+| Age (Young/Veteran) | +5% coureurs dans la tranche d'age | Choix du joueur |
 
 Les bonus sont **additifs**. Exemple : National Pride (Belgique) + Specialist (Sprinteur) = +10%.
 
-**Calcul du boost total affiche (pill My Team) :**
-
-```
-Boost total = Σ (5% × nombre de riders du roster matchant la policy)
-```
-
-Exemples :
-- 1 policy Specialty=GC, 2 riders GC sur 6 → boost affiche = +10%
-- 1 policy Nationality=FR, 3 riders FR sur 6 → boost affiche = +15%
-- 2 policies (Specialty=GC + Nationality=FR), 2 GC + 3 FR → boost affiche = +25%
-- 0 policies actives → boost affiche = +0%
-
-Le boost s'applique individuellement : chaque rider matche reçoit +5% sur ses points PCS gagnes en course. Le pill affiche la **somme de tous les bonus individuels** comme indicateur global.
+**Timing :** Modifiable a tout moment, effectif au prochain payday.
 
 ---
 
 ## 9. Sponsors
 
-2 slots : Secondary (petit sponsor passif) + Principal (sponsor majeur avec conditions). Tier limite par le niveau (voir §7). Voir `docs/prd et wireframe/watthunter-prd-budget-sponsors.md` pour le detail complet (14 sponsors, marketplace, conditions).
+**1 sponsor par equipe**, gate par le niveau uniquement (aucune condition d'eligibilite).
 
-**Sponsor par defaut (Lotto, T1) :**
+### 6 tiers, 13 sponsors
 
-| Regle | Valeur |
-|-------|--------|
-| Montant 1ere phase | 200 000 € |
-| Montant phases suivantes | 300 000 € |
-| Conditions | Aucune |
-| Activation | Automatique a la creation d'equipe |
+| Tier | Niveau | Budget/phase | Sponsors | Orientation |
+|------|--------|-------------|----------|-------------|
+| T1 | 1 | 250 000 EUR | Lotto | Neutre |
+| T2 | 2 | 350 000 EUR | Astana | Neutre |
+| T3 | 3 | 450 000 EUR | Groupama (FR), Movistar (ES) | GC |
+| T3 | 3 | 450 000 EUR | Alpecin (BE/NL), Uno-X (DK/NO) | One-Day |
+| T4 | 5 | 650 000 EUR | Ineos (GB), Decathlon (FR) | GC |
+| T4 | 5 | 650 000 EUR | Soudal QS (BE), Lidl-Trek (US/IT) | One-Day |
+| T5 | 7 | 1 000 000 EUR | Visma (prestige), Red Bull-Bora (regulier) | GC |
+| T6 | 8 | 1 250 000 EUR | UAE Team Emirates | Neutre |
 
-**Systeme de tiers :**
+### Bonus sur resultats de course
 
-| Type | Tier | Niveau | Montant/mois |
-|------|------|--------|--------------|
-| Secondary | T1 (Lotto) | 1 | 200 000 → 300 000 € |
-| Secondary | T2 | 3 | 400 000 € |
-| Principal | T3 | 4 | 550 000 € |
-| Principal | T4 | 6 | 750 000 € |
-| Principal | T5 | 8 | 1 000 000 € |
+Les sponsors creditent des **bonus** quand un coureur de l'equipe obtient un resultat qualifiant.
+
+**T1-T4 : 3 lignes de bonus + multiplicateurs**
+
+Chaque sponsor a un seuil et un montant pour 3 categories :
+- **Bonus GC** — classement general stage race / grand tour
+- **Bonus One-Day** — classiques et monuments
+- **Bonus Etape** — victoire/top X d'etape individuelle
+
+Multiplicateurs (T1-T4 uniquement) :
+- **x2** si Monument ou Grand Tour
+- **x1.5** si la nationalite du coureur matche celle du sponsor
+- Cumulatifs : Monument + nationalite = x3
+
+**T5-T6 : 5 lignes explicites (pas de multiplicateur nationalite)**
+
+Montants distincts pour One-Day / Monument / Stage Race GC / Grand Tour GC / Etape.
+Seul multiplicateur : x2 pour etape de Grand Tour.
+
+### Changement de sponsor
+
+- Modifiable a tout moment
+- Effectif au **prochain payday** (pas immediatement)
+- Le sponsor actuel reste actif pour les bonus de la phase en cours
+
+### Premier sponsor (onboarding)
+
+- Pas de sponsor a la creation d'equipe
+- Le joueur selectionne son premier sponsor → paiement immediat (= premier payday)
+- Lotto (T1) recommande par defaut
 
 ---
 
-## 10. Constantes du jeu (resume)
+## 10. Phases WT & Payday
 
-| Constante | Valeur | A calibrer ? |
-|-----------|--------|-------------|
-| Tresorerie depart | **200 000 €** | Non |
-| Sponsor par defaut (Lotto) | **200k (1ere phase) → 300k (suivantes)** | Non |
-| Enchère = salaire mensuel | Oui — pas d'achat unique | Non |
-| Salaire mensuel | pts_PCS × 2 000 / 12 (pas de plafond) | Non |
-| Bonus par course | max(0, pts_course × 1 500 − salaire) | Non |
-| Salaire plancher (enchere min) | 5 000 €/mois | Non |
-| Taux conversion bonus | 1 500 €/point PCS | Non |
-| Faillite : libere en premier | Meilleur scoreur (beta) | Non |
-| Duree d'enchere | 72 heures | Non |
-| Increment d'enchere | 100 € | Non |
-| Slots max | 6 (Nv.1) → 12 (Nv.7-8) | Non |
-| Politiques max | 1 (Nv.1-2) → 2 (Nv.3-6) → 3 (Nv.7-8) | Non |
-| Pool coureurs | Top 600 PCS global (12 mois glissants) | Non |
-| XP Niveau 5 | 600 | Non |
-| XP Niveau 8 (max) | 2 000 | Non |
-| Contrat sponsor | 2 mois (post-beta) | Non |
-| Joueurs max par ligue | 20 | Non |
+### 8 phases alignees sur le calendrier World Tour
+
+| # | Phase | Periode approx. |
+|---|-------|-----------------|
+| 1 | Season Start | Jan 15 – Mar 1 |
+| 2 | Classics Part 1 | Mar 5 – Apr 1 |
+| 3 | Classics Part 2 | Apr 5 – May 1 |
+| 4 | Giro d'Italia | May 5 – Jun 1 |
+| 5 | Pre-Tour | Jun 5 – Jul 1 |
+| 6 | Tour de France | Jul 4 – Jul 27 |
+| 7 | Post-Tour | Jul 31 – Aug 18 |
+| 8 | La Vuelta | Aug 22 – Sep 15 |
+
+### Payday (confirmation de phase)
+
+Au debut de chaque phase, le joueur **confirme** sa configuration :
+1. Ajuster sponsor, releases, politiques — pas de mouvement d'argent
+2. Cliquer "Confirm"
+3. Calcul : `tresorerie += sponsor_budget - somme(salaires)`
+4. Si tresorerie < -10 000 → cascade de faillite (§4.5)
+5. Le joueur entre en mode encheres
+
+**Chaque joueur confirme independamment** — pas de payday global.
+
+---
+
+## 11. Constantes du jeu (resume)
+
+| Constante | Valeur |
+|-----------|--------|
+| Tresorerie depart | 0 EUR (premier sponsor = premier paiement) |
+| Sponsor par defaut | Lotto T1, 250 000 EUR/phase (fixe) |
+| Enchere = salaire mensuel | Oui — pas d'achat unique |
+| Salaire mensuel | max(5 000, floor(pts_PCS x 2 000 / 12 / 100) x 100) |
+| Salaire plancher | 5 000 EUR/mois |
+| Frais de liberation | 5 000 EUR forfaitaire |
+| Tolerance faillite | -10 000 EUR |
+| Faillite : libere en premier | Plus haut XP cumule |
+| Increment d'enchere | 100 EUR (multiples de 100) |
+| Slots max | 6 (Nv.1) → 12 (Nv.7-8) |
+| Politiques max | 1 (Nv.1-2) → 2 (Nv.3-6) → 3 (Nv.7-8) |
+| Pool coureurs | Top 600 PCS global (12 mois glissants) |
+| XP Niveau 8 (max) | 2 000 |
+| Joueurs max par ligue | 20 |
