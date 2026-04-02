@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
 import { getCurrentPhase } from "@/lib/phases";
+import { confirmPhaseSetup } from "@/app/(game)/league/[leagueId]/team/market/actions";
 
 function minRankForLevel(level: number): number {
   return getLevelByNumber(level).poolMin;
@@ -51,10 +52,23 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
 
   if (!team) return { error: "Team not found" };
 
-  // Gate: must confirm phase setup before bidding
+  // Gate: auto-confirm phase setup if not yet confirmed
   const currentPhase = getCurrentPhase();
   if (team.phase_confirmed_id !== currentPhase.id) {
-    return { error: "You must confirm your phase setup before placing bids" };
+    // Auto-confirm with existing config (no pending changes)
+    const confirmResult = await confirmPhaseSetup(team.id);
+    if (confirmResult && "error" in confirmResult) {
+      return { error: `Auto-confirm failed: ${confirmResult.error}` };
+    }
+    // Re-fetch team treasury after payday (+sponsor income, -salaries)
+    const { data: refreshedTeam } = await supabase
+      .from("teams")
+      .select("treasury")
+      .eq("id", team.id)
+      .single();
+    if (refreshedTeam) {
+      team.treasury = refreshedTeam.treasury;
+    }
   }
 
   // Check rider min salary

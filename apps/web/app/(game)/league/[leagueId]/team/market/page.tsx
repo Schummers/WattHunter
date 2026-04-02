@@ -57,6 +57,7 @@ export default async function MarketPage({
       { data: policies },
       { data: pendingSponsor },
       { data: auctions },
+      { data: leagueInfo },
     ] = await Promise.all([
       supabase
         .from("team_sponsors")
@@ -87,6 +88,11 @@ export default async function MarketPage({
         .in("status", ["scheduled", "open"])
         .order("opens_at", { ascending: true })
         .limit(3),
+      supabase
+        .from("leagues")
+        .select("commissioner_id")
+        .eq("id", leagueId)
+        .single(),
     ]);
 
     const rawSponsor = teamSponsor?.sponsors;
@@ -116,9 +122,12 @@ export default async function MarketPage({
       });
 
     const rounds = (auctions ?? []).map((a) => ({
+      id: a.id,
       name: a.name,
       date: a.opens_at,
     }));
+
+    const isCommissioner = leagueInfo?.commissioner_id === user.id;
 
     const levelData = getLevelByNumber(level);
 
@@ -136,6 +145,7 @@ export default async function MarketPage({
         maxPolicies={levelData.maxActive}
         treasury={team?.treasury ?? 0}
         rounds={rounds}
+        isCommissioner={isCommissioner}
       />
     );
   }

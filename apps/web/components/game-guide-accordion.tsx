@@ -71,13 +71,12 @@ const HELP_SECTIONS: HelpSection[] = [
         </Formula>
         <p>
           <strong>Season structure:</strong> The season runs from January to November, divided
-          into 9 auction phases aligned with the real cycling calendar. Each phase features
+          into 8 auction phases aligned with the real cycling calendar. Each phase features
           different races and auction windows.
         </p>
         <p>
           <strong>How to win:</strong> Accumulate the most XP in your league. Smart budget
-          management and &quot;hidden gem&quot; riders (cheap riders who overperform) are
-          the key to success.
+          management, the right sponsor, and a well-themed roster are the keys to success.
         </p>
       </Prose>
     ),
@@ -162,35 +161,35 @@ const HELP_SECTIONS: HelpSection[] = [
   {
     id: "calendar",
     title: "Race Calendar & Phases",
-    subtitle: "9 auction phases aligned with real cycling",
+    subtitle: "8 auction phases aligned with real cycling",
     icon: Calendar,
     content: (
       <Prose>
         <p>
-          The WattHunter season is divided into <strong>9 auction phases</strong>, each aligned
-          with major periods of the professional cycling calendar. The 2026 WorldTour features{" "}
-          <strong className="font-mono">36</strong> races.
+          The WattHunter season is divided into <strong>8 auction phases</strong>, each aligned
+          with a major period of the professional cycling calendar. Each phase ends with{" "}
+          <strong>3 auction rounds</strong> (one per day) where you can recruit new riders.
         </p>
         <Table
           headers={["#", "Phase", "Period", "Auction rounds", "Key races"]}
           rows={[
-            ["1", "Season Start", "Jan 15 – Mar 1", "R1: Mar 2, R2: Mar 3, R3: Mar 4", "Tour Down Under, Cadel Evans, UAE Tour, Omloop"],
-            ["2", "Classics Part 1", "Mar 5 – Apr 1", "R1: Apr 2, R2: Apr 3, R3: Apr 4", "Strade, Paris-Nice, Tirreno, MSR, Catalunya, Brugge, E3, G-W, Dwars"],
-            ["3", "Classics Part 2", "Apr 5 – May 1", "R1: May 2, R2: May 3, R3: May 4", "Ronde, Itzulia, Roubaix, Amstel, Flèche, LBL, Romandie, Eschborn"],
-            ["4", "Giro d'Italia", "May 5 – Jun 1", "R1: Jun 2, R2: Jun 3, R3: Jun 4", "Giro d'Italia"],
-            ["5", "Pre-Tour", "Jun 5 – Jul 1", "R1: Jul 2, R2: Jul 3, R3: Jul 4", "Dauphiné, Copenhagen Sprint, Tour de Suisse"],
-            ["6", "Tour de France", "Jul 4 – Jul 27", "R1: Jul 28, R2: Jul 29, R3: Jul 30", "Tour de France"],
-            ["7", "Post-Tour", "Jul 31 – Aug 18", "R1: Aug 19, R2: Aug 20, R3: Aug 21", "San Sebastián, Pologne, Cyclassics"],
-            ["8", "La Vuelta", "Aug 22 – Sep 15", "R1: Sep 16, R2: Sep 17, R3: Sep 18", "Renewi, Vuelta, Bretagne, GP Québec, GP Montréal"],
-            ["9", "End of Season", "Sep 19 – Oct 18", "—", "Il Lombardia, Tour of Guangxi"],
+            ["1", "Season Start",   "Jan 15 – Mar 1",  "Mar 2, Mar 3, Mar 4",   "Tour Down Under, Cadel Evans, UAE Tour, Omloop"],
+            ["2", "Classics Part 1","Mar 5 – Apr 1",   "Apr 2, Apr 3, Apr 4",   "Strade, Paris-Nice, Tirreno, MSR, Catalunya, E3, G-W, Dwars"],
+            ["3", "Classics Part 2","Apr 5 – May 1",   "May 2, May 3, May 4",   "Ronde, Itzulia, Roubaix, Amstel, Flèche, LBL, Romandie, Eschborn"],
+            ["4", "Giro d'Italia",  "May 5 – Jun 1",   "Jun 2, Jun 3, Jun 4",   "Giro d'Italia"],
+            ["5", "Pre-Tour",       "Jun 5 – Jul 1",   "Jul 2, Jul 3, Jul 4",   "Dauphiné, Copenhagen Sprint, Tour de Suisse"],
+            ["6", "Tour de France", "Jul 4 – Jul 27",  "Jul 28, Jul 29, Jul 30","Tour de France"],
+            ["7", "Post-Tour",      "Jul 31 – Aug 18", "Aug 19, Aug 20, Aug 21","San Sebastián, Pologne, Cyclassics"],
+            ["8", "La Vuelta",      "Aug 22 – Sep 15", "Sep 16, Sep 17, Sep 18","Renewi, Vuelta, Bretagne, GP Québec, GP Montréal"],
           ]}
         />
         <Formula>
-          <p>Each phase = races → 3 auction rounds (R1, R2, R3 — 24h each) → next phase</p>
+          <p>Each phase = races run → confirm payday → 3 auction rounds (24h each) → next phase</p>
         </Formula>
         <p>
-          At the end of each phase, 3 auction rounds open on consecutive days. This is your
-          window to recruit riders for the upcoming races.
+          At the start of each phase you <strong>confirm your setup</strong> (sponsor, roster,
+          policies) before bidding opens. Confirming triggers the payday: sponsor income is added
+          and salaries are deducted. Then the 3 auction rounds open on consecutive days.
         </p>
       </Prose>
     ),
@@ -210,7 +209,7 @@ const HELP_SECTIONS: HelpSection[] = [
             ["Duration", "72 hours (3 rounds of 24h)"],
             ["Format", "Sealed-bid — bids are secret during each round"],
             ["Minimum bid", "Rider's market salary (PCS-based formula)"],
-            ["Minimum increment", "+100 EUR over current highest bid"],
+            ["Minimum increment", "+500 EUR over current highest bid"],
             ["Tie-breaker", "Earliest timestamp wins"],
           ]}
         />
@@ -233,7 +232,8 @@ const HELP_SECTIONS: HelpSection[] = [
         <p>
           <strong>Resolution:</strong> After each 24h round, highest bid wins. Budget is verified
           in cascade (riders sorted by bid descending). The winning bid becomes the locked{" "}
-          <code>contract_salary</code>. A contract is created immediately.
+          <code>contract_salary</code>. A contract is created and the salary is deducted from your
+          treasury immediately.
         </p>
       </Prose>
     ),
@@ -243,7 +243,7 @@ const HELP_SECTIONS: HelpSection[] = [
   {
     id: "salary-bonus",
     title: "Salaries & Bonuses",
-    subtitle: "How rider costs and race income work",
+    subtitle: "How rider costs and sponsor bonuses work",
     icon: Coins,
     content: (
       <Prose>
@@ -253,34 +253,37 @@ const HELP_SECTIONS: HelpSection[] = [
           their locked monthly salary.
         </p>
         <Formula>
-          <p>Monthly salary = PCS_points_1y × 2,000 / 12</p>
-          <p>Floor: 5,000 EUR/month | No cap</p>
+          <p>Monthly salary = max(5,000, floor(PCS_points × 2,000 / 12 / 100) × 100)</p>
+          <p>Floor: 5,000 EUR/month | No cap | Rounded to nearest 100 EUR</p>
         </Formula>
         <Table
           headers={["Rider rank", "PCS pts (1y)", "Annual value", "Monthly salary"]}
           rows={[
             ["#500", "114", "228,000 EUR", "19,000 EUR"],
-            ["#100", "400", "800,000 EUR", "66,667 EUR"],
-            ["#5 (Vingegaard)", "2,216", "4,432,000 EUR", "369,333 EUR"],
-            ["#1 (Pogacar)", "4,552", "9,104,000 EUR", "758,667 EUR"],
+            ["#100", "400", "800,000 EUR", "66,600 EUR"],
+            ["#5 (Vingegaard)", "2,216", "4,432,000 EUR", "369,300 EUR"],
+            ["#1 (Pogacar)", "4,552", "9,104,000 EUR", "758,600 EUR"],
           ]}
         />
-        <Formula>
-          <p>Race bonus = max(0, race_points × 1,500 − monthly_salary)</p>
-        </Formula>
         <p>
-          <strong>Hidden gem mechanic:</strong> Stars (high salary) almost never generate bonuses
-          because their salary exceeds the bonus formula. Cheap riders (#400-500) generate bonuses
-          as soon as they score race points. This is the core strategic mechanic.
+          <strong>Sponsor bonuses:</strong> Instead of a rider-based bonus formula, your{" "}
+          <strong>sponsor</strong> pays you bonuses when your contracted riders finish in
+          qualifying positions. Bonus amounts depend on your sponsor tier, the result type,
+          and applicable multipliers.
         </p>
         <Table
-          headers={["Rider", "Monthly salary", "Race points", "Bonus earned"]}
+          headers={["Result type", "Multiplier", "Condition"]}
           rows={[
-            ["#450 rider", "21,000 EUR", "20 pts", "9,000 EUR"],
-            ["#100 rider", "67,000 EUR", "30 pts", "0 EUR (45k < 67k salary)"],
-            ["#1 Pogacar", "759,000 EUR", "100 pts", "0 EUR (150k < 759k salary)"],
+            ["Monument or Grand Tour result", "×2", "T1-T4 sponsors (applied to all 3 bonus lines)"],
+            ["Rider nationality matches sponsor", "×1.5", "T1-T4 sponsors only (T1 and T2 have no nationality)"],
+            ["Monument + matching nationality", "×3", "Both multipliers stack multiplicatively"],
           ]}
         />
+        <p>
+          <strong>Example (Groupama sponsor, French GC specialist):</strong> Your French rider
+          finishes 5th in the Tour de France GC. Groupama pays a 20K GC bonus × 2 (Grand Tour) ×
+          1.5 (French nationality) = <strong>60K bonus</strong> credited to your treasury that day.
+        </p>
       </Prose>
     ),
   },
@@ -324,7 +327,7 @@ const HELP_SECTIONS: HelpSection[] = [
   {
     id: "policies",
     title: "Policies (XP Boosters)",
-    subtitle: "5 policy types to multiply your XP",
+    subtitle: "4 policy types to multiply your XP",
     icon: Shield,
     content: (
       <Prose>
@@ -339,16 +342,20 @@ const HELP_SECTIONS: HelpSection[] = [
             ["Speciality", "+5% per matching specialty", "Level 1", "Choose a specialty (Sprinter, GC, etc.)"],
             ["Nationality", "+5% per matching nationality", "Level 3", "Choose a country"],
             ["Teams", "+5% per matching UCI team", "Level 5", "Choose a UCI WorldTeam"],
-            ["Young Blood", "+5% for riders under 23 years", "Level 7", "Automatic"],
-            ["Road Warriors", "+5% for riders over 32 years", "Level 7", "Automatic"],
+            ["Age", "+5% for riders ≤23 (Young Blood) or >32 (Road Warriors)", "Level 7", "Choose Young Blood or Road Warriors"],
           ]}
         />
         <Formula>
-          <p>Max active policies: 1 (Level 1-2) | 2 (Level 3-6) | 3 (Level 7+)</p>
+          <p>Max active policies: 1 (Level 1-2) | 2 (Level 3-6) | 3 (Level 7-8)</p>
           <p>Bonuses are additive across policies</p>
         </Formula>
         <p>
-          <strong>Example:</strong> You activate National Pride (Belgium) and Specialist (Sprinter).
+          <strong>Policy changes</strong> take effect at the <strong>next payday</strong> (when
+          you confirm the next phase setup). You can adjust policies freely between phases without
+          penalty.
+        </p>
+        <p>
+          <strong>Example:</strong> You activate Nationality (Belgium) and Speciality (Sprinter).
           A Belgian sprinter on your roster gets +10% XP on every race day. A Belgian climber
           gets +5% (only nationality matches). A French sprinter gets +5% (only specialty matches).
         </p>
@@ -367,63 +374,84 @@ const HELP_SECTIONS: HelpSection[] = [
         <Table
           headers={["Level", "Phase", "XP", "Slots", "Policies", "Rider pool", "New unlock"]}
           rows={[
-            ["1", "Season Start", "0", "6", "1", "#300–600", "Speciality policy"],
-            ["2", "Classics P1", "25", "7", "1", "#200–600", "—"],
-            ["3", "Classics P2", "150", "8", "2", "#100–600", "Nationality policy"],
-            ["4", "Giro", "350", "9", "2", "#30–600", "Sponsor T3"],
-            ["5", "Pre-Tour", "600", "10", "2", "#20–600", "Teams policy"],
-            ["6", "Tour", "900", "11", "2", "#10–600", "Sponsor T4"],
-            ["7", "Post-Tour", "1,500", "12", "3", "#4–600", "Age policies"],
-            ["8", "Vuelta", "2,000", "12", "3", "#1–600", "Podium unlocked"],
+            ["1", "Season Start",   "0",     "6",  "1", "#300–600", "Speciality policy + Lotto T1 (250K)"],
+            ["2", "Classics P1",    "25",    "7",  "1", "#200–600", "Astana T2 (350K)"],
+            ["3", "Classics P2",    "150",   "8",  "2", "#100–600", "Nationality policy + T3 sponsors (450K)"],
+            ["4", "Giro",           "350",   "9",  "2", "#30–600",  "—"],
+            ["5", "Pre-Tour",       "600",   "10", "2", "#20–600",  "Teams policy + T4 sponsors (650K)"],
+            ["6", "Tour",           "900",   "11", "2", "#10–600",  "—"],
+            ["7", "Post-Tour",      "1,500", "12", "3", "#4–600",   "Age policies + T5 sponsors (1M)"],
+            ["8", "Vuelta",         "2,000", "12", "3", "#1–600",   "T6 UAE Team Emirates (1.25M)"],
           ]}
         />
         <Formula>
           <p>Higher level = more roster slots + access to better-ranked riders + more policy slots</p>
         </Formula>
         <p>
+          <strong>T3 sponsors (Level 3):</strong> Groupama (FR) and Movistar (ES) are GC-oriented.
+          Alpecin (BE/NL) and Uno-X (DK/NO) are One-Day-oriented. All pay 450K/phase.
+        </p>
+        <p>
+          <strong>T4 sponsors (Level 5):</strong> Ineos (GB) and Decathlon (FR) are GC-oriented.
+          Soudal Quick-Step (BE) and Lidl-Trek (US/IT) are One-Day-oriented. All pay 650K/phase.
+        </p>
+        <p>
+          <strong>T5 sponsors (Level 7):</strong> Visma ("Le pari prestige") and Red Bull-Bora
+          ("Le régulier") both pay 1M/phase with different bonus risk profiles.
+        </p>
+        <p>
           <strong>Rider pool gating:</strong> The total rider pool is the Top 600 of the PCS
           global ranking (rolling 12 months). At Level 1, you can only recruit riders ranked
           #300-600. As you level up, higher-ranked (better) riders become available. At Level 8,
-          the entire pool is unlocked — including the podium top 3.
-        </p>
-        <p>
-          <strong>Calendar-aligned progression:</strong> Levels are calibrated so an active
-          player naturally reaches the right level for each racing phase — e.g., Level 4 (top 30
-          riders) for the Giro d&apos;Italia, Level 6 (top 10) for the Tour de France.
+          the entire pool is unlocked — including the world #1.
         </p>
       </Prose>
     ),
   },
 
-  /* 9. Sponsors */
+  /* 9. Sponsors & Income */
   {
     id: "sponsors",
     title: "Sponsors & Income",
-    subtitle: "Income from sponsor contracts",
+    subtitle: "6 tiers, 13 sponsors, race bonuses",
     icon: Handshake,
     content: (
       <Prose>
         <p>
-          Sponsors provide your team with a recurring income, paid at the <strong>start of each
-          auction phase</strong>. Every team starts with a default sponsor.
+          Every team has <strong>exactly one sponsor</strong>, gated by level only — no eligibility
+          conditions. Your sponsor provides a fixed monthly budget paid once per phase at payday,
+          plus race bonuses when your riders perform.
         </p>
         <Table
-          headers={["Sponsor tier", "Payment per phase", "Unlock level"]}
+          headers={["Tier", "Level", "Budget/phase", "Sponsors"]}
           rows={[
-            ["Default (Tier 1)", "200,000 → 300,000 EUR", "Level 1 (active from start)"],
-            ["Tier 2", "400,000 EUR", "Level 3"],
-            ["Tier 3", "550,000 EUR", "Level 4 (Giro)"],
-            ["Tier 4", "750,000 EUR", "Level 6 (Tour)"],
-            ["Tier 5", "1,000,000 EUR", "Level 8"],
+            ["T1", "1", "250,000 EUR", "Lotto (auto-assigned at start)"],
+            ["T2", "2", "350,000 EUR", "Astana (auto-upgraded at L2)"],
+            ["T3", "3", "450,000 EUR", "Groupama (FR), Movistar (ES) — GC · Alpecin (BE/NL), Uno-X (DK/NO) — One-Day"],
+            ["T4", "5", "650,000 EUR", "Ineos (GB), Decathlon (FR) — GC · Soudal Quick-Step (BE), Lidl-Trek (US/IT) — One-Day"],
+            ["T5", "7", "1,000,000 EUR", "Visma \u201CLe pari prestige\u201D · Red Bull-Bora \u201CLe r\u00E9gulier\u201D"],
+            ["T6", "8", "1,250,000 EUR", "UAE Team Emirates (sponsor ultime)"],
           ]}
         />
+        <p>
+          <strong>Race bonuses (T1-T4):</strong> Each sponsor has 3 bonus lines — GC, One-Day,
+          and Stage — that trigger when your riders finish within the qualifying threshold.
+          Multipliers stack: ×2 for Monuments/Grand Tours, ×1.5 if the rider&apos;s nationality
+          matches the sponsor&apos;s. T1 and T2 have no nationality bonus.
+        </p>
+        <p>
+          <strong>Race bonuses (T5-T6):</strong> Explicit bonus amounts for regular vs. prestige
+          events (Monuments and Grand Tours). No nationality multiplier at this tier.
+        </p>
         <Formula>
-          <p>Payment: at the start of each auction phase</p>
-          <p>When you change sponsors, the new sponsor becomes active at the start of the next auction phase</p>
+          <p>T5 Visma: Monument/GT Podium → 75K · Regular Top 5 → 25K (high risk, high reward)</p>
+          <p>T5 Red Bull: Monument/GT Top 5 → 50K · Regular Top 5 → 30K (consistent income)</p>
+          <p>T6 UAE: Monument/GT Podium → 100K · Stage win → 25K (victories and podiums only)</p>
         </Formula>
         <p>
-          Higher-tier sponsors pay more but require higher levels to unlock. Each sponsor
-          may have conditions (nationality, specialty, race results) that your roster must meet.
+          <strong>Changing sponsor:</strong> You can switch anytime. The new sponsor becomes
+          active at the <strong>next payday</strong> (next phase confirmation). Race bonuses
+          during the current phase use the sponsor that was active at your last payday.
         </p>
       </Prose>
     ),
@@ -440,26 +468,33 @@ const HELP_SECTIONS: HelpSection[] = [
         <Table
           headers={["Item", "Detail"]}
           rows={[
-            ["Starting treasury", "200,000 EUR"],
-            ["Inflows", "Sponsor payments (each phase) + Rider bonuses (per race)"],
-            ["Outflows", "Rider salaries (each phase)"],
-            ["Phase cycle", "At the start of each phase: sponsor paid first, then salaries deducted"],
+            ["Starting treasury", "0 EUR — first sponsor payment replaces the old starting fund"],
+            ["Payday", "Player-triggered: click Confirm at phase start. +sponsor budget, -salaries"],
+            ["Race bonuses", "+sponsor bonus credited on the day race results are imported"],
+            ["Auction win", "-locked salary deducted immediately from treasury"],
+            ["Release fee", "-5,000 EUR flat fee, deducted immediately"],
           ]}
         />
         <Formula>
-          <p>Treasury = starting_balance + cumulative_sponsor_payments + cumulative_bonuses − cumulative_salaries</p>
+          <p>After payday: treasury = treasury + sponsor_budget - sum(active_salaries)</p>
+          <p>Race bonus: treasury += base_bonus × multiplier (credited same day as result)</p>
         </Formula>
         <p>
           <strong>Releasing riders:</strong>
         </p>
         <ul>
           <li>
-            You can <strong>manually release riders</strong> to reduce your salary burden and
-            avoid bankruptcy
+            You can <strong>release a rider at any time</strong> — flat fee of{" "}
+            <strong>5,000 EUR</strong>, effective immediately
           </li>
           <li>
-            You can release riders <strong>during the auction window</strong>. The rider enters
-            notice and leaves your roster at the start of the next phase.
+            <strong>Transfer bonus:</strong> if the rider&apos;s current market salary is higher
+            than what you paid, you receive{" "}
+            <code>max(0, current_min_salary - locked_salary)</code> back
+          </li>
+          <li>
+            <strong>Lock:</strong> you cannot release a rider recruited during the current phase&apos;s
+            auction rounds
           </li>
         </ul>
         <p>
@@ -467,27 +502,25 @@ const HELP_SECTIONS: HelpSection[] = [
         </p>
         <ul>
           <li>
-            <strong>Month 1 of negative treasury:</strong> Debt status — blocked from
-            auctions, but you can still play and earn bonuses
+            At payday, if <code>treasury &lt; -10,000 EUR</code> after salary deduction, an{" "}
+            <strong>auto-release cascade</strong> triggers
           </li>
           <li>
-            <strong>Month 2 consecutive negative:</strong> Auto-release kicks in —
-            your best scorer (highest PCS points) is released first, then the next,
-            until treasury is positive again
+            The rider with the <strong>highest cumulative XP</strong> is released first: salary
+            refunded, 5,000 EUR fee applied, transfer bonus applied if applicable
+          </li>
+          <li>
+            The cascade repeats until <code>treasury ≥ -10,000 EUR</code> or the roster is empty
           </li>
         </ul>
         <Table
           headers={["Scenario", "Treasury", "Action"]}
           rows={[
-            ["Healthy", "> 0 EUR", "Normal play — can bid at auctions"],
-            ["Month 1 debt", "< 0 EUR", "Blocked from auctions — earn your way back"],
-            ["Month 2 debt", "< 0 EUR (2nd consecutive)", "Auto-release best riders until positive"],
+            ["Healthy", "≥ 0 EUR", "Normal play — can bid at auctions"],
+            ["Tolerance zone", "-10,000 to 0 EUR", "Can still play, monitor carefully"],
+            ["Bankruptcy", "< -10,000 EUR at payday", "Auto-release cascade (highest XP rider first)"],
           ]}
         />
-        <p>
-          No notice period applies to auto-releases during bankruptcy. Released riders
-          return to the auction pool immediately.
-        </p>
       </Prose>
     ),
   },

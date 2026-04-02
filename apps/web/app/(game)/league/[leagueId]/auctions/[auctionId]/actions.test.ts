@@ -15,10 +15,11 @@ import { describe, it, expect, vi } from "vitest";
 // ---------------------------------------------------------------------------
 
 // Use vi.hoisted() so these are available when vi.mock() factory runs
-const { mockFrom, mockGetUser } = vi.hoisted(() => {
+const { mockFrom, mockGetUser, mockConfirmPhaseSetup } = vi.hoisted(() => {
   const mockFrom = vi.fn();
   const mockGetUser = vi.fn();
-  return { mockFrom, mockGetUser };
+  const mockConfirmPhaseSetup = vi.fn();
+  return { mockFrom, mockGetUser, mockConfirmPhaseSetup };
 });
 
 const mockSupabase = {
@@ -32,6 +33,9 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 vi.mock("@/lib/phases", () => ({
   getCurrentPhase: () => ({ id: 4, label: "Giro d'Italia" }),
+}));
+vi.mock("@/app/(game)/league/[leagueId]/team/market/actions", () => ({
+  confirmPhaseSetup: mockConfirmPhaseSetup,
 }));
 
 // Import AFTER mocks are declared
@@ -310,6 +314,80 @@ describe("placeBid — budget check", () => {
       round: 1,
     });
 
+    expect(result).toEqual({ success: true });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// placeBid — auto-confirm phase setup
+// ---------------------------------------------------------------------------
+
+describe("placeBid — auto-confirm phase setup", () => {
+  it("calls confirmPhaseSetup when phase is not confirmed, then proceeds with bid", async () => {
+    // team.phase_confirmed_id = 3 (stale), currentPhase.id = 4 → triggers auto-confirm
+    mockConfirmPhaseSetup.mockResolvedValueOnce({ success: true });
+
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
+    mockFrom
+      .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))                         // auctions
+      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 8, phase_confirmed_id: 3 }))   // teams (phase NOT confirmed)
+      .mockReturnValueOnce(makeChain({ treasury: 1_000 }))                                                   // re-fetch treasury after auto-confirm
+      .mockReturnValueOnce(makeChain({ monthly_salary: 100, pcs_rank: 5, ever_in_pool: true }))              // riders
+      .mockReturnValueOnce(makeChain(null))                                                                   // existingBid
+      .mockReturnValueOnce(makeChain([]))                                                                     // activeBids (empty)
+      .mockReturnValueOnce(makeChain(null, null, 0))                                                         // contracts count
+      .mockReturnValueOnce(makeChain(null, null));                                                            // insert success
+
+    const result = await placeBid({
+      auctionId: UUID_1,
+      riderId: UUID_2,
+      amount: 1_000,
+      round: 1,
+    });
+
+    expect(mockConfirmPhaseSetup).toHaveBeenCalledWith("team-1");
+    expect(result).toEqual({ success: true });
+  });
+
+  it("returns auto-confirm error when confirmPhaseSetup fails", async () => {
+    mockConfirmPhaseSetup.mockResolvedValueOnce({ error: "Team not found" });
+
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
+    mockFrom
+      .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))          // auctions
+      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 8, phase_confirmed_id: 3 })); // teams
+
+    const result = await placeBid({
+      auctionId: UUID_1,
+      riderId: UUID_2,
+      amount: 1_000,
+      round: 1,
+    });
+
+    expect(result).toEqual({ error: "Auto-confirm failed: Team not found" });
+  });
+
+  it("does not call confirmPhaseSetup when phase is already confirmed", async () => {
+    mockConfirmPhaseSetup.mockClear();
+
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
+    mockFrom
+      .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))                         // auctions
+      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 8, phase_confirmed_id: 4 }))   // teams (phase confirmed = 4)
+      .mockReturnValueOnce(makeChain({ monthly_salary: 100, pcs_rank: 5, ever_in_pool: true }))              // riders
+      .mockReturnValueOnce(makeChain(null))                                                                   // existingBid
+      .mockReturnValueOnce(makeChain([]))                                                                     // activeBids
+      .mockReturnValueOnce(makeChain(null, null, 0))                                                         // contracts count
+      .mockReturnValueOnce(makeChain(null, null));                                                            // insert success
+
+    const result = await placeBid({
+      auctionId: UUID_1,
+      riderId: UUID_2,
+      amount: 1_000,
+      round: 1,
+    });
+
+    expect(mockConfirmPhaseSetup).not.toHaveBeenCalled();
     expect(result).toEqual({ success: true });
   });
 });

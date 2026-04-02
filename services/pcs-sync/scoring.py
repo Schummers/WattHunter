@@ -7,7 +7,7 @@ For each contracted rider with pcs_points > 0 (from race_results):
   3. Update teams.cumulative_xp and teams.level
   4. Snapshot team_ranking_daily for movement tracking
 
-Treasury is handled separately by daily_finance.py and sponsor_bonus.py.
+Treasury is handled separately by confirmPhaseSetup server action and sponsor_bonus.py.
 """
 from __future__ import annotations
 import logging

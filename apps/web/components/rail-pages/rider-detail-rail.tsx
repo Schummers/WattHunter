@@ -30,6 +30,8 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
     contractData: { locked_salary: number; status: string } | null;
     ownerInfo: { display_name: string; team_name: string } | null;
     budgetInfo?: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number; activeBidCount: number };
+    gameXp: number;
+    totalBonus: number;
   } | null>(null);
 
   useEffect(() => {
@@ -84,6 +86,18 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
         .eq("rider_id", riderId)
         .order("race_date", { ascending: false });
 
+      // Fetch XP and bonus data in parallel
+      const [{ data: xpDailyRaw }, { data: sponsorBonusesRaw }] = await Promise.all([
+        supabase
+          .from("rider_xp_daily")
+          .select("xp_gained, team_id")
+          .eq("rider_id", riderId),
+        supabase
+          .from("sponsor_bonuses")
+          .select("final_bonus, team_id")
+          .eq("rider_id", riderId),
+      ]);
+
       // Auth + context
       const { data: { user } } = await supabase.auth.getUser();
       let context: RiderContext = (from as RiderContext) ?? "ranking";
@@ -93,6 +107,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
       let activeAuctionId: string | null = null;
       let ownerInfo: { display_name: string; team_name: string } | null = null;
       let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number; activeBidCount: number } | undefined;
+      let userTeamId: string | null = null;
 
       if (user) {
         const { data: member } = await supabase
@@ -103,6 +118,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
           .single();
 
         if (member?.team_id) {
+          userTeamId = member.team_id;
           const { data: contract } = await supabase
             .from("contracts")
             .select("id, locked_salary, status")
@@ -140,7 +156,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
             if (auction) activeAuctionId = auction.id;
           }
 
-          // Budget info for recruts context
+          // Budget info for market context
           if (context === "market") {
             const { data: teamData } = await supabase
               .from("teams")
@@ -197,6 +213,21 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
 
       const minSalary = calcMinSalary(rider.pcs_points_1yr ?? 0);
 
+      // Compute game XP and bonus totals (team-scoped for "team" context, global otherwise)
+      let gameXp: number;
+      let totalBonus: number;
+      if (context === "team" && userTeamId) {
+        gameXp = (xpDailyRaw ?? [])
+          .filter((x) => x.team_id === userTeamId)
+          .reduce((sum, x) => sum + (x.xp_gained ?? 0), 0);
+        totalBonus = (sponsorBonusesRaw ?? [])
+          .filter((b) => b.team_id === userTeamId)
+          .reduce((sum, b) => sum + (b.final_bonus ?? 0), 0);
+      } else {
+        gameXp = (xpDailyRaw ?? []).reduce((sum, x) => sum + (x.xp_gained ?? 0), 0);
+        totalBonus = (sponsorBonusesRaw ?? []).reduce((sum, b) => sum + (b.final_bonus ?? 0), 0);
+      }
+
       if (!cancelled) {
         setData({
           rider: {
@@ -236,6 +267,8 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
           contractData,
           ownerInfo,
           budgetInfo,
+          gameXp,
+          totalBonus,
         });
         setLoading(false);
       }
@@ -277,6 +310,8 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
       ownerInfo={data.ownerInfo}
       budgetInfo={data.budgetInfo}
       hideBidSection={from === "mybids"}
+      gameXp={data.gameXp}
+      totalBonus={data.totalBonus}
       inRail
     />
   );

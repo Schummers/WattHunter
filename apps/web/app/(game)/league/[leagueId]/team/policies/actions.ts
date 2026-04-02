@@ -53,7 +53,7 @@ export async function savePolicies(
   const level = team.level ?? 1;
 
   const firstCycle = await isLeagueFirstCycle(supabase, leagueId);
-  const inAuction = isInAuctionWindow() || firstCycle;
+  const immediate = firstCycle;
 
   // Fetch existing state to project total active policies
   const { data: existingPolicies } = await supabase
@@ -67,7 +67,7 @@ export async function savePolicies(
     for (const ep of existingPolicies) {
       const slug = Array.isArray(ep.policies) ? ep.policies[0]?.slug : (ep.policies as any)?.slug;
       if (slug) {
-        projectedState[slug] = inAuction ? ep.is_active : (ep.pending_is_active ?? ep.is_active);
+        projectedState[slug] = immediate ? ep.is_active : (ep.pending_is_active ?? ep.is_active);
       }
     }
   }
@@ -109,9 +109,9 @@ export async function savePolicies(
     slugToId[p.slug] = p.id;
   }
 
-  // Only require nextPhase when outside auction window (pending mode)
-  const nextPhase = inAuction ? null : getNextPhase(getCurrentPhase());
-  if (!inAuction && !nextPhase) {
+  // Only require nextPhase when not in immediate mode (pending mode)
+  const nextPhase = immediate ? null : getNextPhase(getCurrentPhase());
+  if (!immediate && !nextPhase) {
     return { error: "Cannot change policies during the last phase of the season." };
   }
 
@@ -131,7 +131,7 @@ export async function savePolicies(
       .eq("policy_id", policyId)
       .single();
 
-    if (inAuction) {
+    if (immediate) {
       // IMMEDIATE: write directly to is_active + config, clear any pending state
       if (existing) {
         const sameActive = existing.is_active === policy.isActive;
@@ -202,7 +202,7 @@ export async function savePolicies(
   revalidatePath(`/league/${leagueId}/team`);
   revalidatePath(`/league/${leagueId}/team/policies`);
 
-  if (inAuction) {
+  if (immediate) {
     return { success: true, immediate: true };
   }
   return { success: true, effectivePhaseName: nextPhase!.label };

@@ -185,7 +185,7 @@ export function RiderDialog({
             </label>
             <Input
               type="number"
-              step={100}
+              step={500}
               min={rider.monthly_salary}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}

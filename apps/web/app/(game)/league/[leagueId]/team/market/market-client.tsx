@@ -473,7 +473,7 @@ export function MarketClient({
                                 type="text"
                                 inputMode="numeric"
                                 min={minSalary}
-                                step={100}
+                                step={500}
                                 placeholder={formatThousands(minSalary)}
                                 value={currentBid ? formatThousands(currentBid) : ""}
                                 onChange={(e) => {
@@ -536,7 +536,7 @@ export function MarketClient({
                         type="text"
                         inputMode="numeric"
                         min={minSalary}
-                        step={100}
+                        step={500}
                         placeholder={formatThousands(minSalary)}
                         value={currentBid ? formatThousands(currentBid) : ""}
                         onChange={(e) => {

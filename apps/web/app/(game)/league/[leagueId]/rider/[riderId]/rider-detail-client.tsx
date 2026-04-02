@@ -10,6 +10,7 @@ import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[au
 import { releaseRider } from "./actions";
 import { formatThousands, formatEuro, countryCodeToFlag, calcTransferBonus, RELEASE_FEE } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
+import { StickyBar } from "@/components/sticky-bar";
 
 type RiderContext = "market" | "team" | "ranking";
 
@@ -71,6 +72,8 @@ interface RiderDetailClientProps {
   };
   inRail?: boolean;
   hideBidSection?: boolean;
+  gameXp?: number;
+  totalBonus?: number;
 }
 
 function getAge(birthdate: string | null): number | null {
@@ -115,6 +118,8 @@ export function RiderDetailClient({
   budgetInfo,
   inRail,
   hideBidSection,
+  gameXp,
+  totalBonus,
 }: RiderDetailClientProps) {
   const router = useRouter();
   const [tabIndex, setTabIndex] = useState(0);
@@ -168,11 +173,15 @@ export function RiderDetailClient({
       return (
         <div className="flex gap-3 px-4">
           <div className={boxClass}>
-            <div className={valueClass}>—</div>
+            <div className={valueClass}>
+              {gameXp ? formatThousands(gameXp) : "—"}
+            </div>
             <span className={labelClass}>Game XP</span>
           </div>
           <div className={boxClass}>
-            <div className={valueClass}>—</div>
+            <div className={valueClass}>
+              {totalBonus ? formatThousands(totalBonus) + " €" : "—"}
+            </div>
             <span className={labelClass}>Bonus</span>
           </div>
           <div className={boxClass}>
@@ -189,11 +198,15 @@ export function RiderDetailClient({
       return (
         <div className="flex gap-3 px-4">
           <div className={boxClass}>
-            <div className={valueClass}>—</div>
+            <div className={valueClass}>
+              {gameXp ? formatThousands(gameXp) : "—"}
+            </div>
             <span className={labelClass}>Game XP</span>
           </div>
           <div className={boxClass}>
-            <div className={valueClass}>—</div>
+            <div className={valueClass}>
+              {totalBonus ? formatThousands(totalBonus) + " €" : "—"}
+            </div>
             <span className={labelClass}>Bonus</span>
           </div>
           <div className={boxClass}>
@@ -210,11 +223,15 @@ export function RiderDetailClient({
     return (
       <div className="flex gap-3 px-4">
         <div className={boxClass}>
-          <div className={`${valueClass} !text-[var(--accent-highlight)]`}>—</div>
+          <div className={`${valueClass} !text-[var(--accent-highlight)]`}>
+            {gameXp ? formatThousands(gameXp) : "—"}
+          </div>
           <span className={labelClass}>Game XP</span>
         </div>
         <div className={boxClass}>
-          <div className={valueClass}>—</div>
+          <div className={valueClass}>
+            {totalBonus ? formatThousands(totalBonus) + " €" : "—"}
+          </div>
           <span className={labelClass}>Bonus</span>
         </div>
         <div className={boxClass}>
@@ -349,32 +366,12 @@ export function RiderDetailClient({
               <Plus className="size-4" />
             </Button>
           </div>
-          {/* Min salary hint */}
-          <p className="text-center text-[length:var(--type-micro)] text-[var(--text-ghost)]">
-            min {formatThousands(minSalary)} €
-          </p>
-          {budgetInfo && (() => {
-            const serverBid = currentBidAmount ?? 0;
-            const localBid = bidAmount ?? 0;
-            const bidDelta = localBid - serverBid;
-            const isNewBid = currentBidAmount === null && bidAmount !== null;
-            const slotsUsed = budgetInfo.currentSlots + budgetInfo.activeBidCount + (isNewBid ? 1 : 0);
-            const remainingBudget = budgetInfo.treasury - budgetInfo.totalBidAmount - bidDelta;
-            return (
-              <div className="text-center font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-mid)]">
-                {slotsUsed}/{budgetInfo.maxSlots} slots &middot; {formatThousands(remainingBudget)} €
-              </div>
-            );
-          })()}
-          <Button
-            variant="cta"
-            size="lg"
-            className="w-full"
-            onClick={handleSaveBid}
-            disabled={!activeAuctionId || saving || bidAmount === null || bidAmount === currentBidAmount}
-          >
-            {saving ? "Saving..." : "Save bid"}
-          </Button>
+          {/* Min salary hint — visible only when typing (placeholder already shows it) */}
+          {bidAmount !== null && (
+            <p className="text-center text-[length:var(--type-micro)] text-[var(--text-ghost)]">
+              min {formatThousands(minSalary)} €
+            </p>
+          )}
           {currentBidId && activeAuctionId && (
             <button
               type="button"
@@ -387,6 +384,23 @@ export function RiderDetailClient({
           {error && (
             <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
           )}
+          {budgetInfo && (() => {
+            const serverBid = currentBidAmount ?? 0;
+            const localBid = bidAmount ?? 0;
+            const bidDelta = localBid - serverBid;
+            const isNewBid = currentBidAmount === null && bidAmount !== null;
+            const slotsUsed = budgetInfo.currentSlots + budgetInfo.activeBidCount + (isNewBid ? 1 : 0);
+            const remainingBudget = budgetInfo.treasury - budgetInfo.totalBidAmount - bidDelta;
+            return (
+              <StickyBar
+                saveEnabled={!!activeAuctionId && bidAmount !== null && bidAmount !== currentBidAmount}
+                onSave={handleSaveBid}
+                saving={saving}
+                slotInfo={`${slotsUsed}/${budgetInfo.maxSlots} slots`}
+                budgetInfo={`${formatThousands(remainingBudget)} €`}
+              />
+            );
+          })()}
         </div>
       )}
 

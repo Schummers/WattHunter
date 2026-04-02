@@ -27,6 +27,7 @@ export default async function RiderDetailPage({
     {
       data: { user },
     },
+    { data: sponsorBonusesRaw },
   ] = await Promise.all([
     supabase.from("riders").select("*").eq("id", riderId).single(),
     supabase
@@ -50,6 +51,10 @@ export default async function RiderDetailPage({
       .eq("rider_id", riderId)
       .order("date", { ascending: false }),
     supabase.auth.getUser(),
+    supabase
+      .from("sponsor_bonuses")
+      .select("final_bonus, team_id")
+      .eq("rider_id", riderId),
   ]);
 
   // Fetch race metadata (name, date, rank) for game results
@@ -83,6 +88,11 @@ export default async function RiderDetailPage({
     };
   });
 
+  // Compute game XP and sponsor bonus totals (team-filtered for "team" context, global otherwise)
+  // These are computed before we know context/team, so we derive both scopes and pick later
+  const allXp = (xpDailyRaw ?? []).reduce((sum, x) => sum + (x.xp_gained ?? 0), 0);
+  const allBonus = (sponsorBonusesRaw ?? []).reduce((sum, b) => sum + (b.final_bonus ?? 0), 0);
+
   if (!rider) {
     return (
       <div className="px-4 py-8">
@@ -104,6 +114,7 @@ export default async function RiderDetailPage({
   let currentBidId: string | null = null;
   let activeAuctionId: string | null = null;
   let ownerInfo: { display_name: string; team_name: string } | null = null;
+  let userTeamId: string | null = null;
 
   if (user) {
     const { data: member } = await supabase
@@ -114,6 +125,7 @@ export default async function RiderDetailPage({
       .single();
 
     if (member?.team_id) {
+      userTeamId = member.team_id;
       // Check if owned and current bid in parallel
       const [{ data: contract }, { data: activeBid }] = await Promise.all([
         supabase
@@ -148,7 +160,7 @@ export default async function RiderDetailPage({
         activeAuctionId = activeBid.auction_id;
       }
 
-      // Get active auction for recruts context
+      // Get active auction for market context
       if (!activeAuctionId) {
         const { data: auction } = await supabase
           .from("auctions")
@@ -196,7 +208,22 @@ export default async function RiderDetailPage({
 
   const minSalary = calcMinSalary(rider.pcs_points_1yr ?? 0);
 
-  // Phase 1.3: Budget info for recruts context
+  // Pick team-scoped totals for "team" context, global totals for market/ranking
+  let gameXp: number;
+  let totalBonus: number;
+  if (context === "team" && userTeamId) {
+    gameXp = (xpDailyRaw ?? [])
+      .filter((x) => x.team_id === userTeamId)
+      .reduce((sum, x) => sum + (x.xp_gained ?? 0), 0);
+    totalBonus = (sponsorBonusesRaw ?? [])
+      .filter((b) => b.team_id === userTeamId)
+      .reduce((sum, b) => sum + (b.final_bonus ?? 0), 0);
+  } else {
+    gameXp = allXp;
+    totalBonus = allBonus;
+  }
+
+  // Phase 1.3: Budget info for market context
   let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number; activeBidCount: number } | undefined;
   if (context === "market" && user) {
     const { data: memberForBudget } = await supabase
@@ -273,6 +300,8 @@ export default async function RiderDetailPage({
       activeAuctionId={activeAuctionId}
       contractData={contractData}
       ownerInfo={ownerInfo}
+      gameXp={gameXp}
+      totalBonus={totalBonus}
     />
   );
 }
