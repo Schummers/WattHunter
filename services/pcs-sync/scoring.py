@@ -3,25 +3,18 @@ Daily scoring job — WattHunter PCS Sync Microservice.
 
 For each contracted rider with pcs_points > 0 (from race_results):
   1. Apply per-rider policy matching → XP gained
-  2. Calculate revenue → add to treasury
-  3. Upsert into rider_xp_daily (keyed by team_id, rider_id, race_slug)
-  4. Update teams.cumulative_xp, teams.treasury, and teams.level
-  5. Insert treasury_log entry (with dedup guard)
-  6. Snapshot team_ranking_daily for movement tracking
+  2. Upsert into rider_xp_daily (keyed by team_id, rider_id, race_slug)
+  3. Update teams.cumulative_xp and teams.level
+  4. Snapshot team_ranking_daily for movement tracking
 
-NEVER hardcode CONVERSION_RATE — always read from env (CLAUDE.md rule).
+Treasury is handled separately by daily_finance.py and sponsor_bonus.py.
 """
 from __future__ import annotations
-import os
 import logging
 from datetime import date, datetime
 from supabase import Client
 
 logger = logging.getLogger(__name__)
-
-# Read at import time so the module-level constant is set correctly.
-# 1500 €/point PCS — intentionally below salary rate (2000) to create "pépite" dynamic.
-CONVERSION_RATE = int(os.getenv("CONVERSION_RATE_EUR_PER_PCS", "1500"))
 
 # Level thresholds — must match apps/web/lib/levels.ts (8 levels)
 LEVEL_THRESHOLDS = [0, 25, 150, 350, 600, 900, 1500, 2000]
@@ -33,15 +26,6 @@ def compute_level(xp: float) -> int:
         if xp >= LEVEL_THRESHOLDS[i]:
             return i + 1
     return 1
-
-
-def calculate_rider_bonus(pcs_points: int, locked_salary: int, conversion_rate: int) -> int:
-    """
-    Beta economy: bonus = max(0, pts × conversion_rate - locked_salary).
-    Positive only — a rider never costs more than their salary.
-    """
-    revenue = pcs_points * conversion_rate
-    return max(0, revenue - locked_salary)
 
 
 def _rider_matches_policy(
@@ -105,17 +89,12 @@ async def calculate_daily_scores(
     For each contracted rider with pcs_points > 0 in race_results:
       - Filter by race_slugs if provided, otherwise by today's date (backward compat)
       - Apply per-rider policy matching → XP
-      - Calculate revenue → treasury
       - Upsert rider_xp_daily (keyed by team_id, rider_id, race_slug)
-      - Update team cumulative_xp, treasury, and level
-      - Insert treasury_log entry with dedup check
+      - Update team cumulative_xp and level
       - Snapshot team_ranking_daily
 
     Returns a summary dict with teams_processed count and any errors.
     """
-    # Re-read CONVERSION_RATE from env at call time to pick up any runtime changes.
-    conversion_rate = int(os.getenv("CONVERSION_RATE_EUR_PER_PCS", "1500"))
-
     today = date.today().isoformat()
     processed = 0
     errors = []
@@ -151,19 +130,17 @@ async def calculate_daily_scores(
     # On first run prev=0 → delta=total (same as before).
     # On re-run prev=total → delta=0 → teams unchanged (no double-count).
     prev_team_xp: dict[str, float] = {}
-    prev_team_revenue: dict[str, int] = {}
     if race_slugs:
         prev_resp = supabase.table("rider_xp_daily").select(
-            "team_id, xp_gained, revenue_earned"
+            "team_id, xp_gained"
         ).in_("race_slug", race_slugs).execute()
         for row in (prev_resp.data or []):
             tid = row["team_id"]
             prev_team_xp[tid] = prev_team_xp.get(tid, 0.0) + float(row.get("xp_gained") or 0)
-            prev_team_revenue[tid] = prev_team_revenue.get(tid, 0) + int(row.get("revenue_earned") or 0)
 
     # --- Step 2: Get all active/notice contracts with rider info for policy matching ---
     contracts = supabase.table("contracts").select(
-        "id, team_id, rider_id, locked_salary, purchased_at, release_date, "
+        "id, team_id, rider_id, purchased_at, release_date, "
         "riders:rider_id(specialty, nationality, real_team, birthdate)"
     ).in_("status", ["active", "notice"]).execute()
 
@@ -200,10 +177,9 @@ async def calculate_daily_scores(
     # Track all league_ids for snapshot step
     league_ids_seen: set[str] = set()
 
-    # --- Step 4: Calculate XP + revenue per team and persist ---
+    # --- Step 4: Calculate XP per team and persist ---
     for team_id, team_clist in team_contracts.items():
         total_xp = 0.0
-        total_revenue = 0
 
         for contract in team_clist:
             rider_id = contract["rider_id"]
@@ -226,8 +202,6 @@ async def calculate_daily_scores(
             policies_for_team = team_policies.get(team_id, [])
             bonus = _compute_rider_bonus(rider_info, policies_for_team)
 
-            contract_salary = contract.get("locked_salary", 0)
-
             for entry in race_entries:
                 # Contract-date guard: only score races during contract period
                 race_date_str = entry.get("race_date")
@@ -247,7 +221,6 @@ async def calculate_daily_scores(
                 raw_points = entry["pcs_points"]
                 race_slug = entry["race_slug"]
                 xp = raw_points * (1 + bonus)
-                revenue = calculate_rider_bonus(raw_points, contract_salary, conversion_rate)
 
                 # Upsert rider_xp_daily (conflict key: team_id + rider_id + race_slug)
                 try:
@@ -260,7 +233,6 @@ async def calculate_daily_scores(
                         "policy_bonus": bonus,
                         "xp_gained": round(xp, 2),
                         "race_slug": race_slug,
-                        "revenue_earned": revenue,
                     }, on_conflict="team_id,rider_id,race_slug").execute()
                 except Exception as e:
                     logger.error(f"rider_xp_daily upsert failed for rider {rider_id} race {race_slug}: {e}")
@@ -268,27 +240,23 @@ async def calculate_daily_scores(
                     continue
 
                 total_xp += xp
-                total_revenue += revenue
 
-        if total_xp == 0 and total_revenue == 0:
+        if total_xp == 0:
             continue
 
         try:
             # Fetch current team values
             team_row = supabase.table("teams").select(
-                "id, cumulative_xp, treasury, level, league_id"
+                "id, cumulative_xp, level, league_id"
             ).eq("id", team_id).single().execute()
 
             if not team_row.data:
-                logger.warning(f"Team {team_id} not found — skipping treasury update")
+                logger.warning(f"Team {team_id} not found — skipping XP update")
                 continue
 
             prev_xp = round(prev_team_xp.get(team_id, 0.0), 2)
-            prev_rev = prev_team_revenue.get(team_id, 0)
             delta_xp = round(total_xp - prev_xp, 2)
-            delta_revenue = total_revenue - prev_rev
             new_xp = team_row.data["cumulative_xp"] + delta_xp
-            new_treasury = team_row.data["treasury"] + delta_revenue
 
             # Task 3: auto level-up
             current_level = team_row.data.get("level", 1)
@@ -296,7 +264,6 @@ async def calculate_daily_scores(
 
             update_data: dict = {
                 "cumulative_xp": new_xp,
-                "treasury": new_treasury,
             }
             if new_level != current_level:
                 update_data["level"] = new_level
@@ -307,21 +274,6 @@ async def calculate_daily_scores(
             # Track league for snapshot
             if team_row.data.get("league_id"):
                 league_ids_seen.add(team_row.data["league_id"])
-
-            # Insert treasury_log with dedup: only one rider_revenue per team per day
-            existing_log = supabase.table("treasury_log").select("id").eq(
-                "team_id", team_id
-            ).eq("type", "rider_revenue").gte(
-                "created_at", f"{today}T00:00:00"
-            ).execute()
-
-            if delta_revenue != 0 and not existing_log.data:
-                supabase.table("treasury_log").insert({
-                    "team_id": team_id,
-                    "type": "rider_revenue",
-                    "amount": delta_revenue,
-                    "description": f"Rider revenue {today}",
-                }).execute()
 
             processed += 1
 
