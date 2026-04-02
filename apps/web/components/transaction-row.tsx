@@ -16,8 +16,11 @@ function formatDate(iso: string): string {
 }
 
 function getAvatar(props: TransactionRowProps): { text: string; isSponsor: boolean } {
-  if (props.type === "sponsor_payment") {
+  if (props.type === "sponsor_payment" || props.type === "phase_sponsor_base") {
     return { text: props.sponsorAbbreviation ?? "SP", isSponsor: true };
+  }
+  if (props.type === "sponsor_bonus") {
+    return { text: "B", isSponsor: true };
   }
   if (props.type === "starting_fund") {
     return { text: "WH", isSponsor: true };
@@ -26,8 +29,9 @@ function getAvatar(props: TransactionRowProps): { text: string; isSponsor: boole
 }
 
 function getSubtitle(props: TransactionRowProps): string {
-  if (props.type === "sponsor_payment") return "Sponsorship";
-  if (props.type === "monthly_salary") return "Salary";
+  if (props.type === "sponsor_payment" || props.type === "phase_sponsor_base") return "Sponsorship";
+  if (props.type === "sponsor_bonus") return "Race bonus";
+  if (props.type === "monthly_salary" || props.type === "phase_salary") return "Salary";
   if (props.type === "monthly_bonus" || props.type === "rider_revenue") {
     return props.description?.split(" — ")[1] ?? "Bonus";
   }
@@ -38,7 +42,9 @@ function getSubtitle(props: TransactionRowProps): string {
 }
 
 function getName(props: TransactionRowProps): string {
-  if (props.type === "sponsor_payment") return props.description ?? "Sponsor";
+  if (props.type === "sponsor_payment" || props.type === "phase_sponsor_base") return props.description ?? "Sponsor";
+  if (props.type === "sponsor_bonus") return props.description ?? "Sponsor bonus";
+  if (props.type === "phase_salary") return props.description ?? "Phase salaries";
   if (props.type === "starting_fund") return "Initial treasury";
   if (props.type === "auction_purchase") return props.description?.split(" — ")[1] ?? props.description ?? "Contract";
   if (props.type === "bankruptcy_release") return props.description ?? "Auto-release";

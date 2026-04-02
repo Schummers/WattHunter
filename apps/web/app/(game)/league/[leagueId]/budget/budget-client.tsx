@@ -40,9 +40,9 @@ const FILTER_SEGMENTS = ["All", "Bonuses", "Salaries", "Sponsors"];
 
 function filterTransactions(transactions: Transaction[], filterIndex: number): Transaction[] {
   if (filterIndex === 0) return transactions;
-  if (filterIndex === 1) return transactions.filter((t) => t.type === "rider_revenue" || t.type === "monthly_bonus");
-  if (filterIndex === 2) return transactions.filter((t) => t.type === "monthly_salary" || t.type === "auction_purchase");
-  if (filterIndex === 3) return transactions.filter((t) => t.type === "sponsor_payment");
+  if (filterIndex === 1) return transactions.filter((t) => ["rider_revenue", "monthly_bonus", "sponsor_bonus"].includes(t.type));
+  if (filterIndex === 2) return transactions.filter((t) => ["monthly_salary", "phase_salary", "auction_purchase"].includes(t.type));
+  if (filterIndex === 3) return transactions.filter((t) => ["sponsor_payment", "phase_sponsor_base"].includes(t.type));
   return transactions;
 }
 

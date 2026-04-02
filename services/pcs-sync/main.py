@@ -82,9 +82,7 @@ async def job_daily_scoring(
 ):
     """
     Calculate daily XP for all teams with contracted riders who earned PCS points today.
-    Note: treasury is no longer updated here — treasury changes happen via phase-finance.
-
-    CONVERSION_RATE is read from env (CONVERSION_RATE_EUR_PER_PCS) — never hardcoded.
+    Treasury is handled separately by /jobs/phase-finance and sponsor bonuses.
     """
     _check_auth(x_api_secret)
     result = await calculate_daily_scores(_supabase)
