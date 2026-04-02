@@ -95,9 +95,10 @@ export async function confirmPhaseSetup(teamId: string) {
     .eq("team_id", teamId)
     .single();
 
-  const sponsor = teamSponsor?.sponsors;
-  const sponsorBudget = (sponsor as { monthly_budget: number } | null)?.monthly_budget ?? 250_000;
-  const sponsorName = (sponsor as { name: string } | null)?.name ?? "Lotto (default)";
+  const rawSponsor = teamSponsor?.sponsors;
+  const sponsor = Array.isArray(rawSponsor) ? rawSponsor[0] : rawSponsor;
+  const sponsorBudget = (sponsor as { monthly_budget: number } | undefined)?.monthly_budget ?? 250_000;
+  const sponsorName = (sponsor as { name: string } | undefined)?.name ?? "Lotto (default)";
 
   treasury += sponsorBudget;
 

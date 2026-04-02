@@ -89,7 +89,8 @@ export default async function RecrutsPage({
         .limit(3),
     ]);
 
-    const sponsor = teamSponsor?.sponsors as { name: string; monthly_budget: number } | null;
+    const rawSponsor = teamSponsor?.sponsors;
+    const sponsor = (Array.isArray(rawSponsor) ? rawSponsor[0] : rawSponsor) as { name: string; monthly_budget: number } | null;
     const { start: phaseStart } = getPhaseRange(currentPhase, new Date().getFullYear());
     const phaseStarted = new Date() >= phaseStart;
 

@@ -56,7 +56,7 @@ export function PhaseSetup({
     startTransition(async () => {
       const result = await confirmPhaseSetup(teamId);
       if ("error" in result) {
-        setError(result.error);
+        setError(result.error ?? "Unknown error");
       } else {
         router.refresh();
       }

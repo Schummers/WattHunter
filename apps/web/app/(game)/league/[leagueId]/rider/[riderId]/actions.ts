@@ -30,7 +30,12 @@ export async function releaseRider(contractId: string) {
       "riders:rider_id(pcs_points_1yr)"
     )
     .eq("id", contractId)
-    .single();
+    .single() as { data: {
+      id: string; team_id: string; rider_id: string; status: string;
+      locked_salary: number; phase_recruited_id: number | null;
+      teams: { user_id: string; treasury: number; league_id: string } | { user_id: string; treasury: number; league_id: string }[];
+      riders: { pcs_points_1yr: number | null } | { pcs_points_1yr: number | null }[];
+    } | null };
 
   if (!contract) return { error: "Contract not found" };
 

@@ -30,6 +30,9 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() => Promise.resolve(mockSupabase)),
 }));
+vi.mock("@/lib/phases", () => ({
+  getCurrentPhase: () => ({ id: 4, label: "Giro d'Italia" }),
+}));
 
 // Import AFTER mocks are declared
 import { placeBid, cancelBid } from "./actions";
@@ -226,7 +229,7 @@ describe("placeBid — rider salary minimum", () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
     mockFrom
       .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))           // auctions
-      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 500_000 })) // teams
+      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 500_000, phase_confirmed_id: 4 })) // teams
       .mockReturnValueOnce(makeChain({ monthly_salary: 10_000 }));          // riders
 
     const result = await placeBid({
@@ -250,7 +253,7 @@ describe("placeBid — budget check", () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
     mockFrom
       .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))                   // auctions
-      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000 }))          // teams
+      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, phase_confirmed_id: 4 }))          // teams
       .mockReturnValueOnce(makeChain({ monthly_salary: 100 }))                     // riders
       .mockReturnValueOnce(makeChain(null))                                         // existingBid (maybeSingle → null)
       .mockReturnValueOnce(makeChain([{ id: "other-bid", amount: 800 }]));         // activeBids
@@ -270,7 +273,7 @@ describe("placeBid — budget check", () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
     mockFrom
       .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))                         // auctions
-      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 8 }))   // teams
+      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 8, phase_confirmed_id: 4 }))   // teams
       .mockReturnValueOnce(makeChain({ monthly_salary: 100, pcs_rank: 5, ever_in_pool: true })) // riders
       .mockReturnValueOnce(makeChain(null))                               // existingBid
       .mockReturnValueOnce(makeChain([]))                                 // activeBids (empty)
