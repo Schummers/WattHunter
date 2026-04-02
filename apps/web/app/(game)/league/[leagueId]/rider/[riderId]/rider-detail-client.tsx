@@ -8,7 +8,7 @@ import { SegmentedControl } from "@/components/segmented-control";
 import { BackHeader } from "@/components/back-header";
 import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
 import { releaseRider } from "./actions";
-import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
+import { formatThousands, formatEuro, countryCodeToFlag, calcTransferBonus, RELEASE_FEE } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
 
 type RiderContext = "recruts" | "team" | "ranking";
@@ -60,10 +60,8 @@ interface RiderDetailClientProps {
   currentBidId?: string;
   currentBidAmount: number | null;
   activeAuctionId: string | null;
-  contractData: { locked_salary: number; status: string; contractId?: string; effectivePhaseName?: string } | null;
+  contractData: { locked_salary: number; status: string; contractId?: string; pcsPoints?: number } | null;
   ownerInfo: { display_name: string; team_name: string } | null;
-  canRelease?: boolean;
-  nextPhaseName?: string | null;
   budgetInfo?: {
     currentSlots: number;
     maxSlots: number;
@@ -113,8 +111,6 @@ export function RiderDetailClient({
   activeAuctionId,
   contractData,
   ownerInfo,
-  canRelease,
-  nextPhaseName,
   budgetInfo,
   inRail,
 }: RiderDetailClientProps) {
@@ -394,47 +390,48 @@ export function RiderDetailClient({
       )}
 
       {/* RD-6: Release button (team only) */}
-      {context === "team" && contractData?.status === "active" && (
-        <div className="px-4 space-y-2">
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full"
-            disabled={!canRelease || saving || !contractData.contractId}
-            onClick={async () => {
-              if (!contractData?.contractId) return;
-              const phaseName = nextPhaseName ?? "next phase";
-              if (!confirm(`Release this rider? They will leave at the start of ${phaseName}.`)) return;
-              setSaving(true);
-              setError(null);
-              const result = await releaseRider(contractData.contractId);
-              if (result.error) {
-                setError(result.error);
-              } else {
-                router.refresh();
-              }
-              setSaving(false);
-            }}
-          >
-            {saving ? "Releasing..." : canRelease
-              ? `Release rider — leaves ${nextPhaseName ?? "next phase"}`
-              : "Release only available during auctions"}
-          </Button>
-          {error && (
-            <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
-          )}
-        </div>
-      )}
-      {/* Notice badge for riders in notice period */}
-      {context === "team" && contractData?.status === "notice" && (
-        <div className="px-4">
-          <div className="rounded-lg bg-[var(--status-warning-bg,rgba(251,191,36,0.15))] px-4 py-3 text-center">
-            <span className="text-[length:var(--type-body)] font-semibold text-[var(--status-warning,#fbbf24)]">
-              Leaving after {contractData.effectivePhaseName ?? "next phase"}
-            </span>
+      {context === "team" && contractData?.status === "active" && (() => {
+        const bonus = calcTransferBonus(contractData.pcsPoints ?? 0, contractData.locked_salary);
+        return (
+          <div className="px-4 space-y-2">
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full"
+              disabled={saving || !contractData.contractId}
+              onClick={async () => {
+                if (!contractData?.contractId) return;
+                const msg = [
+                  "Release this rider?",
+                  `• Fee: ${formatEuro(RELEASE_FEE)} (deducted immediately)`,
+                  bonus > 0 ? `• Transfer bonus: +${formatEuro(bonus)}` : null,
+                  "• Rider returns to recruitment pool immediately",
+                ].filter(Boolean).join("\n");
+                if (!confirm(msg)) return;
+                setSaving(true);
+                setError(null);
+                const result = await releaseRider(contractData.contractId);
+                if (result.error) {
+                  setError(result.error);
+                } else {
+                  router.refresh();
+                }
+                setSaving(false);
+              }}
+            >
+              {saving ? "Releasing..." : `Release rider — ${formatEuro(RELEASE_FEE)} fee`}
+            </Button>
+            {bonus > 0 && (
+              <p className="text-[length:var(--type-caption)] text-[var(--accent-default)] text-center font-mono">
+                Transfer bonus: +{formatEuro(bonus)}
+              </p>
+            )}
+            {error && (
+              <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* RD-7: Ownership line (ranking only) */}
       {context === "ranking" && (
