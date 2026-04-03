@@ -448,7 +448,7 @@ export function MarketClient({
                         photo_url: r.photo_url,
                       }}
                       bidState={savedDraftIds.has(r.id) || bids[r.id] ? "active" : "none"}
-                      href={`/league/${leagueId}/rider/${r.id}?from=market`}
+                      onNavigate={() => router.push(`/league/${leagueId}/rider/${r.id}?from=market`)}
                       rightContent={renderRiderRight(r)}
                     />
                   ))}
@@ -467,10 +467,11 @@ export function MarketClient({
                   nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
                   team_name: r.real_team ?? undefined,
                   pcs_rank: r.pcs_rank ?? undefined,
+                  pcs_rank_diff: r.pcs_rank_diff,
                   photo_url: r.photo_url,
                 }}
                 bidState={savedDraftIds.has(r.id) || bids[r.id] ? "active" : "none"}
-                href={`/league/${leagueId}/rider/${r.id}?from=market`}
+                onNavigate={() => router.push(`/league/${leagueId}/rider/${r.id}?from=market`)}
                 rightContent={renderRiderRight(r)}
               />
             ))}

@@ -21,6 +21,7 @@ interface RiderCardProps {
   outbidMessage?: string;
   isOpenSlot?: boolean;
   href?: string;
+  onNavigate?: () => void;
   rightContent?: React.ReactNode;
 }
 
@@ -45,6 +46,7 @@ export function RiderCard({
   outbidMessage,
   isOpenSlot,
   href,
+  onNavigate,
   rightContent,
 }: RiderCardProps) {
   const isMuted = bidState === "outbid" || bidState === "not-accepted";
@@ -84,12 +86,9 @@ export function RiderCard({
 
   const hoverClass = !href ? "" : "hover:bg-[var(--bg-subtle)]";
 
-  const inner = (
-    <div
-      className={`relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] transition-colors ${bgClass} ${
-        isMuted ? "opacity-60" : ""
-      } ${hoverClass}`}
-    >
+  // Avatar + name area — clickable when onNavigate is set
+  const avatarAndName = (
+    <>
       {/* Avatar + PCS rank overlay */}
       <div className="relative shrink-0">
         <Avatar className="h-9 w-9">
@@ -110,9 +109,12 @@ export function RiderCard({
       {/* Name + team */}
       <div className="flex flex-1 flex-col min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] truncate">
+          <span className={`text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] truncate ${onNavigate ? "group-hover/nav:text-[var(--accent-default)] transition-colors" : ""}`}>
             {rider.name}
           </span>
+          {onNavigate && (
+            <span className="shrink-0 text-[length:var(--type-caption)] text-[var(--text-ghost)] group-hover/nav:text-[var(--accent-default)] transition-colors">›</span>
+          )}
           {rider.nationality_flag && (
             <span className="shrink-0 text-[length:var(--type-caption)]">{rider.nationality_flag}</span>
           )}
@@ -138,6 +140,28 @@ export function RiderCard({
           )}
         </div>
       </div>
+    </>
+  );
+
+  const inner = (
+    <div
+      className={`relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] transition-colors ${bgClass} ${
+        isMuted ? "opacity-60" : ""
+      } ${hoverClass}`}
+    >
+      {onNavigate ? (
+        // Clickable avatar+name area only
+        <button
+          type="button"
+          onClick={onNavigate}
+          className="group/nav flex flex-1 items-center gap-3 min-w-0 text-left cursor-pointer"
+        >
+          {avatarAndName}
+        </button>
+      ) : (
+        // Full-card mode (href) or non-clickable: render inline
+        avatarAndName
+      )}
 
       {/* Right side: XP or custom content */}
       {rightContent ? (
@@ -151,8 +175,8 @@ export function RiderCard({
         </div>
       ) : null}
 
-      {/* Chevron */}
-      {href && (
+      {/* Far-right chevron — only for href (full-card link), not onNavigate */}
+      {href && !onNavigate && (
         <ChevronRight size={14} className="shrink-0 text-[var(--text-ghost)] group-hover:text-[var(--accent-default)] transition-colors" />
       )}
     </div>
