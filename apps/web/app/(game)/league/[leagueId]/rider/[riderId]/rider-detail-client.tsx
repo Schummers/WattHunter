@@ -8,7 +8,7 @@ import { SegmentedControl } from "@/components/segmented-control";
 import { BackHeader } from "@/components/back-header";
 import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
 import { releaseRider } from "./actions";
-import { formatThousands, formatEuro, countryCodeToFlag, calcTransferBonus, RELEASE_FEE } from "@/lib/format";
+import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
 import { StickyBar } from "@/components/sticky-bar";
 
@@ -405,48 +405,39 @@ export function RiderDetailClient({
       )}
 
       {/* RD-6: Release button (team only) */}
-      {context === "team" && contractData?.status === "active" && (() => {
-        const bonus = calcTransferBonus(contractData.pcsPoints ?? 0, contractData.locked_salary);
-        return (
-          <div className="px-4 space-y-2">
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full"
-              disabled={saving || !contractData.contractId}
-              onClick={async () => {
-                if (!contractData?.contractId) return;
-                const msg = [
-                  "Release this rider?",
-                  `• Fee: ${formatEuro(RELEASE_FEE)} (deducted immediately)`,
-                  bonus > 0 ? `• Transfer bonus: +${formatEuro(bonus)}` : null,
-                  "• Rider returns to recruitment pool immediately",
-                ].filter(Boolean).join("\n");
-                if (!confirm(msg)) return;
-                setSaving(true);
-                setError(null);
-                const result = await releaseRider(contractData.contractId);
-                if (result.error) {
-                  setError(result.error);
-                } else {
-                  router.refresh();
-                }
-                setSaving(false);
-              }}
-            >
-              {saving ? "Releasing..." : `Release rider — ${formatEuro(RELEASE_FEE)} fee`}
-            </Button>
-            {bonus > 0 && (
-              <p className="text-[length:var(--type-caption)] text-[var(--accent-default)] text-center font-mono">
-                Transfer bonus: +{formatEuro(bonus)}
-              </p>
-            )}
-            {error && (
-              <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
-            )}
-          </div>
-        );
-      })()}
+      {context === "team" && contractData?.status === "active" && (
+        <div className="px-4 space-y-2">
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full"
+            disabled={saving || !contractData.contractId}
+            onClick={async () => {
+              if (!contractData?.contractId) return;
+              const msg = [
+                "Release this rider?",
+                "• Free — no release fee",
+                "• Rider returns to recruitment pool immediately",
+              ].join("\n");
+              if (!confirm(msg)) return;
+              setSaving(true);
+              setError(null);
+              const result = await releaseRider(contractData.contractId);
+              if (result.error) {
+                setError(result.error);
+              } else {
+                router.refresh();
+              }
+              setSaving(false);
+            }}
+          >
+            {saving ? "Releasing..." : "Release rider"}
+          </Button>
+          {error && (
+            <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
+          )}
+        </div>
+      )}
 
       {/* RD-7: Ownership line (ranking only) */}
       {context === "ranking" && (

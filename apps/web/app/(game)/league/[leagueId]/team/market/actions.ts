@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { getCurrentPhase, getPhaseRange } from "@/lib/phases";
-import { RELEASE_FEE } from "@/lib/format";
 import { z } from "zod/v4";
 
 // ---------------------------------------------------------------------------
@@ -240,20 +239,8 @@ export async function confirmPhaseSetup(teamId: string) {
         .update({ status: "released", released_at: new Date().toISOString() })
         .eq("id", contract.id);
 
-      // Refund salary
+      // Refund salary (no release fee — releasing is free)
       treasury += contract.locked_salary;
-
-      // Release fee
-      treasury -= RELEASE_FEE;
-
-      // Treasury log: release fee
-      await supabase.from("treasury_log").insert({
-        team_id: teamId,
-        type: "release_fee",
-        amount: -RELEASE_FEE,
-        description: `Bankruptcy release fee — rider ${contract.rider_id}`,
-        rider_id: contract.rider_id,
-      });
 
       // Treasury log: salary refund (bankruptcy_release)
       await supabase.from("treasury_log").insert({

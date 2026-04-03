@@ -3,16 +3,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { getCurrentPhase } from "@/lib/phases";
-import { calcTransferBonus, RELEASE_FEE } from "@/lib/format";
 
 /**
- * Release a rider immediately.
+ * Release a rider immediately. Releasing is free — no fee, no transfer bonus.
+ * The salary already paid for the current phase is simply lost (not refunded).
  *
  * Rules:
- *   - Flat fee: 5 000 EUR, deducted immediately
- *   - Transfer bonus if rider appreciated (current min salary > locked salary)
  *   - Lock: cannot release a rider recruited during the current phase
  *   - Contract set to 'released' immediately, rider returns to pool
+ *   - Any active draft bids for this rider from this team are deleted
  */
 export async function releaseRider(contractId: string) {
   const supabase = await createClient();
@@ -21,20 +20,18 @@ export async function releaseRider(contractId: string) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  // Fetch contract + team + rider data in one query
+  // Fetch contract + team data
   const { data: contract } = await supabase
     .from("contracts")
     .select(
-      "id, team_id, rider_id, status, locked_salary, phase_recruited_id, " +
-      "teams:team_id(user_id, treasury, league_id), " +
-      "riders:rider_id(pcs_points_1yr)"
+      "id, team_id, rider_id, status, phase_recruited_id, " +
+      "teams:team_id(user_id, league_id)"
     )
     .eq("id", contractId)
     .single() as { data: {
       id: string; team_id: string; rider_id: string; status: string;
-      locked_salary: number; phase_recruited_id: number | null;
-      teams: { user_id: string; treasury: number; league_id: string } | { user_id: string; treasury: number; league_id: string }[];
-      riders: { pcs_points_1yr: number | null } | { pcs_points_1yr: number | null }[];
+      phase_recruited_id: number | null;
+      teams: { user_id: string; league_id: string } | { user_id: string; league_id: string }[];
     } | null };
 
   if (!contract) return { error: "Contract not found" };
@@ -54,19 +51,7 @@ export async function releaseRider(contractId: string) {
     return { error: "Cannot release a rider recruited during the current phase" };
   }
 
-  const treasury = (team as { treasury: number }).treasury;
   const leagueId = (team as { league_id: string }).league_id;
-
-  // Check treasury can cover release fee
-  if (treasury < RELEASE_FEE) {
-    return { error: "Insufficient treasury for release fee (5 000 EUR required)" };
-  }
-
-  // Calculate transfer bonus
-  const rider = Array.isArray(contract.riders) ? contract.riders[0] : contract.riders;
-  const pcsPoints = (rider as { pcs_points_1yr: number | null })?.pcs_points_1yr ?? 0;
-  const transferBonus = calcTransferBonus(pcsPoints, contract.locked_salary);
-
   const now = new Date().toISOString();
 
   // 1. Update contract to released
@@ -77,33 +62,13 @@ export async function releaseRider(contractId: string) {
 
   if (contractErr) return { error: contractErr.message };
 
-  // 2. Deduct release fee
-  await supabase.from("treasury_log").insert({
-    team_id: contract.team_id,
-    type: "release_fee",
-    amount: -RELEASE_FEE,
-    description: "Release fee (flat 5 000 EUR)",
-    rider_id: contract.rider_id,
-  });
-
-  // 3. Credit transfer bonus (if any)
-  if (transferBonus > 0) {
-    await supabase.from("treasury_log").insert({
-      team_id: contract.team_id,
-      type: "transfer_bonus",
-      amount: transferBonus,
-      description: `Transfer bonus for rider (min salary appreciated)`,
-      rider_id: contract.rider_id,
-    });
-  }
-
-  // 4. Update treasury: -fee +bonus
-  const newTreasury = treasury - RELEASE_FEE + transferBonus;
+  // 2. Delete any active draft bids for this rider from this team
   await supabase
-    .from("teams")
-    .update({ treasury: newTreasury })
-    .eq("id", contract.team_id);
+    .from("draft_bids")
+    .delete()
+    .eq("team_id", contract.team_id)
+    .eq("rider_id", contract.rider_id);
 
   revalidatePath(`/league/${leagueId}`);
-  return { success: true, transferBonus, releaseFee: RELEASE_FEE };
+  return { success: true };
 }
