@@ -109,9 +109,8 @@ export function AuctionsClient({
   const draftCount = drafts.length;
   const totalCount = rosterCount + draftCount;
 
-  const rosterSalaries = rosterRiders.reduce((s, r) => s + r.lockedSalary, 0);
   const draftBidsTotal = drafts.reduce((s, d) => s + d.amount, 0);
-  const remaining = treasury + sponsorBudget - rosterSalaries - draftBidsTotal;
+  const remaining = treasury - draftBidsTotal;
   const isDeficit = remaining < 0;
 
   const hasOpenRound = activeRound !== null;
@@ -163,7 +162,6 @@ export function AuctionsClient({
       setValidateError(result.error);
     } else {
       setValidateSuccess(true);
-      setDrafts([]);
       router.refresh();
     }
   }
@@ -351,9 +349,7 @@ export function AuctionsClient({
             </span>
           </div>
           <BudgetSummary
-            sponsorIncome={sponsorBudget}
-            rosterSalaries={rosterSalaries}
-            rosterCount={rosterCount}
+            treasury={treasury}
             draftBidsTotal={draftBidsTotal}
             draftCount={draftCount}
           />
