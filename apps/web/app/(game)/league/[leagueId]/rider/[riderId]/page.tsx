@@ -248,9 +248,9 @@ export default async function RiderDetailPage({
     totalBonus = allBonus;
   }
 
-  // Phase 1.3: Budget info for market context
+  // Budget info for market/recruts contexts (add-to-draft flow)
   let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number; activeBidCount: number } | undefined;
-  if (context === "market" && user) {
+  if ((context === "market" || from === "recruts") && user) {
     const { data: memberForBudget } = await supabase
       .from("league_members")
       .select("team_id, teams:team_id(level, treasury)")

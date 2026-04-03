@@ -6,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/segmented-control";
 import { BackHeader } from "@/components/back-header";
+import { StickyBar } from "@/components/sticky-bar";
 import { addDraft, removeDraft } from "@/app/(game)/league/[leagueId]/team/auctions/actions";
 import { releaseRider } from "./actions";
 import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
@@ -336,46 +337,27 @@ export function RiderDetailClient({
       {/* Metric Boxes (RD-4) */}
       {renderMetrics()}
 
-      {/* Action bar — fixed at bottom, 3 states */}
+      {/* Action section — content area actions */}
       {!hideBidSection && (
-        <div className="sticky bottom-0 z-30 bg-[var(--bg-app)] border-t border-[var(--border-default)] px-4 py-3 space-y-2">
-          {/* State 1: In roster → Release */}
+        <div className="px-4 space-y-3">
+          {/* State 1: In roster → Release (outline red, in content area) */}
           {isInRoster && (
             <>
-              <Button
-                variant="destructive"
-                size="lg"
-                className="w-full"
+              <button
+                type="button"
                 disabled={saving}
                 onClick={handleRelease}
+                className="w-full rounded-[var(--radius-md)] border border-red-500/30 text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-red-500/10 transition-colors disabled:opacity-50"
               >
-                {saving ? "Releasing..." : "Release rider"}
-              </Button>
+                {saving ? "Releasing..." : "Release Rider"}
+              </button>
               {error && (
                 <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
               )}
             </>
           )}
 
-          {/* State 2: In draft → Cancel Draft */}
-          {!isInRoster && isInDraft && (
-            <>
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full border-[var(--status-danger)] text-[var(--status-danger)] hover:bg-[var(--status-danger)]/10"
-                disabled={saving}
-                onClick={handleRemoveDraft}
-              >
-                {saving ? "Removing..." : "Cancel Draft"}
-              </Button>
-              {error && (
-                <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
-              )}
-            </>
-          )}
-
-          {/* State 3: Not in roster, not in draft → bid input + Add to Draft */}
+          {/* State 3: Not in roster, not in draft → bid input in content area */}
           {!isInRoster && !isInDraft && (
             <>
               <div className="flex items-center gap-2">
@@ -432,6 +414,64 @@ export function RiderDetailClient({
                   min {formatThousands(minSalary)} €
                 </p>
               )}
+              {error && (
+                <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* StickyBar — Add to Draft / Cancel Draft (mobile only when not in rail) */}
+      {!hideBidSection && !inRail && (
+        <>
+          {/* State 2: In draft → Cancel Draft via StickyBar */}
+          {!isInRoster && isInDraft && (
+            <StickyBar
+              saveEnabled={!saving}
+              onSave={handleRemoveDraft}
+              saving={saving}
+              slotInfo={budgetInfo ? `${budgetInfo.currentSlots}/${budgetInfo.maxSlots}` : undefined}
+              budgetInfo={budgetInfo ? `€${formatThousands(budgetInfo.treasury)}` : undefined}
+              buttonLabel={saving ? "Removing..." : "Cancel Draft"}
+            />
+          )}
+
+          {/* State 3: Not in roster, not in draft → Add to Draft via StickyBar */}
+          {!isInRoster && !isInDraft && (
+            <StickyBar
+              saveEnabled={!saving && bidAmount !== null && bidAmount >= minSalary}
+              onSave={handleAddDraft}
+              saving={saving}
+              slotInfo={budgetInfo ? `${budgetInfo.currentSlots}/${budgetInfo.maxSlots}` : undefined}
+              budgetInfo={budgetInfo ? `€${formatThousands(budgetInfo.treasury)}` : undefined}
+              buttonLabel="Add to Draft"
+            />
+          )}
+        </>
+      )}
+
+      {/* In-rail action buttons (desktop rail — not sticky) */}
+      {!hideBidSection && inRail && (
+        <div className="px-4 space-y-2">
+          {!isInRoster && isInDraft && (
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full border-[var(--status-danger)] text-[var(--status-danger)] hover:bg-[var(--status-danger)]/10"
+                disabled={saving}
+                onClick={handleRemoveDraft}
+              >
+                {saving ? "Removing..." : "Cancel Draft"}
+              </Button>
+              {error && (
+                <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
+              )}
+            </>
+          )}
+          {!isInRoster && !isInDraft && (
+            <>
               <Button
                 size="lg"
                 className="w-full"

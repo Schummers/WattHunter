@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import Link from "next/link";
+import { StickyBar } from "@/components/sticky-bar";
 import { RoundBlocks } from "@/components/round-blocks";
 import { ConfigCards } from "@/components/config-cards";
 import { BudgetSummary } from "@/components/budget-summary";
@@ -92,7 +92,6 @@ export function AuctionsClient({
   maxSlots,
 }: AuctionsClientProps) {
   const router = useRouter();
-  const navVisible = useScrollDirection();
   const [drafts, setDrafts] = useState<DraftBid[]>(initialDrafts);
   const [releaseConfirm, setReleaseConfirm] = useState<string | null>(null);
   const [validateError, setValidateError] = useState<string | null>(null);
@@ -354,52 +353,28 @@ export function AuctionsClient({
         )}
       </div>
 
-      {/* Sticky validate bar — always visible */}
-      <div
-        className="fixed inset-x-0 z-30 border-t border-[var(--border-default)] bg-[var(--bg-app)] transition-[bottom] duration-200 lg:bottom-0 lg:left-[180px]"
-        style={{ bottom: navVisible ? "3.5rem" : "0" }}
-      >
-        <div className="px-4 py-2.5 flex items-center gap-3">
-          {/* Left: slots + remaining */}
-          <div className="shrink-0 text-left min-w-[72px]">
-            <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">
-              <span className="font-mono">{totalCount}/{maxSlots}</span> slots
-            </div>
-            <div
-              className={`text-[length:var(--type-emphasis)] font-bold font-mono ${
-                isDeficit ? "text-red-400" : "text-[var(--accent-highlight)]"
-              }`}
-            >
-              {isDeficit ? "−" : ""}€{formatThousands(Math.abs(remaining))}
-            </div>
-          </div>
-
-          {/* Validate button — always visible, disabled when no open round */}
-          <button
-            type="button"
-            onClick={handleValidate}
-            disabled={validateDisabled}
-            className={`flex-1 rounded-[var(--radius-md)] py-3 text-center text-[length:var(--type-emphasis)] font-bold transition-all ${
-              validateDisabled
-                ? "bg-[var(--bg-surface)] text-[var(--text-ghost)] cursor-not-allowed opacity-50"
-                : "bg-gradient-to-br from-[var(--accent-default)] to-[var(--accent-highlight)] text-[#020617] hover:opacity-90"
-            }`}
-          >
-            {validateSuccess
-              ? "Round Validated"
-              : hasOpenRound
-                ? `Validate Round ${activeRound}`
-                : "No Open Round"}
-          </button>
-        </div>
-
-        {/* Deficit / over-limit warning */}
-        {(isDeficit || totalCount > maxSlots) && (
-          <div className="text-[10px] text-red-400 text-center px-4 pb-1">
-            Remove riders or lower bids to balance your budget.
-          </div>
-        )}
-      </div>
+      {/* Sticky validate bar */}
+      <StickyBar
+        saveEnabled={!validateDisabled}
+        onSave={handleValidate}
+        saving={false}
+        slotInfo={`${totalCount}/${maxSlots}`}
+        budgetInfo={`${isDeficit ? "−" : ""}€${formatThousands(Math.abs(remaining))}`}
+        isDeficit={isDeficit || totalCount > maxSlots}
+        deficitMessage={
+          isDeficit || totalCount > maxSlots
+            ? "Remove riders or lower bids to balance your budget."
+            : undefined
+        }
+        buttonLabel={
+          validateSuccess
+            ? "Round Validated"
+            : hasOpenRound
+              ? `Validate Round ${activeRound}`
+              : "No Open Round"
+        }
+        alwaysShow
+      />
 
       {/* Release confirmation dialog */}
       {releaseConfirm && (

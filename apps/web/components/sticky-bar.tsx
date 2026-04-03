@@ -12,6 +12,8 @@ interface StickyBarProps {
   children?: React.ReactNode;
   isDeficit?: boolean;
   deficitMessage?: string;
+  buttonLabel?: string;
+  alwaysShow?: boolean;
 }
 
 export function StickyBar({
@@ -23,6 +25,8 @@ export function StickyBar({
   children,
   isDeficit,
   deficitMessage,
+  buttonLabel,
+  alwaysShow,
 }: StickyBarProps) {
   const navVisible = useScrollDirection();
   const [keyboardOffset, setKeyboardOffset] = useState(0);
@@ -49,7 +53,7 @@ export function StickyBar({
 
   return (
     <div
-      className="fixed inset-x-0 z-30 border-t border-[var(--border-default)] bg-[var(--bg-subtle)] py-2 transition-[bottom] duration-200 lg:hidden"
+      className={`fixed inset-x-0 z-30 border-t border-[var(--border-default)] bg-[var(--bg-subtle)] py-2 transition-[bottom] duration-200${alwaysShow ? " lg:left-[180px] lg:bottom-0" : " lg:hidden"}`}
       style={bottomStyle}
     >
       {children ? (
@@ -69,7 +73,7 @@ export function StickyBar({
                   : "cta-gradient text-[var(--cta-text)] disabled:opacity-40"
               }`}
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? "Saving..." : (buttonLabel ?? "Save")}
             </button>
           </div>
           {isDeficit && deficitMessage && (
