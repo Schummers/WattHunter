@@ -249,7 +249,15 @@ export default async function RiderDetailPage({
   }
 
   // Budget info for market/recruts contexts (add-to-draft flow)
-  let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalBidAmount: number; activeBidCount: number } | undefined;
+  let budgetInfo: {
+    currentSlots: number;
+    maxSlots: number;
+    treasury: number;
+    sponsorBudget: number;
+    rosterSalaries: number;
+    totalDraftBidsAmount: number;
+    draftBidsCount: number;
+  } | undefined;
   if ((context === "market" || from === "recruts") && user) {
     const { data: memberForBudget } = await supabase
       .from("league_members")
@@ -263,28 +271,45 @@ export default async function RiderDetailPage({
       const level = budgetTeam?.level ?? 1;
       const maxSlots = getMaxSlots(level);
 
-      const [{ count: contractCount }, { data: activeBids }] = await Promise.all([
+      const [
+        { data: activeContracts },
+        { data: teamSponsor },
+        { data: draftBids },
+      ] = await Promise.all([
         supabase
           .from("contracts")
-          .select("id", { count: "exact", head: true })
+          .select("id, locked_salary")
           .eq("team_id", memberForBudget.team_id)
           .eq("status", "active"),
         supabase
-          .from("auction_bids")
-          .select("amount")
+          .from("team_sponsors")
+          .select("sponsors:sponsor_id(monthly_budget)")
           .eq("team_id", memberForBudget.team_id)
-          .eq("status", "active"),
+          .maybeSingle(),
+        supabase
+          .from("draft_bids")
+          .select("amount")
+          .eq("team_id", memberForBudget.team_id),
       ]);
 
-      const totalBidAmount = (activeBids ?? []).reduce((sum, b) => sum + b.amount, 0);
-      const activeBidCount = (activeBids ?? []).length;
+      const contractCount = (activeContracts ?? []).length;
+      const rosterSalaries = (activeContracts ?? []).reduce((sum, c) => sum + (c.locked_salary ?? 0), 0);
+
+      const sponsorRaw = teamSponsor?.sponsors;
+      const sponsorEntry = Array.isArray(sponsorRaw) ? sponsorRaw[0] : sponsorRaw;
+      const sponsorBudget = (sponsorEntry as { monthly_budget?: number } | null)?.monthly_budget ?? 0;
+
+      const totalDraftBidsAmount = (draftBids ?? []).reduce((sum, b) => sum + (b.amount ?? 0), 0);
+      const draftBidsCount = (draftBids ?? []).length;
 
       budgetInfo = {
-        currentSlots: contractCount ?? 0,
+        currentSlots: contractCount,
         maxSlots,
         treasury: budgetTeam?.treasury ?? 200000,
-        totalBidAmount,
-        activeBidCount,
+        sponsorBudget,
+        rosterSalaries,
+        totalDraftBidsAmount,
+        draftBidsCount,
       };
     }
   }

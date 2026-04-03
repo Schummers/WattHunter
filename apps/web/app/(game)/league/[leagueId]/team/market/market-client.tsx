@@ -50,6 +50,8 @@ interface MarketClientProps {
   maxSlots: number;
   currentSlots: number;
   treasury: number;
+  sponsorBudget: number;
+  rosterSalaries: number;
   draftBids?: DraftBid[];
 }
 
@@ -123,6 +125,8 @@ export function MarketClient({
   currentSlots,
   maxSlots,
   treasury,
+  sponsorBudget,
+  rosterSalaries,
   draftBids = [],
 }: MarketClientProps) {
   const router = useRouter();
@@ -290,8 +294,8 @@ export function MarketClient({
 
   // Stats for sticky bar
   const totalBidCount = currentSlots + Object.keys(bids).length;
-  const totalBidAmount = Object.values(bids).reduce((s, v) => s + v, 0);
-  const remainingBudget = treasury - totalBidAmount;
+  const allDraftTotal = Object.values(bids).reduce((s, v) => s + v, 0);
+  const remainingBudget = treasury + sponsorBudget - rosterSalaries - allDraftTotal;
 
   // Paginated flat list
   const paginatedFlatRiders = useMemo(() => {

@@ -47,7 +47,12 @@ export default async function MarketPage({
   const level = getLevelForXp(xp);
   const minRank = getLevelByNumber(level).poolMin;
 
-  const [{ data: riders }, { data: leagueTeams }] = await Promise.all([
+  const [
+    { data: riders },
+    { data: leagueTeams },
+    { data: teamSponsor },
+    { data: activeContracts },
+  ] = await Promise.all([
     supabase
       .from("riders")
       .select(
@@ -58,6 +63,20 @@ export default async function MarketPage({
       .order("pcs_rank", { ascending: true })
       .limit(600),
     supabase.from("teams").select("id").eq("league_id", leagueId),
+    team?.id
+      ? supabase
+          .from("team_sponsors")
+          .select("sponsors(monthly_budget)")
+          .eq("team_id", team.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { sponsors: { monthly_budget: number } | null } | null }),
+    team?.id
+      ? supabase
+          .from("contracts")
+          .select("locked_salary")
+          .eq("team_id", team.id)
+          .eq("status", "active")
+      : Promise.resolve({ data: null as { locked_salary: number }[] | null }),
   ]);
 
   const leagueTeamIds = (leagueTeams ?? []).map((t) => t.id);
@@ -128,6 +147,15 @@ export default async function MarketPage({
     }
   }
 
+  const sponsorData = teamSponsor?.sponsors;
+  const sponsorEntry = Array.isArray(sponsorData) ? sponsorData[0] : sponsorData;
+  const sponsorBudget = (sponsorEntry as { monthly_budget?: number } | null)?.monthly_budget ?? 0;
+
+  const rosterSalaries = (activeContracts ?? []).reduce(
+    (sum, c) => sum + (c.locked_salary ?? 0),
+    0
+  );
+
   // Fetch the user's draft bids (rider_id + amount)
   let draftBidMap: { riderId: string; amount: number }[] = [];
   if (team?.id) {
@@ -151,6 +179,8 @@ export default async function MarketPage({
       maxSlots={getMaxSlots(level)}
       currentSlots={ownTeamSlots}
       treasury={team?.treasury ?? 0}
+      sponsorBudget={sponsorBudget}
+      rosterSalaries={rosterSalaries}
       draftBids={draftBidMap}
     />
   );

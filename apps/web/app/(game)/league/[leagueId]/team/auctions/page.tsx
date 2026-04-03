@@ -285,6 +285,7 @@ export default async function AuctionsPage({
       pendingSponsorName={pendingSponsorName}
       activePolicies={activePoliciesDisplay}
       maxPolicies={maxActivePolicies}
+      treasury={team?.treasury ?? 0}
       rosterRiders={rosterRiders}
       drafts={drafts}
       maxSlots={maxSlots}

@@ -67,8 +67,10 @@ interface RiderDetailClientProps {
     currentSlots: number;
     maxSlots: number;
     treasury: number;
-    totalBidAmount: number;
-    activeBidCount: number;
+    sponsorBudget: number;
+    rosterSalaries: number;
+    totalDraftBidsAmount: number;
+    draftBidsCount: number;
   };
   inRail?: boolean;
   hideBidSection?: boolean;
@@ -292,12 +294,14 @@ export function RiderDetailClient({
     return bidAmount; // new bid, full amount added
   })();
   const dynamicBudget = budgetInfo
-    ? budgetInfo.treasury - (budgetInfo.totalBidAmount ?? 0) - currentBidDelta
+    ? budgetInfo.treasury + budgetInfo.sponsorBudget - budgetInfo.rosterSalaries
+      - budgetInfo.totalDraftBidsAmount - currentBidDelta
     : null;
 
-  // Dynamic slots: +1 if entering a NEW bid (not already in draft/roster)
+  // Dynamic slots: count draft bids + 1 if entering a NEW bid (not already in draft/roster)
   const dynamicSlots = budgetInfo
-    ? budgetInfo.currentSlots + (!isInDraft && !isInRoster && bidInputHasValue ? 1 : 0)
+    ? budgetInfo.currentSlots + budgetInfo.draftBidsCount
+      + (!isInDraft && !isInRoster && bidInputHasValue ? 1 : 0)
     : null;
 
   const stickyBudgetLabel = dynamicBudget !== null ? formatEuro(dynamicBudget) : undefined;

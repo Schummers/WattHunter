@@ -68,6 +68,7 @@ interface AuctionsClientProps {
   isRound1: boolean;
   sponsorName: string;
   sponsorBudget: number;
+  treasury: number;
   pendingSponsorName: string | null;
   activePolicies: PolicyDisplay[];
   maxPolicies: number;
@@ -88,6 +89,7 @@ export function AuctionsClient({
   isRound1,
   sponsorName,
   sponsorBudget,
+  treasury,
   pendingSponsorName,
   activePolicies,
   maxPolicies,
@@ -109,7 +111,7 @@ export function AuctionsClient({
 
   const rosterSalaries = rosterRiders.reduce((s, r) => s + r.lockedSalary, 0);
   const draftBidsTotal = drafts.reduce((s, d) => s + d.amount, 0);
-  const remaining = sponsorBudget - rosterSalaries - draftBidsTotal;
+  const remaining = treasury + sponsorBudget - rosterSalaries - draftBidsTotal;
   const isDeficit = remaining < 0;
 
   const hasOpenRound = activeRound !== null;
