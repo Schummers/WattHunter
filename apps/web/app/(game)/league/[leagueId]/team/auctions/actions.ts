@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { calcMinSalary } from "@/lib/format";
+import { getMaxSlots } from "@/lib/levels";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -205,5 +206,181 @@ export async function updateDraftAmount(input: {
 
   revalidatePath(`/league/${leagueId}/team/auctions`);
   revalidatePath(`/league/${leagueId}/team/market`);
+  return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// validateRound
+// ---------------------------------------------------------------------------
+
+const ValidateRoundSchema = z.object({
+  leagueId: z.string().uuid(),
+});
+
+export async function validateRound(input: { leagueId: string }) {
+  const parsed = ValidateRoundSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid data" };
+  }
+  const { leagueId } = parsed.data;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // --- 1. Resolve team ---
+  const teamId = await getTeamForUser(supabase, user.id, leagueId);
+  if (!teamId) return { error: "Team not found" };
+
+  const { data: team } = await supabase
+    .from("teams")
+    .select("id, treasury, level")
+    .eq("id", teamId)
+    .single();
+
+  if (!team) return { error: "Team not found" };
+
+  // --- 2. Find open auction round for this league ---
+  const { data: auction } = await supabase
+    .from("auctions")
+    .select("id, round")
+    .eq("league_id", leagueId)
+    .eq("status", "open")
+    .order("round", { ascending: true })
+    .limit(1)
+    .single();
+
+  if (!auction) return { error: "No open auction round found" };
+
+  // --- 3. Get draft bids for this team + league ---
+  const { data: drafts, error: draftsError } = await supabase
+    .from("draft_bids")
+    .select("id, rider_id, amount")
+    .eq("team_id", teamId)
+    .eq("league_id", leagueId);
+
+  if (draftsError) return { error: draftsError.message };
+  const draftList = drafts ?? [];
+
+  // --- 4. Get active contracts ---
+  const { data: contracts, error: contractsError } = await supabase
+    .from("contracts")
+    .select("id, locked_salary")
+    .eq("team_id", teamId)
+    .eq("status", "active");
+
+  if (contractsError) return { error: contractsError.message };
+  const contractList = contracts ?? [];
+
+  // --- 5. Calculate financials ---
+  const rosterSalaries = contractList.reduce(
+    (sum, c) => sum + (c.locked_salary ?? 0),
+    0
+  );
+  const draftTotal = draftList.reduce((sum, d) => sum + d.amount, 0);
+
+  // --- 6. Get sponsor monthly_budget ---
+  const { data: teamSponsor } = await supabase
+    .from("team_sponsors")
+    .select("sponsor_id, sponsors(monthly_budget, name)")
+    .eq("team_id", teamId)
+    .single();
+
+  const rawSponsor = teamSponsor?.sponsors;
+  const sponsorData = Array.isArray(rawSponsor) ? rawSponsor[0] : rawSponsor;
+  const sponsorIncome =
+    (sponsorData as { monthly_budget: number } | null | undefined)
+      ?.monthly_budget ?? 250_000;
+  const sponsorName =
+    (sponsorData as { name: string } | null | undefined)?.name ??
+    "Lotto (default)";
+
+  // --- 7. Budget check: sponsorIncome - rosterSalaries - draftTotal >= 0 ---
+  const remaining = sponsorIncome - rosterSalaries - draftTotal;
+  if (remaining < 0) {
+    return {
+      error: `Budget exceeded: your bids total ${(
+        rosterSalaries + draftTotal
+      ).toLocaleString("en-GB")} € but sponsor income is only ${sponsorIncome.toLocaleString("en-GB")} €`,
+    };
+  }
+
+  // --- 8. Slot check ---
+  const maxSlots = getMaxSlots(team.level);
+  const rosterCount = contractList.length;
+  const draftCount = draftList.length;
+  if (rosterCount + draftCount > maxSlots) {
+    return {
+      error: `Roster limit exceeded: ${rosterCount} active + ${draftCount} new bids = ${
+        rosterCount + draftCount
+      } riders, but your level allows ${maxSlots} slots`,
+    };
+  }
+
+  // --- 9. Convert drafts → auction_bids ---
+  if (draftList.length > 0) {
+    const auctionBids = draftList.map((draft) => ({
+      auction_id: auction.id,
+      team_id: teamId,
+      rider_id: draft.rider_id,
+      amount: draft.amount,
+      round: auction.round,
+      status: "active" as const,
+    }));
+
+    const { error: insertError } = await supabase
+      .from("auction_bids")
+      .insert(auctionBids);
+
+    if (insertError) return { error: insertError.message };
+  }
+
+  // --- 10. Clear drafts ---
+  const { error: deleteError } = await supabase
+    .from("draft_bids")
+    .delete()
+    .eq("team_id", teamId)
+    .eq("league_id", leagueId);
+
+  if (deleteError) return { error: deleteError.message };
+
+  // --- 11. Round 1 payday: credit sponsor income + debit all salaries ---
+  if (auction.round === 1) {
+    let treasury = team.treasury;
+
+    // Credit sponsor income
+    treasury += sponsorIncome;
+    await supabase.from("treasury_log").insert({
+      team_id: teamId,
+      type: "sponsor_payment",
+      amount: sponsorIncome,
+      description: `Round 1 payday — ${sponsorName}`,
+    });
+
+    // Debit all salaries (existing roster + newly validated bids)
+    const totalSalary = rosterSalaries + draftTotal;
+    if (totalSalary > 0) {
+      treasury -= totalSalary;
+      await supabase.from("treasury_log").insert({
+        team_id: teamId,
+        type: "payday_salary",
+        amount: -totalSalary,
+        description: `Round 1 salaries — ${contractList.length + draftList.length} riders`,
+      });
+    }
+
+    // Persist updated treasury
+    const { error: treasuryError } = await supabase
+      .from("teams")
+      .update({ treasury })
+      .eq("id", teamId);
+
+    if (treasuryError) return { error: treasuryError.message };
+  }
+
+  revalidatePath(`/league/${leagueId}/team/auctions`);
+  revalidatePath(`/league/${leagueId}/auctions`);
   return { success: true };
 }
