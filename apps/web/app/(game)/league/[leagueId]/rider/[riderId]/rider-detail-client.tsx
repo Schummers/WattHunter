@@ -6,13 +6,12 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/segmented-control";
 import { BackHeader } from "@/components/back-header";
-import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
+import { addDraft, removeDraft } from "@/app/(game)/league/[leagueId]/team/auctions/actions";
 import { releaseRider } from "./actions";
 import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
-import { StickyBar } from "@/components/sticky-bar";
 
-type RiderContext = "market" | "team" | "ranking";
+type RiderContext = "market" | "auctions" | "team" | "ranking";
 
 interface Rider {
   id: string;
@@ -74,6 +73,8 @@ interface RiderDetailClientProps {
   hideBidSection?: boolean;
   gameXp?: number;
   totalBonus?: number;
+  draftAmount?: number | null;
+  currentRound?: number | null;
 }
 
 function getAge(birthdate: string | null): number | null {
@@ -98,6 +99,7 @@ function resolvePhoto(url: string | null): string | undefined {
 
 const BACK_LABELS: Record<RiderContext, string> = {
   market: "Market",
+  auctions: "Auctions",
   team: "My Team",
   ranking: "Ranking",
 };
@@ -120,47 +122,70 @@ export function RiderDetailClient({
   hideBidSection,
   gameXp,
   totalBonus,
+  draftAmount,
+  currentRound,
 }: RiderDetailClientProps) {
   const router = useRouter();
   const [tabIndex, setTabIndex] = useState(0);
-  const [bidAmount, setBidAmount] = useState<number | null>(currentBidAmount);
+  const [bidAmount, setBidAmount] = useState<number | null>(draftAmount ?? minSalary);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bidInputRef = useRef<HTMLInputElement>(null);
   const age = getAge(rider.birthdate);
 
-  async function handleSaveBid() {
-    if (!activeAuctionId || bidAmount === null) return;
+  const isInDraft = draftAmount != null;
+  const isInRoster = contractData?.status === "active" && !!contractData.contractId;
+
+  function handleBack() {
+    if (context === "market") {
+      router.push(`/league/${leagueId}/team/market`);
+    } else if (context === "auctions") {
+      router.push(`/league/${leagueId}/team/auctions`);
+    } else {
+      router.back();
+    }
+  }
+
+  async function handleAddDraft() {
+    if (bidAmount === null) return;
     setSaving(true);
     setError(null);
-    const result = await placeBid({
-      auctionId: activeAuctionId,
-      riderId: rider.id,
-      amount: bidAmount,
-      round: 1,
-    });
+    const result = await addDraft({ leagueId, riderId: rider.id, amount: bidAmount });
     if (result.error) {
       setError(result.error);
+    } else {
+      router.refresh();
     }
     setSaving(false);
   }
 
-  async function handleRemoveBid() {
-    if (!currentBidId || !activeAuctionId) return;
+  async function handleRemoveDraft() {
     setSaving(true);
     setError(null);
-    const result = await cancelBid(currentBidId, activeAuctionId);
+    const result = await removeDraft({ leagueId, riderId: rider.id });
     if (result.error) {
       setError(result.error);
-      setSaving(false);
-      return;
+    } else {
+      router.refresh();
     }
     setSaving(false);
-    if (inRail) {
-      router.refresh();
-    } else {
-      router.back();
+  }
+
+  async function handleRelease() {
+    if (!contractData?.contractId) return;
+    if (currentRound !== 1) {
+      const msg = `Release ${rider.full_name}? You already paid his ${formatEuro(contractData.locked_salary)} salary for this phase. It will not be refunded.`;
+      if (!confirm(msg)) return;
     }
+    setSaving(true);
+    setError(null);
+    const result = await releaseRider(contractData.contractId);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      router.refresh();
+    }
+    setSaving(false);
   }
 
   // Metric boxes per context (RD-4) — value on top, label below (DS standard)
@@ -244,7 +269,7 @@ export function RiderDetailClient({
 
   return (
     <div className="space-y-6">
-      {!inRail && <BackHeader label={BACK_LABELS[context]} />}
+      {!inRail && <BackHeader label={BACK_LABELS[context]} onBack={handleBack} />}
 
       {/* Hero — horizontal layout (RD-3) */}
       <div className="flex items-start gap-3 px-4">
@@ -311,130 +336,114 @@ export function RiderDetailClient({
       {/* Metric Boxes (RD-4) */}
       {renderMetrics()}
 
-      {/* Action zone */}
-      {/* RD-5: Bid section (market only, hidden when hideBidSection=true) */}
-      {context === "market" && !hideBidSection && (
-        <div className={`px-4 space-y-3 ${!activeAuctionId ? "opacity-50 pointer-events-none" : ""}`}>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon-lg"
-              className="size-11"
-              onClick={() => {
-                if (bidAmount !== null) setBidAmount(Math.max(minSalary, bidAmount - 500));
-              }}
-              disabled={!activeAuctionId || bidAmount === null}
-            >
-              <Minus className="size-4" />
-            </Button>
-            <div className={`flex-1 flex items-center justify-center gap-1 h-10 px-3 rounded-md ${
-              bidAmount !== null
-                ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
-                : "border border-[var(--border-default)] bg-transparent"
-            }`}>
-              <input
-                ref={bidInputRef}
-                type="text"
-                inputMode="numeric"
-                placeholder={formatThousands(minSalary)}
-                value={bidAmount !== null ? formatThousands(bidAmount) : ""}
-                onChange={(e) => {
-                  const raw = e.target.value.replace(/\s/g, "");
-                  const val = parseInt(raw, 10);
-                  if (!isNaN(val) && val >= 0) setBidAmount(val);
-                  else if (raw === "") setBidAmount(null);
-                }}
-                disabled={!activeAuctionId}
-                className={`w-full bg-transparent text-center text-base md:text-[length:var(--type-stat-small)] font-bold font-mono tabular-nums outline-none ${
-                  bidAmount !== null
-                    ? "text-[var(--accent-default)]"
-                    : "text-[var(--text-low)]"
-                }`}
-              />
-              <span className="text-[length:var(--type-body)] text-[var(--text-ghost)]">€</span>
-            </div>
-            <Button
-              variant="outline"
-              size="icon-lg"
-              className="size-11"
-              onClick={() => {
-                if (bidAmount === null) setBidAmount(minSalary);
-                else setBidAmount(bidAmount + 500);
-              }}
-              disabled={!activeAuctionId}
-            >
-              <Plus className="size-4" />
-            </Button>
-          </div>
-          {/* Min salary hint — visible only when typing (placeholder already shows it) */}
-          {bidAmount !== null && (
-            <p className="text-center text-[length:var(--type-micro)] text-[var(--text-ghost)]">
-              min {formatThousands(minSalary)} €
-            </p>
+      {/* Action bar — fixed at bottom, 3 states */}
+      {!hideBidSection && (
+        <div className="sticky bottom-0 z-30 bg-[var(--bg-app)] border-t border-[var(--border-default)] px-4 py-3 space-y-2">
+          {/* State 1: In roster → Release */}
+          {isInRoster && (
+            <>
+              <Button
+                variant="destructive"
+                size="lg"
+                className="w-full"
+                disabled={saving}
+                onClick={handleRelease}
+              >
+                {saving ? "Releasing..." : "Release rider"}
+              </Button>
+              {error && (
+                <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
+              )}
+            </>
           )}
-          {currentBidId && activeAuctionId && (
-            <button
-              type="button"
-              onClick={handleRemoveBid}
-              className="w-full text-center text-[length:var(--type-body)] link-tertiary"
-            >
-              Remove bid
-            </button>
-          )}
-          {error && (
-            <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
-          )}
-          {budgetInfo && (() => {
-            const serverBid = currentBidAmount ?? 0;
-            const localBid = bidAmount ?? 0;
-            const bidDelta = localBid - serverBid;
-            const isNewBid = currentBidAmount === null && bidAmount !== null;
-            const slotsUsed = budgetInfo.currentSlots + budgetInfo.activeBidCount + (isNewBid ? 1 : 0);
-            const remainingBudget = budgetInfo.treasury - budgetInfo.totalBidAmount - bidDelta;
-            return (
-              <StickyBar
-                saveEnabled={!!activeAuctionId && bidAmount !== null && bidAmount !== currentBidAmount}
-                onSave={handleSaveBid}
-                saving={saving}
-                slotInfo={`${slotsUsed}/${budgetInfo.maxSlots} slots`}
-                budgetInfo={`${formatThousands(remainingBudget)} €`}
-              />
-            );
-          })()}
-        </div>
-      )}
 
-      {/* RD-6: Release button (team only) */}
-      {context === "team" && contractData?.status === "active" && (
-        <div className="px-4 space-y-2">
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full"
-            disabled={saving || !contractData.contractId}
-            onClick={async () => {
-              if (!contractData?.contractId) return;
-              const msg = [
-                "Release this rider?",
-                "• Free — no release fee",
-                "• Rider returns to recruitment pool immediately",
-              ].join("\n");
-              if (!confirm(msg)) return;
-              setSaving(true);
-              setError(null);
-              const result = await releaseRider(contractData.contractId);
-              if (result.error) {
-                setError(result.error);
-              } else {
-                router.refresh();
-              }
-              setSaving(false);
-            }}
-          >
-            {saving ? "Releasing..." : "Release rider"}
-          </Button>
-          {error && (
-            <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
+          {/* State 2: In draft → Cancel Draft */}
+          {!isInRoster && isInDraft && (
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full border-[var(--status-danger)] text-[var(--status-danger)] hover:bg-[var(--status-danger)]/10"
+                disabled={saving}
+                onClick={handleRemoveDraft}
+              >
+                {saving ? "Removing..." : "Cancel Draft"}
+              </Button>
+              {error && (
+                <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
+              )}
+            </>
+          )}
+
+          {/* State 3: Not in roster, not in draft → bid input + Add to Draft */}
+          {!isInRoster && !isInDraft && (
+            <>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-10 shrink-0"
+                  onClick={() => {
+                    if (bidAmount !== null) setBidAmount(Math.max(minSalary, bidAmount - 500));
+                  }}
+                  disabled={bidAmount === null}
+                >
+                  <Minus className="size-4" />
+                </Button>
+                <div className={`flex-1 flex items-center justify-center gap-1 h-10 px-3 rounded-md ${
+                  bidAmount !== null
+                    ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
+                    : "border border-[var(--border-default)] bg-transparent"
+                }`}>
+                  <input
+                    ref={bidInputRef}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={formatThousands(minSalary)}
+                    value={bidAmount !== null ? formatThousands(bidAmount) : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\s/g, "");
+                      const val = parseInt(raw, 10);
+                      if (!isNaN(val) && val >= 0) setBidAmount(val);
+                      else if (raw === "") setBidAmount(null);
+                    }}
+                    className={`w-full bg-transparent text-center text-base md:text-[length:var(--type-stat-small)] font-bold font-mono tabular-nums outline-none ${
+                      bidAmount !== null
+                        ? "text-[var(--accent-default)]"
+                        : "text-[var(--text-low)]"
+                    }`}
+                  />
+                  <span className="text-[length:var(--type-body)] text-[var(--text-ghost)]">€</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-10 shrink-0"
+                  onClick={() => {
+                    if (bidAmount === null) setBidAmount(minSalary);
+                    else setBidAmount(bidAmount + 500);
+                  }}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
+              {bidAmount !== null && (
+                <p className="text-center text-[length:var(--type-micro)] text-[var(--text-ghost)]">
+                  min {formatThousands(minSalary)} €
+                </p>
+              )}
+              <Button
+                size="lg"
+                className="w-full"
+                disabled={saving || bidAmount === null || bidAmount < minSalary}
+                onClick={handleAddDraft}
+              >
+                {saving ? "Adding..." : "Add to Draft"}
+              </Button>
+              {error && (
+                <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
+              )}
+            </>
           )}
         </div>
       )}

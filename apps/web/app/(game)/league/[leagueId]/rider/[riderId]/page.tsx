@@ -115,6 +115,8 @@ export default async function RiderDetailPage({
   let activeAuctionId: string | null = null;
   let ownerInfo: { display_name: string; team_name: string } | null = null;
   let userTeamId: string | null = null;
+  let draftAmount: number | null = null;
+  let currentRound: number | null = null;
 
   if (user) {
     const { data: member } = await supabase
@@ -160,15 +162,38 @@ export default async function RiderDetailPage({
         activeAuctionId = activeBid.auction_id;
       }
 
-      // Get active auction for market context
+      // Check if rider is in draft bids
+      const { data: draftBid } = await supabase
+        .from("draft_bids")
+        .select("amount")
+        .eq("team_id", member.team_id)
+        .eq("rider_id", riderId)
+        .maybeSingle();
+
+      if (draftBid) {
+        draftAmount = draftBid.amount;
+      }
+
+      // Get active auction for market context + round info
       if (!activeAuctionId) {
         const { data: auction } = await supabase
           .from("auctions")
-          .select("id")
+          .select("id, round")
           .eq("league_id", leagueId)
           .in("status", ["active", "open"])
           .maybeSingle();
-        if (auction) activeAuctionId = auction.id;
+        if (auction) {
+          activeAuctionId = auction.id;
+          currentRound = auction.round;
+        }
+      } else {
+        // Fetch round for an already-found auction
+        const { data: auction } = await supabase
+          .from("auctions")
+          .select("round")
+          .eq("id", activeAuctionId)
+          .maybeSingle();
+        if (auction) currentRound = auction.round;
       }
     }
   }
@@ -302,6 +327,8 @@ export default async function RiderDetailPage({
       ownerInfo={ownerInfo}
       gameXp={gameXp}
       totalBonus={totalBonus}
+      draftAmount={draftAmount}
+      currentRound={currentRound}
     />
   );
 }
