@@ -36,6 +36,11 @@ interface NextRound {
   opens_at: string;
 }
 
+interface DraftBid {
+  riderId: string;
+  amount: number;
+}
+
 interface MarketClientProps {
   leagueId: string;
   riders: Rider[];
@@ -45,7 +50,7 @@ interface MarketClientProps {
   maxSlots: number;
   currentSlots: number;
   treasury: number;
-  draftRiderIds?: string[];
+  draftBids?: DraftBid[];
 }
 
 const FILTER_OPTIONS = [
@@ -118,7 +123,7 @@ export function MarketClient({
   currentSlots,
   maxSlots,
   treasury,
-  draftRiderIds = [],
+  draftBids = [],
 }: MarketClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -130,19 +135,18 @@ export function MarketClient({
 
   // bids: riderId → amount (only riders the user has modified/entered a bid for)
   const [bids, setBids] = useState<Record<string, number>>(() => {
-    // Pre-populate with min salary for riders already in draft
+    // Pre-populate with actual amounts from saved drafts
     const map: Record<string, number> = {};
-    for (const riderId of draftRiderIds) {
-      const rider = riders.find((r) => r.id === riderId);
-      if (rider) {
-        map[riderId] = calcMinSalary(rider.pcs_points_1yr ?? 0);
-      }
+    for (const draft of draftBids) {
+      map[draft.riderId] = draft.amount;
     }
     return map;
   });
 
   // Track which riders are already saved in draft (server-side)
-  const [savedDraftIds] = useState<Set<string>>(() => new Set(draftRiderIds));
+  const [savedDraftIds] = useState<Set<string>>(
+    () => new Set(draftBids.map((d) => d.riderId))
+  );
 
   const [saving, setSaving] = useState(false);
 

@@ -128,14 +128,17 @@ export default async function MarketPage({
     }
   }
 
-  // Fetch the user's draft bids
-  let draftRiderIds: string[] = [];
+  // Fetch the user's draft bids (rider_id + amount)
+  let draftBidMap: { riderId: string; amount: number }[] = [];
   if (team?.id) {
     const { data: draftBids } = await supabase
       .from("draft_bids")
-      .select("rider_id")
+      .select("rider_id, amount")
       .eq("team_id", team.id);
-    draftRiderIds = (draftBids ?? []).map((d) => d.rider_id);
+    draftBidMap = (draftBids ?? []).map((d) => ({
+      riderId: d.rider_id,
+      amount: d.amount,
+    }));
   }
 
   return (
@@ -148,7 +151,7 @@ export default async function MarketPage({
       maxSlots={getMaxSlots(level)}
       currentSlots={ownTeamSlots}
       treasury={team?.treasury ?? 0}
-      draftRiderIds={draftRiderIds}
+      draftBids={draftBidMap}
     />
   );
 }
