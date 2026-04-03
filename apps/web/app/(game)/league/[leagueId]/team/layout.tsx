@@ -12,7 +12,8 @@ export default function TeamLayout({
   const pathname = usePathname();
   const params = useParams<{ leagueId: string }>();
   const leagueId = params.leagueId;
-  const hideTabs = pathname.includes("/policies");
+  const hideTabs =
+    pathname.includes("/policies") || pathname.includes("/auctions/");
 
   return (
     <>
@@ -21,6 +22,7 @@ export default function TeamLayout({
           tabs={[
             { label: "My Team", href: `/league/${leagueId}/team` },
             { label: "Market", href: `/league/${leagueId}/team/market` },
+            { label: "Auctions", href: `/league/${leagueId}/team/auctions` },
           ]}
         />
       )}
