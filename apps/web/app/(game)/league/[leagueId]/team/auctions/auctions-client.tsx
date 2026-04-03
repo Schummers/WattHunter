@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import Link from "next/link";
 import { RoundBlocks } from "@/components/round-blocks";
 import { ConfigCards } from "@/components/config-cards";
@@ -91,6 +92,7 @@ export function AuctionsClient({
   maxSlots,
 }: AuctionsClientProps) {
   const router = useRouter();
+  const navVisible = useScrollDirection();
   const [drafts, setDrafts] = useState<DraftBid[]>(initialDrafts);
   const [releaseConfirm, setReleaseConfirm] = useState<string | null>(null);
   const [validateError, setValidateError] = useState<string | null>(null);
@@ -353,7 +355,10 @@ export function AuctionsClient({
       </div>
 
       {/* Sticky validate bar — always visible */}
-      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+56px)] lg:bottom-0 left-0 right-0 lg:left-[180px] bg-[var(--bg-app)] border-t border-[var(--border-default)] z-30">
+      <div
+        className="fixed inset-x-0 z-30 border-t border-[var(--border-default)] bg-[var(--bg-app)] transition-[bottom] duration-200 lg:bottom-0 lg:left-[180px]"
+        style={{ bottom: navVisible ? "3.5rem" : "0" }}
+      >
         <div className="px-4 py-2.5 flex items-center gap-3">
           {/* Left: slots + remaining */}
           <div className="shrink-0 text-left min-w-[72px]">
