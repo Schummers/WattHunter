@@ -16,16 +16,13 @@
 - ~~Après résolution d'un round, afficher qui a gagné/perdu chaque coureur.~~
 - Déjà disponible dans la page Market History (`/team/market/history`).
 
-### ~~3. Treasury_log : phase economy pas implémentée~~ ✅ DÉJÀ IMPL
-- `confirmPhaseSetup` existe dans `team/market/actions.ts` (L91-284)
-- Auto-appelée quand un joueur place un bid sans phase confirmée (`auctions/[auctionId]/actions.ts` L57-72)
-- Insère `sponsor_payment` + `payday_salary` + gère bankruptcy cascade
-- Page Budget vide = normal tant qu'aucun bid n'a déclenché de payday
+### ~~3. Treasury_log : phase economy~~ ✅ DONE (93ceacb)
+- Payday déplacé de `confirmPhaseSetup` vers le pipeline Python (`auction.py → run_payday()`)
+- Se déclenche à la résolution du Round 1 uniquement (pas au premier bid)
+- `confirmPhaseSetup` reste disponible mais plus auto-appelé
 
-### 4. Enrichissement riders 500-600 ⏳ TODO (manuel)
-- Beaucoup de riders sans spécialité dans la tranche 500-600.
-- `cd services/pcs-sync && python3 run_pipeline.py enrich-riders --start 501 --end 600`
-- ~1h d'exécution, IP résidentielle requise.
+### ~~4. Enrichissement riders 500-600~~ ✅ DONE (lancé manuellement 2026-04-03)
+- Pipeline lancé par l'utilisateur en local.
 
 ### ~~5. Draft bids perdus lors de la navigation~~ ✅ DONE (f189f57)
 - ~~Les montants modifiés localement se perdent quand on navigue vers Rider Detail et qu'on revient.~~
@@ -88,24 +85,12 @@
 - ~~N'afficher que les coureurs en draft dans la section Pending Bids.~~
 - ~~Renamed "Pending Bids" → "Draft Bids"; removed outbid/won display; only active bids shown.~~
 
-### 24. Phases — Trous entre les phases + enchères dans le vide
-- Les dates dans `lib/phases.ts` ont des **trous de 2-3 jours** entre chaque phase.
-- Ces trous correspondent aux `auctionDates` de la phase précédente → les enchères tombent entre deux phases.
-- **Fix proposé** : les enchères d'une phase N appartiennent au **début** de la phase N+1.
-  - Phase N finit le dernier jour de course.
-  - Phase N+1 commence le premier jour d'enchère (= lendemain de la fin de phase N).
-  - Les `auctionDates` sont les premiers jours de la nouvelle phase.
-- Concrètement : `phase.startDay` = premier jour d'enchère, plus de trous.
-- **En attente de validation utilisateur** sur cette approche.
-- Vérifier aussi que les dates correspondent au calendrier WT 2026 réel.
+### ~~24. Phases — Trous entre les phases + enchères dans le vide~~ ✅ DONE (da7ab47)
+- Phases contiguës, 0 trou. Enchères = premiers jours de chaque phase.
+- `phases.ts` + `auction.py` + game-guide + GAME_RULES.md tous mis à jour.
 
-### 25. Budget — Phase cards vides avant validation Round 1
-- Les données treasury (sponsor income, salary deductions) ne sont créées qu'à l'appel de `confirmPhaseSetup()`.
-- **Comportement attendu** : ne rien afficher dans les phase cards tant que le joueur n'a pas validé son premier round.
-- Après validation Round 1 : afficher sponsor income − salaires roster − salaires nouveaux coureurs gagnés.
-- Après chaque round suivant : mise à jour avec les nouveaux coureurs gagnés (salaire déduit immédiatement).
-- Bonus sponsor : mis à jour après chaque course (résultats).
-- **Pas d'historique sponsor par phase** : actuellement `team_sponsors` ne stocke que le sponsor actif → les phases passées montrent le sponsor actuel au lieu de celui qui était actif à l'époque. À corriger si on veut un historique fidèle.
+### ~~25. Budget — Phase cards vides avant validation Round 1~~ ✅ DONE (décision produit)
+- Avant le premier payday : rien à afficher, c'est normal. Pas de changement nécessaire.
 
 ### ~~23. Bid increment — Passer de 500 à 100~~ ✅ DONE (2bc31f5)
 - Zod, inputs, bid-adjust-card, migration DB — tous passés à 100.
