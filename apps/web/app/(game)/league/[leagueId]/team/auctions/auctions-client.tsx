@@ -122,6 +122,7 @@ export function AuctionsClient({
 
   function handleRemoveDraft(riderId: string) {
     setDrafts((prev) => prev.filter((d) => d.riderId !== riderId));
+    setValidateSuccess(false);
     startTransition(() => {
       removeDraft({ leagueId, riderId });
     });
@@ -131,6 +132,7 @@ export function AuctionsClient({
     setDrafts((prev) =>
       prev.map((d) => (d.riderId === riderId ? { ...d, amount: newAmount } : d))
     );
+    setValidateSuccess(false);
     startTransition(() => {
       updateDraftAmount({ leagueId, riderId, amount: newAmount });
     });
@@ -381,15 +383,12 @@ export function AuctionsClient({
         saving={false}
         slotInfo={`${totalCount}/${maxSlots}`}
         budgetInfo={`${isDeficit ? "−" : ""}€${formatThousands(Math.abs(remaining))}`}
-        isDeficit={isDeficit || totalCount > maxSlots}
-        deficitMessage={
-          isDeficit || totalCount > maxSlots
-            ? "Remove riders or lower bids to balance your budget."
-            : undefined
-        }
+        isDeficit={isDeficit}
+        deficitMessage={isDeficit ? "Budget deficit — lower your bids to validate." : undefined}
+        warningMessage={totalCount > maxSlots ? "Too many riders — remove some to validate." : undefined}
         buttonLabel={
           validateSuccess
-            ? "Round Validated"
+            ? "Re-validate"
             : hasOpenRound
               ? `Validate Round ${activeRound}`
               : "No Open Round"
@@ -406,9 +405,7 @@ export function AuctionsClient({
                 Release rider?
               </p>
               <p className="mt-1 text-[length:var(--type-body)] text-[var(--text-mid)]">
-                {isRound1
-                  ? "This rider will be released immediately. No salary has been charged yet — release is free."
-                  : "The rider will be released immediately. The salary already paid this phase is not refunded."}
+                Release this rider? The phase salary already paid will not be refunded.
               </p>
             </div>
             <div className="flex gap-3">

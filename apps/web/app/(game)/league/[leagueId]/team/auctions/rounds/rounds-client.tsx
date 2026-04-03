@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { BackHeader } from "@/components/back-header";
+import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { updateRoundDates } from "./actions";
 
 interface RoundRow {
@@ -26,6 +27,7 @@ export function RoundsClient({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const navVisible = useScrollDirection();
 
   const inputClass =
     "flex-1 min-w-0 bg-transparent border border-[var(--border-default)] rounded-[var(--radius-md)] px-3 py-2 text-[length:var(--type-body)] font-mono text-[var(--text-high)] focus:border-[var(--accent-default)] focus:outline-none transition-colors [color-scheme:dark]";
@@ -117,8 +119,24 @@ export function RoundsClient({
         )}
       </div>
 
-      {/* Sticky save button */}
-      <div className="fixed bottom-0 inset-x-0 border-t border-[var(--border-default)] bg-[var(--bg-app)] px-4 py-3 safe-area-bottom">
+      {/* Sticky save button — sits above bottom nav on mobile */}
+      <div
+        className="fixed inset-x-0 z-30 border-t border-[var(--border-default)] bg-[var(--bg-app)] px-4 py-3 transition-[bottom] duration-200 lg:hidden"
+        style={{ bottom: navVisible ? "3.5rem" : "0" }}
+      >
+        <div className="max-w-lg mx-auto">
+          <button
+            onClick={handleSave}
+            disabled={isPending}
+            className="w-full rounded-[var(--radius-md)] bg-gradient-to-r from-cyan-500 to-cyan-400 px-4 py-2.5 text-[length:var(--type-emphasis)] font-semibold text-black transition-opacity disabled:opacity-50"
+          >
+            {isPending ? "Saving..." : "Save changes"}
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop save button (no bottom nav) */}
+      <div className="hidden lg:block fixed bottom-0 inset-x-0 border-t border-[var(--border-default)] bg-[var(--bg-app)] px-4 py-3 lg:left-[180px]">
         <div className="max-w-lg mx-auto">
           <button
             onClick={handleSave}

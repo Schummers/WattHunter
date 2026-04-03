@@ -174,10 +174,8 @@ export function RiderDetailClient({
 
   async function handleRelease() {
     if (!contractData?.contractId) return;
-    if (currentRound !== 1) {
-      const msg = `Release ${rider.full_name}? You already paid his ${formatEuro(contractData.locked_salary)} salary for this phase. It will not be refunded.`;
-      if (!confirm(msg)) return;
-    }
+    const msg = `Release this rider? The phase salary already paid will not be refunded.`;
+    if (!confirm(msg)) return;
     setSaving(true);
     setError(null);
     const result = await releaseRider(contractData.contractId);
@@ -268,9 +266,44 @@ export function RiderDetailClient({
     );
   }
 
+  // Determine if bid amount has changed from saved draft (for "Update Draft" state)
+  const bidAmountChanged = isInDraft && bidAmount !== draftAmount;
+  const bidInputHasValue = bidAmount !== null && bidAmount >= minSalary;
+
+  // Sticky bar button state
+  const stickyButtonLabel = (() => {
+    if (saving) return isInDraft ? (bidAmountChanged ? "Updating..." : "Removing...") : "Saving...";
+    if (isInRoster) return "Draft Auction";
+    if (isInDraft) return bidAmountChanged ? "Update Draft" : "Draft Auction";
+    return "Draft Auction";
+  })();
+
+  const stickyButtonEnabled = (() => {
+    if (saving) return false;
+    if (isInRoster) return false;
+    if (isInDraft) return bidAmountChanged && bidInputHasValue;
+    return bidInputHasValue;
+  })();
+
+  const stickyBudgetLabel = budgetInfo
+    ? `${formatEuro(budgetInfo.treasury - (budgetInfo.totalBidAmount ?? 0))}`
+    : undefined;
+
+  const slotLabel = budgetInfo
+    ? `${budgetInfo.currentSlots}/${budgetInfo.maxSlots} slots`
+    : undefined;
+
+  async function handleStickyAction() {
+    if (isInDraft && bidAmountChanged) {
+      await handleAddDraft();
+    } else if (!isInDraft) {
+      await handleAddDraft();
+    }
+  }
+
   return (
     <>
-    <div className={`space-y-6${!hideBidSection && !inRail && (!isInRoster) ? " pb-20" : ""}`}>
+    <div className={`space-y-6${!hideBidSection && !inRail ? " pb-24" : ""}`}>
       {!inRail && <BackHeader label={BACK_LABELS[context]} onBack={handleBack} />}
 
       {/* Hero — horizontal layout (RD-3) */}
@@ -338,28 +371,11 @@ export function RiderDetailClient({
       {/* Metric Boxes (RD-4) */}
       {renderMetrics()}
 
-      {/* Action section — content area actions */}
+      {/* Action section — bid input always visible (unless hideBidSection), secondary action below */}
       {!hideBidSection && (
         <div className="px-4 space-y-3">
-          {/* State 1: In roster → Release (outline red, in content area) */}
-          {isInRoster && (
-            <>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={handleRelease}
-                className="w-full rounded-[var(--radius-md)] border border-red-500/30 text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-red-500/10 transition-colors disabled:opacity-50"
-              >
-                {saving ? "Releasing..." : "Release Rider"}
-              </button>
-              {error && (
-                <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
-              )}
-            </>
-          )}
-
-          {/* State 3: Not in roster, not in draft → bid input in content area */}
-          {!isInRoster && !isInDraft && (
+          {/* Bid input — always visible when not in rail */}
+          {!inRail && !isInRoster && (
             <>
               <div className="flex items-center gap-2">
                 <Button
@@ -410,15 +426,37 @@ export function RiderDetailClient({
                   <Plus className="size-4" />
                 </Button>
               </div>
-              {bidAmount !== null && (
-                <p className="text-center text-[length:var(--type-micro)] text-[var(--text-ghost)]">
-                  min {formatThousands(minSalary)} €
-                </p>
-              )}
-              {error && (
-                <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
-              )}
+              <p className="text-center text-[length:var(--type-micro)] text-[var(--text-ghost)]">
+                min {formatThousands(minSalary)} €
+              </p>
             </>
+          )}
+
+          {/* Secondary action: Cancel Draft or Release Rider — below the bid input */}
+          {!inRail && isInDraft && !isInRoster && (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={handleRemoveDraft}
+              className="w-full rounded-[var(--radius-md)] border border-red-500/30 text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-red-500/10 transition-colors disabled:opacity-50"
+            >
+              {saving ? "Removing..." : "Cancel Draft"}
+            </button>
+          )}
+
+          {!inRail && isInRoster && (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={handleRelease}
+              className="w-full rounded-[var(--radius-md)] border border-red-500/30 text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-red-500/10 transition-colors disabled:opacity-50"
+            >
+              {saving ? "Releasing..." : "Release Rider"}
+            </button>
+          )}
+
+          {error && (
+            <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
           )}
         </div>
       )}
@@ -498,33 +536,37 @@ export function RiderDetailClient({
       </div>
     </div>
 
-    {/* StickyBar — Add to Draft / Cancel Draft (mobile only when not in rail) */}
+    {/* StickyBar — always shown when not in rail and not hideBidSection */}
     {!hideBidSection && !inRail && (
-      <>
-        {/* State 2: In draft → Cancel Draft via StickyBar */}
-        {!isInRoster && isInDraft && (
-          <StickyBar
-            saveEnabled={!saving}
-            onSave={handleRemoveDraft}
-            saving={saving}
-            slotInfo={budgetInfo ? `${budgetInfo.currentSlots}/${budgetInfo.maxSlots} slots` : undefined}
-            budgetInfo={budgetInfo ? `€${formatThousands(budgetInfo.treasury)}` : undefined}
-            buttonLabel={saving ? "Removing..." : "Cancel Draft"}
-          />
-        )}
-
-        {/* State 3: Not in roster, not in draft → Add to Draft via StickyBar */}
-        {!isInRoster && !isInDraft && (
-          <StickyBar
-            saveEnabled={!saving && bidAmount !== null && bidAmount >= minSalary}
-            onSave={handleAddDraft}
-            saving={saving}
-            slotInfo={budgetInfo ? `${budgetInfo.currentSlots}/${budgetInfo.maxSlots} slots` : undefined}
-            budgetInfo={budgetInfo ? `€${formatThousands(budgetInfo.treasury)}` : undefined}
-            buttonLabel="+ Draft Auction"
-          />
-        )}
-      </>
+      <StickyBar
+        saveEnabled={stickyButtonEnabled}
+        onSave={handleStickyAction}
+        saving={saving}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+            {slotLabel && stickyBudgetLabel ? (
+              <>
+                <span className="font-mono">{slotLabel}</span>
+                {" · "}
+                <span className="font-mono">{stickyBudgetLabel}</span>
+              </>
+            ) : slotLabel ? (
+              <span className="font-mono">{slotLabel}</span>
+            ) : (
+              <span className="font-mono">{formatThousands(minSalary)} € min</span>
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={handleStickyAction}
+            disabled={!stickyButtonEnabled || saving}
+            className="rounded-lg px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold cta-gradient text-[var(--cta-text)] disabled:opacity-40"
+          >
+            {stickyButtonLabel}
+          </button>
+        </div>
+      </StickyBar>
     )}
     </>
   );

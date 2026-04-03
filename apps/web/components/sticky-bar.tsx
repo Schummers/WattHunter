@@ -12,6 +12,7 @@ interface StickyBarProps {
   children?: React.ReactNode;
   isDeficit?: boolean;
   deficitMessage?: string;
+  warningMessage?: string;
   buttonLabel?: string;
   alwaysShow?: boolean;
 }
@@ -25,6 +26,7 @@ export function StickyBar({
   children,
   isDeficit,
   deficitMessage,
+  warningMessage,
   buttonLabel,
   alwaysShow,
 }: StickyBarProps) {
@@ -78,6 +80,9 @@ export function StickyBar({
           </div>
           {isDeficit && deficitMessage && (
             <p className="text-[length:var(--type-caption)] text-red-400">{deficitMessage}</p>
+          )}
+          {warningMessage && (
+            <p className="text-[length:var(--type-caption)] text-[var(--text-high)]">{warningMessage}</p>
           )}
         </div>
       )}

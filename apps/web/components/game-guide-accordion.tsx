@@ -488,7 +488,7 @@ const HELP_SECTIONS: HelpSection[] = [
             ["Payday", "Player-triggered: click Confirm at phase start. +sponsor budget, -salaries"],
             ["Race bonuses", "+sponsor bonus credited on the day race results are imported"],
             ["Auction win", "-locked salary deducted immediately from treasury"],
-            ["Release fee", "None — the phase salary is not refunded"],
+            ["Release fee", "Free release — phase salary not refunded"],
           ]}
         />
         <Formula>
