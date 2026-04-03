@@ -37,7 +37,7 @@ export default async function AuctionsPage({
   // Get member + team
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, team_id, teams:team_id(id, name, cumulative_xp, level, treasury, sponsor_id)")
+    .select("id, team_id, teams:team_id(id, name, cumulative_xp, level, treasury)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
