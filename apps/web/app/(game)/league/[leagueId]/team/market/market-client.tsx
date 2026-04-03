@@ -6,8 +6,9 @@ import Link from "next/link";
 import { Search, ChevronDown } from "lucide-react";
 import { RiderCard } from "@/components/rider-card";
 import { FilterChips } from "@/components/filter-chips";
+import { StickyBar } from "@/components/sticky-bar";
 import { addDraft } from "@/app/(game)/league/[leagueId]/team/auctions/actions";
-import { smartCountdown, formatThousands, countryCodeToFlag, calcMinSalary } from "@/lib/format";
+import { smartCountdown, formatThousands, countryCodeToFlag, calcMinSalary, formatEuro } from "@/lib/format";
 
 interface Rider {
   id: string;
@@ -116,6 +117,7 @@ export function MarketClient({
   nextAuctionLabel,
   currentSlots,
   maxSlots,
+  treasury,
   draftRiderIds = [],
 }: MarketClientProps) {
   const router = useRouter();
@@ -124,14 +126,25 @@ export function MarketClient({
   const activeFilter = FILTER_OPTIONS[activeFilterIndex].label;
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [displayCount, setDisplayCount] = useState(INITIAL_DISPLAY_COUNT);
-
-  // Track which riders are in draft (optimistic)
-  const [draftSet, setDraftSet] = useState<Set<string>>(() => new Set(draftRiderIds));
-  // Per-rider loading state for "Add to Draft" button
-  const [draftingRider, setDraftingRider] = useState<string | null>(null);
-  // Per-rider bid input values (for amount when adding to draft)
-  const [bidInputs, setBidInputs] = useState<Record<string, number>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // bids: riderId → amount (only riders the user has modified/entered a bid for)
+  const [bids, setBids] = useState<Record<string, number>>(() => {
+    // Pre-populate with min salary for riders already in draft
+    const map: Record<string, number> = {};
+    for (const riderId of draftRiderIds) {
+      const rider = riders.find((r) => r.id === riderId);
+      if (rider) {
+        map[riderId] = calcMinSalary(rider.pcs_points_1yr ?? 0);
+      }
+    }
+    return map;
+  });
+
+  // Track which riders are already saved in draft (server-side)
+  const [savedDraftIds] = useState<Set<string>>(() => new Set(draftRiderIds));
+
+  const [saving, setSaving] = useState(false);
 
   // Reset display count when filter or search changes
   useEffect(() => {
@@ -220,29 +233,56 @@ export function MarketClient({
     });
   }, []);
 
-  function handleBidInputChange(riderId: string, value: number) {
-    setBidInputs((prev) => ({ ...prev, [riderId]: value }));
+  function handleBidChange(riderId: string, value: number) {
+    if (value <= 0) {
+      setBids((prev) => {
+        const next = { ...prev };
+        delete next[riderId];
+        return next;
+      });
+    } else {
+      setBids((prev) => ({ ...prev, [riderId]: value }));
+    }
   }
 
-  async function handleAddDraft(riderId: string, minSalary: number) {
-    const amount = bidInputs[riderId] ?? minSalary;
-    setDraftingRider(riderId);
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next[riderId];
-      return next;
-    });
+  // New bids = bids that are NOT already saved in draft (or have a different amount)
+  const pendingBids = useMemo(() => {
+    return Object.entries(bids).filter(([riderId]) => !savedDraftIds.has(riderId));
+  }, [bids, savedDraftIds]);
 
-    const result = await addDraft({ leagueId, riderId, amount });
+  const hasPendingBids = pendingBids.length > 0;
 
-    if (result.error) {
-      setErrors((prev) => ({ ...prev, [riderId]: result.error! }));
+  async function handleAddToDraft() {
+    if (!hasPendingBids) return;
+    setSaving(true);
+    setErrors({});
+    const newErrors: Record<string, string> = {};
+
+    const results = await Promise.all(
+      pendingBids.map(async ([riderId, amount]) => {
+        const result = await addDraft({ leagueId, riderId, amount });
+        return { riderId, result };
+      })
+    );
+
+    for (const { riderId, result } of results) {
+      if (result.error) {
+        newErrors[riderId] = result.error;
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
     } else {
-      setDraftSet((prev) => new Set([...prev, riderId]));
       router.refresh();
     }
-    setDraftingRider(null);
+    setSaving(false);
   }
+
+  // Stats for sticky bar
+  const totalBidCount = Object.keys(bids).length;
+  const totalBidAmount = Object.values(bids).reduce((s, v) => s + v, 0);
+  const remainingBudget = treasury - totalBidAmount;
 
   // Paginated flat list
   const paginatedFlatRiders = useMemo(() => {
@@ -251,6 +291,50 @@ export function MarketClient({
   }, [filteredRiders, groupedRiders, displayCount]);
 
   const remainingCount = groupedRiders ? 0 : Math.max(0, filteredRiders.length - displayCount);
+
+  function renderRiderRight(r: Rider) {
+    const minSalary = calcMinSalary(r.pcs_points_1yr ?? 0);
+    const currentBid = bids[r.id];
+    return (
+      <div className="flex flex-col items-end gap-0.5">
+        <div
+          className={`flex items-center gap-0.5 rounded-lg px-2 h-7 lg:pointer-events-none ${
+            currentBid
+              ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
+              : "border border-[var(--border-default)] bg-transparent"
+          }`}
+        >
+          <input
+            type="text"
+            inputMode="numeric"
+            min={minSalary}
+            step={500}
+            placeholder={formatThousands(minSalary)}
+            value={currentBid ? formatThousands(currentBid) : ""}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/\s/g, "");
+              const val = parseInt(raw, 10);
+              handleBidChange(r.id, isNaN(val) ? 0 : val);
+            }}
+            onClick={(e) => { if (window.innerWidth < 1024) e.stopPropagation(); }}
+            className={`w-20 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
+              currentBid
+                ? "text-[var(--accent-default)]"
+                : "text-[var(--text-low)]"
+            }`}
+          />
+          <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)] font-medium">
+            €
+          </span>
+        </div>
+        {errors[r.id] && (
+          <span className="text-[length:var(--type-micro)] text-[var(--status-danger)]">
+            {errors[r.id]}
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="pb-20">
@@ -293,7 +377,7 @@ export function MarketClient({
         </div>
       </div>
 
-      {/* Filter chips — no horizontal scroll */}
+      {/* Filter chips */}
       <div className="px-4 pb-3">
         <FilterChips
           options={FILTER_OPTIONS}
@@ -338,149 +422,45 @@ export function MarketClient({
                   </div>
                 </button>
                 {expanded &&
-                  groupRiders.map((r) => {
-                    const minSalary = calcMinSalary(r.pcs_points_1yr ?? 0);
-                    const inDraft = draftSet.has(r.id);
-                    const isAdding = draftingRider === r.id;
-                    return (
-                      <RiderCard
-                        key={r.id}
-                        rider={{
-                          id: r.id,
-                          name: formatName(r.full_name),
-                          nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
-                          team_name: r.real_team ?? undefined,
-                          pcs_rank: r.pcs_rank ?? undefined,
-                          pcs_rank_diff: r.pcs_rank_diff,
-                          photo_url: r.photo_url,
-                        }}
-                        bidState={inDraft ? "active" : "none"}
-                        href={`/league/${leagueId}/rider/${r.id}?from=market`}
-                        rightContent={
-                          <div className="flex flex-col items-end gap-0.5">
-                            {inDraft ? (
-                              <span className="text-[length:var(--type-caption)] font-semibold text-[var(--accent-default)]">
-                                In Draft ✓
-                              </span>
-                            ) : (
-                              <div className="flex items-center gap-1">
-                                <div className="flex items-center gap-0.5 rounded-lg px-2 h-7 border border-[var(--border-default)] bg-transparent">
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    min={minSalary}
-                                    step={500}
-                                    placeholder={formatThousands(minSalary)}
-                                    value={bidInputs[r.id] ? formatThousands(bidInputs[r.id]) : ""}
-                                    onChange={(e) => {
-                                      const raw = e.target.value.replace(/\s/g, "");
-                                      const val = parseInt(raw, 10);
-                                      handleBidInputChange(r.id, isNaN(val) ? 0 : val);
-                                    }}
-                                    onClick={(e) => { if (window.innerWidth < 1024) e.stopPropagation(); }}
-                                    className="w-16 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none text-[var(--text-low)]"
-                                  />
-                                  <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)] font-medium">
-                                    €
-                                  </span>
-                                </div>
-                                <button
-                                  type="button"
-                                  disabled={isAdding}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAddDraft(r.id, minSalary);
-                                  }}
-                                  className="h-7 px-2 rounded-[var(--radius-md)] border border-[var(--accent-default)] text-[length:var(--type-caption)] font-semibold text-[var(--accent-default)] hover:bg-[var(--bg-surface-hover)] disabled:opacity-50 shrink-0"
-                                >
-                                  {isAdding ? "..." : "+ Draft"}
-                                </button>
-                              </div>
-                            )}
-                            {errors[r.id] && (
-                              <span className="text-[length:var(--type-micro)] text-[var(--status-danger)]">
-                                {errors[r.id]}
-                              </span>
-                            )}
-                          </div>
-                        }
-                      />
-                    );
-                  })}
+                  groupRiders.map((r) => (
+                    <RiderCard
+                      key={r.id}
+                      rider={{
+                        id: r.id,
+                        name: formatName(r.full_name),
+                        nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
+                        team_name: r.real_team ?? undefined,
+                        pcs_rank: r.pcs_rank ?? undefined,
+                        pcs_rank_diff: r.pcs_rank_diff,
+                        photo_url: r.photo_url,
+                      }}
+                      bidState={bids[r.id] ? "active" : "none"}
+                      href={`/league/${leagueId}/rider/${r.id}?from=market`}
+                      rightContent={renderRiderRight(r)}
+                    />
+                  ))}
               </div>
             );
           })
         ) : (
           /* Flat list view with pagination */
           <>
-            {(paginatedFlatRiders ?? []).map((r) => {
-              const minSalary = calcMinSalary(r.pcs_points_1yr ?? 0);
-              const inDraft = draftSet.has(r.id);
-              const isAdding = draftingRider === r.id;
-              return (
-                <RiderCard
-                  key={r.id}
-                  rider={{
-                    id: r.id,
-                    name: formatName(r.full_name),
-                    nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
-                    team_name: r.real_team ?? undefined,
-                    pcs_rank: r.pcs_rank ?? undefined,
-                    photo_url: r.photo_url,
-                  }}
-                  bidState={inDraft ? "active" : "none"}
-                  href={`/league/${leagueId}/rider/${r.id}?from=market`}
-                  rightContent={
-                    <div className="flex flex-col items-end gap-0.5">
-                      {inDraft ? (
-                        <span className="text-[length:var(--type-caption)] font-semibold text-[var(--accent-default)]">
-                          In Draft ✓
-                        </span>
-                      ) : (
-                        <div className="flex items-center gap-1">
-                          <div className="flex items-center gap-0.5 rounded-lg px-2 h-7 border border-[var(--border-default)] bg-transparent">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              min={minSalary}
-                              step={500}
-                              placeholder={formatThousands(minSalary)}
-                              value={bidInputs[r.id] ? formatThousands(bidInputs[r.id]) : ""}
-                              onChange={(e) => {
-                                const raw = e.target.value.replace(/\s/g, "");
-                                const val = parseInt(raw, 10);
-                                handleBidInputChange(r.id, isNaN(val) ? 0 : val);
-                              }}
-                              onClick={(e) => e.preventDefault()}
-                              className="w-16 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none text-[var(--text-low)]"
-                            />
-                            <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)] font-medium">
-                              €
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            disabled={isAdding}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddDraft(r.id, minSalary);
-                            }}
-                            className="h-7 px-2 rounded-[var(--radius-md)] border border-[var(--accent-default)] text-[length:var(--type-caption)] font-semibold text-[var(--accent-default)] hover:bg-[var(--bg-surface-hover)] disabled:opacity-50 shrink-0"
-                          >
-                            {isAdding ? "..." : "+ Draft"}
-                          </button>
-                        </div>
-                      )}
-                      {errors[r.id] && (
-                        <span className="text-[length:var(--type-micro)] text-[var(--status-danger)]">
-                          {errors[r.id]}
-                        </span>
-                      )}
-                    </div>
-                  }
-                />
-              );
-            })}
+            {(paginatedFlatRiders ?? []).map((r) => (
+              <RiderCard
+                key={r.id}
+                rider={{
+                  id: r.id,
+                  name: formatName(r.full_name),
+                  nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
+                  team_name: r.real_team ?? undefined,
+                  pcs_rank: r.pcs_rank ?? undefined,
+                  photo_url: r.photo_url,
+                }}
+                bidState={bids[r.id] ? "active" : "none"}
+                href={`/league/${leagueId}/rider/${r.id}?from=market`}
+                rightContent={renderRiderRight(r)}
+              />
+            ))}
 
             {/* Load more */}
             {remainingCount > 0 && (
@@ -505,6 +485,31 @@ export function MarketClient({
           </div>
         )}
       </div>
+
+      {/* Sticky bar — always shown; button enabled only when there are pending bids */}
+      <StickyBar
+        saveEnabled={hasPendingBids}
+        onSave={handleAddToDraft}
+        saving={saving}
+      >
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+            {totalBidCount} rider{totalBidCount !== 1 ? "s" : ""} &middot; {formatEuro(remainingBudget)}
+          </span>
+          <button
+            type="button"
+            onClick={handleAddToDraft}
+            disabled={!hasPendingBids || saving}
+            className="rounded-lg px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold cta-gradient text-[var(--cta-text)] disabled:opacity-40"
+          >
+            {saving
+              ? "Saving..."
+              : hasPendingBids
+                ? `Add ${pendingBids.length} to Draft`
+                : "Add to Draft"}
+          </button>
+        </div>
+      </StickyBar>
     </div>
   );
 }
