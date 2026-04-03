@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { calcMinSalary } from "@/lib/format";
 import { getMaxSlots } from "@/lib/levels";
+import { computeAvailableBudget } from "@/lib/budget";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -276,14 +277,32 @@ export async function validateRound(input: { leagueId: string }) {
   if (contractsError) return { error: contractsError.message };
   const contractList = contracts ?? [];
 
+  // --- 4b. Get sponsor income ---
+  const { data: sponsorData } = await supabase
+    .from("team_sponsors")
+    .select("sponsors(monthly_budget)")
+    .eq("team_id", teamId)
+    .maybeSingle();
+  let sponsorIncome = 0;
+  if (sponsorData?.sponsors) {
+    const sp = Array.isArray(sponsorData.sponsors) ? sponsorData.sponsors[0] : sponsorData.sponsors;
+    sponsorIncome = (sp as { monthly_budget: number }).monthly_budget ?? 0;
+  }
+
   // --- 5. Calculate financials ---
   const draftTotal = draftList.reduce((sum, d) => sum + d.amount, 0);
+  const activeSalaries = contractList.reduce((sum, c) => sum + (c.locked_salary ?? 0), 0);
 
-  // --- 6. Budget check: treasury - draftTotal >= 0 ---
-  const remaining = team.treasury - draftTotal;
+  // --- 6. Budget check ---
+  const remaining = computeAvailableBudget(
+    team.treasury,
+    sponsorIncome,
+    activeSalaries,
+    draftTotal
+  );
   if (remaining < 0) {
     return {
-      error: `Budget exceeded: your draft bids total ${draftTotal.toLocaleString("en-GB")} € but treasury is ${team.treasury.toLocaleString("en-GB")} €`,
+      error: `Budget exceeded: you cannot afford ${draftTotal.toLocaleString("en-GB")} € of drafts with your current purchasing power.`,
     };
   }
 

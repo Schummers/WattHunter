@@ -1,12 +1,25 @@
 import { cn } from "@/lib/utils";
+import { computeAvailableBudget } from "@/lib/budget";
 
 interface TreasuryWidgetProps {
   treasury: number;
+  sponsorIncome: number;
+  activeSalaries: number;
   activeBidsTotal: number;
 }
 
-export function TreasuryWidget({ treasury, activeBidsTotal }: TreasuryWidgetProps) {
-  const available = treasury - activeBidsTotal;
+export function TreasuryWidget({
+  treasury,
+  sponsorIncome,
+  activeSalaries,
+  activeBidsTotal,
+}: TreasuryWidgetProps) {
+  const available = computeAvailableBudget(
+    treasury,
+    sponsorIncome,
+    activeSalaries,
+    activeBidsTotal
+  );
 
   return (
     <div className="sticky top-0 z-10 flex items-center gap-8 border-b border-[var(--border-default)] bg-[var(--bg-surface)] py-3">

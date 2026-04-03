@@ -13,6 +13,7 @@ import { formatThousands } from "@/lib/format";
 import { X } from "lucide-react";
 import { removeDraft, updateDraftAmount, validateRound } from "./actions";
 import { releaseRider } from "@/app/(game)/league/[leagueId]/rider/[riderId]/actions";
+import { computeAvailableBudget } from "@/lib/budget";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -67,7 +68,8 @@ interface AuctionsClientProps {
   activeRound: number | null;
   isRound1: boolean;
   sponsorName: string;
-  sponsorBudget: number;
+  sponsorIncome: number;
+  activeSalaries: number;
   treasury: number;
   pendingSponsorName: string | null;
   activePolicies: PolicyDisplay[];
@@ -88,7 +90,8 @@ export function AuctionsClient({
   activeRound,
   isRound1,
   sponsorName,
-  sponsorBudget,
+  sponsorIncome,
+  activeSalaries,
   treasury,
   pendingSponsorName,
   activePolicies,
@@ -110,7 +113,12 @@ export function AuctionsClient({
   const totalCount = rosterCount + draftCount;
 
   const draftBidsTotal = drafts.reduce((s, d) => s + d.amount, 0);
-  const remaining = treasury - draftBidsTotal;
+  const remaining = computeAvailableBudget(
+    treasury,
+    sponsorIncome,
+    activeSalaries,
+    draftBidsTotal
+  );
   const isDeficit = remaining < 0;
 
   const hasOpenRound = activeRound !== null;
@@ -214,7 +222,7 @@ export function AuctionsClient({
           <ConfigCards
             leagueId={leagueId}
             sponsorName={sponsorName}
-            sponsorBudget={sponsorBudget}
+            sponsorBudget={sponsorIncome}
             policies={activePolicies.map((p) => ({
               name: p.name,
               value: p.name,
@@ -350,6 +358,8 @@ export function AuctionsClient({
           </div>
           <BudgetSummary
             treasury={treasury}
+            sponsorIncome={sponsorIncome}
+            activeSalaries={activeSalaries}
             draftBidsTotal={draftBidsTotal}
             draftCount={draftCount}
           />

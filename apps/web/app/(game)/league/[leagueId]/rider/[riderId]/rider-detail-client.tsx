@@ -11,7 +11,7 @@ import { addDraft, removeDraft } from "@/app/(game)/league/[leagueId]/team/aucti
 import { releaseRider } from "./actions";
 import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
-import { BID_INCREMENT } from "@/lib/budget";
+import { BID_INCREMENT, computeAvailableBudget } from "@/lib/budget";
 
 type RiderContext = "market" | "auctions" | "team" | "ranking";
 
@@ -68,6 +68,8 @@ interface RiderDetailClientProps {
     currentSlots: number;
     maxSlots: number;
     treasury: number;
+    sponsorIncome: number;
+    activeSalaries: number;
     totalDraftBidsAmount: number;
     draftBidsCount: number;
   };
@@ -293,7 +295,12 @@ export function RiderDetailClient({
     return bidAmount; // new bid, full amount added
   })();
   const dynamicBudget = budgetInfo
-    ? budgetInfo.treasury - budgetInfo.totalDraftBidsAmount - currentBidDelta
+    ? computeAvailableBudget(
+        budgetInfo.treasury,
+        budgetInfo.sponsorIncome,
+        budgetInfo.activeSalaries,
+        budgetInfo.totalDraftBidsAmount + currentBidDelta
+      )
     : null;
 
   // Dynamic slots: count draft bids + 1 if entering a NEW bid (not already in draft/roster)
