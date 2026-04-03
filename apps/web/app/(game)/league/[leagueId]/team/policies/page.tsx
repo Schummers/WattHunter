@@ -92,10 +92,17 @@ export default async function PoliciesPage({
   for (const tp of teamPolicies ?? []) {
     const slug = policyIdToSlug[tp.policy_id];
     if (slug && initialPolicies[slug] !== undefined) {
+      // When a pending change exists, display the pending (intended) state so
+      // the toggle reflects what the user last saved rather than the stale
+      // current state. This prevents the UI from appearing as though the save
+      // had no effect after a page reload.
+      const hasPending = tp.pending_is_active != null;
       initialPolicies[slug] = {
-        isActive: tp.is_active,
-        config: tp.config as Record<string, string> | null,
-        hasPending: tp.pending_is_active != null,
+        isActive: hasPending ? (tp.pending_is_active ?? tp.is_active) : tp.is_active,
+        config: hasPending
+          ? ((tp.pending_config as Record<string, string> | null) ?? (tp.config as Record<string, string> | null))
+          : (tp.config as Record<string, string> | null),
+        hasPending,
         pendingIsActive: tp.pending_is_active ?? undefined,
         pendingConfig: tp.pending_config as Record<string, string> | null ?? undefined,
       };

@@ -56,26 +56,40 @@ export function DraftBidCard({
   onNavigate,
 }: DraftBidCardProps) {
   const [localAmount, setLocalAmount] = useState(amount);
+  const [inputValue, setInputValue] = useState(String(amount));
   const [, startTransition] = useTransition();
 
   const flag = rider.nationality ? countryCodeToFlag(rider.nationality) : null;
   const movement = getRankMovement(rider.pcs_rank, rider.pcs_rank_prev);
 
-  function handleDecrement() {
-    const next = Math.max(minSalary, localAmount - INCREMENT);
-    if (next === localAmount) return;
+  function commitAmount(next: number) {
     setLocalAmount(next);
+    setInputValue(String(next));
     startTransition(() => {
       onAmountChange(next);
     });
   }
 
+  function handleDecrement() {
+    const next = Math.max(minSalary, localAmount - INCREMENT);
+    if (next === localAmount) return;
+    commitAmount(next);
+  }
+
   function handleIncrement() {
-    const next = localAmount + INCREMENT;
-    setLocalAmount(next);
-    startTransition(() => {
-      onAmountChange(next);
-    });
+    commitAmount(localAmount + INCREMENT);
+  }
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    // Only allow digits
+    const raw = e.target.value.replace(/\D/g, "");
+    setInputValue(raw);
+  }
+
+  function handleInputBlur() {
+    const parsed = parseInt(inputValue, 10);
+    const next = isNaN(parsed) ? minSalary : Math.max(minSalary, parsed);
+    commitAmount(next);
   }
 
   const canDecrement = localAmount > minSalary;
@@ -86,7 +100,7 @@ export function DraftBidCard({
       <div className="flex items-center gap-[10px]">
         {/* Avatar with PCS badge */}
         <div className="relative shrink-0">
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-11 w-11">
             {rider.photo_url && (
               <AvatarImage
                 src={resolvePhotoUrl(rider.photo_url)}
@@ -180,10 +194,14 @@ export function DraftBidCard({
         <div className="flex flex-1 flex-col items-center">
           <input
             type="text"
-            readOnly
-            value={`€${formatThousands(localAmount)}`}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={inputValue === String(localAmount) ? `€${formatThousands(localAmount)}` : inputValue}
+            onChange={handleInputChange}
+            onFocus={() => setInputValue(String(localAmount))}
+            onBlur={handleInputBlur}
             autoComplete="off"
-            className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-[10px] py-[9px] text-center font-mono text-[length:var(--type-emphasis)] text-[var(--text-high)]"
+            className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-[10px] py-[9px] text-center font-mono text-[length:var(--type-emphasis)] text-[var(--text-high)] focus:border-[var(--accent-default)] focus:outline-none"
           />
           <span className="mt-[3px] text-[length:var(--type-micro)] text-[var(--text-low)]">
             Min: <span className="font-mono">€{formatThousands(minSalary)}</span>

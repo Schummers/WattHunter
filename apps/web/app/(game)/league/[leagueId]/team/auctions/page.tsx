@@ -58,6 +58,14 @@ export default async function AuctionsPage({
   const maxSlots = getMaxSlots(level);
   const maxActivePolicies = getMaxActivePolicies(level);
 
+  // Check commissioner
+  const { data: league } = await supabase
+    .from("leagues")
+    .select("commissioner_id")
+    .eq("id", leagueId)
+    .single();
+  const isCommissioner = league?.commissioner_id === user.id;
+
   // Parallel queries
   const [
     { data: auctionRounds },
@@ -270,6 +278,7 @@ export default async function AuctionsPage({
       rosterRiders={rosterRiders}
       drafts={drafts}
       maxSlots={maxSlots}
+      isCommissioner={isCommissioner}
     />
   );
 }

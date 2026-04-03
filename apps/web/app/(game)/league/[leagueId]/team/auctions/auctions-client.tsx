@@ -74,6 +74,7 @@ interface AuctionsClientProps {
   rosterRiders: RosterRider[];
   drafts: DraftBid[];
   maxSlots: number;
+  isCommissioner: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -93,6 +94,7 @@ export function AuctionsClient({
   rosterRiders,
   drafts: initialDrafts,
   maxSlots,
+  isCommissioner,
 }: AuctionsClientProps) {
   const router = useRouter();
   const [drafts, setDrafts] = useState<DraftBid[]>(initialDrafts);
@@ -190,6 +192,14 @@ export function AuctionsClient({
               No auction rounds scheduled yet.
             </p>
           )}
+          {isCommissioner && (
+            <Link
+              href={`/league/${leagueId}/team/auctions/rounds`}
+              className="block px-4 mt-1.5 text-[length:var(--type-caption)] text-[var(--accent-default)]"
+            >
+              Edit round dates &rarr;
+            </Link>
+          )}
         </section>
 
         {/* Section: Sponsor & Policies */}
@@ -209,7 +219,7 @@ export function AuctionsClient({
               boostPct: p.boostPct,
             }))}
             maxPolicies={maxPolicies}
-            isEditable={activeRound === null || activeRound === 1}
+            isEditable={true}
           />
           {pendingSponsorName && !isRound1 && (
             <p className="text-[length:var(--type-caption)] text-[var(--accent-default)] px-4 mt-1.5 leading-snug">
@@ -218,8 +228,8 @@ export function AuctionsClient({
           )}
           <p className="text-[length:var(--type-micro)] text-[var(--text-low)] px-4 mt-1.5 leading-snug">
             {isRound1
-              ? "Changes take effect immediately during Round 1."
-              : "Only modifiable during Round 1. Locked after validation."}
+              ? "Changes during Round 1 take effect immediately."
+              : "Changes during Round 1 take effect immediately. After Round 1, changes apply next phase."}
           </p>
         </section>
 
