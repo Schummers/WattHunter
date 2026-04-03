@@ -30,6 +30,8 @@ export default async function AuctionDetailPage({
     { data: riders },
     { data: myBids },
     { data: contracts },
+    { data: teamContracts },
+    { data: teamSponsors },
   ] = await Promise.all([
     supabase
       .from("auctions")
@@ -48,10 +50,23 @@ export default async function AuctionDetailPage({
       .select("id, rider_id, team_id, amount, round, status")
       .eq("auction_id", auctionId),
     supabase.from("contracts").select("rider_id").eq("status", "active"),
+    supabase.from("contracts").select("locked_salary").eq("status", "active").eq("team_id", team?.id),
+    supabase.from("team_sponsors").select("sponsors(monthly_budget)").eq("team_id", team?.id).maybeSingle(),
   ]);
 
   if (!auction || !team) {
     return <p className="text-[var(--text-mid)]">Auction not found.</p>;
+  }
+
+  const activeSalaries = (teamContracts ?? []).reduce(
+    (sum, c) => sum + (c.locked_salary ?? 0),
+    0
+  );
+
+  let sponsorIncome = 0;
+  if (teamSponsors?.sponsors) {
+    const sp = Array.isArray(teamSponsors.sponsors) ? teamSponsors.sponsors[0] : teamSponsors.sponsors;
+    sponsorIncome = (sp as { monthly_budget: number }).monthly_budget ?? 0;
   }
 
   const now = new Date();
@@ -90,12 +105,19 @@ export default async function AuctionDetailPage({
         </div>
       </div>
 
-      <TreasuryWidget treasury={team.treasury} activeBidsTotal={activeBidsTotal} />
+      <TreasuryWidget 
+        treasury={team.treasury} 
+        sponsorIncome={sponsorIncome}
+        activeSalaries={activeSalaries}
+        activeBidsTotal={activeBidsTotal} 
+      />
 
       <AuctionClient
         riders={enrichedRiders}
         myBids={myCurrentBids}
         team={team}
+        sponsorIncome={sponsorIncome}
+        activeSalaries={activeSalaries}
         auctionId={auctionId}
         currentRound={currentRound}
       />

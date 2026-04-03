@@ -227,6 +227,11 @@ export default async function AuctionsPage({
       .single();
     pendingSponsorName = pendingSponsor?.name ?? null;
   }
+  
+  const activeSalaries = (activeContracts ?? []).reduce(
+    (sum, c) => sum + (c.locked_salary ?? 0),
+    0
+  );
 
   // Build roster riders for client
   const rosterRiders = (activeContracts ?? []).map((tr) => {
@@ -281,11 +286,12 @@ export default async function AuctionsPage({
       activeRound={activeRoundNumber}
       isRound1={isRound1}
       sponsorName={sponsorName}
-      sponsorBudget={sponsorBudget}
       pendingSponsorName={pendingSponsorName}
       activePolicies={activePoliciesDisplay}
       maxPolicies={maxActivePolicies}
       treasury={team?.treasury ?? 0}
+      sponsorIncome={sponsorBudget}
+      activeSalaries={activeSalaries}
       rosterRiders={rosterRiders}
       drafts={drafts}
       maxSlots={maxSlots}

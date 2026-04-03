@@ -35,6 +35,8 @@ interface AuctionClientProps {
   riders: Rider[];
   myBids: Bid[];
   team: Team;
+  sponsorIncome: number;
+  activeSalaries: number;
   auctionId: string;
   currentRound: number;
 }
@@ -43,6 +45,8 @@ export function AuctionClient({
   riders,
   myBids,
   team,
+  sponsorIncome,
+  activeSalaries,
   auctionId,
   currentRound,
 }: AuctionClientProps) {
@@ -114,6 +118,8 @@ export function AuctionClient({
         rider={selectedRider}
         existingBid={existingBid}
         treasury={team.treasury}
+        sponsorIncome={sponsorIncome}
+        activeSalaries={activeSalaries}
         activeBidsTotal={activeBidsTotal}
         auctionId={auctionId}
         currentRound={currentRound}

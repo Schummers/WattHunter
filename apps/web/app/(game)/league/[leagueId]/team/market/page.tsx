@@ -67,7 +67,7 @@ export default async function MarketPage({
 
   const { data: leagueContracts } = await supabase
     .from("contracts")
-    .select("rider_id, team_id")
+    .select("rider_id, team_id, locked_salary")
     .in("team_id", leagueTeamIds)
     .eq("status", "active");
 
@@ -75,9 +75,14 @@ export default async function MarketPage({
     (leagueContracts ?? []).map((c) => c.rider_id)
   );
 
-  const ownTeamSlots = (leagueContracts ?? []).filter(
+  const ownTeamContracts = (leagueContracts ?? []).filter(
     (c) => c.team_id === team?.id
-  ).length;
+  );
+  const ownTeamSlots = ownTeamContracts.length;
+  const activeSalaries = ownTeamContracts.reduce(
+    (sum, c) => sum + (c.locked_salary ?? 0),
+    0
+  );
 
   const availableRiders = (riders ?? [])
     .filter((r) => !ownedRiderIds.has(r.id))
@@ -133,15 +138,33 @@ export default async function MarketPage({
 
   // Fetch the user's draft bids (rider_id + amount)
   let draftBidMap: { riderId: string; amount: number }[] = [];
+  let sponsorIncome = 0;
+  
   if (team?.id) {
-    const { data: draftBids } = await supabase
-      .from("draft_bids")
-      .select("rider_id, amount")
-      .eq("team_id", team.id);
+    const [
+      { data: draftBids },
+      { data: sponsorData }
+    ] = await Promise.all([
+      supabase
+        .from("draft_bids")
+        .select("rider_id, amount")
+        .eq("team_id", team.id),
+      supabase
+        .from("team_sponsors")
+        .select("sponsors(monthly_budget)")
+        .eq("team_id", team.id)
+        .maybeSingle()
+    ]);
+    
     draftBidMap = (draftBids ?? []).map((d) => ({
       riderId: d.rider_id,
       amount: d.amount,
     }));
+    
+    if (sponsorData?.sponsors) {
+      const sp = Array.isArray(sponsorData.sponsors) ? sponsorData.sponsors[0] : sponsorData.sponsors;
+      sponsorIncome = (sp as { monthly_budget: number }).monthly_budget ?? 0;
+    }
   }
 
   return (
@@ -154,6 +177,8 @@ export default async function MarketPage({
       maxSlots={getMaxSlots(level)}
       currentSlots={ownTeamSlots}
       treasury={team?.treasury ?? 0}
+      sponsorIncome={sponsorIncome}
+      activeSalaries={activeSalaries}
       draftBids={draftBidMap}
     />
   );

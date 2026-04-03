@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { countryCodeToFlag } from "@/lib/format";
 import { placeBid, cancelBid } from "./actions";
+import { computeAvailableBudget } from "@/lib/budget";
 
 interface Rider {
   id: string;
@@ -35,6 +36,8 @@ interface RiderDialogProps {
   rider: Rider | null;
   existingBid: ExistingBid | null;
   treasury: number;
+  sponsorIncome: number;
+  activeSalaries: number;
   activeBidsTotal: number;
   auctionId: string;
   currentRound: number;
@@ -54,6 +57,8 @@ export function RiderDialog({
   rider,
   existingBid,
   treasury,
+  sponsorIncome,
+  activeSalaries,
   activeBidsTotal,
   auctionId,
   currentRound,
@@ -68,8 +73,12 @@ export function RiderDialog({
   if (!rider) return null;
 
   const numAmount = parseInt(amount) || 0;
-  const budgetAfter =
-    treasury - activeBidsTotal - numAmount + (existingBid?.amount ?? 0);
+  const budgetAfter = computeAvailableBudget(
+    treasury,
+    sponsorIncome,
+    activeSalaries,
+    activeBidsTotal + numAmount - (existingBid?.amount ?? 0)
+  );
   const isValid =
     numAmount >= rider.monthly_salary &&
     numAmount % 100 === 0 &&
