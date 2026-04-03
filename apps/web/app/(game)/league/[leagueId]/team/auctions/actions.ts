@@ -295,17 +295,14 @@ export async function validateRound(input: { leagueId: string }) {
   const sponsorIncome =
     (sponsorData as { monthly_budget: number } | null | undefined)
       ?.monthly_budget ?? 250_000;
-  const sponsorName =
-    (sponsorData as { name: string } | null | undefined)?.name ??
-    "Lotto (default)";
 
-  // --- 7. Budget check: sponsorIncome - rosterSalaries - draftTotal >= 0 ---
-  const remaining = sponsorIncome - rosterSalaries - draftTotal;
+  // --- 7. Budget check: treasury + sponsorIncome - rosterSalaries - draftTotal >= 0 ---
+  const remaining = team.treasury + sponsorIncome - rosterSalaries - draftTotal;
   if (remaining < 0) {
     return {
       error: `Budget exceeded: your bids total ${(
         rosterSalaries + draftTotal
-      ).toLocaleString("en-GB")} € but sponsor income is only ${sponsorIncome.toLocaleString("en-GB")} €`,
+      ).toLocaleString("en-GB")} € but available funds (treasury + sponsor income) are ${(team.treasury + sponsorIncome).toLocaleString("en-GB")} €`,
     };
   }
 
@@ -347,40 +344,6 @@ export async function validateRound(input: { leagueId: string }) {
     .eq("league_id", leagueId);
 
   if (deleteError) return { error: deleteError.message };
-
-  // --- 11. Round 1 payday: credit sponsor income + debit all salaries ---
-  if (auctionRound === 1) {
-    let treasury = team.treasury;
-
-    // Credit sponsor income
-    treasury += sponsorIncome;
-    await supabase.from("treasury_log").insert({
-      team_id: teamId,
-      type: "sponsor_payment",
-      amount: sponsorIncome,
-      description: `Round 1 payday — ${sponsorName}`,
-    });
-
-    // Debit all salaries (existing roster + newly validated bids)
-    const totalSalary = rosterSalaries + draftTotal;
-    if (totalSalary > 0) {
-      treasury -= totalSalary;
-      await supabase.from("treasury_log").insert({
-        team_id: teamId,
-        type: "payday_salary",
-        amount: -totalSalary,
-        description: `Round 1 salaries — ${contractList.length + draftList.length} riders`,
-      });
-    }
-
-    // Persist updated treasury
-    const { error: treasuryError } = await supabase
-      .from("teams")
-      .update({ treasury })
-      .eq("id", teamId);
-
-    if (treasuryError) return { error: treasuryError.message };
-  }
 
   revalidatePath(`/league/${leagueId}/team/auctions`);
   revalidatePath(`/league/${leagueId}/auctions`);

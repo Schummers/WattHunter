@@ -271,10 +271,19 @@ async def resolve_current_round(
             # Always close an expired auction after resolution
             _close_auction(supabase, auction_id, league_id)
 
+            # Run payday for all teams — only on Round 1 of each phase
+            auction_name = auction.get("name", "")
+            is_round_1 = "Round 1" in auction_name or str(auction.get("round", "")) == "1"
+            payday_result = None
+            if is_round_1 and league_id:
+                logger.info(f"Auction {auction_id} is Round 1 — triggering payday for league {league_id}")
+                payday_result = run_payday(supabase, league_id)
+
             results.append({
                 "auction_id": auction_id,
                 "round": current_round,
                 "resolved": resolved_count,
+                **({"payday": payday_result} if payday_result else {}),
             })
 
         except Exception as e:
@@ -285,6 +294,207 @@ async def resolve_current_round(
             })
 
     return {"status": "completed", "auctions": results}
+
+
+def run_payday(supabase: Client, league_id: str) -> dict:
+    """
+    Run the monthly payday for ALL teams in a league.
+
+    Called after Round 1 auction resolution. Mirrors the confirmPhaseSetup
+    server action (apps/web/app/(game)/league/[leagueId]/team/market/actions.ts).
+
+    For each team:
+      1. Apply pending sponsor change
+      2. Apply pending policy changes
+      3. Credit sponsor income
+      4. Deduct active contract salaries
+      5. Update treasury
+      6. Bankruptcy cascade (if treasury < -10_000)
+      7. Mark phase as confirmed
+    """
+    BANKRUPTCY_THRESHOLD = -10_000
+    now_iso = datetime.utcnow().isoformat()
+    phase_id = _get_current_phase_id()
+
+    logger.info(f"[Payday] Starting payday for league {league_id} — phase {phase_id}")
+
+    # Fetch all teams in the league
+    teams_resp = supabase.table("teams").select(
+        "id, treasury, pending_sponsor_id"
+    ).eq("league_id", league_id).execute()
+
+    if not teams_resp.data:
+        logger.warning(f"[Payday] No teams found for league {league_id}")
+        return {"status": "no_teams"}
+
+    payday_results = []
+
+    for team in teams_resp.data:
+        team_id = team["id"]
+        try:
+            treasury = int(team["treasury"] or 0)
+            logger.info(f"[Payday] Team {team_id} — treasury before: {treasury}")
+
+            # --- Step 1: Apply pending sponsor change ---
+            if team.get("pending_sponsor_id"):
+                supabase.table("team_sponsors").upsert(
+                    {
+                        "team_id": team_id,
+                        "sponsor_id": team["pending_sponsor_id"],
+                        "activated_at": now_iso,
+                    },
+                    on_conflict="team_id",
+                ).execute()
+                supabase.table("teams").update(
+                    {"pending_sponsor_id": None}
+                ).eq("id", team_id).execute()
+                logger.info(f"[Payday] Team {team_id} — applied pending sponsor {team['pending_sponsor_id']}")
+
+            # --- Step 2: Apply pending policy changes ---
+            pending_policies_resp = supabase.table("team_policies").select(
+                "id, pending_is_active, pending_config"
+            ).eq("team_id", team_id).not_.is_("pending_is_active", "null").execute()
+
+            for policy in (pending_policies_resp.data or []):
+                if policy["pending_is_active"] is False:
+                    supabase.table("team_policies").delete().eq("id", policy["id"]).execute()
+                    logger.info(f"[Payday] Team {team_id} — deleted policy {policy['id']}")
+                else:
+                    supabase.table("team_policies").update({
+                        "is_active": policy["pending_is_active"],
+                        "config": policy["pending_config"],
+                        "activated_at": now_iso,
+                        "pending_is_active": None,
+                        "pending_config": None,
+                    }).eq("id", policy["id"]).execute()
+                    logger.info(f"[Payday] Team {team_id} — activated policy {policy['id']}")
+
+            # --- Step 3: Credit sponsor income ---
+            sponsor_resp = supabase.table("team_sponsors").select(
+                "sponsor_id, sponsors(id, name, monthly_budget)"
+            ).eq("team_id", team_id).single().execute()
+
+            sponsor_budget = 250_000  # default (Lotto T1)
+            sponsor_name = "Lotto (default)"
+
+            if sponsor_resp.data:
+                raw_sponsor = sponsor_resp.data.get("sponsors")
+                if isinstance(raw_sponsor, list):
+                    raw_sponsor = raw_sponsor[0] if raw_sponsor else None
+                if raw_sponsor:
+                    sponsor_budget = int(raw_sponsor.get("monthly_budget", 250_000))
+                    sponsor_name = raw_sponsor.get("name", "Unknown sponsor")
+
+            treasury += sponsor_budget
+
+            supabase.table("treasury_log").insert({
+                "team_id": team_id,
+                "type": "sponsor_payment",
+                "amount": sponsor_budget,
+                "description": f"Payday — {sponsor_name} (Phase {phase_id})",
+            }).execute()
+            logger.info(f"[Payday] Team {team_id} — credited {sponsor_budget} from {sponsor_name}")
+
+            # --- Step 4: Deduct active contract salaries ---
+            contracts_resp = supabase.table("contracts").select(
+                "id, rider_id, locked_salary"
+            ).eq("team_id", team_id).eq("status", "active").execute()
+
+            contracts = contracts_resp.data or []
+            total_salary = sum(int(c.get("locked_salary") or 0) for c in contracts)
+
+            if total_salary > 0:
+                treasury -= total_salary
+                supabase.table("treasury_log").insert({
+                    "team_id": team_id,
+                    "type": "payday_salary",
+                    "amount": -total_salary,
+                    "description": f"Payday salaries — {len(contracts)} riders (Phase {phase_id})",
+                }).execute()
+                logger.info(f"[Payday] Team {team_id} — deducted {total_salary} salaries ({len(contracts)} riders)")
+
+            # --- Step 5: Update treasury ---
+            supabase.table("teams").update({"treasury": treasury}).eq("id", team_id).execute()
+
+            # --- Step 6: Bankruptcy cascade ---
+            released_riders: list[str] = []
+
+            if treasury < BANKRUPTCY_THRESHOLD and contracts:
+                logger.warning(f"[Payday] Team {team_id} — BANKRUPTCY triggered (treasury={treasury})")
+
+                # Fetch cumulative XP per rider
+                xp_resp = supabase.table("rider_xp_daily").select(
+                    "rider_id, xp_gained"
+                ).eq("team_id", team_id).execute()
+
+                rider_xp: dict[str, int] = {}
+                for row in (xp_resp.data or []):
+                    rid = row["rider_id"]
+                    rider_xp[rid] = rider_xp.get(rid, 0) + int(row.get("xp_gained") or 0)
+
+                # Sort by highest cumulative XP first
+                sorted_contracts = sorted(
+                    contracts,
+                    key=lambda c: rider_xp.get(c["rider_id"], 0),
+                    reverse=True,
+                )
+
+                for contract in sorted_contracts:
+                    if treasury >= BANKRUPTCY_THRESHOLD:
+                        break
+
+                    contract_salary = int(contract.get("locked_salary") or 0)
+
+                    supabase.table("contracts").update({
+                        "status": "released",
+                        "released_at": now_iso,
+                    }).eq("id", contract["id"]).execute()
+
+                    treasury += contract_salary
+
+                    supabase.table("treasury_log").insert({
+                        "team_id": team_id,
+                        "type": "bankruptcy_release",
+                        "amount": contract_salary,
+                        "description": f"Bankruptcy salary refund — rider {contract['rider_id']}",
+                        "rider_id": contract["rider_id"],
+                    }).execute()
+
+                    released_riders.append(contract["rider_id"])
+                    logger.info(
+                        f"[Payday] Team {team_id} — released rider {contract['rider_id']} "
+                        f"(refund +{contract_salary}, treasury now {treasury})"
+                    )
+
+                # Update treasury after bankruptcy releases
+                supabase.table("teams").update({"treasury": treasury}).eq("id", team_id).execute()
+
+            # --- Step 7: Mark phase as confirmed ---
+            supabase.table("teams").update({
+                "phase_confirmed_id": phase_id,
+                "phase_confirmed_at": now_iso,
+            }).eq("id", team_id).execute()
+
+            logger.info(
+                f"[Payday] Team {team_id} — DONE. treasury_after={treasury}, "
+                f"released={released_riders}, phase_confirmed={phase_id}"
+            )
+
+            payday_results.append({
+                "team_id": team_id,
+                "treasury_after": treasury,
+                "sponsor_budget": sponsor_budget,
+                "total_salary": total_salary,
+                "released": released_riders,
+                "phase_id": phase_id,
+            })
+
+        except Exception as e:
+            logger.error(f"[Payday] Team {team_id} — error: {e}", exc_info=True)
+            payday_results.append({"team_id": team_id, "error": str(e)})
+
+    logger.info(f"[Payday] Completed for league {league_id} — {len(payday_results)} teams processed")
+    return {"status": "completed", "teams": payday_results}
 
 
 def _close_auction(supabase: Client, auction_id: str, league_id: str | None = None) -> None:

@@ -4,8 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
-import { getCurrentPhase } from "@/lib/phases";
-import { confirmPhaseSetup } from "@/app/(game)/league/[leagueId]/team/market/actions";
 
 function minRankForLevel(level: number): number {
   return getLevelByNumber(level).poolMin;
@@ -45,31 +43,12 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id, treasury, level, phase_confirmed_id")
+    .select("id, treasury, level")
     .eq("user_id", user.id)
     .eq("league_id", auction.league_id)
     .single();
 
   if (!team) return { error: "Team not found" };
-
-  // Gate: auto-confirm phase setup if not yet confirmed
-  const currentPhase = getCurrentPhase();
-  if (team.phase_confirmed_id !== currentPhase.id) {
-    // Auto-confirm with existing config (no pending changes)
-    const confirmResult = await confirmPhaseSetup(team.id);
-    if (confirmResult && "error" in confirmResult) {
-      return { error: `Auto-confirm failed: ${confirmResult.error}` };
-    }
-    // Re-fetch team treasury after payday (+sponsor income, -salaries)
-    const { data: refreshedTeam } = await supabase
-      .from("teams")
-      .select("treasury")
-      .eq("id", team.id)
-      .single();
-    if (refreshedTeam) {
-      team.treasury = refreshedTeam.treasury;
-    }
-  }
 
   // Check rider min salary
   const { data: rider } = await supabase
