@@ -167,12 +167,12 @@ export default async function AuctionsPage({
     }
   }
 
-  // Active policies for display
+  // Active policies for display (boost % reflects roster + draft riders combined)
   const activePoliciesDisplay = boostPolicies.map((bp) => {
     const policyType = POLICY_TYPES.find((pt) => pt.slug === bp.slug);
     if (!policyType) return null;
     const configValue = bp.config?.[policyType.paramKey] ?? null;
-    const rosterRiders = (activeContracts ?? []).map((tr) => {
+    const rosterRiderData = (activeContracts ?? []).map((tr) => {
       const r = Array.isArray(tr.riders) ? tr.riders[0] : tr.riders;
       return {
         nationality: r?.nationality ?? null,
@@ -181,7 +181,17 @@ export default async function AuctionsPage({
         birthdate: (r as { birthdate?: string | null } | null | undefined)?.birthdate ?? null,
       };
     });
-    const matchCount = rosterRiders.filter((r) => riderMatchesPolicy(r, bp)).length;
+    const draftRiderData = (draftBids ?? []).map((db) => {
+      const r = Array.isArray(db.riders) ? db.riders[0] : db.riders;
+      return {
+        nationality: r?.nationality ?? null,
+        real_team: r?.real_team ?? null,
+        specialty: r?.specialty ?? null,
+        birthdate: (r as { birthdate?: string | null } | null | undefined)?.birthdate ?? null,
+      };
+    });
+    const combinedRiders = [...rosterRiderData, ...draftRiderData];
+    const matchCount = combinedRiders.filter((r) => riderMatchesPolicy(r, bp)).length;
     return {
       slug: bp.slug,
       name: configValue ? `${policyType.name}: ${configValue}` : policyType.name,

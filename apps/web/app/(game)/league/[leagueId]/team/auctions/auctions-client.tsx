@@ -406,7 +406,9 @@ export function AuctionsClient({
                 Release rider?
               </p>
               <p className="mt-1 text-[length:var(--type-body)] text-[var(--text-mid)]">
-                The rider will be released immediately. The salary already paid this phase is not refunded.
+                {isRound1
+                  ? "This rider will be released immediately. No salary has been charged yet — release is free."
+                  : "The rider will be released immediately. The salary already paid this phase is not refunded."}
               </p>
             </div>
             <div className="flex gap-3">

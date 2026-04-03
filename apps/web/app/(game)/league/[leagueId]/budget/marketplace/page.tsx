@@ -6,10 +6,13 @@ import type { SponsorRow, TeamSponsor } from "@/lib/sponsors";
 
 interface Props {
   params: Promise<{ leagueId: string }>;
+  searchParams: Promise<{ from?: string }>;
 }
 
-export default async function MarketplacePage({ params }: Props) {
+export default async function MarketplacePage({ params, searchParams }: Props) {
   const { leagueId } = await params;
+  const { from } = await searchParams;
+  const backLabel = from === "auctions" ? "Auctions" : "Budget";
   const supabase = await createClient();
 
   const {
@@ -49,6 +52,7 @@ export default async function MarketplacePage({ params }: Props) {
       nextPhaseName={nextPhase?.label ?? null}
       isImmediate={immediate}
       pendingSponsorId={team.pending_sponsor_id ?? null}
+      backLabel={backLabel}
     />
   );
 }

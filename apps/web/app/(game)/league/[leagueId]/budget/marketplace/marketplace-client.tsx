@@ -26,6 +26,7 @@ interface MarketplaceClientProps {
   nextPhaseName: string | null;
   isImmediate: boolean;
   pendingSponsorId: string | null;
+  backLabel?: string;
 }
 
 // Maps ISO country codes to demonym adjectives for the nationality note
@@ -363,6 +364,7 @@ export function MarketplaceClient({
   nextPhaseName,
   isImmediate,
   pendingSponsorId,
+  backLabel = "Budget",
 }: MarketplaceClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -420,7 +422,7 @@ export function MarketplaceClient({
 
   return (
     <div className="pb-24">
-      <BackHeader label="Budget" />
+      <BackHeader label={backLabel} />
 
       {/* Header */}
       <div className="px-4 pb-4 pt-2">
