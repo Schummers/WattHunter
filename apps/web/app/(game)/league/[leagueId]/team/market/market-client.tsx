@@ -296,13 +296,17 @@ export function MarketClient({
     const minSalary = calcMinSalary(r.pcs_points_1yr ?? 0);
     const currentBid = bids[r.id];
     return (
-      <div className="flex flex-col items-end gap-0.5">
+      <div
+        className="flex flex-col items-end gap-0.5"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div
-          className={`flex items-center gap-0.5 rounded-lg px-2 h-7 lg:pointer-events-none ${
+          className={`flex items-center gap-0.5 rounded-lg px-2 h-7 ${
             currentBid
               ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
               : "border border-[var(--border-default)] bg-transparent"
           }`}
+          onClick={(e) => e.stopPropagation()}
         >
           <input
             type="text"
@@ -316,7 +320,7 @@ export function MarketClient({
               const val = parseInt(raw, 10);
               handleBidChange(r.id, isNaN(val) ? 0 : val);
             }}
-            onClick={(e) => { if (window.innerWidth < 1024) e.stopPropagation(); }}
+            onClick={(e) => e.stopPropagation()}
             className={`w-20 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
               currentBid
                 ? "text-[var(--accent-default)]"
@@ -327,10 +331,12 @@ export function MarketClient({
             €
           </span>
         </div>
-        {/* Min salary label */}
-        <div className="text-[10px] text-[var(--text-low)] font-mono mt-0.5">
-          Min: €{formatThousands(minSalary)}
-        </div>
+        {/* Min salary — only visible when there's an active bid */}
+        {(bids[r.id] || savedDraftIds.has(r.id)) && (
+          <div className="text-[9px] text-[var(--text-low)] font-mono mt-px">
+            Min: €{formatThousands(minSalary)}
+          </div>
+        )}
         {errors[r.id] && (
           <span className="text-[length:var(--type-micro)] text-[var(--status-danger)]">
             {errors[r.id]}

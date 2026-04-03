@@ -164,7 +164,7 @@ export function AuctionsClient({
 
   return (
     <>
-      <div className="py-4 space-y-6 pb-[calc(env(safe-area-inset-bottom)+56px+64px)]">
+      <div className="py-4 space-y-6 pb-[calc(env(safe-area-inset-bottom)+56px+64px)] lg:pb-24">
 
         {/* Section: Rounds */}
         <section>
@@ -248,7 +248,7 @@ export function AuctionsClient({
                           +{rider.xp} XP
                         </span>
                       </div>
-                      {isRound1 && (
+                      {(isRound1 || hasOpenRound) && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -353,7 +353,7 @@ export function AuctionsClient({
       </div>
 
       {/* Sticky validate bar — always visible */}
-      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+56px)] left-0 right-0 bg-[var(--bg-app)] border-t border-[var(--border-default)] z-30">
+      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+56px)] lg:bottom-0 left-0 right-0 lg:left-[180px] bg-[var(--bg-app)] border-t border-[var(--border-default)] z-30">
         <div className="px-4 py-2.5 flex items-center gap-3">
           {/* Left: slots + remaining */}
           <div className="shrink-0 text-left min-w-[72px]">
@@ -369,21 +369,23 @@ export function AuctionsClient({
             </div>
           </div>
 
-          {/* Validate button — only shown when a round is open */}
-          {hasOpenRound && (
-            <button
-              type="button"
-              onClick={handleValidate}
-              disabled={validateDisabled}
-              className={`flex-1 rounded-[var(--radius-md)] py-3 text-center text-[length:var(--type-emphasis)] font-bold transition-all ${
-                validateDisabled
-                  ? "bg-[var(--bg-surface)] text-[var(--text-ghost)] cursor-not-allowed"
-                  : "bg-gradient-to-br from-[var(--accent-default)] to-[var(--accent-highlight)] text-[#020617] hover:opacity-90"
-              }`}
-            >
-              {validateSuccess ? "Round Validated" : `Validate Round ${activeRound}`}
-            </button>
-          )}
+          {/* Validate button — always visible, disabled when no open round */}
+          <button
+            type="button"
+            onClick={handleValidate}
+            disabled={validateDisabled}
+            className={`flex-1 rounded-[var(--radius-md)] py-3 text-center text-[length:var(--type-emphasis)] font-bold transition-all ${
+              validateDisabled
+                ? "bg-[var(--bg-surface)] text-[var(--text-ghost)] cursor-not-allowed opacity-50"
+                : "bg-gradient-to-br from-[var(--accent-default)] to-[var(--accent-highlight)] text-[#020617] hover:opacity-90"
+            }`}
+          >
+            {validateSuccess
+              ? "Round Validated"
+              : hasOpenRound
+                ? `Validate Round ${activeRound}`
+                : "No Open Round"}
+          </button>
         </div>
 
         {/* Deficit / over-limit warning */}
