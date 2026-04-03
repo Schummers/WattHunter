@@ -3,13 +3,14 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { PhaseNavigator } from "@/components/phase-navigator";
 import { FilterChips } from "@/components/filter-chips";
 import { TransactionRow } from "@/components/transaction-row";
 import { Tag } from "@/components/pill";
 import { SponsorBonusDetails } from "@/components/sponsor-bonus-details";
 import { formatEuro, countryCodeToFlag } from "@/lib/format";
+import { AUCTION_PHASES, getCurrentPhase } from "@/lib/phases";
 import {
   formatBudget,
   ORIENTATION_LABELS,
@@ -51,10 +52,11 @@ export function BudgetClient({
   leagueId,
   treasury,
   income,
-  outgoing,
+  outgoing: _outgoing,
   transactions,
   currentSponsor,
   phaseIndex,
+  phaseSalaries,
 }: BudgetClientProps) {
   const router = useRouter();
   const [filterIndex, setFilterIndex] = useState(0);
@@ -65,6 +67,12 @@ export function BudgetClient({
     [transactions, filterIndex],
   );
 
+  // Determine the real current phase index to prevent future navigation
+  const realCurrentPhaseIndex = useMemo(() => {
+    const current = getCurrentPhase();
+    return AUCTION_PHASES.findIndex((p) => p.id === current.id);
+  }, []);
+
   function handlePhaseChange(newIndex: number) {
     router.replace(`?phase=${newIndex}`, { scroll: false });
   }
@@ -73,35 +81,72 @@ export function BudgetClient({
     ? currentSponsor.nationality.split("/").map((c) => c.trim())
     : [];
 
+  const sponsorBase = currentSponsor?.monthly_budget ?? 0;
+  const bonuses = income - sponsorBase;
+  const phaseResult = sponsorBase + bonuses - phaseSalaries;
+  const isBankruptcyRisk = phaseSalaries > sponsorBase;
+
   return (
     <div className="pb-24">
       {/* Phase Navigator */}
-      <PhaseNavigator currentIndex={phaseIndex} onChange={handlePhaseChange} />
+      <PhaseNavigator
+        currentIndex={phaseIndex}
+        onChange={handlePhaseChange}
+        maxIndex={realCurrentPhaseIndex}
+      />
 
-      {/* Balance Hero Card */}
-      <div className="xp-card-body mx-4 mt-2 p-5 mb-6">
+      {/* Treasury Hero Card */}
+      <div className="xp-card-body mx-4 mt-1 p-5">
         <div className="xp-content">
           <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-            Balance
+            Treasury
           </span>
-          <div className="mt-1 font-mono text-[length:var(--type-display)] font-black leading-none text-[var(--accent-highlight)] tabular-nums">
+          <div className="mt-1 font-[family-name:var(--font-geist-mono)] text-[length:var(--type-display)] font-black leading-none text-[var(--accent-highlight)] tabular-nums">
             {formatEuro(treasury)}
           </div>
-          <div className="mt-2 flex items-center gap-3 text-[length:var(--type-caption)]">
-            <span className="text-[var(--text-low)]">
-              Income{" "}
-              <span className="font-mono font-semibold text-[var(--text-high)]">+{formatCompact(income)}</span>
-            </span>
-            <span className="text-[var(--text-low)]">
-              Outgoing{" "}
-              <span className="font-mono font-semibold text-[var(--text-high)]">-{formatCompact(outgoing)}</span>
-            </span>
+
+          {/* P&L rows */}
+          <div className="mt-3 space-y-1.5">
+            <div className="flex items-center justify-between text-[length:var(--type-caption)]">
+              <span className="text-[var(--text-low)]">Sponsor</span>
+              <span className="font-[family-name:var(--font-geist-mono)] font-semibold text-[var(--text-high)] tabular-nums">
+                +{formatCompact(sponsorBase)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[length:var(--type-caption)]">
+              <span className="text-[var(--text-low)]">Bonuses</span>
+              <span className="font-[family-name:var(--font-geist-mono)] font-semibold text-[var(--text-high)] tabular-nums">
+                +{formatCompact(Math.max(0, bonuses))}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[length:var(--type-caption)]">
+              <span className="text-[var(--text-low)]">Salaries</span>
+              <span className="font-[family-name:var(--font-geist-mono)] font-semibold text-[var(--text-high)] tabular-nums">
+                -{formatCompact(phaseSalaries)}
+              </span>
+            </div>
+            <div className="border-t border-white/10 pt-1.5">
+              <div className="flex items-center justify-between text-[length:var(--type-caption)]">
+                <span className="font-semibold text-[var(--text-high)]">Phase result</span>
+                <span className="font-[family-name:var(--font-geist-mono)] font-bold text-[var(--text-high)] tabular-nums">
+                  {phaseResult >= 0 ? "+" : ""}{formatCompact(phaseResult)}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Bankruptcy risk warning */}
+      {isBankruptcyRisk && (
+        <div className="mx-4 mt-2 flex items-center gap-1.5 rounded-[var(--radius-md)] border border-red-500/30 bg-red-500/8 px-3 py-2 text-[length:var(--type-caption)] text-red-400">
+          <span>⚠</span>
+          <span>Bankruptcy risk — your salaries exceed your sponsor income</span>
+        </div>
+      )}
+
       {/* Sponsor Section */}
-      <div className="mt-2 mb-6">
+      <div className="mt-6 mb-0">
         <div className="flex items-center justify-between px-4 mb-2">
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             Sponsor
@@ -121,31 +166,25 @@ export function BudgetClient({
               onClick={() => setSponsorExpanded((v) => !v)}
               className="block w-full rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
             >
-              {/* Line 1: chevron + name + budget */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ChevronRight
-                    size={14}
-                    className={cn(
-                      "shrink-0 text-[var(--text-low)] transition-transform duration-200",
-                      sponsorExpanded && "rotate-90",
-                    )}
-                  />
-                  <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-                    {currentSponsor.name}
-                  </span>
-                </div>
-                <span className="font-mono text-[length:var(--type-stat-small)] font-bold text-[var(--text-high)] tabular-nums">
-                  {formatBudget(currentSponsor.monthly_budget)}
+              {/* Single line: chevron + name + tags + flags + amount */}
+              <div className="flex items-center gap-2">
+                <ChevronDown
+                  size={14}
+                  className={cn(
+                    "shrink-0 text-[var(--text-low)] transition-transform duration-200",
+                    sponsorExpanded && "rotate-180",
+                  )}
+                />
+                <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+                  {currentSponsor.name}
                 </span>
-              </div>
-
-              {/* Line 2: tags */}
-              <div className="flex items-center gap-1.5 mt-1 pl-[22px]">
                 <Tag variant="highlighted">{ORIENTATION_LABELS[currentSponsor.orientation]}</Tag>
                 {nationalities.map((nat) => (
                   <Tag key={nat} variant="default">{countryCodeToFlag(nat)}</Tag>
                 ))}
+                <span className="ml-auto font-[family-name:var(--font-geist-mono)] text-[length:var(--type-stat-small)] font-bold text-[var(--text-high)] tabular-nums">
+                  {formatBudget(currentSponsor.monthly_budget)}
+                </span>
               </div>
 
               {/* Expanded bonus details */}
@@ -168,7 +207,7 @@ export function BudgetClient({
       </div>
 
       {/* Transactions Section */}
-      <div className="mt-2 mb-4">
+      <div className="mt-6 mb-4">
         <div className="flex items-center justify-between px-4 mb-2">
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             Transactions

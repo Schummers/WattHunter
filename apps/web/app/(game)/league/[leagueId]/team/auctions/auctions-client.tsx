@@ -10,6 +10,7 @@ import { BudgetSummary } from "@/components/budget-summary";
 import { DraftBidCard } from "@/components/draft-bid-card";
 import { RiderCard } from "@/components/rider-card";
 import { formatThousands } from "@/lib/format";
+import { X } from "lucide-react";
 import { removeDraft, updateDraftAmount, validateRound } from "./actions";
 import { releaseRider } from "@/app/(game)/league/[leagueId]/rider/[riderId]/actions";
 
@@ -67,11 +68,13 @@ interface AuctionsClientProps {
   isRound1: boolean;
   sponsorName: string;
   sponsorBudget: number;
+  pendingSponsorName: string | null;
   activePolicies: PolicyDisplay[];
   maxPolicies: number;
   rosterRiders: RosterRider[];
   drafts: DraftBid[];
   maxSlots: number;
+  isCommissioner: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -85,11 +88,13 @@ export function AuctionsClient({
   isRound1,
   sponsorName,
   sponsorBudget,
+  pendingSponsorName,
   activePolicies,
   maxPolicies,
   rosterRiders,
   drafts: initialDrafts,
   maxSlots,
+  isCommissioner,
 }: AuctionsClientProps) {
   const router = useRouter();
   const [drafts, setDrafts] = useState<DraftBid[]>(initialDrafts);
@@ -187,6 +192,14 @@ export function AuctionsClient({
               No auction rounds scheduled yet.
             </p>
           )}
+          {isCommissioner && (
+            <Link
+              href={`/league/${leagueId}/team/auctions/rounds`}
+              className="block px-4 mt-1.5 text-[length:var(--type-caption)] text-[var(--accent-default)]"
+            >
+              Edit round dates &rarr;
+            </Link>
+          )}
         </section>
 
         {/* Section: Sponsor & Policies */}
@@ -206,10 +219,17 @@ export function AuctionsClient({
               boostPct: p.boostPct,
             }))}
             maxPolicies={maxPolicies}
-            isEditable={activeRound === null || activeRound === 1}
+            isEditable={true}
           />
+          {pendingSponsorName && !isRound1 && (
+            <p className="text-[length:var(--type-caption)] text-[var(--accent-default)] px-4 mt-1.5 leading-snug">
+              {pendingSponsorName} will be active from next auction phase.
+            </p>
+          )}
           <p className="text-[length:var(--type-micro)] text-[var(--text-low)] px-4 mt-1.5 leading-snug">
-            Only modifiable during Round 1. Locked after validation.
+            {isRound1
+              ? "Changes during Round 1 take effect immediately."
+              : "Changes during Round 1 take effect immediately. After Round 1, changes apply next phase."}
           </p>
         </section>
 
@@ -238,15 +258,15 @@ export function AuctionsClient({
                   }}
                   xp={rider.xp}
                   boostPct={rider.boostPct}
-                  href={`/league/${leagueId}/rider/${rider.riderId}?from=team`}
+                  onNavigate={() => router.push(`/league/${leagueId}/rider/${rider.riderId}?from=team`)}
                   rightContent={
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <div className="flex flex-col items-end">
                         <span className="text-[length:var(--type-body)] font-bold font-mono text-[var(--text-high)]">
                           {formatThousands(rider.lockedSalary)} €
                         </span>
-                        <span className="text-[length:var(--type-caption)] font-mono text-[var(--text-low)]">
-                          +{rider.xp} XP
+                        <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+                          +<span className="font-mono">{rider.xp}</span> XP
                         </span>
                       </div>
                       {(isRound1 || hasOpenRound) && (
@@ -256,9 +276,10 @@ export function AuctionsClient({
                             e.preventDefault();
                             handleReleaseClick(rider.contractId);
                           }}
-                          className="shrink-0 rounded-[var(--radius-md)] bg-red-500/[0.12] px-2 py-1.5 text-[length:var(--type-micro)] font-medium text-red-400 transition-colors hover:bg-red-500/20"
+                          aria-label="Release rider"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-red-500/[0.12] text-red-400 transition-colors hover:bg-red-500/20"
                         >
-                          Release
+                          <X size={14} />
                         </button>
                       )}
                     </div>
@@ -385,7 +406,9 @@ export function AuctionsClient({
                 Release rider?
               </p>
               <p className="mt-1 text-[length:var(--type-body)] text-[var(--text-mid)]">
-                The rider will be released immediately. The salary already paid this phase is not refunded.
+                {isRound1
+                  ? "This rider will be released immediately. No salary has been charged yet — release is free."
+                  : "The rider will be released immediately. The salary already paid this phase is not refunded."}
               </p>
             </div>
             <div className="flex gap-3">

@@ -245,14 +245,16 @@ export async function validateRound(input: { leagueId: string }) {
   // --- 2. Find open auction round for this league ---
   const { data: auction } = await supabase
     .from("auctions")
-    .select("id, round")
+    .select("id, name")
     .eq("league_id", leagueId)
     .eq("status", "open")
-    .order("round", { ascending: true })
+    .order("opens_at", { ascending: true })
     .limit(1)
     .single();
 
   if (!auction) return { error: "No open auction round found" };
+
+  const auctionRound = parseInt(auction.name.match(/\d+/)?.[0] ?? "0", 10);
 
   // --- 3. Get draft bids for this team + league ---
   const { data: drafts, error: draftsError } = await supabase
@@ -326,7 +328,7 @@ export async function validateRound(input: { leagueId: string }) {
       team_id: teamId,
       rider_id: draft.rider_id,
       amount: draft.amount,
-      round: auction.round,
+      round: auctionRound,
       status: "active" as const,
     }));
 
@@ -347,7 +349,7 @@ export async function validateRound(input: { leagueId: string }) {
   if (deleteError) return { error: deleteError.message };
 
   // --- 11. Round 1 payday: credit sponsor income + debit all salaries ---
-  if (auction.round === 1) {
+  if (auctionRound === 1) {
     let treasury = team.treasury;
 
     // Credit sponsor income

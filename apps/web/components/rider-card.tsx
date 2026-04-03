@@ -53,10 +53,10 @@ export function RiderCard({
 
   if (isOpenSlot) {
     const inner = (
-      <div className={`relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] transition-colors ${href ? "hover:bg-[var(--bg-subtle)]" : ""}`}>
+      <div className={`relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] transition-colors ${href ? "hover:bg-[var(--bg-surface-hover)]" : ""}`}>
         {/* Avatar placeholder */}
         <div className="flex flex-col items-center gap-0.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-[var(--border-default)]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-[var(--border-default)]">
             <Plus size={16} className="text-[var(--text-ghost)]" />
           </div>
         </div>
@@ -84,14 +84,14 @@ export function RiderCard({
   const hasBid = bidState === "active" || bidState === "outbid";
   const bgClass = "";
 
-  const hoverClass = !href ? "" : "hover:bg-[var(--bg-subtle)]";
+  const hoverClass = !href ? "" : "hover:bg-[var(--bg-surface-hover)]";
 
   // Avatar + name area — clickable when onNavigate is set
   const avatarAndName = (
     <>
       {/* Avatar + PCS rank overlay */}
       <div className="relative shrink-0">
-        <Avatar className="h-9 w-9">
+        <Avatar className="h-11 w-11">
           {rider.photo_url && (
             <AvatarImage src={resolvePhotoUrl(rider.photo_url)} alt={rider.name} referrerPolicy="no-referrer" />
           )}
@@ -109,7 +109,7 @@ export function RiderCard({
       {/* Name + team */}
       <div className="flex flex-1 flex-col min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className={`text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] truncate ${onNavigate ? "group-hover/nav:text-[var(--accent-default)] transition-colors" : ""}`}>
+          <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] truncate">
             {rider.name}
           </span>
           {onNavigate && (

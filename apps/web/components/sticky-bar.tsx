@@ -62,7 +62,7 @@ export function StickyBar({
         <div className="space-y-1 px-4">
           <div className="flex items-center justify-between">
             <span className={`font-mono text-[length:var(--type-emphasis)] font-semibold ${isDeficit ? "text-red-400" : "text-[var(--text-high)]"}`}>
-              {slotInfo} &middot; {budgetInfo}
+              {budgetInfo}
             </span>
             <button
               onClick={onSave}

@@ -37,7 +37,7 @@ export default async function AuctionsPage({
   // Get member + team
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, team_id, teams:team_id(id, name, cumulative_xp, level, treasury)")
+    .select("id, team_id, teams:team_id(id, name, cumulative_xp, level, treasury, pending_sponsor_id)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
@@ -58,6 +58,14 @@ export default async function AuctionsPage({
   const maxSlots = getMaxSlots(level);
   const maxActivePolicies = getMaxActivePolicies(level);
 
+  // Check commissioner
+  const { data: league } = await supabase
+    .from("leagues")
+    .select("commissioner_id")
+    .eq("id", leagueId)
+    .single();
+  const isCommissioner = league?.commissioner_id === user.id;
+
   // Parallel queries
   const [
     { data: auctionRounds },
@@ -68,9 +76,10 @@ export default async function AuctionsPage({
   ] = await Promise.all([
     supabase
       .from("auctions")
-      .select("id, round, opens_at, closes_at, status")
+      .select("id, name, opens_at, closes_at, status")
       .eq("league_id", leagueId)
-      .order("round", { ascending: true }),
+      .in("status", ["open", "scheduled"])
+      .order("opens_at", { ascending: true }),
     supabase
       .from("contracts")
       .select(
@@ -158,12 +167,12 @@ export default async function AuctionsPage({
     }
   }
 
-  // Active policies for display
+  // Active policies for display (boost % reflects roster + draft riders combined)
   const activePoliciesDisplay = boostPolicies.map((bp) => {
     const policyType = POLICY_TYPES.find((pt) => pt.slug === bp.slug);
     if (!policyType) return null;
     const configValue = bp.config?.[policyType.paramKey] ?? null;
-    const rosterRiders = (activeContracts ?? []).map((tr) => {
+    const rosterRiderData = (activeContracts ?? []).map((tr) => {
       const r = Array.isArray(tr.riders) ? tr.riders[0] : tr.riders;
       return {
         nationality: r?.nationality ?? null,
@@ -172,7 +181,17 @@ export default async function AuctionsPage({
         birthdate: (r as { birthdate?: string | null } | null | undefined)?.birthdate ?? null,
       };
     });
-    const matchCount = rosterRiders.filter((r) => riderMatchesPolicy(r, bp)).length;
+    const draftRiderData = (draftBids ?? []).map((db) => {
+      const r = Array.isArray(db.riders) ? db.riders[0] : db.riders;
+      return {
+        nationality: r?.nationality ?? null,
+        real_team: r?.real_team ?? null,
+        specialty: r?.specialty ?? null,
+        birthdate: (r as { birthdate?: string | null } | null | undefined)?.birthdate ?? null,
+      };
+    });
+    const combinedRiders = [...rosterRiderData, ...draftRiderData];
+    const matchCount = combinedRiders.filter((r) => riderMatchesPolicy(r, bp)).length;
     return {
       slug: bp.slug,
       name: configValue ? `${policyType.name}: ${configValue}` : policyType.name,
@@ -186,10 +205,28 @@ export default async function AuctionsPage({
   const sponsorName = (sponsorData as { name: string } | null | undefined)?.name ?? "Lotto (default)";
   const sponsorBudget = (sponsorData as { monthly_budget: number } | null | undefined)?.monthly_budget ?? 250_000;
 
+  // Parse round number from name ("Round 1" → 1)
+  function parseRoundNumber(name: string): number {
+    const match = name.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  }
+
   // Active round
   const openRound = (auctionRounds ?? []).find((r) => r.status === "open");
-  const activeRoundNumber = openRound?.round ?? null;
+  const activeRoundNumber = openRound ? parseRoundNumber(openRound.name) : null;
   const isRound1 = activeRoundNumber === 1;
+
+  // Pending sponsor (for notification when not Round 1)
+  const pendingSponsorId = (team as { pending_sponsor_id?: string | null })?.pending_sponsor_id ?? null;
+  let pendingSponsorName: string | null = null;
+  if (pendingSponsorId) {
+    const { data: pendingSponsor } = await supabase
+      .from("sponsors")
+      .select("name")
+      .eq("id", pendingSponsorId)
+      .single();
+    pendingSponsorName = pendingSponsor?.name ?? null;
+  }
 
   // Build roster riders for client
   const rosterRiders = (activeContracts ?? []).map((tr) => {
@@ -236,7 +273,7 @@ export default async function AuctionsPage({
       leagueId={leagueId}
       rounds={(auctionRounds ?? []).map((r) => ({
         id: r.id,
-        round: r.round,
+        round: parseRoundNumber(r.name),
         opens_at: r.opens_at,
         closes_at: r.closes_at,
         status: r.status,
@@ -245,11 +282,13 @@ export default async function AuctionsPage({
       isRound1={isRound1}
       sponsorName={sponsorName}
       sponsorBudget={sponsorBudget}
+      pendingSponsorName={pendingSponsorName}
       activePolicies={activePoliciesDisplay}
       maxPolicies={maxActivePolicies}
       rosterRiders={rosterRiders}
       drafts={drafts}
       maxSlots={maxSlots}
+      isCommissioner={isCommissioner}
     />
   );
 }

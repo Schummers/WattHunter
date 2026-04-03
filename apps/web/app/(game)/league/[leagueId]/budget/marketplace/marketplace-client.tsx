@@ -2,15 +2,14 @@
 
 import { useState, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, ChevronRight } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { Lock, ChevronDown } from "lucide-react";
 import { BackHeader } from "@/components/back-header";
 import { Tag } from "@/components/pill";
-import { SponsorBonusDetails } from "@/components/sponsor-bonus-details";
 import { cn } from "@/lib/utils";
 import {
   formatBudget,
   groupByTier,
+  thresholdLabel,
   ORIENTATION_LABELS,
   type SponsorRow,
   type TeamSponsor,
@@ -27,9 +26,215 @@ interface MarketplaceClientProps {
   nextPhaseName: string | null;
   isImmediate: boolean;
   pendingSponsorId: string | null;
+  backLabel?: string;
 }
 
-function SponsorRow({
+// Maps ISO country codes to demonym adjectives for the nationality note
+const NATIONALITY_DEMONYMS: Record<string, string> = {
+  FR: "French",
+  ES: "Spanish",
+  BE: "Belgian",
+  NL: "Dutch",
+  GB: "British",
+  US: "American",
+  IT: "Italian",
+  DK: "Danish",
+  NO: "Norwegian",
+};
+
+/** Inline bonus content for Tiers 1-4 (two-column base/enhanced layout) */
+function BaseBonusContent({ sponsor }: { sponsor: SponsorRow }) {
+  const nationalities = sponsor.nationality
+    ? sponsor.nationality.split("/").map((c) => c.trim())
+    : [];
+
+  // Grouping: GC or neutral → GC+Stage first, then One-Day
+  //           one_day → One-Day first, then GC+Stage
+  const isGcFirst = sponsor.orientation !== "one_day";
+
+  const gcStageGroup = (
+    <>
+      {sponsor.bonus_gc > 0 && (
+        <div className="flex items-baseline py-1 gap-2">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+            {thresholdLabel(sponsor.gc_threshold)} GC
+          </span>
+          <span className="font-[family-name:var(--font-geist-mono)] text-[11px] text-[var(--text-low)] tabular-nums">
+            +{formatBudget(sponsor.bonus_gc)}
+          </span>
+          <span className="ml-auto flex items-baseline gap-1">
+            <span className="text-[10px] text-[var(--text-low)]">if Grand Tour</span>
+            <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+              +{formatBudget(sponsor.bonus_gc * 2)}
+            </span>
+          </span>
+        </div>
+      )}
+      {sponsor.bonus_stage > 0 && (
+        <div className="flex items-baseline py-1 gap-2">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+            {thresholdLabel(sponsor.stage_threshold)} Stage
+          </span>
+          <span className="font-[family-name:var(--font-geist-mono)] text-[11px] text-[var(--text-low)] tabular-nums">
+            +{formatBudget(sponsor.bonus_stage)}
+          </span>
+          <span className="ml-auto flex items-baseline gap-1">
+            <span className="text-[10px] text-[var(--text-low)]">if Grand Tour</span>
+            <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+              +{formatBudget(sponsor.bonus_stage * 2)}
+            </span>
+          </span>
+        </div>
+      )}
+    </>
+  );
+
+  const oneDayGroup = (
+    <>
+      {sponsor.bonus_one_day > 0 && (
+        <div className="flex items-baseline py-1 gap-2">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+            {thresholdLabel(sponsor.one_day_threshold)} One-Day
+          </span>
+          <span className="font-[family-name:var(--font-geist-mono)] text-[11px] text-[var(--text-low)] tabular-nums">
+            +{formatBudget(sponsor.bonus_one_day)}
+          </span>
+          <span className="ml-auto flex items-baseline gap-1">
+            <span className="text-[10px] text-[var(--text-low)]">if Monument</span>
+            <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+              +{formatBudget(sponsor.bonus_one_day * 2)}
+            </span>
+          </span>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <div>
+      {/* Section title */}
+      <div className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)] mt-1 pt-2 border-t border-[var(--border-default)]">
+        Base Bonus
+      </div>
+
+      {/* Rows */}
+      {isGcFirst ? (
+        <>
+          {gcStageGroup}
+          <div className="border-t border-[var(--border-subtle)] my-1.5" />
+          {oneDayGroup}
+        </>
+      ) : (
+        <>
+          {oneDayGroup}
+          <div className="border-t border-[var(--border-subtle)] my-1.5" />
+          {gcStageGroup}
+        </>
+      )}
+
+      {/* Nationality note */}
+      {nationalities.length > 0 && (
+        <div className="flex items-center gap-1.5 border-t border-[var(--border-default)] mt-2.5 pt-2.5 text-[11px] text-[var(--text-low)]">
+          {nationalities.map((nat) => (
+            <span key={nat}>{countryCodeToFlag(nat)}</span>
+          ))}
+          <span>
+            {nationalities
+              .map((nat) => NATIONALITY_DEMONYMS[nat] ?? nat)
+              .join(" / ")}{" "}
+            rider: all bonuses ×1.5
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Inline bonus content for Tiers 5-6 (prestige single-column layout) */
+function PrestigeBonusContent({ sponsor }: { sponsor: SponsorRow }) {
+  // Stage-race group: Grand Tour GC, Stage (GT), Stage (regular)
+  // One-day group: Monument, One-Day
+
+  const hasGrandTourGC =
+    sponsor.bonus_grand_tour != null &&
+    sponsor.bonus_grand_tour > 0 &&
+    sponsor.grand_tour_threshold != null;
+  const hasMonument =
+    sponsor.bonus_monument != null &&
+    sponsor.bonus_monument > 0 &&
+    sponsor.monument_threshold != null;
+
+  return (
+    <div>
+      {/* Section title */}
+      <div className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)] mt-1 pt-2 border-t border-[var(--border-default)]">
+        Prestige Bonus
+      </div>
+
+      {/* Stage-race group */}
+      {hasGrandTourGC && (
+        <div className="flex items-baseline justify-between py-1">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+            {thresholdLabel(sponsor.grand_tour_threshold!)} Grand Tour GC
+          </span>
+          <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+            +{formatBudget(sponsor.bonus_grand_tour!)}
+          </span>
+        </div>
+      )}
+      {sponsor.bonus_gc > 0 && (
+        <div className="flex items-baseline justify-between py-1">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+            {thresholdLabel(sponsor.gc_threshold)} Stage Race GC
+          </span>
+          <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+            +{formatBudget(sponsor.bonus_gc)}
+          </span>
+        </div>
+      )}
+      {sponsor.bonus_stage > 0 && (
+        <div className="flex items-baseline justify-between py-1">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+            {thresholdLabel(sponsor.stage_threshold)} Stage
+          </span>
+          <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+            +{formatBudget(sponsor.bonus_stage)}
+          </span>
+        </div>
+      )}
+
+      {/* Divider between stage-race and one-day groups */}
+      {(hasGrandTourGC || sponsor.bonus_gc > 0 || sponsor.bonus_stage > 0) &&
+        (hasMonument || sponsor.bonus_one_day > 0) && (
+          <div className="border-t border-[var(--border-subtle)] my-1.5" />
+        )}
+
+      {/* One-day group */}
+      {hasMonument && (
+        <div className="flex items-baseline justify-between py-1">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+            {thresholdLabel(sponsor.monument_threshold!)} Monument
+          </span>
+          <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+            +{formatBudget(sponsor.bonus_monument!)}
+          </span>
+        </div>
+      )}
+      {sponsor.bonus_one_day > 0 && (
+        <div className="flex items-baseline justify-between py-1">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+            {thresholdLabel(sponsor.one_day_threshold)} One-Day
+          </span>
+          <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+            +{formatBudget(sponsor.bonus_one_day)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SponsorCard({
   sponsor,
   teamLevel,
   isSelected,
@@ -48,65 +253,102 @@ function SponsorRow({
     ? sponsor.nationality.split("/").map((c) => c.trim())
     : [];
 
-  const handleRowClick = useCallback(() => {
+  const handleHeaderClick = useCallback(() => {
+    if (isLocked) return;
     setExpanded((v) => !v);
-  }, []);
+  }, [isLocked]);
+
+  const handleRadioClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!isLocked) {
+        onToggle();
+      }
+    },
+    [isLocked, onToggle],
+  );
+
+  const handleChevronClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!isLocked) {
+        setExpanded((v) => !v);
+      }
+    },
+    [isLocked],
+  );
 
   return (
-    <div className={cn(isLocked && "opacity-40")}>
-      {/* Clickable row — expand/collapse */}
+    <div
+      className={cn(
+        "rounded-[var(--radius-lg)] border bg-[var(--bg-surface)] transition-colors",
+        isSelected
+          ? "border-2 border-[var(--accent-default)]"
+          : "border-[var(--border-default)]",
+        isLocked && "opacity-40",
+      )}
+    >
+      {/* Header row — click to expand */}
       <button
         type="button"
-        onClick={handleRowClick}
-        className="flex w-full flex-col gap-1 py-4 text-left"
+        onClick={handleHeaderClick}
+        disabled={isLocked}
+        className="flex w-full items-center gap-2.5 px-3.5 py-3 text-left"
       >
-        {/* Line 1: chevron + name */}
-        <div className="flex items-center gap-2">
-          <ChevronRight
-            size={14}
-            className={cn(
-              "shrink-0 text-[var(--text-low)] transition-transform duration-200",
-              expanded && "rotate-90",
-            )}
-          />
-          <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-            {sponsor.name}
+        {/* Radio button */}
+        <div
+          role="radio"
+          aria-checked={isSelected}
+          onClick={handleRadioClick}
+          className={cn(
+            "shrink-0 h-[18px] w-[18px] rounded-full border-2 flex items-center justify-center transition-colors",
+            isSelected
+              ? "border-[var(--accent-default)] bg-[var(--accent-default)]"
+              : "border-[var(--border-default)] bg-transparent",
+          )}
+        >
+          {isSelected && (
+            <div className="h-[7px] w-[7px] rounded-full bg-[var(--bg-app)]" />
+          )}
+        </div>
+
+        {/* Name */}
+        <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+          {sponsor.name}
+        </span>
+
+        {/* Orientation tag */}
+        <Tag variant="highlighted">{ORIENTATION_LABELS[sponsor.orientation]}</Tag>
+
+        {/* Nationality flags — inline */}
+        {nationalities.map((nat) => (
+          <span key={nat} className="text-[length:var(--type-caption)]">
+            {countryCodeToFlag(nat)}
           </span>
-        </div>
+        ))}
 
-        {/* Line 2: tags left, budget + toggle right */}
-        <div className="flex items-center justify-between pl-[22px]">
-          <div className="flex items-center gap-1.5">
-            <Tag variant="highlighted">{ORIENTATION_LABELS[sponsor.orientation]}</Tag>
-            {nationalities.map((nat) => (
-              <Tag key={nat} variant="default">{countryCodeToFlag(nat)}</Tag>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-[length:var(--type-stat-small)] font-bold text-[var(--text-high)] tabular-nums">
-              {formatBudget(sponsor.monthly_budget)}
-            </span>
-            {isLocked ? (
-              <Lock size={16} className="text-[var(--text-low)]" />
-            ) : (
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggle();
-                }}
-              >
-                <Switch checked={isSelected} />
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Amount + chevron — far right */}
+        <span className="ml-auto font-[family-name:var(--font-geist-mono)] text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] tabular-nums">
+          {formatBudget(sponsor.monthly_budget)}
+        </span>
+        <ChevronDown
+          size={16}
+          onClick={handleChevronClick}
+          className={cn(
+            "shrink-0 text-[var(--text-low)] transition-transform duration-200",
+            expanded && "rotate-180",
+          )}
+        />
       </button>
 
-      {/* Expanded bonus details */}
-      {expanded && (
-        <div className="pl-[22px] pb-4">
-          <SponsorBonusDetails sponsor={sponsor} />
+      {/* Expanded bonus content — indented past radio */}
+      {expanded && !isLocked && (
+        <div className="pl-[42px] pr-3.5 pb-3.5">
+          {sponsor.has_explicit_prestige ? (
+            <PrestigeBonusContent sponsor={sponsor} />
+          ) : (
+            <BaseBonusContent sponsor={sponsor} />
+          )}
         </div>
       )}
     </div>
@@ -122,6 +364,7 @@ export function MarketplaceClient({
   nextPhaseName,
   isImmediate,
   pendingSponsorId,
+  backLabel = "Budget",
 }: MarketplaceClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -131,7 +374,10 @@ export function MarketplaceClient({
   } | null>(
     // Show pending banner on load if there's a pending sponsor change
     pendingSponsorId
-      ? { type: "pending", name: sponsors.find((s) => s.id === pendingSponsorId)?.name ?? "" }
+      ? {
+          type: "pending",
+          name: sponsors.find((s) => s.id === pendingSponsorId)?.name ?? "",
+        }
       : null,
   );
 
@@ -176,7 +422,7 @@ export function MarketplaceClient({
 
   return (
     <div className="pb-24">
-      <BackHeader label="Budget" />
+      <BackHeader label={backLabel} />
 
       {/* Header */}
       <div className="px-4 pb-4 pt-2">
@@ -207,24 +453,19 @@ export function MarketplaceClient({
       {/* Tier groups */}
       <div className="px-4 max-w-[600px] mx-auto">
         {tierGroups.map((group, groupIdx) => (
-          <div
-            key={group.tier}
-            className={cn(groupIdx > 0 && "mt-5")}
-          >
-            {/* Tier section header */}
-            <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
-              <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-                Tier {group.tier}
-              </span>
-              <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-low)]">
-                Lv. {group.unlockLevel}
-              </span>
+          <div key={group.tier} className={cn(groupIdx > 0 && "mt-5")}>
+            {/* Tier section header — single line */}
+            <div className="text-[length:var(--type-caption)] font-semibold uppercase tracking-wide text-[var(--text-low)] pb-2">
+              Tier {group.tier} · Level {group.unlockLevel}
+              {teamLevel < group.unlockLevel && (
+                <Lock size={12} className="inline ml-1.5 align-baseline" />
+              )}
             </div>
 
-            {/* Sponsor rows */}
-            <div className="divide-y divide-[var(--border-subtle)]">
+            {/* Sponsor cards — gap between cards (no divider lines) */}
+            <div className="flex flex-col gap-2">
               {group.sponsors.map((sponsor) => (
-                <SponsorRow
+                <SponsorCard
                   key={sponsor.id}
                   sponsor={sponsor}
                   teamLevel={teamLevel}
