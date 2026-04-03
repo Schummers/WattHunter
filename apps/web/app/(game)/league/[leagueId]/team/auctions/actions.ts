@@ -277,32 +277,13 @@ export async function validateRound(input: { leagueId: string }) {
   const contractList = contracts ?? [];
 
   // --- 5. Calculate financials ---
-  const rosterSalaries = contractList.reduce(
-    (sum, c) => sum + (c.locked_salary ?? 0),
-    0
-  );
   const draftTotal = draftList.reduce((sum, d) => sum + d.amount, 0);
 
-  // --- 6. Get sponsor monthly_budget ---
-  const { data: teamSponsor } = await supabase
-    .from("team_sponsors")
-    .select("sponsor_id, sponsors(monthly_budget, name)")
-    .eq("team_id", teamId)
-    .single();
-
-  const rawSponsor = teamSponsor?.sponsors;
-  const sponsorData = Array.isArray(rawSponsor) ? rawSponsor[0] : rawSponsor;
-  const sponsorIncome =
-    (sponsorData as { monthly_budget: number } | null | undefined)
-      ?.monthly_budget ?? 250_000;
-
-  // --- 7. Budget check: treasury + sponsorIncome - rosterSalaries - draftTotal >= 0 ---
-  const remaining = team.treasury + sponsorIncome - rosterSalaries - draftTotal;
+  // --- 6. Budget check: treasury - draftTotal >= 0 ---
+  const remaining = team.treasury - draftTotal;
   if (remaining < 0) {
     return {
-      error: `Budget exceeded: your bids total ${(
-        rosterSalaries + draftTotal
-      ).toLocaleString("en-GB")} € but available funds (treasury + sponsor income) are ${(team.treasury + sponsorIncome).toLocaleString("en-GB")} €`,
+      error: `Budget exceeded: your draft bids total ${draftTotal.toLocaleString("en-GB")} € but treasury is ${team.treasury.toLocaleString("en-GB")} €`,
     };
   }
 
@@ -318,7 +299,16 @@ export async function validateRound(input: { leagueId: string }) {
     };
   }
 
-  // --- 9. Convert drafts → auction_bids ---
+  // --- 9. Convert drafts → auction_bids (delete old + insert to allow re-validation) ---
+  // Remove previous auction_bids for this team/auction so re-validation replaces them
+  const { error: clearBidsError } = await supabase
+    .from("auction_bids")
+    .delete()
+    .eq("auction_id", auction.id)
+    .eq("team_id", teamId);
+
+  if (clearBidsError) return { error: clearBidsError.message };
+
   if (draftList.length > 0) {
     const auctionBids = draftList.map((draft) => ({
       auction_id: auction.id,
@@ -336,14 +326,7 @@ export async function validateRound(input: { leagueId: string }) {
     if (insertError) return { error: insertError.message };
   }
 
-  // --- 10. Clear drafts ---
-  const { error: deleteError } = await supabase
-    .from("draft_bids")
-    .delete()
-    .eq("team_id", teamId)
-    .eq("league_id", leagueId);
-
-  if (deleteError) return { error: deleteError.message };
+  // Draft bids are kept — player can modify amounts and re-validate
 
   revalidatePath(`/league/${leagueId}/team/auctions`);
   revalidatePath(`/league/${leagueId}/auctions`);

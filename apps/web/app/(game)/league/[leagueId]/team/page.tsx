@@ -1,12 +1,11 @@
-import Link from "next/link";
 import { ChevronRight, Target, Globe, Users, Clock } from "lucide-react";
 import { RailLink } from "@/components/rail-link";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { RiderCard } from "@/components/rider-card";
 import { BrandCard } from "@/components/brand-card";
-import { getMaxSlots, getProgressPct, getNextLevel, getLevelByNumber, getLevelForXp } from "@/lib/levels";
-import { formatThousands, smartCountdown, countryCodeToFlag } from "@/lib/format";
+import { getMaxSlots, getProgressPct, getNextLevel, getLevelForXp } from "@/lib/levels";
+import { countryCodeToFlag } from "@/lib/format";
 import { calculateBoost, riderMatchesPolicy } from "@/lib/boost";
 import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
 
@@ -69,7 +68,6 @@ export default async function MyTeamPage({
   const xp = team?.cumulative_xp ?? 0;
   const [
     { data: teamRiders },
-    { count: openRoundCount },
     { count: teamsAbove },
     { count: totalTeams },
     { data: activePolicies },
@@ -81,11 +79,6 @@ export default async function MyTeamPage({
       )
       .eq("team_id", team?.id)
       .eq("status", "active"),
-    supabase
-      .from("auctions")
-      .select("id", { count: "exact", head: true })
-      .eq("league_id", leagueId)
-      .in("status", ["open", "scheduled"]),
     supabase
       .from("teams")
       .select("id", { count: "exact", head: true })
@@ -102,22 +95,10 @@ export default async function MyTeamPage({
       .eq("is_active", true),
   ]);
 
-  const hasOpenRounds = (openRoundCount ?? 0) > 0;
-
   const riderIds = (teamRiders ?? []).map((tr) => tr.rider_id);
 
   // Group 2: parallel queries — depend on Group 1 results
-  const [{ data: activeBids }, { data: xpData }] = await Promise.all([
-    hasOpenRounds
-      ? supabase
-          .from("auction_bids")
-          .select(
-            "id, amount, status, rider_id, auction_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url), auctions!inner(status, league_id)"
-          )
-          .eq("team_id", team?.id)
-          .eq("auctions.league_id", leagueId)
-          .eq("status", "active")
-      : Promise.resolve({ data: [] as never[] }),
+  const [{ data: xpData }] = await Promise.all([
     riderIds.length > 0
       ? supabase
           .from("rider_xp_daily")
@@ -126,23 +107,6 @@ export default async function MyTeamPage({
           .in("rider_id", riderIds)
       : Promise.resolve({ data: [] as never[] }),
   ]);
-
-  const allBids = activeBids ?? [];
-
-  const auctionIds = [...new Set(allBids.map((b) => b.auction_id))];
-
-  // Group 3: parallel query — fetch active auction info for round display
-  const [activeAuctionResult] = await Promise.all([
-    auctionIds.length > 0
-      ? supabase
-          .from("auctions")
-          .select("name, closes_at")
-          .eq("id", auctionIds[0])
-          .single()
-      : Promise.resolve({ data: null }),
-  ]);
-
-  const activeAuction = activeAuctionResult.data as { name: string; closes_at: string } | null;
 
   const rank = (teamsAbove ?? 0) + 1;
   const teamCount = totalTeams ?? 0;
@@ -347,47 +311,6 @@ export default async function MyTeamPage({
         </div>
       </div>
 
-      {/* Draft Bids — active bids in the current open round */}
-      {allBids.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between px-4 mb-2">
-            <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-              Draft Bids
-            </span>
-            {activeAuction && (
-              <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
-                {activeAuction.name} · closes {smartCountdown(activeAuction.closes_at)}
-              </span>
-            )}
-          </div>
-          <div>
-            {allBids.map((bid) => {
-              const r = Array.isArray(bid.riders) ? bid.riders[0] : bid.riders;
-              if (!r) return null;
-              return (
-                <RiderCard
-                  key={bid.id}
-                  rider={{
-                    id: r.id,
-                    name: formatName(r.full_name),
-                    nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
-                    team_name: r.real_team ?? undefined,
-                    pcs_rank: r.pcs_rank ?? undefined,
-                    photo_url: r.photo_url,
-                  }}
-                  bidState="active"
-                  href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
-                  rightContent={
-                    <span className="text-[length:var(--type-body)] font-bold font-mono text-[var(--text-high)]">
-                      {formatThousands(bid.amount)} €
-                    </span>
-                  }
-                />
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
