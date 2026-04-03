@@ -1,0 +1,79 @@
+Alors je vais te dire tous les autres problèmes. Je peux te dire qu'il en a un. Alors, voyons voir. Refond UI sponsor, on est bon. Design market. Alors, effectivement, quand tu vas dans le market et que tu es dans la les l'état 1 où on valide les différents elements. de nouveau les titres section comme quand on a dans My Team je crois que c'est tag la police 16 là et qu'on affiche par exemple sponsor et puis en dessous on affiche la carte avec le sponsor qu'on affiche déjà par exemple dans la page budget puis en dessous on a par exemple je sais pas le le titre le sous-titre polici le titre de section polici et puis on affiche les policiers tout comme on affiche ça dans My Team.
+
+Pareil pour le roster, on a un titre roster et puis on affiche les différents coureurs comme dans on affiche dans My Team, tu vois. Et c'est juste qu'on ajoute un bouton remove tu vois et pour sponsor et policy on met le bouton change et ça nous redirige justement vers la page où on a tous les sponsors et on peut en sélectionner un et par contre, quand on arrive sur la page là, c'est une page, il faut que le bouton retour en arrière nous redirige de nouveau à market.
+
+Tu vois ce que je veux dire ? Pas vers budget, mais vers market. Donc je ne sais pas comment tu dois faire ça. Mais il faut l'avoir en tête.
+
+Et pareil, pour policier, je crois que c'est déjà le cas. Donc quand tu arrives dans Polici et que tu fais retour en arrière, ça te redirige vers Market. Donc voilà. Et donc dans... De manière générale, l'état 1 de market je trouve que on suit pas on suit pas le design système pour moi il a beaucoup trop d'écart avec le design système et des fois aussi on utilise des polices par exemple pour les labels et tout des fois on utilise des polices des numéros là alors que c'est pas des numéros c'est du texte tu vois je crois que la police de numéros devrait vraiment être que sur les caractères numériques même si c'est sur la même ligne les, autres devraient être en police normale pour moi.
+
+Mais donc ce qui est très important si c'est le retour en arrière. Et après suivre le design système avec des titres de section. Et puis autant QuickWeen reprendre le format auquel on est déjà habitué. Il a un format pour les policiers, il a un format pour le sponsor, il a un format pour les coureurs.
+
+Autant reprendre ça. C'est juste que là tu mets voilà pour les par exemple les coureurs un bouton remove à droite quoi oui et il faut aussi dans celui là bah il faut de nouveau pouvoir voir l'history effectivement l'history j'ai pas envie de le mettre dans les tabs mais donc il faut je sais ne plus où il faut afficher mais il faut qu'il soit disponible le voir history dans History avec la flèche, un peu exactement ce que c'était, mais il faut qu'il so disientponible dans l'état 1 et l'état 2 du du marché, market.
+
+Alors gros gros gros sujet. Mais tu vois là je me suis... Je me suis projeté et à un moment je voulais pas release mes coureurs. À un moment je me dis peut-être est-ce que c'est le bon sponsor ou pas, tu vois.
+
+Je viens de réaliser un truc, c'est que on peut pas juste... C'est bien de laisser la possibilité aux gens de changer de sponsor, de policiers, et de virer des coureurs avant de commencer le marché mais il faut pouvoir revenir en arrière non faut pas revenir en arrière mais il faut pouvoir continuer à virer d'autres coureurs pendant la phase of phase, and you should also change a sponsor to the area, and you should also change the policy to the phase of the phone.
+
+Donc classiquement, une phase d'enchère, c'est les trois rounds, et puis après il a la phase de course qui va durer un mois plus ou moins, tu vois. Et puis il a de nouveau trois rounds d'enchère, et puis un voilà et je crois que bloquer tout ça pendant les enchères c'est trop c'est trop restrictif je trouve c'est des fois voilà tu as envie de tester et tout tu vois c'est les choses sont pas figées dans le marbre par contre dès que les enchères sont finies là je suis d'accord que si tu veux virer un coureur changer de sponsor changer de policier ça devrait que être actif à la à la de nouveau lors de la prochaine phase d'enchère pour voilà donc là dessus je suis assez d'accord mais mais mais je crois que là dessus on s'est trompé et donc il faudrait aussi avoir un message de le tu vois on demande aux gens s'ils veulent changer dès le début mais il faut aussi dire qu'ils pourront toujours le faire lors des trois prochains rounds tu vois il faut mettre le message là quand même.
+
+Et donc ça veut dire qu'il faut aussi prendre en compte que des gens font des fois venir en arrière. Donc ça veut dire quoi ? Ça veut dire qu'ils vont releaser des coureurs pour lesquels ils ont déjà payé un salaire lors de la phase des enchères donc là dessus ils vont devoir être remboursés ça veut dire qu'ils vont prendre des sponsors et ils vont peut-être changer de sponsor mais là dessus souvent sera un sponsor d'un montant équivalent mais donc je sa neis pas comment il faut le traiter, s'il faut rembourser et puis revoir l'argent de quelqu'un d'autre.
+
+Je ne sais pas trop là-dessus. Donc voilà, réfléchissons bien aux conséquences that it has.
+
+Alright effectively we have also said that it fallacy afficher Donc for too much it was the dates the three prochain rounds on the market when we are in premier état avant que on a dit je valide pour le next round. Déjà là il faut afficher quand même la date des three prochains rounds and it's modifiable by the commissioner.
+
+Don't say it's definitely done UI, comment faire tout ça et où l'afficher, surtout qu'il faut aussi afficher le bouton history, donc il a beaucoup de choses à afficher. Et il faut aussi afficher voilà la date toujours, mais quand on est le jour même, c'est les heures même si là on parle de deux choses différentes je m'égare
+
+oui, tu vois, quand on affiche le récap de l'argent qui te reste dans le market et à 1, I crooke it's also made là au cas où si montant d'égatif, il faut mettre un message alerte des conséquences ce qui se passe. Tu vas dire que si tu as un déficit de plus de 10 000, tu vas être force ça va force ça va vendre automatiquement ton meilleur coureur tu vois.
+
+Donc je dis en gros après veuillez vous-même vendre des courants en avance, tu vois, un truc comme ça il faut un message d'alerte quand même si t'es en négatif tu vois pour le prochain round oui ça je t'ai déjà dit aussi effectivement il faut utiliser la poly la police pour les chiffres que sur les chiffres et pas des fois sur les labels.
+
+Là dessus il a un peu un manque. Mais dans plusieurs pages il a un manque là-dessus je trouve. Ça il faut peut-être bien remettre aussi changer dans le design system, bien dire que pour les caractères numérique parce que des fois là quand tu as un label et puis un chiffre j'ai l'impression qu'on applique le truc aussi sur le label et puis sur le chiffre alors qu'il faudrait que sur le chiffre tu vois donc ouais comme j'ai déjà dit il faut aussi bien afficher le la date du oui le segment control dans le card rider detail and the ranking il faut qu'il prenne tout la largeur.
+
+C'est un truc qu'on n'a pas encore fait ça. Ok, donc le segment tit control doit prendre tout la largeur. Dans le D Rider Detail et Ranking. Il a la bordure bien sûr à gauche et à droite, mais voilà.
+
+C'est ça que je veux dire, il doit prendre tout la largeur en respectant la bordure bien sûr alors le bouton release rider il est il est trop moche on dirait pas un bouton de mon design system. Je croyais pas que les boutons secondaires ils étaient comme ça. Et puis vu que c'est destructeur, est-ce qu'on le mettrait peut-être pas en rouge ?
+
+J'ai en plus vu aussi t'as fait une modale. La modale elle est aussi très bizarre après pour confirmer. C'est bien de confirmer, je suis d'accord, c'est très bien de confirmer, mais la modale, elle fait pas très elle fait un peu bizarre aussi. Donc à revoir le la UI sur tout ça mais le bouton je trouve qu'il ne fait pas mon design system si ça c'est le bouton secondaire il faut peut-être le changer et l'autre truc là dessus par exemple là je voulais release un coureur mais j'avais pas assez d'argent.
+
+Tu vois ce que je veux dire? Donc en gros, il fallait que j'ai 5000 pour le dépenser, tu vois. Donc j'étais bloqué, je pouvais même pas release de coureur. Donc là-dessus, ça pose une grosse question sur le système.
+
+Soit on accepte d'être en déficit, et en gros tu peux être en déficit comme ça ça pose plus problème et on débite directement. Ou ça veut dire qu'il faut débiter au même moment où tu reçois le salaire, toi mais il faut trouver une solution. Réfléchis avec moi là-dessus, là-dessus, je suis pas convaincu, il faut que tu réfléchisses avec moi.
+
+Also the market. Search rider team country. And we did that it's just rider or team. The country on [enlè.ve](http://xn--enl-8la.ve/) Donc ça c'est déjà un des premiers points. L'autre problème que je vois c'est que tu as mis une scroll bar horizontale mais je trouve ça très moche et ça ajoute pas de valeur ajoutée donc je la supprimerai.
+
+Et ce que je ferai par contre c'est que c'est que my build j'ai envie qu'il soit toujours positionné en haut à droite et que les autres tags passent en dessous de lui you know what you're my big il est toujours visible au premier coup d'œil and par contre on le met dans la même couleur que notre sayad notre couleur d'interaction okay d'ailleurs là je viens de relancer des enchères et je vois que ça n'a pas fonctionné parce que je vois que ils m'ont pas déduit mon salaire et que j'ai quand même 250 alors je devrais que avoir 50 de disponible donc quand j'ai fait lancer les enchères ça m'a pas déduit les montants des salaires donc ça ça a bugué déjà voilà ça c'est déjà un mauvais signe je crois que quand on ajoute un coureur ouais il faut enlever mais if you have afficher the unknown il faut juste afficher voilà ça ça fonctionne teamwellens you tac et je peux augmenter super ok donc ça c'est bon ça fonctionne aussi le minimum, on a dit qu'il fallaitit qu'il so en dessous du champ d'input.
+
+Là il est à droite. Il faut qu'il soit en dessous. La photo elle doit grandir aussi. Et je ne sais pas pourquoi il a du sayan à gauche.
+
+J'ai jamais dit de faire ça. Yo ActiveBead je sais pas si il faut que ça prenne la forme là. Alors en desktop on a dit qu'on pouvait plus parier sans découreur mais par contre en mobile si il faut pouvoir et d'ailleurs en mobile il a un problème là parce que tu vois en gros l'aigne sont si j'ai envie de le prendre.
+
+Oui donc là on peut plus maintenant sur mobile parier sur les coureurs qu'on est dans la page rider detail. Donc ça c'est déjà une énorme erreur. Et je ne sais pas pourquoi mais la barre elle est elle est transparente aussi, l'action bar en dessous. Donc ça ça fonctionne pas.
+
+Ça il faut changer alors quand on est sur my bid je crois qu'on peut garder la search bar comme ça ça saute pas parce que là ça saute toujours je sais pas si ou alors il faut mieux gérer l'espacement parce que tu vois actuellement entre la search bar et next round et history, il a un plus grand espace que après avec juste my bid.
+
+Donc là je vois Guillaume Martin, mais c'est mal fait puisque j'avais deux bids pourtant à il a un problème j'ai l'impression là ça sauvegarde pas mes bids j'ai l'impression donc par exemple je mets 1 qu'ailleurs dans all on voit toujours pas les tags pour voir combien de points il a gagné sur PCS dernièrement alors qu'on le voit dans Teams, dans Speciality mais pas dans All et on le voit pas non plus dans MyBead ça et ouais et donc il faut à tout prix pouvoir de nouveau, quand tu rentres sur un coureur, enchérir sur lui, tu vois.
+
+Et tu vois, là I perdre my selection already that I've safe two coureurs. My bid, I was on a coureur, and when I was on the coureur in my bid and she was on the road, I took annually my safeguard. So I have the impression qu'il a des problèmes aussi avec le save comme quoi des fois il s'annule et ça ça ça c'est vraiment pas bon par contre ok je crois que la search bar tu peux la mettre pas obligé de la mettre dans un autre couleur je crois que tu peux prendre le même design un peu que pour les les les peels tu vois pas besoin de lui mettre un background on on enlève le background on garde juste le le stroke le contour so it's more I think it's a bit more and my beats when it has no active bead pas besoin the no on my beats on the So it's not con afficher the coureurs that possess déjà and et sur les coureurs qu'il possède déjà.
+
+Par contre, il ne peut pas bien sûr modifier le salaire. Et ce qu'il peut faire, c'est les release. Ça, il peut les release quoi. Le bouton Browse Market, il ne sert à rien.
+
+Il faut juste mettre quand tu sur my bid, no active bids. Browse the market to place your first bid, ok ça c'est bien. On en élève les unknown, mais je crois qu'il faudrait aussi mettre effectivement sa team existante et on peut le supprimer les reli And the spacing on the next round and the pills.
+
+Like you have a spacing too, you know. And that's what we enlave the background at the search bar aussi.
+
+Alors le dernier truc c'est qu'on a un problème de performance de ouf dans le market. Donc dans all je propose d'afficher que 100 coureurs et quand la personne scrolle, à un moment it a is un voire plus. And when you click on voir plus, we affect the 100 prochains.
+
+And we can charge. I don't know if you want to say comment to améliore the performance. But I think it'il faut déj segàmenter un peu les coureurs qu'on affiche et peut-être des fois on peut charger aussi un peu en avance tu vois. Ouais dans My Beads il faut enlever le truc Cyan à gauche là il sert à rien.
+
+Et ouais c'est la le minimum, il faut bien le mettre en dessous du champ input. Et il faut revoir un peu les spacing entre les différents éléments. Et le vrai problème ouais j'essaie de répliquer le bug, c'est quand je rentre dans la page de détails d'un des coureurs, ça me met... ça me met la mauvaise vue, ça me met pas la vue où j'ai bidé sur lui, je peux changer le bide, ça me met la vue ranking, tu vois, c'est pas le bon.
+
+Et quand je reviens en arrière, ça m'a fait perdre tout ma sélection. Ça c'est le bug qu'il faut à tout prix éviter. Essaye d'identifier s'il a d'autres bugs aussi.
+
+Alors l'autre truc c'est dans la home page les next race on n'affiche aucune des next race pour la prochaine phase et donc ça ça m'étonne un peu beaucoup tu vois pourquoi ça fonctionne pas c'est quoi le bug, je suis curieux
+
+Donc je crois que la documentation in-game on l'a bien mis à jour mais j'aimerais quand même vérifier que tous les documentations ont ou on stocke nos documentation il a je suppose qu'il a celle qui est in-game qu'il faut mettre à jour et je suppose aussi qu'il faut mettre à jour le don le design system qui est une documentation, game rules, architecture, architecture c'est un fichier qu'on utilise encore vraiment ou pas tu vois?
+
+Je sais pas. Donc le fichier Claude MD je suppose aussi il faut mettre à jour. Donc voilà tout ça je challenge.
+
+Il faut aussi relancer l’enreichissement sur les coureurs du top 500 à 600, il en a bcp sans spécialité j’ai l’impression ? Comment améliorer ça ?

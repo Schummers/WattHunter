@@ -298,7 +298,8 @@ export function MarketClient({
     return (
       <div
         className="flex flex-col items-end gap-0.5"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         <div
           className={`flex items-center gap-0.5 rounded-lg px-2 h-7 ${
@@ -306,7 +307,7 @@ export function MarketClient({
               ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
               : "border border-[var(--border-default)] bg-transparent"
           }`}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
         >
           <input
             type="text"
@@ -320,7 +321,9 @@ export function MarketClient({
               const val = parseInt(raw, 10);
               handleBidChange(r.id, isNaN(val) ? 0 : val);
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onFocus={(e) => e.stopPropagation()}
             className={`w-20 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
               currentBid
                 ? "text-[var(--accent-default)]"

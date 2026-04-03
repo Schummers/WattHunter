@@ -1,0 +1,392 @@
+<h2>Écran Auctions — V6 (final polish)</h2>
+<p class="subtitle">Labels uppercase. Chevron après le nom. Bouton trash au-dessus du +. Pas de bouton View.</p>
+
+<style>
+  .wh {
+    background:#0c1012; color:#eaeff1; font-family:'Geist','Inter',system-ui,sans-serif;
+    max-width:390px; margin:0 auto; font-size:14px; border-radius:12px;
+    overflow:hidden; border:1px solid #273339; margin-bottom:40px;
+    position:relative; padding-bottom:72px;
+  }
+  .wh * { box-sizing:border-box; }
+  .mono { font-family:'Geist Mono','SF Mono',monospace; }
+  .subtabs { display:flex; border-bottom:1px solid #273339; padding:0 16px; }
+  .subtab { padding:12px 16px; font-size:13px; color:#74919f; }
+  .subtab.active { color:#06b6d4; border-bottom:2px solid #06b6d4; font-weight:600; }
+  .s-title { font-size:16px; font-weight:600; color:#eaeff1; }
+  .s-right { font-size:12px; font-weight:600; color:#74919f; }
+  .s-header { display:flex; justify-content:space-between; align-items:center; padding:0 16px; }
+  .link-t { font-size:13px; color:#06b6d4; cursor:pointer; }
+
+  /* Caption label style — uppercase, letter-spacing */
+  .cap-label { font-size:10px; color:#74919f; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+  .cap-label-cyan { font-size:10px; color:#06b6d4; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+
+  .rounds-row { display:flex; gap:8px; padding:0 16px; margin-top:8px; }
+  .round-block { flex:1; background:#151b1e; border-radius:8px; padding:8px; border:1px solid #273339; text-align:center; }
+  .round-block.active { border-color:#06b6d4; background:rgba(6,182,212,0.05); }
+  .round-date { font-size:13px; margin-top:3px; }
+  .round-block.active .round-date { color:#eaeff1; }
+  .round-block:not(.active) .round-date { color:#89a1ad; }
+  .round-time { font-size:11px; color:#74919f; margin-top:1px; }
+
+  .config-grid { display:flex; gap:8px; padding:0 16px; margin-top:8px; }
+  .config-card { flex:1; background:#151b1e; border-radius:8px; padding:10px; border:1px solid #273339; cursor:pointer; position:relative; }
+  .config-change { font-size:10px; color:#06b6d4; position:absolute; top:10px; right:10px; }
+  .config-name { font-size:12px; color:#eaeff1; font-weight:500; line-height:1.4; margin-top:4px; }
+  .config-detail { font-size:11px; color:#89a1ad; margin-top:2px; }
+  .rule-text { font-size:11px; color:#74919f; line-height:1.5; padding:0 16px; margin-top:6px; }
+
+  .boost-tag { font-size:9px; color:#22d3ee; background:rgba(6,182,212,0.08); padding:1px 5px; border-radius:20px; }
+  .rank-up { font-size:9px; padding:1px 5px; border-radius:20px; background:rgba(34,197,94,0.12); color:#4ade80; }
+  .rank-down { font-size:9px; padding:1px 5px; border-radius:20px; background:rgba(239,68,68,0.12); color:#f87171; }
+
+  /* Rider rows (roster) */
+  .rider-row { padding:10px 16px; position:relative; }
+  .rider-row:not(:last-child)::after { content:''; position:absolute; bottom:0; left:16px; right:16px; height:1px; background:#273339; }
+  .rider-top { display:flex; align-items:center; gap:8px; }
+  .avatar { width:40px; height:40px; background:#1f292e; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; color:#74919f; flex-shrink:0; position:relative; }
+  .pcs-badge { position:absolute; bottom:-2px; right:-2px; background:#1f292e; border:1px solid #273339; border-radius:4px; font-size:8px; color:#89a1ad; padding:1px 3px; line-height:1; }
+  .rider-main { flex:1; min-width:0; }
+  .rider-line1 { display:flex; align-items:center; gap:4px; font-size:13px; flex-wrap:wrap; }
+  .rider-name { color:#eaeff1; font-weight:500; }
+  .rider-name-link { color:#eaeff1; font-weight:500; cursor:pointer; }
+  .rider-name-link:hover { color:#06b6d4; }
+  .chevron-sm { color:#334249; font-size:11px; margin-right:2px; }
+  .rider-flag { font-size:12px; }
+  .rider-line2 { display:flex; align-items:center; gap:6px; font-size:11px; color:#74919f; margin-top:1px; }
+  .rider-spec { color:#89a1ad; }
+  .dot-sep { color:#334249; }
+  .rider-right { text-align:right; flex-shrink:0; }
+  .rider-salary { font-size:13px; font-weight:600; color:#eaeff1; }
+  .rider-xp { font-size:11px; color:#74919f; }
+  .release-btn { background:rgba(239,68,68,0.12); color:#f87171; font-size:10px; padding:6px 8px; border-radius:6px; cursor:pointer; font-weight:500; flex-shrink:0; }
+
+  /* Draft bid rows */
+  .draft-row { padding:16px 16px; position:relative; }
+  .draft-row:not(:last-child)::after { content:''; position:absolute; bottom:0; left:16px; right:16px; height:1px; background:#273339; }
+  .draft-top { display:flex; align-items:center; gap:10px; }
+
+  /* Bid input + trash/plus column */
+  .bid-area { display:flex; align-items:flex-start; margin-top:12px; gap:12px; }
+  .bid-minus {
+    width:40px; height:40px; border-radius:6px; background:#1f292e; border:1px solid #273339;
+    color:#89a1ad; display:flex; align-items:center; justify-content:center; font-size:18px;
+    cursor:pointer; flex-shrink:0;
+  }
+  .bid-input-col { flex:1; }
+  .bid-input {
+    width:100%; background:#151b1e; border:1px solid #273339; border-radius:6px;
+    padding:9px 10px; text-align:center; color:#eaeff1; font-size:14px; height:40px;
+  }
+  .bid-min { font-size:10px; color:#74919f; text-align:center; margin-top:3px; }
+  .bid-right-col { display:flex; flex-direction:column; gap:4px; flex-shrink:0; width:40px; }
+  .bid-trash {
+    width:40px; height:18px; border-radius:4px; background:rgba(239,68,68,0.12);
+    color:#f87171; display:flex; align-items:center; justify-content:center; font-size:11px;
+    cursor:pointer;
+  }
+  .bid-plus {
+    width:40px; height:40px; border-radius:6px; background:#1f292e; border:1px solid #273339;
+    color:#89a1ad; display:flex; align-items:center; justify-content:center; font-size:18px;
+    cursor:pointer;
+  }
+
+  /* Summary */
+  .summary-box { background:#151b1e; border-radius:8px; padding:10px 12px; border:1px solid #273339; }
+  .sum-row { display:flex; justify-content:space-between; padding:3px 0; }
+  .sum-label { font-size:12px; color:#74919f; }
+  .sum-pos { font-size:12px; color:#22d3ee; }
+  .sum-neg { font-size:12px; color:#f87171; }
+  .sum-div { height:1px; background:#273339; margin:4px 0; }
+
+  /* Sticky bar */
+  .sticky-bar {
+    position:absolute; bottom:0; left:0; right:0;
+    background:#0c1012; border-top:1px solid #273339;
+    padding:10px 16px; display:flex; align-items:center; gap:10px;
+  }
+  .sticky-info { flex-shrink:0; text-align:left; min-width:72px; }
+  .sticky-slots { font-size:11px; color:#74919f; }
+  .sticky-remaining { font-size:13px; font-weight:600; }
+  .sticky-remaining.ok { color:#22d3ee; }
+  .sticky-cta {
+    flex:1; text-align:center; padding:12px; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer;
+    background:linear-gradient(135deg,#06b6d4,#22d3ee); color:#020617;
+  }
+
+  .policy-line { display:flex; align-items:center; gap:4px; margin-top:3px; }
+  .policy-name { font-size:12px; color:#eaeff1; font-weight:500; }
+  .policy-boost { font-size:9px; color:#22d3ee; background:rgba(6,182,212,0.08); padding:1px 5px; border-radius:20px; }
+</style>
+
+<div class="wh">
+  <div class="subtabs">
+    <div class="subtab">My Team</div>
+    <div class="subtab">Market</div>
+    <div class="subtab active">Auctions</div>
+  </div>
+
+  <!-- Rounds -->
+  <div style="padding-top:16px;">
+    <div class="s-header">
+      <span class="s-title">Rounds</span>
+      <span class="link-t">History →</span>
+    </div>
+    <div class="rounds-row">
+      <div class="round-block active">
+        <div class="cap-label-cyan">Round 1</div>
+        <div class="round-date mono">Apr 5</div>
+        <div class="round-time mono">18:00</div>
+      </div>
+      <div class="round-block">
+        <div class="cap-label">Round 2</div>
+        <div class="round-date mono">Apr 8</div>
+        <div class="round-time mono">18:00</div>
+      </div>
+      <div class="round-block">
+        <div class="cap-label">Round 3</div>
+        <div class="round-date mono">Apr 11</div>
+        <div class="round-time mono">18:00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sponsor & Policies -->
+  <div style="padding-top:24px;">
+    <div class="s-header">
+      <span class="s-title">Sponsor & Policies</span>
+    </div>
+    <div class="config-grid">
+      <div class="config-card">
+        <div class="config-change">Change →</div>
+        <div class="cap-label">Sponsor</div>
+        <div class="config-name">Groupama FDJ</div>
+        <div class="config-detail mono">€450k/phase</div>
+      </div>
+      <div class="config-card">
+        <div class="config-change">Change →</div>
+        <div class="cap-label">Policies <span class="mono" style="color:#89a1ad;">2/2</span></div>
+        <div class="policy-line">
+          <span class="policy-name">Speciality: GC</span>
+          <span class="policy-boost">+15%</span>
+        </div>
+        <div class="policy-line">
+          <span class="policy-name">Nationality: 🇧🇪</span>
+          <span class="policy-boost">+10%</span>
+        </div>
+      </div>
+    </div>
+    <p class="rule-text">Only modifiable during Round 1. Locked after validation.</p>
+  </div>
+
+  <!-- Roster -->
+  <div style="padding-top:24px;">
+    <div class="s-header">
+      <span class="s-title">Roster</span>
+      <span class="s-right"><span class="mono">3/8</span> slots</span>
+    </div>
+
+    <div class="rider-row">
+      <div class="rider-top">
+        <div class="avatar">TP<div class="pcs-badge mono">#1</div></div>
+        <div class="rider-main">
+          <div class="rider-line1">
+            <span class="rider-name-link">T. Pogačar</span>
+            <span class="chevron-sm">›</span>
+            <span class="rider-flag">🇸🇮</span>
+            <span class="rank-up">▲ 0</span>
+            <span class="boost-tag">+5%</span>
+          </div>
+          <div class="rider-line2">
+            <span>UAE Team Emirates</span>
+            <span class="dot-sep">·</span>
+            <span class="rider-spec">GC</span>
+          </div>
+        </div>
+        <div class="rider-right" style="margin-right:6px;">
+          <div class="rider-salary mono">€66,600</div>
+          <div class="rider-xp mono">+142 XP</div>
+        </div>
+        <div class="release-btn">Release</div>
+      </div>
+    </div>
+
+    <div class="rider-row">
+      <div class="rider-top">
+        <div class="avatar">WV<div class="pcs-badge mono">#5</div></div>
+        <div class="rider-main">
+          <div class="rider-line1">
+            <span class="rider-name-link">W. van Aert</span>
+            <span class="chevron-sm">›</span>
+            <span class="rider-flag">🇧🇪</span>
+            <span class="rank-up">▲ 3</span>
+            <span class="boost-tag">+10%</span>
+          </div>
+          <div class="rider-line2">
+            <span>Visma-Lease a Bike</span>
+            <span class="dot-sep">·</span>
+            <span class="rider-spec">One Day</span>
+          </div>
+        </div>
+        <div class="rider-right" style="margin-right:6px;">
+          <div class="rider-salary mono">€45,200</div>
+          <div class="rider-xp mono">+89 XP</div>
+        </div>
+        <div class="release-btn">Release</div>
+      </div>
+    </div>
+
+    <div class="rider-row">
+      <div class="rider-top">
+        <div class="avatar">JV<div class="pcs-badge mono">#2</div></div>
+        <div class="rider-main">
+          <div class="rider-line1">
+            <span class="rider-name-link">J. Vingegaard</span>
+            <span class="chevron-sm">›</span>
+            <span class="rider-flag">🇩🇰</span>
+            <span class="rank-up">▲ 1</span>
+            <span class="boost-tag">+5%</span>
+          </div>
+          <div class="rider-line2">
+            <span>Visma-Lease a Bike</span>
+            <span class="dot-sep">·</span>
+            <span class="rider-spec">GC</span>
+          </div>
+        </div>
+        <div class="rider-right" style="margin-right:6px;">
+          <div class="rider-salary mono">€52,800</div>
+          <div class="rider-xp mono">+67 XP</div>
+        </div>
+        <div class="release-btn">Release</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Draft Bids -->
+  <div style="padding-top:24px;">
+    <div class="s-header">
+      <span class="s-title">Draft Bids</span>
+      <span class="s-right"><span class="mono">6/8</span> slots</span>
+    </div>
+
+    <!-- Pidcock -->
+    <div class="draft-row">
+      <div class="draft-top">
+        <div class="avatar">PP<div class="pcs-badge mono">#28</div></div>
+        <div class="rider-main">
+          <div class="rider-line1">
+            <span class="rider-name-link">P. Pidcock</span>
+            <span class="chevron-sm">›</span>
+            <span class="rider-flag">🇬🇧</span>
+            <span class="rank-down">▼ 5</span>
+            <span class="boost-tag">+5%</span>
+          </div>
+          <div class="rider-line2">
+            <span>Q36.5 Pro Cycling</span>
+            <span class="dot-sep">·</span>
+            <span class="rider-spec">GC</span>
+          </div>
+        </div>
+      </div>
+      <div class="bid-area">
+        <div class="bid-minus">−</div>
+        <div class="bid-input-col">
+          <input type="text" class="bid-input mono" value="€22,000" readonly>
+          <div class="bid-min">Min: <span class="mono">€18,500</span></div>
+        </div>
+        <div class="bid-right-col">
+          <div class="bid-trash">🗑</div>
+          <div class="bid-plus">+</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alaphilippe -->
+    <div class="draft-row">
+      <div class="draft-top">
+        <div class="avatar">JA<div class="pcs-badge mono">#72</div></div>
+        <div class="rider-main">
+          <div class="rider-line1">
+            <span class="rider-name-link">J. Alaphilippe</span>
+            <span class="chevron-sm">›</span>
+            <span class="rider-flag">🇫🇷</span>
+            <span class="rank-up">▲ 12</span>
+          </div>
+          <div class="rider-line2">
+            <span>Tudor Pro Cycling</span>
+            <span class="dot-sep">·</span>
+            <span class="rider-spec">One Day</span>
+          </div>
+        </div>
+      </div>
+      <div class="bid-area">
+        <div class="bid-minus">−</div>
+        <div class="bid-input-col">
+          <input type="text" class="bid-input mono" value="€15,000" readonly>
+          <div class="bid-min">Min: <span class="mono">€12,000</span></div>
+        </div>
+        <div class="bid-right-col">
+          <div class="bid-trash">🗑</div>
+          <div class="bid-plus">+</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Evenepoel -->
+    <div class="draft-row">
+      <div class="draft-top">
+        <div class="avatar">RE<div class="pcs-badge mono">#4</div></div>
+        <div class="rider-main">
+          <div class="rider-line1">
+            <span class="rider-name-link">R. Evenepoel</span>
+            <span class="chevron-sm">›</span>
+            <span class="rider-flag">🇧🇪</span>
+            <span class="rank-down">▼ 1</span>
+            <span class="boost-tag">+10%</span>
+          </div>
+          <div class="rider-line2">
+            <span>Soudal-QuickStep</span>
+            <span class="dot-sep">·</span>
+            <span class="rider-spec">GC</span>
+          </div>
+        </div>
+      </div>
+      <div class="bid-area">
+        <div class="bid-minus">−</div>
+        <div class="bid-input-col">
+          <input type="text" class="bid-input mono" value="€58,000" readonly>
+          <div class="bid-min">Min: <span class="mono">€55,400</span></div>
+        </div>
+        <div class="bid-right-col">
+          <div class="bid-trash">🗑</div>
+          <div class="bid-plus">+</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div style="padding:24px 16px 16px;">
+    <div style="margin-bottom:8px;"><span class="s-title">Summary</span></div>
+    <div class="summary-box">
+      <div class="sum-row"><span class="sum-label">Sponsor income</span><span class="sum-pos mono">+€450,000</span></div>
+      <div class="sum-row"><span class="sum-label">Roster salaries (3)</span><span class="sum-neg mono">−€164,600</span></div>
+      <div class="sum-row"><span class="sum-label">Draft bids (3)</span><span class="sum-neg mono">−€95,000</span></div>
+      <div class="sum-div"></div>
+      <div class="sum-row" style="padding-top:4px;">
+        <span style="font-size:13px; color:#eaeff1; font-weight:600;">Remaining</span>
+        <span class="mono" style="font-size:15px; color:#22d3ee; font-weight:700;">€190,400</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky bar -->
+  <div class="sticky-bar">
+    <div class="sticky-info">
+      <div class="sticky-slots"><span class="mono">6/8</span> slots</div>
+      <div class="sticky-remaining ok mono">€190,400</div>
+    </div>
+    <div class="sticky-cta">Validate Round 1</div>
+  </div>
+</div>
