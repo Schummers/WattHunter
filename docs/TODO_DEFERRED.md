@@ -6,14 +6,15 @@
 
 ## Fonctionnel
 
-### 1. Auto-validation joueur inactif ⏳ TODO
+### 1. Auto-validation joueur inactif ⏳ DEFERRED
 - Si un joueur ne valide pas avant la deadline : roster conservé, même sponsor/policy, 0 nouveaux bids.
 - Si en déficit : auto-release du coureur le plus cher, en boucle jusqu'à l'équilibre.
 - **Impl** : Supabase Edge Function ou cron job à chaque deadline de round.
+- **Décision** : validation manuelle pour l'alpha, automation plus tard.
 
-### 2. Résultats de round dans Auctions ⏳ TODO
-- Après résolution d'un round, afficher qui a gagné/perdu chaque coureur.
-- Design à définir.
+### ~~2. Résultats de round dans Auctions~~ ✅ DONE
+- ~~Après résolution d'un round, afficher qui a gagné/perdu chaque coureur.~~
+- Déjà disponible dans la page Market History (`/team/market/history`).
 
 ### ~~3. Treasury_log : phase economy pas implémentée~~ ✅ DÉJÀ IMPL
 - `confirmPhaseSetup` existe dans `team/market/actions.ts` (L91-284)
@@ -106,11 +107,9 @@
   - Déficit → "Budget deficit"
   - Les deux → afficher les deux messages
 
-### 22. Pending Bids — Simplifier
-- N'afficher que les coureurs en draft dans la section Pending Bids.
-- Les coureurs gagnés après résolution vont directement dans le roster.
-- Pour voir l'historique (qui a gagné quoi), aller dans la page History.
-- Supprimer tout affichage de résultats won/lost dans Pending Bids.
+### ~~22. Pending Bids — Simplifier~~ ✓ DONE (2026-04-03)
+- ~~N'afficher que les coureurs en draft dans la section Pending Bids.~~
+- ~~Renamed "Pending Bids" → "Draft Bids"; removed outbid/won display; only active bids shown.~~
 
 ### 24. Phases — Trous entre les phases + enchères dans le vide
 - Les dates dans `lib/phases.ts` ont des **trous de 2-3 jours** entre chaque phase.
@@ -152,5 +151,5 @@
 - Ajouter les nouveaux composants créés (config-cards, round-blocks, draft-bid-card, etc.)
 - Ajouter la route commissioner `/team/auctions/rounds/`
 
-### 9. Vérifier la documentation in-game ⏳ TODO
+### 9. Vérifier la documentation in-game 🔄 EN COURS
 - Page d'aide (?) dans le topbar — vérifier que les règles affichées sont cohérentes avec les mécaniques implémentées.

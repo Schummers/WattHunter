@@ -104,24 +104,19 @@ export default async function MyTeamPage({
 
   const hasOpenRounds = (openRoundCount ?? 0) > 0;
 
-  // Fetch pending bids — include outbid from recent rounds (7-day window)
-  const sevenDaysAgo = new Date(
-    Date.now() - 7 * 24 * 60 * 60 * 1000
-  ).toISOString();
   const riderIds = (teamRiders ?? []).map((tr) => tr.rider_id);
 
   // Group 2: parallel queries — depend on Group 1 results
-  const [{ data: pendingBids }, { data: xpData }] = await Promise.all([
+  const [{ data: activeBids }, { data: xpData }] = await Promise.all([
     hasOpenRounds
       ? supabase
           .from("auction_bids")
           .select(
-            "id, amount, status, rider_id, auction_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url), auctions!inner(status, league_id, opens_at)"
+            "id, amount, status, rider_id, auction_id, riders(id, full_name, nationality, real_team, pcs_rank, photo_url), auctions!inner(status, league_id)"
           )
           .eq("team_id", team?.id)
           .eq("auctions.league_id", leagueId)
-          .gte("auctions.opens_at", sevenDaysAgo)
-          .in("status", ["active", "outbid"])
+          .eq("status", "active")
       : Promise.resolve({ data: [] as never[] }),
     riderIds.length > 0
       ? supabase
@@ -132,16 +127,12 @@ export default async function MyTeamPage({
       : Promise.resolve({ data: [] as never[] }),
   ]);
 
-  // Filter bids
-  const activeBids = pendingBids?.filter((b) => b.status === "active") ?? [];
-  const outbidBids = pendingBids?.filter((b) => b.status === "outbid") ?? [];
-  const allBids = [...activeBids, ...outbidBids];
+  const allBids = activeBids ?? [];
 
-  const auctionIds = [...new Set(pendingBids?.map((b) => b.auction_id) ?? [])];
-  const outbidRiderIds = outbidBids.map((b) => b.rider_id);
+  const auctionIds = [...new Set(allBids.map((b) => b.auction_id))];
 
-  // Group 3: parallel queries — depend on Group 2 results
-  const [activeAuctionResult, winningBidsResult] = await Promise.all([
+  // Group 3: parallel query — fetch active auction info for round display
+  const [activeAuctionResult] = await Promise.all([
     auctionIds.length > 0
       ? supabase
           .from("auctions")
@@ -149,13 +140,6 @@ export default async function MyTeamPage({
           .eq("id", auctionIds[0])
           .single()
       : Promise.resolve({ data: null }),
-    outbidRiderIds.length > 0
-      ? supabase
-          .from("auction_bids")
-          .select("rider_id, amount, teams:team_id(name)")
-          .eq("status", "won")
-          .in("rider_id", outbidRiderIds)
-      : Promise.resolve({ data: [] as never[] }),
   ]);
 
   const activeAuction = activeAuctionResult.data as { name: string; closes_at: string } | null;
@@ -211,16 +195,6 @@ export default async function MyTeamPage({
   const xpByRider: Record<string, number> = {};
   for (const row of xpData ?? []) {
     xpByRider[row.rider_id] = (xpByRider[row.rider_id] ?? 0) + row.xp_gained;
-  }
-
-  // Winning bids for outbid riders
-  let winnerMap: Record<string, { team_name: string; amount: number }> = {};
-  for (const wb of (winningBidsResult.data ?? []) as Array<{ rider_id: string; amount: number; teams: unknown }>) {
-    const t = Array.isArray(wb.teams) ? wb.teams[0] : wb.teams;
-    winnerMap[wb.rider_id] = {
-      team_name: (t as { name: string })?.name ?? "Unknown",
-      amount: wb.amount,
-    };
   }
 
   // Level progress
@@ -373,12 +347,12 @@ export default async function MyTeamPage({
         </div>
       </div>
 
-      {/* Pending Bids — MT-5: success green amounts */}
+      {/* Draft Bids — active bids in the current open round */}
       {allBids.length > 0 && (
         <div>
           <div className="flex items-center justify-between px-4 mb-2">
             <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-              Pending Bids
+              Draft Bids
             </span>
             {activeAuction && (
               <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
@@ -390,8 +364,6 @@ export default async function MyTeamPage({
             {allBids.map((bid) => {
               const r = Array.isArray(bid.riders) ? bid.riders[0] : bid.riders;
               if (!r) return null;
-              const isOutbid = bid.status === "outbid";
-              const winner = isOutbid ? winnerMap[bid.rider_id] : undefined;
               return (
                 <RiderCard
                   key={bid.id}
@@ -403,19 +375,12 @@ export default async function MyTeamPage({
                     pcs_rank: r.pcs_rank ?? undefined,
                     photo_url: r.photo_url,
                   }}
-                  bidState={isOutbid ? "outbid" : "active"}
+                  bidState="active"
                   href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
                   rightContent={
-                    <div className="flex flex-col items-end">
-                      <span className={`text-[length:var(--type-body)] font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--text-high)]"}`}>
-                        {formatThousands(bid.amount)} €
-                      </span>
-                      {winner && (
-                        <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-                          Won by {winner.team_name} · {formatThousands(winner.amount)} €
-                        </span>
-                      )}
-                    </div>
+                    <span className="text-[length:var(--type-body)] font-bold font-mono text-[var(--text-high)]">
+                      {formatThousands(bid.amount)} €
+                    </span>
                   }
                 />
               );

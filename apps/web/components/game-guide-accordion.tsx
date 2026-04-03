@@ -209,7 +209,7 @@ const HELP_SECTIONS: HelpSection[] = [
             ["Duration", "72 hours (3 rounds of 24h)"],
             ["Format", "Sealed-bid — bids are secret during each round"],
             ["Minimum bid", "Rider's market salary (PCS-based formula)"],
-            ["Minimum increment", "+500 EUR over current highest bid"],
+            ["Minimum increment", "+100 EUR — bids must be multiples of 100 EUR"],
             ["Tie-breaker", "Earliest timestamp wins"],
           ]}
         />
@@ -350,10 +350,17 @@ const HELP_SECTIONS: HelpSection[] = [
           <p>Bonuses are additive across policies</p>
         </Formula>
         <p>
-          <strong>Policy changes</strong> take effect at the <strong>next payday</strong> (when
-          you confirm the next phase setup). You can adjust policies freely between phases without
-          penalty.
+          <strong>Policy change timing:</strong>
         </p>
+        <ul>
+          <li>
+            In <strong>Round 1</strong> of a phase: policy changes take effect <strong>immediately</strong>
+          </li>
+          <li>
+            In <strong>Round 2+</strong>: policy changes are <strong>pending</strong> and take effect
+            at the next payday (next phase confirmation)
+          </li>
+        </ul>
         <p>
           <strong>Example:</strong> You activate Nationality (Belgium) and Speciality (Sprinter).
           A Belgian sprinter on your roster gets +10% XP on every race day. A Belgian climber
@@ -396,8 +403,8 @@ const HELP_SECTIONS: HelpSection[] = [
           Soudal Quick-Step (BE) and Lidl-Trek (US/IT) are One-Day-oriented. All pay 650K/phase.
         </p>
         <p>
-          <strong>T5 sponsors (Level 7):</strong> Visma ("Le pari prestige") and Red Bull-Bora
-          ("Le régulier") both pay 1M/phase with different bonus risk profiles.
+          <strong>T5 sponsors (Level 7):</strong> Visma ("The prestige bet") and Red Bull-Bora
+          ("The regular") both pay 1M/phase with different bonus risk profiles.
         </p>
         <p>
           <strong>Rider pool gating:</strong> The total rider pool is the Top 600 of the PCS
@@ -429,8 +436,8 @@ const HELP_SECTIONS: HelpSection[] = [
             ["T2", "2", "350,000 EUR", "Astana (auto-upgraded at L2)"],
             ["T3", "3", "450,000 EUR", "Groupama (FR), Movistar (ES) — GC · Alpecin (BE/NL), Uno-X (DK/NO) — One-Day"],
             ["T4", "5", "650,000 EUR", "Ineos (GB), Decathlon (FR) — GC · Soudal Quick-Step (BE), Lidl-Trek (US/IT) — One-Day"],
-            ["T5", "7", "1,000,000 EUR", "Visma \u201CLe pari prestige\u201D · Red Bull-Bora \u201CLe r\u00E9gulier\u201D"],
-            ["T6", "8", "1,250,000 EUR", "UAE Team Emirates (sponsor ultime)"],
+            ["T5", "7", "1,000,000 EUR", "Visma \"The prestige bet\" · Red Bull-Bora \"The regular\""],
+            ["T6", "8", "1,250,000 EUR", "UAE Team Emirates (ultimate sponsor)"],
           ]}
         />
         <p>
@@ -449,10 +456,17 @@ const HELP_SECTIONS: HelpSection[] = [
           <p>T6 UAE: Monument/GT Podium → 100K · Stage win → 25K (victories and podiums only)</p>
         </Formula>
         <p>
-          <strong>Changing sponsor:</strong> You can switch anytime. The new sponsor becomes
-          active at the <strong>next payday</strong> (next phase confirmation). Race bonuses
-          during the current phase use the sponsor that was active at your last payday.
+          <strong>Changing sponsor:</strong> You can switch anytime.
         </p>
+        <ul>
+          <li>
+            In <strong>Round 1</strong> of a phase: the new sponsor takes effect <strong>immediately</strong>
+          </li>
+          <li>
+            In <strong>Round 2+</strong>: the change is <strong>pending</strong> and takes effect
+            at the next payday. Your current sponsor remains active for race bonuses until then.
+          </li>
+        </ul>
       </Prose>
     ),
   },
@@ -468,11 +482,11 @@ const HELP_SECTIONS: HelpSection[] = [
         <Table
           headers={["Item", "Detail"]}
           rows={[
-            ["Starting treasury", "0 EUR — first sponsor payment replaces the old starting fund"],
+            ["Starting treasury", "200,000 EUR"],
             ["Payday", "Player-triggered: click Confirm at phase start. +sponsor budget, -salaries"],
             ["Race bonuses", "+sponsor bonus credited on the day race results are imported"],
             ["Auction win", "-locked salary deducted immediately from treasury"],
-            ["Release fee", "-5,000 EUR flat fee, deducted immediately"],
+            ["Release fee", "None — the phase salary is not refunded"],
           ]}
         />
         <Formula>
@@ -484,17 +498,14 @@ const HELP_SECTIONS: HelpSection[] = [
         </p>
         <ul>
           <li>
-            You can <strong>release a rider at any time</strong> — flat fee of{" "}
-            <strong>5,000 EUR</strong>, effective immediately
+            You can <strong>release a rider at any time</strong> — <strong>no release fee</strong>
           </li>
           <li>
-            <strong>Transfer bonus:</strong> if the rider&apos;s current market salary is higher
-            than what you paid, you receive{" "}
-            <code>max(0, current_min_salary - locked_salary)</code> back
+            The release takes effect at the <strong>start of the next phase</strong> — the rider
+            stays on your roster until then and their current phase salary is not refunded
           </li>
           <li>
-            <strong>Lock:</strong> you cannot release a rider recruited during the current phase&apos;s
-            auction rounds
+            The slot is freed and the rider returns to the pool when the next phase begins
           </li>
         </ul>
         <p>
@@ -503,11 +514,11 @@ const HELP_SECTIONS: HelpSection[] = [
         <ul>
           <li>
             At payday, if <code>treasury &lt; -10,000 EUR</code> after salary deduction, an{" "}
-            <strong>auto-release cascade</strong> triggers
+            <strong>auto-release cascade</strong> triggers immediately
           </li>
           <li>
-            The rider with the <strong>highest cumulative XP</strong> is released first: salary
-            refunded, 5,000 EUR fee applied, transfer bonus applied if applicable
+            The rider with the <strong>highest cumulative XP</strong> is released first — no fee,
+            phase salary not refunded
           </li>
           <li>
             The cascade repeats until <code>treasury ≥ -10,000 EUR</code> or the roster is empty
