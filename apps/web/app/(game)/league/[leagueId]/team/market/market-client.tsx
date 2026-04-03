@@ -508,7 +508,7 @@ export function MarketClient({
       >
         <div className="flex items-center justify-between">
           <span className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-            {totalBidCount} rider{totalBidCount !== 1 ? "s" : ""} &middot; {formatEuro(remainingBudget)}
+            {totalBidCount}/{maxSlots} slots &middot; {formatEuro(remainingBudget)}
           </span>
           <button
             type="button"
@@ -519,8 +519,8 @@ export function MarketClient({
             {saving
               ? "Saving..."
               : hasPendingBids
-                ? `Add ${pendingBids.length} to Draft`
-                : "Add to Draft"}
+                ? `Add ${pendingBids.length} to Draft Auction`
+                : "Add to Draft Auction"}
           </button>
         </div>
       </StickyBar>
