@@ -111,7 +111,7 @@ export async function addDraft(input: {
   const { error: upsertError } = await supabase
     .from("draft_bids")
     .upsert(
-      { team_id: teamId, rider_id: riderId, amount },
+      { team_id: teamId, rider_id: riderId, league_id: leagueId, amount },
       { onConflict: "team_id,rider_id" }
     );
 

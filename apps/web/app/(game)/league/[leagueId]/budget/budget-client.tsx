@@ -3,22 +3,17 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown } from "lucide-react";
 import { PhaseNavigator } from "@/components/phase-navigator";
 import { FilterChips } from "@/components/filter-chips";
 import { TransactionRow } from "@/components/transaction-row";
-import { Tag } from "@/components/pill";
-import { SponsorBonusDetails } from "@/components/sponsor-bonus-details";
-import { formatEuro, countryCodeToFlag } from "@/lib/format";
+import { SponsorBonusCard } from "@/components/sponsor-bonus-card";
+import { formatEuro } from "@/lib/format";
 import { AUCTION_PHASES, getCurrentPhase } from "@/lib/phases";
 import {
-  formatBudget,
-  ORIENTATION_LABELS,
   TRANSACTION_FILTER_OPTIONS,
   filterTransactions,
   type SponsorRow,
 } from "@/lib/sponsors";
-import { cn } from "@/lib/utils";
 
 interface Transaction {
   id: string;
@@ -76,10 +71,6 @@ export function BudgetClient({
   function handlePhaseChange(newIndex: number) {
     router.replace(`?phase=${newIndex}`, { scroll: false });
   }
-
-  const nationalities = currentSponsor?.nationality
-    ? currentSponsor.nationality.split("/").map((c) => c.trim())
-    : [];
 
   const sponsorBase = currentSponsor?.monthly_budget ?? 0;
   const bonuses = income - sponsorBase;
@@ -161,39 +152,11 @@ export function BudgetClient({
 
         <div className="px-4">
           {currentSponsor ? (
-            <button
-              type="button"
-              onClick={() => setSponsorExpanded((v) => !v)}
-              className="block w-full rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
-            >
-              {/* Single line: chevron + name + tags + flags + amount */}
-              <div className="flex items-center gap-2">
-                <ChevronDown
-                  size={14}
-                  className={cn(
-                    "shrink-0 text-[var(--text-low)] transition-transform duration-200",
-                    sponsorExpanded && "rotate-180",
-                  )}
-                />
-                <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-                  {currentSponsor.name}
-                </span>
-                <Tag variant="highlighted">{ORIENTATION_LABELS[currentSponsor.orientation]}</Tag>
-                {nationalities.map((nat) => (
-                  <Tag key={nat} variant="default">{countryCodeToFlag(nat)}</Tag>
-                ))}
-                <span className="ml-auto font-[family-name:var(--font-geist-mono)] text-[length:var(--type-stat-small)] font-bold text-[var(--text-high)] tabular-nums">
-                  {formatBudget(currentSponsor.monthly_budget)}
-                </span>
-              </div>
-
-              {/* Expanded bonus details */}
-              {sponsorExpanded && (
-                <div className="pl-[22px] mt-2">
-                  <SponsorBonusDetails sponsor={currentSponsor} />
-                </div>
-              )}
-            </button>
+            <SponsorBonusCard
+              sponsor={currentSponsor}
+              expanded={sponsorExpanded}
+              onToggle={() => setSponsorExpanded((v) => !v)}
+            />
           ) : (
             <Link href={`/league/${leagueId}/budget/marketplace`}>
               <div className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-4 py-5 hover:bg-[var(--bg-surface-hover)] transition-colors">
