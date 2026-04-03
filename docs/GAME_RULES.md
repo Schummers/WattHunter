@@ -253,18 +253,19 @@ Only multiplier: ×2 for a Grand Tour stage.
 
 ## 10. WT Phases & Payday
 
-### 8 phases aligned to the World Tour calendar
+### 9 phases aligned to the World Tour calendar
 
-| # | Phase | Approx. Period |
-|---|-------|----------------|
-| 1 | Season Start | Jan 15 – Mar 1 |
-| 2 | Classics Part 1 | Mar 5 – Apr 1 |
-| 3 | Classics Part 2 | Apr 5 – May 1 |
-| 4 | Giro d'Italia | May 5 – Jun 1 |
-| 5 | Pre-Tour | Jun 5 – Jul 1 |
-| 6 | Tour de France | Jul 4 – Jul 27 |
-| 7 | Post-Tour | Jul 31 – Aug 18 |
-| 8 | La Vuelta | Aug 22 – Sep 15 |
+| # | Phase | Approx. Period | Auction Rounds |
+|---|-------|----------------|----------------|
+| 1 | Season Start | Jan 15 – Mar 1 | Jan 15/16/17 |
+| 2 | Classics Part 1 | Mar 2 – Apr 1 | Mar 2/3/4 |
+| 3 | Classics Part 2 | Apr 2 – May 1 | Apr 2/3/4 |
+| 4 | Giro d'Italia | May 2 – Jun 1 | May 2/3/4 |
+| 5 | Pre-Tour | Jun 2 – Jul 1 | Jun 2/3/4 |
+| 6 | Tour de France | Jul 2 – Jul 27 | Jul 2/3/4 |
+| 7 | Post-Tour | Jul 28 – Aug 18 | Jul 28/29/30 |
+| 8 | La Vuelta | Aug 19 – Sep 15 | Aug 19/20/21 |
+| 9 | End of Season | Sep 16 – Oct 18 | Sep 16/17/18 |
 
 > **Note:** The commissioner can edit round dates for any auction round before it closes.
 

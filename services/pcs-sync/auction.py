@@ -26,16 +26,17 @@ from supabase import Client
 logger = logging.getLogger(__name__)
 
 # Phase calendar (mirrors apps/web/lib/phases.ts AUCTION_PHASES)
+# No gaps — each phase starts with 3 auction round days, then racing.
 _PHASES = [
     (1, 1, 15, 3, 1),   # Season Start: Jan 15 – Mar 1
-    (2, 3, 5, 4, 1),    # Classics Part 1: Mar 5 – Apr 1
-    (3, 4, 5, 5, 1),    # Classics Part 2: Apr 5 – May 1
-    (4, 5, 5, 6, 1),    # Giro d'Italia: May 5 – Jun 1
-    (5, 6, 5, 7, 1),    # Pre-Tour: Jun 5 – Jul 1
-    (6, 7, 4, 7, 27),   # Tour de France: Jul 4 – Jul 27
-    (7, 7, 31, 8, 18),  # Post-Tour: Jul 31 – Aug 18
-    (8, 8, 22, 9, 15),  # La Vuelta: Aug 22 – Sep 15
-    (9, 9, 19, 10, 18), # End of Season: Sep 19 – Oct 18
+    (2, 3, 2, 4, 1),    # Classics Part 1: Mar 2 – Apr 1
+    (3, 4, 2, 5, 1),    # Classics Part 2: Apr 2 – May 1
+    (4, 5, 2, 6, 1),    # Giro d'Italia: May 2 – Jun 1
+    (5, 6, 2, 7, 1),    # Pre-Tour: Jun 2 – Jul 1
+    (6, 7, 2, 7, 27),   # Tour de France: Jul 2 – Jul 27
+    (7, 7, 28, 8, 18),  # Post-Tour: Jul 28 – Aug 18
+    (8, 8, 19, 9, 15),  # La Vuelta: Aug 19 – Sep 15
+    (9, 9, 16, 10, 18), # End of Season: Sep 16 – Oct 18
 ]
 
 def _get_current_phase_id(d: date | None = None) -> int:

@@ -23,15 +23,15 @@ export interface AuctionPhase {
 }
 
 export const AUCTION_PHASES: AuctionPhase[] = [
-  { id: 1, label: "Season Start",     startMonth: 1,  startDay: 15, endMonth: 3,  endDay: 1,  auctionDates: [{ month: 3, day: 2 }, { month: 3, day: 3 }, { month: 3, day: 4 }] },
-  { id: 2, label: "Classics Part 1",  startMonth: 3,  startDay: 5,  endMonth: 4,  endDay: 1,  auctionDates: [{ month: 4, day: 2 }, { month: 4, day: 3 }, { month: 4, day: 4 }] },
-  { id: 3, label: "Classics Part 2",  startMonth: 4,  startDay: 5,  endMonth: 5,  endDay: 1,  auctionDates: [{ month: 5, day: 2 }, { month: 5, day: 3 }, { month: 5, day: 4 }] },
-  { id: 4, label: "Giro d'Italia",    startMonth: 5,  startDay: 5,  endMonth: 6,  endDay: 1,  auctionDates: [{ month: 6, day: 2 }, { month: 6, day: 3 }, { month: 6, day: 4 }] },
-  { id: 5, label: "Pre-Tour",         startMonth: 6,  startDay: 5,  endMonth: 7,  endDay: 1,  auctionDates: [{ month: 7, day: 2 }, { month: 7, day: 3 }, { month: 7, day: 4 }] },
-  { id: 6, label: "Tour de France",   startMonth: 7,  startDay: 4,  endMonth: 7,  endDay: 27, auctionDates: [{ month: 7, day: 28 }, { month: 7, day: 29 }, { month: 7, day: 30 }] },
-  { id: 7, label: "Post-Tour",        startMonth: 7,  startDay: 31, endMonth: 8,  endDay: 18, auctionDates: [{ month: 8, day: 19 }, { month: 8, day: 20 }, { month: 8, day: 21 }] },
-  { id: 8, label: "La Vuelta",        startMonth: 8,  startDay: 22, endMonth: 9,  endDay: 15, auctionDates: [{ month: 9, day: 16 }, { month: 9, day: 17 }, { month: 9, day: 18 }] },
-  { id: 9, label: "End of Season",    startMonth: 9,  startDay: 19, endMonth: 10, endDay: 18, auctionDates: null },
+  { id: 1, label: "Season Start",     startMonth: 1,  startDay: 15, endMonth: 3,  endDay: 1,  auctionDates: [{ month: 1, day: 15 }, { month: 1, day: 16 }, { month: 1, day: 17 }] },
+  { id: 2, label: "Classics Part 1",  startMonth: 3,  startDay: 2,  endMonth: 4,  endDay: 1,  auctionDates: [{ month: 3, day: 2 }, { month: 3, day: 3 }, { month: 3, day: 4 }] },
+  { id: 3, label: "Classics Part 2",  startMonth: 4,  startDay: 2,  endMonth: 5,  endDay: 1,  auctionDates: [{ month: 4, day: 2 }, { month: 4, day: 3 }, { month: 4, day: 4 }] },
+  { id: 4, label: "Giro d'Italia",    startMonth: 5,  startDay: 2,  endMonth: 6,  endDay: 1,  auctionDates: [{ month: 5, day: 2 }, { month: 5, day: 3 }, { month: 5, day: 4 }] },
+  { id: 5, label: "Pre-Tour",         startMonth: 6,  startDay: 2,  endMonth: 7,  endDay: 1,  auctionDates: [{ month: 6, day: 2 }, { month: 6, day: 3 }, { month: 6, day: 4 }] },
+  { id: 6, label: "Tour de France",   startMonth: 7,  startDay: 2,  endMonth: 7,  endDay: 27, auctionDates: [{ month: 7, day: 2 }, { month: 7, day: 3 }, { month: 7, day: 4 }] },
+  { id: 7, label: "Post-Tour",        startMonth: 7,  startDay: 28, endMonth: 8,  endDay: 18, auctionDates: [{ month: 7, day: 28 }, { month: 7, day: 29 }, { month: 7, day: 30 }] },
+  { id: 8, label: "La Vuelta",        startMonth: 8,  startDay: 19, endMonth: 9,  endDay: 15, auctionDates: [{ month: 8, day: 19 }, { month: 8, day: 20 }, { month: 8, day: 21 }] },
+  { id: 9, label: "End of Season",    startMonth: 9,  startDay: 16, endMonth: 10, endDay: 18, auctionDates: [{ month: 9, day: 16 }, { month: 9, day: 17 }, { month: 9, day: 18 }] },
 ];
 
 export function getCurrentPhase(date: Date = new Date()): AuctionPhase {

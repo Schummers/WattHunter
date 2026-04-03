@@ -48,7 +48,7 @@ async def health():
 @app.post("/sync/riders")
 async def sync_riders_endpoint(x_api_secret: Optional[str] = Header(default=None)):
     """
-    Full rider catalogue sync (~500 top riders from PCS global ranking).
+    Full rider catalogue sync (~600 top riders from PCS global ranking).
     Updates pcs_points_1yr, pcs_rank, monthly_salary for all riders.
     Runtime: ~2 min with 15s pause between pages.
     """

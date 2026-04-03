@@ -166,25 +166,27 @@ const HELP_SECTIONS: HelpSection[] = [
     content: (
       <Prose>
         <p>
-          The WattHunter season is divided into <strong>8 auction phases</strong>, each aligned
-          with a major period of the professional cycling calendar. Each phase ends with{" "}
-          <strong>3 auction rounds</strong> (one per day) where you can recruit new riders.
+          The WattHunter season is divided into <strong>9 auction phases</strong>, each aligned
+          with a major period of the professional cycling calendar. Each phase starts with{" "}
+          <strong>3 auction rounds</strong> (one per day) where you can recruit new riders, then
+          racing begins.
         </p>
         <Table
           headers={["#", "Phase", "Period", "Auction rounds", "Key races"]}
           rows={[
-            ["1", "Season Start",   "Jan 15 – Mar 1",  "Mar 2, Mar 3, Mar 4",   "Tour Down Under, Cadel Evans, UAE Tour, Omloop"],
-            ["2", "Classics Part 1","Mar 5 – Apr 1",   "Apr 2, Apr 3, Apr 4",   "Strade, Paris-Nice, Tirreno, MSR, Catalunya, E3, G-W, Dwars"],
-            ["3", "Classics Part 2","Apr 5 – May 1",   "May 2, May 3, May 4",   "Ronde, Itzulia, Roubaix, Amstel, Flèche, LBL, Romandie, Eschborn"],
-            ["4", "Giro d'Italia",  "May 5 – Jun 1",   "Jun 2, Jun 3, Jun 4",   "Giro d'Italia"],
-            ["5", "Pre-Tour",       "Jun 5 – Jul 1",   "Jul 2, Jul 3, Jul 4",   "Dauphiné, Copenhagen Sprint, Tour de Suisse"],
-            ["6", "Tour de France", "Jul 4 – Jul 27",  "Jul 28, Jul 29, Jul 30","Tour de France"],
-            ["7", "Post-Tour",      "Jul 31 – Aug 18", "Aug 19, Aug 20, Aug 21","San Sebastián, Pologne, Cyclassics"],
-            ["8", "La Vuelta",      "Aug 22 – Sep 15", "Sep 16, Sep 17, Sep 18","Renewi, Vuelta, Bretagne, GP Québec, GP Montréal"],
+            ["1", "Season Start",   "Jan 15 – Mar 1",  "Jan 15, Jan 16, Jan 17",  "Tour Down Under, Cadel Evans, UAE Tour, Omloop"],
+            ["2", "Classics Part 1","Mar 2 – Apr 1",   "Mar 2, Mar 3, Mar 4",     "Strade, Paris-Nice, Tirreno, MSR, Catalunya, E3, G-W, Dwars"],
+            ["3", "Classics Part 2","Apr 2 – May 1",   "Apr 2, Apr 3, Apr 4",     "Ronde, Itzulia, Roubaix, Amstel, Flèche, LBL, Romandie, Eschborn"],
+            ["4", "Giro d'Italia",  "May 2 – Jun 1",   "May 2, May 3, May 4",     "Giro d'Italia"],
+            ["5", "Pre-Tour",       "Jun 2 – Jul 1",   "Jun 2, Jun 3, Jun 4",     "Dauphiné, Copenhagen Sprint, Tour de Suisse"],
+            ["6", "Tour de France", "Jul 2 – Jul 27",  "Jul 2, Jul 3, Jul 4",     "Tour de France"],
+            ["7", "Post-Tour",      "Jul 28 – Aug 18", "Jul 28, Jul 29, Jul 30",  "San Sebastián, Pologne, Cyclassics"],
+            ["8", "La Vuelta",      "Aug 19 – Sep 15", "Aug 19, Aug 20, Aug 21",  "Renewi, Vuelta, Bretagne, GP Québec, GP Montréal"],
+            ["9", "End of Season",  "Sep 16 – Oct 18", "Sep 16, Sep 17, Sep 18",  "GP de Québec, GP de Montréal, Il Lombardia, Worlds"],
           ]}
         />
         <Formula>
-          <p>Each phase = races run → confirm payday → 3 auction rounds (24h each) → next phase</p>
+          <p>Each phase = 3 auction rounds (24h each) → racing → next phase</p>
         </Formula>
         <p>
           At the start of each phase you <strong>confirm your setup</strong> (sponsor, roster,
