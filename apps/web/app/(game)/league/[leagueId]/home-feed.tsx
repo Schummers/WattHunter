@@ -3,7 +3,7 @@
 import { InfoCard } from "@/components/info-card";
 import { OnboardingCards } from "@/components/onboarding-cards";
 import { getPhaseRaces, formatRaceDate, type UpcomingRace } from "@/lib/calendar";
-import { getCurrentPhase, getPhaseRange } from "@/lib/phases";
+import { getCurrentPhase, getPhaseRange, getNextPhase } from "@/lib/phases";
 import { Timer, ChevronRight, Calendar } from "lucide-react";
 
 function timeUntil(dateStr: string): string {
@@ -42,12 +42,17 @@ export function HomeFeed({
   activeAuction,
   nextAuctionLabel,
 }: HomeFeedProps) {
-  // Get all races in the current phase
+  // Get all races in the current phase (extend window to match getCurrentPhase boundary)
   const now = new Date();
   const phase = getCurrentPhase(now);
+  const nextPhase = getNextPhase(phase);
   const range = getPhaseRange(phase, now.getFullYear());
   const phaseStart = range.start.toISOString().slice(0, 10);
-  const phaseEnd = range.end.toISOString().slice(0, 10);
+  // Use next phase start - 1 day as ceiling (matches getCurrentPhase logic)
+  const phaseEnd = nextPhase
+    ? new Date(now.getFullYear(), nextPhase.startMonth - 1, nextPhase.startDay - 1, 23, 59, 59)
+        .toISOString().slice(0, 10)
+    : range.end.toISOString().slice(0, 10);
   const phaseRaces = getPhaseRaces(phaseStart, phaseEnd);
 
   // Build unified chronological feed

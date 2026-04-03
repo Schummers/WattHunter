@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
-import { getCurrentPhase, getNextPhase, isInAuctionWindow, isLeagueFirstCycle } from "@/lib/phases";
+import { getCurrentPhase, getNextPhase, isInAuctionWindow } from "@/lib/phases";
 
 const PolicyInputSchema = z.object({
   slug: z.string(),
@@ -52,8 +52,16 @@ export async function savePolicies(
 
   const level = team.level ?? 1;
 
-  const firstCycle = await isLeagueFirstCycle(supabase, leagueId);
-  const immediate = firstCycle;
+  // Immediate effect when the open auction is Round 1 (matches budget/sponsor logic)
+  const { data: openAuction } = await supabase
+    .from("auctions")
+    .select("name")
+    .eq("league_id", leagueId)
+    .eq("status", "open")
+    .order("opens_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const immediate = openAuction?.name === "Round 1";
 
   // Fetch existing state to project total active policies
   const { data: existingPolicies } = await supabase

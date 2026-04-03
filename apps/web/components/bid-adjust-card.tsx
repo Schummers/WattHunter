@@ -33,7 +33,7 @@ function formatName(fullName: string): string {
   return `${firstInitial}. ${lastName}`;
 }
 
-const STEP = 500;
+const STEP = 100;
 
 export function BidAdjustCard({
   rider,

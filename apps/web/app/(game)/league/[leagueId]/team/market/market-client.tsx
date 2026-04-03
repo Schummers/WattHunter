@@ -144,7 +144,7 @@ export function MarketClient({
   });
 
   // Track which riders are already saved in draft (server-side)
-  const [savedDraftIds] = useState<Set<string>>(
+  const [savedDraftIds, setSavedDraftIds] = useState<Set<string>>(
     () => new Set(draftBids.map((d) => d.riderId))
   );
 
@@ -278,6 +278,11 @@ export function MarketClient({
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
     } else {
+      setSavedDraftIds((prev) => {
+        const next = new Set(prev);
+        for (const [riderId] of pendingBids) next.add(riderId);
+        return next;
+      });
       router.refresh();
     }
     setSaving(false);
@@ -317,7 +322,7 @@ export function MarketClient({
             type="text"
             inputMode="numeric"
             min={minSalary}
-            step={500}
+            step={100}
             placeholder={formatThousands(minSalary)}
             value={currentBid ? formatThousands(currentBid) : ""}
             onChange={(e) => {

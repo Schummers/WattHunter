@@ -17,7 +17,7 @@ const AddDraftSchema = z.object({
     .number()
     .int()
     .min(5000, "Minimum bid is 5 000 €")
-    .refine((v) => v % 500 === 0, "Amount must be a multiple of 500"),
+    .refine((v) => v % 100 === 0, "Amount must be a multiple of 100"),
 });
 
 const RemoveDraftSchema = z.object({
@@ -32,7 +32,7 @@ const UpdateDraftAmountSchema = z.object({
     .number()
     .int()
     .min(5000, "Minimum bid is 5 000 €")
-    .refine((v) => v % 500 === 0, "Amount must be a multiple of 500"),
+    .refine((v) => v % 100 === 0, "Amount must be a multiple of 100"),
 });
 
 // ---------------------------------------------------------------------------
