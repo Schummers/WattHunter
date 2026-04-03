@@ -129,10 +129,14 @@ async def test_nominal_resolution():
     bid_winner = {
         "id": "bid-w", "rider_id": RIDER_ID, "team_id": TEAM_A,
         "amount": "6000", "placed_at": "2026-02-28T10:00:00", "round": 1,
+            "riders": {"full_name": "Tadej Pogacar", "pcs_rank": 1},
+            "teams": {"level": 8, "treasury": 500000}
     }
     bid_loser = {
         "id": "bid-l", "rider_id": RIDER_ID, "team_id": TEAM_B,
         "amount": "5000", "placed_at": "2026-02-28T09:00:00", "round": 1,
+            "riders": {"full_name": "Tadej Pogacar", "pcs_rank": 1},
+            "teams": {"level": 8, "treasury": 500000}
     }
 
     sb = make_supabase(
@@ -140,13 +144,9 @@ async def test_nominal_resolution():
         [EXPIRED_AUCTION],
         # 2. auction_bids (all active bids)
         [bid_winner, bid_loser],
-        # 3. riders (fetch rider name — single())
-        {"full_name": "Tadej Pogacar"},
-        # 4. auction_bids update winner → status='won'
+            # 3. existing contracts pre-fetch
         [],
-        # 5. auction_bids update loser → status='outbid'
-        [],
-        # 6+ remaining calls (level gating, contract check, contract insert, treasury, etc.)
+            # 4. updates and inserts ...
     )
 
     p1, p2 = _patch_datetime()
@@ -171,6 +171,8 @@ async def test_always_closes_after_resolution():
     bid = {
         "id": "bid-solo", "rider_id": RIDER_ID, "team_id": TEAM_A,
         "amount": "5000", "placed_at": "2026-02-28T08:00:00", "round": 1,
+            "riders": {"full_name": "Jonas Vingegaard", "pcs_rank": 2},
+            "teams": {"level": 8, "treasury": 300000}
     }
 
     sb = make_supabase(
@@ -178,8 +180,8 @@ async def test_always_closes_after_resolution():
         [EXPIRED_AUCTION],
         # 2. auction_bids
         [bid],
-        # 3. riders single
-        {"full_name": "Jonas Vingegaard"},
+            # 3. existing contracts
+            [],
         # 4+ remaining calls
     )
 

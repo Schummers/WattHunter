@@ -95,23 +95,8 @@ describe("releaseRider", () => {
     expect(result).toEqual({ error: "Cannot release a rider recruited during the current phase" });
   });
 
-  it("returns error when treasury insufficient for release fee", async () => {
-    mockFrom.mockReturnValue(
-      makeChain({
-        id: CONTRACT_ID,
-        team_id: TEAM_ID,
-        status: "active",
-        locked_salary: 50_000,
-        phase_recruited_id: 2,
-        teams: { user_id: USER_ID, treasury: 3_000, league_id: "lg-1" },
-        riders: { pcs_points_1yr: 100 },
-      })
-    );
-    const result = await releaseRider(CONTRACT_ID);
-    expect(result.error).toMatch(/insufficient/i);
-  });
-
-  it("successfully releases rider with flat fee and transfer bonus", async () => {
+  // Releasing is free now so there's no treasury check or transfer bonus
+  it("successfully releases rider for free", async () => {
     let callCount = 0;
 
     mockFrom.mockImplementation(() => {
@@ -137,9 +122,6 @@ describe("releaseRider", () => {
 
     const result = await releaseRider(CONTRACT_ID);
 
-    expect(result).toHaveProperty("success", true);
-    // Transfer bonus: calcMinSalary(500) = max(5000, floor(500*2000/12/100)*100) = max(5000, 83300) = 83300
-    // bonus = 83300 - 30000 = 53300
-    expect(result).toHaveProperty("transferBonus", 53_300);
+    expect(result).toEqual({ success: true });
   });
 });

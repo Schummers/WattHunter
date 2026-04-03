@@ -120,7 +120,8 @@ async def resolve_current_round(
         try:
             # --- Fetch ALL active bids for this auction ---
             bids_resp = supabase.table("auction_bids").select(
-                "id, rider_id, team_id, amount, placed_at, round"
+                "id, rider_id, team_id, amount, placed_at, round, "
+                "riders(full_name, pcs_rank), teams(level, treasury)"
             ).eq("auction_id", auction_id).eq("status", "active").execute()
 
             if not bids_resp.data:
@@ -142,7 +143,28 @@ async def resolve_current_round(
                 rider_id = bid["rider_id"]
                 rider_bids.setdefault(rider_id, []).append(bid)
 
+            # Pre-fetch existing contracts in this league for these riders to avoid N+1 query
+            rider_ids = list(rider_bids.keys())
+            existing_contracts_resp = supabase.table("contracts").select("rider_id").eq(
+                "league_id", league_id
+            ).in_("rider_id", rider_ids).in_("status", ["active", "notice"]).execute()
+            riders_with_contracts = {c["rider_id"] for c in (existing_contracts_resp.data or [])}
+
             resolved_count = 0
+
+            won_ids = []
+            outbid_ids = []
+            cancelled_ids = []
+
+            new_contracts = []
+            treasury_logs = []
+
+            # Map of team_id -> team_treasury (we'll update memory and batch update later)
+            team_treasuries = {}
+            # Map of rider_id -> bool to mark as active
+            activated_riders = set()
+
+            from sync import rank_max_for_level
 
             for rider_id, rbids in rider_bids.items():
                 try:
@@ -151,37 +173,19 @@ async def resolve_current_round(
                     winner = rbids[0]
                     losers = rbids[1:]
 
-                    # Fetch rider name for logging
-                    rider_name_resp = supabase.table("riders").select(
-                        "full_name"
-                    ).eq("id", rider_id).single().execute()
-                    rider_name = rider_name_resp.data.get("full_name", rider_id) if rider_name_resp.data else rider_id
+                    rider_info = winner.get("riders") or {}
+                    team_info = winner.get("teams") or {}
 
-                    # Mark winner
-                    supabase.table("auction_bids").update(
-                        {"status": "won"}
-                    ).eq("id", winner["id"]).execute()
-
-                    # Mark losers
-                    for loser in losers:
-                        supabase.table("auction_bids").update(
-                            {"status": "outbid"}
-                        ).eq("id", loser["id"]).execute()
+                    rider_name = rider_info.get("full_name") or rider_id
+                    rider_pcs_rank = rider_info.get("pcs_rank")
+                    team_level = team_info.get("level") or 1
 
                     locked_salary = int(winner["amount"])
+                    team_id = winner["team_id"]
+
+                    loser_ids = [l["id"] for l in losers]
 
                     # Level gating — verify rider is accessible at team's level
-                    from sync import rank_max_for_level
-                    team_data = supabase.table("teams").select(
-                        "level"
-                    ).eq("id", winner["team_id"]).single().execute()
-                    rider_data = supabase.table("riders").select(
-                        "pcs_rank"
-                    ).eq("id", rider_id).single().execute()
-
-                    team_level = team_data.data.get("level", 1) if team_data.data else 1
-                    rider_pcs_rank = rider_data.data.get("pcs_rank") if rider_data.data else None
-
                     if rider_pcs_rank is not None:
                         pool_min = rank_max_for_level(team_level)
                         if rider_pcs_rank < pool_min:
@@ -189,38 +193,26 @@ async def resolve_current_round(
                                 f"  {rider_name}: PCS rank {rider_pcs_rank} below pool min {pool_min} "
                                 f"for team level {team_level} — cancelling all bids"
                             )
-                            supabase.table("auction_bids").update(
-                                {"status": "cancelled"}
-                            ).eq("id", winner["id"]).execute()
-                            for loser in losers:
-                                supabase.table("auction_bids").update(
-                                    {"status": "cancelled"}
-                                ).eq("id", loser["id"]).execute()
+                            cancelled_ids.append(winner["id"])
+                            cancelled_ids.extend(loser_ids)
                             continue
 
                     # Check for existing active contract for this rider in this league
-                    existing = supabase.table("contracts").select("id").eq(
-                        "rider_id", rider_id
-                    ).eq("league_id", league_id).in_(
-                        "status", ["active", "notice"]
-                    ).execute()
-
-                    if existing.data:
+                    if rider_id in riders_with_contracts:
                         logger.warning(
                             f"  {rider_name}: already has active contract in league — skipping"
                         )
-                        supabase.table("auction_bids").update(
-                            {"status": "cancelled"}
-                        ).eq("id", winner["id"]).execute()
-                        for loser in losers:
-                            supabase.table("auction_bids").update(
-                                {"status": "cancelled"}
-                            ).eq("id", loser["id"]).execute()
+                        cancelled_ids.append(winner["id"])
+                        cancelled_ids.extend(loser_ids)
                         continue
 
-                    # Create contract with first salary marked as paid
-                    supabase.table("contracts").insert({
-                        "team_id": winner["team_id"],
+                    # Valid winner
+                    won_ids.append(winner["id"])
+                    outbid_ids.extend(loser_ids)
+
+                    # Prepare contract insertion
+                    new_contracts.append({
+                        "team_id": team_id,
                         "rider_id": rider_id,
                         "league_id": league_id,
                         "locked_salary": locked_salary,
@@ -228,35 +220,26 @@ async def resolve_current_round(
                         "purchased_at": datetime.utcnow().isoformat(),
                         "last_salary_paid": today.isoformat(),
                         "phase_recruited_id": _get_current_phase_id(today),
-                    }).execute()
+                    })
 
-                    # Debit first month's salary from team treasury
-                    team_resp = supabase.table("teams").select(
-                        "treasury"
-                    ).eq("id", winner["team_id"]).single().execute()
-                    current_treasury = team_resp.data["treasury"] if team_resp.data else 200000
-
+                    # Calculate new treasury
+                    current_treasury = team_treasuries.get(team_id, team_info.get("treasury", 200000))
                     new_treasury = current_treasury - locked_salary
-                    supabase.table("teams").update({
-                        "treasury": new_treasury,
-                    }).eq("id", winner["team_id"]).execute()
+                    team_treasuries[team_id] = new_treasury
 
-                    # Log the treasury deduction
-                    _log_treasury_debit(
-                        supabase,
-                        team_id=winner["team_id"],
-                        amount=locked_salary,
-                        description=f"Auction {auction.get('name', '')} — {rider_name} — salary {locked_salary} EUR/month",
-                        rider_id=rider_id,
-                    )
+                    # Prepare treasury log
+                    treasury_logs.append({
+                        "team_id": team_id,
+                        "type": "auction_purchase",
+                        "amount": -locked_salary,
+                        "description": f"Auction {auction.get('name', '')} — {rider_name} — salary {locked_salary} EUR/month",
+                        "rider_id": rider_id,
+                    })
 
-                    # Mark rider as active in the game
-                    supabase.table("riders").update(
-                        {"is_active_in_game": True}
-                    ).eq("id", rider_id).execute()
+                    activated_riders.add(rider_id)
 
                     logger.info(
-                        f"  {rider_name}: won by team {winner['team_id']} "
+                        f"  {rider_name}: won by team {team_id} "
                         f"at {locked_salary} EUR/mois (treasury: {current_treasury} → {new_treasury})"
                     )
 
@@ -266,6 +249,29 @@ async def resolve_current_round(
                     logger.error(
                         f"Auction {auction_id} rider {rider_id}: {e}"
                     )
+
+            # --- Bulk Execute Updates and Inserts ---
+            if won_ids:
+                supabase.table("auction_bids").update({"status": "won"}).in_("id", won_ids).execute()
+            if outbid_ids:
+                supabase.table("auction_bids").update({"status": "outbid"}).in_("id", outbid_ids).execute()
+            if cancelled_ids:
+                supabase.table("auction_bids").update({"status": "cancelled"}).in_("id", cancelled_ids).execute()
+
+            if new_contracts:
+                supabase.table("contracts").insert(new_contracts).execute()
+
+            for t_id, new_t_val in team_treasuries.items():
+                supabase.table("teams").update({"treasury": new_t_val}).eq("id", t_id).execute()
+
+            if treasury_logs:
+                supabase.table("treasury_log").insert(treasury_logs).execute()
+
+            if activated_riders:
+                # We can't do a bulk update with different values easily, but here they all get True
+                # Actually, Supabase doesn't support bulk update with 'in_' nicely if the list is too long, but it's fine for our size.
+                # However, python client for supabase supports updating by id using in_
+                supabase.table("riders").update({"is_active_in_game": True}).in_("id", list(activated_riders)).execute()
 
             # Always close an expired auction after resolution
             _close_auction(supabase, auction_id, league_id)

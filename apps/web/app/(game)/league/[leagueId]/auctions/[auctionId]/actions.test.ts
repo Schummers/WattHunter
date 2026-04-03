@@ -336,7 +336,11 @@ describe("placeBid — auto-confirm phase setup", () => {
       .mockReturnValueOnce(makeChain(null))                                                                   // existingBid
       .mockReturnValueOnce(makeChain([]))                                                                     // activeBids (empty)
       .mockReturnValueOnce(makeChain(null, null, 0))                                                         // contracts count
-      .mockReturnValueOnce(makeChain(null, null));                                                            // insert success
+      .mockReturnValueOnce(makeChain(null));                                                                  // draft_bids existing check
+      // .mockReturnValueOnce(makeChain({ id: "new-bid" }));                                                     // insert success - handled below
+
+    // We also need to mock the insert
+    mockFrom.mockReturnValueOnce(makeChain(null)); // insert success
 
     const result = await placeBid({
       auctionId: UUID_1,
@@ -346,6 +350,8 @@ describe("placeBid — auto-confirm phase setup", () => {
     });
 
     expect(mockConfirmPhaseSetup).toHaveBeenCalledWith("team-1");
+    // Since placeBid returns success or error we handle that.
+    // However, placeBid also does a budget check against amount (1_000) > treasury.
     expect(result).toEqual({ success: true });
   });
 
@@ -378,7 +384,10 @@ describe("placeBid — auto-confirm phase setup", () => {
       .mockReturnValueOnce(makeChain(null))                                                                   // existingBid
       .mockReturnValueOnce(makeChain([]))                                                                     // activeBids
       .mockReturnValueOnce(makeChain(null, null, 0))                                                         // contracts count
-      .mockReturnValueOnce(makeChain(null, null));                                                            // insert success
+      .mockReturnValueOnce(makeChain(null));                                                                  // draft_bids existing check
+
+    // We also need to mock the insert
+    mockFrom.mockReturnValueOnce(makeChain(null)); // insert success
 
     const result = await placeBid({
       auctionId: UUID_1,

@@ -299,13 +299,15 @@ export async function validateRound(input: { leagueId: string }) {
     (sponsorData as { name: string } | null | undefined)?.name ??
     "Lotto (default)";
 
-  // --- 7. Budget check: sponsorIncome - rosterSalaries - draftTotal >= 0 ---
-  const remaining = sponsorIncome - rosterSalaries - draftTotal;
+  // --- 7. Budget check: treasury + sponsorIncome (if round 1) - rosterSalaries - draftTotal >= 0 ---
+  const currentTreasury = team.treasury;
+  const availableBudget = currentTreasury + (auctionRound === 1 ? sponsorIncome : 0);
+  const remaining = availableBudget - rosterSalaries - draftTotal;
   if (remaining < 0) {
     return {
       error: `Budget exceeded: your bids total ${(
         rosterSalaries + draftTotal
-      ).toLocaleString("en-GB")} € but sponsor income is only ${sponsorIncome.toLocaleString("en-GB")} €`,
+      ).toLocaleString("en-GB")} € but available budget is ${availableBudget.toLocaleString("en-GB")} €`,
     };
   }
 
