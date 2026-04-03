@@ -461,7 +461,7 @@ export function RiderDetailClient({
 
       {/* Segmented Control (RD-8) — hide for ranking */}
       {context !== "ranking" && (
-        <div className="px-4">
+        <div className="w-full px-4">
           <SegmentedControl
             segments={["PCS Stats", "Game Stats"]}
             activeIndex={tabIndex}

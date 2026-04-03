@@ -10,6 +10,8 @@ interface StickyBarProps {
   slotInfo?: string;
   budgetInfo?: string;
   children?: React.ReactNode;
+  isDeficit?: boolean;
+  deficitMessage?: string;
 }
 
 export function StickyBar({
@@ -19,6 +21,8 @@ export function StickyBar({
   slotInfo,
   budgetInfo,
   children,
+  isDeficit,
+  deficitMessage,
 }: StickyBarProps) {
   const navVisible = useScrollDirection();
   const [keyboardOffset, setKeyboardOffset] = useState(0);
@@ -51,17 +55,26 @@ export function StickyBar({
       {children ? (
         <div className="px-4">{children}</div>
       ) : (
-        <div className="flex items-center justify-between px-4">
-          <span className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-            {slotInfo} &middot; {budgetInfo}
-          </span>
-          <button
-            onClick={onSave}
-            disabled={!saveEnabled || saving}
-            className="rounded-lg cta-gradient px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold text-[var(--cta-text)] disabled:opacity-40"
-          >
-            {saving ? "Saving..." : "Save"}
-          </button>
+        <div className="space-y-1 px-4">
+          <div className="flex items-center justify-between">
+            <span className={`font-mono text-[length:var(--type-emphasis)] font-semibold ${isDeficit ? "text-red-400" : "text-[var(--text-high)]"}`}>
+              {slotInfo} &middot; {budgetInfo}
+            </span>
+            <button
+              onClick={onSave}
+              disabled={!saveEnabled || saving || isDeficit}
+              className={`rounded-lg px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold ${
+                isDeficit
+                  ? "bg-[var(--bg-surface)] text-[var(--text-low)] cursor-not-allowed"
+                  : "cta-gradient text-[var(--cta-text)] disabled:opacity-40"
+              }`}
+            >
+              {saving ? "Saving..." : "Save"}
+            </button>
+          </div>
+          {isDeficit && deficitMessage && (
+            <p className="text-[length:var(--type-caption)] text-red-400">{deficitMessage}</p>
+          )}
         </div>
       )}
     </div>

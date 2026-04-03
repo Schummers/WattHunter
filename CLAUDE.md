@@ -72,6 +72,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 - NEVER autoriser une enchère si treasury < total des enchères actives.
 - NEVER skip la validation Zod sur les inputs d'API routes.
 - NEVER libérer un coureur hors de la fenêtre d'enchères — le release prend effet au début de la phase suivante (sauf auto-release faillite).
+- NEVER autoriser une validation si treasury < total des salaires + bids actifs.
 
 ## Constantes du jeu (calibrer avant le lancement alpha)
 - Trésorerie départ : 200 000 €
@@ -84,6 +85,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 - Enchère = salaire mensuel récurrent (pas un achat unique)
 - Salaire mensuel = pts_PCS × 2 000 / 12 (pas de plafond)
 - Salaire plancher (enchère min) : 5 000 €/mois
+- Release = gratuit (salaire de la phase non remboursé)
 - Durée d'enchère : chaque round dure de sa date jusqu'à la date du round suivant (dernier round = fin de journée)
 - 8 niveaux alignés sur les 8 phases WT (Season Start → Vuelta)
 - Slots coureurs : 6 (Nv.1) → 7 → 8 → 9 → 10 → 11 → 12 (Nv.7-8)
@@ -114,6 +116,7 @@ watthunter/
 │   ├── app/(game)/league/[id]/  # Main game shell (auth guard + responsive layout)
 │   │   ├── page.tsx             # Home / Lobby
 │   │   ├── team/                # My Team, Recruts, Policies, Levels, History
+│   │   │   ├── auctions/        # Auctions sub-tab (draft bids, round validation)
 │   │   ├── rider/[riderId]/     # Rider Detail (PCS + Game stats)
 │   │   ├── auctions/            # Auction calendar, detail, results
 │   │   └── settings/            # Settings page
