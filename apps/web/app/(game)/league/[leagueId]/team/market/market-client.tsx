@@ -280,7 +280,7 @@ export function MarketClient({
   }
 
   // Stats for sticky bar
-  const totalBidCount = Object.keys(bids).length;
+  const totalBidCount = currentSlots + Object.keys(bids).length;
   const totalBidAmount = Object.values(bids).reduce((s, v) => s + v, 0);
   const remainingBudget = treasury - totalBidAmount;
 
