@@ -521,7 +521,7 @@ export function RiderDetailClient({
             saving={saving}
             slotInfo={budgetInfo ? `${budgetInfo.currentSlots}/${budgetInfo.maxSlots} slots` : undefined}
             budgetInfo={budgetInfo ? `€${formatThousands(budgetInfo.treasury)}` : undefined}
-            buttonLabel="Add to Draft Auction"
+            buttonLabel="+ Draft Auction"
           />
         )}
       </>
@@ -583,7 +583,7 @@ function PcsStatsSection({ rankings, startlists }: { rankings: SeasonRanking[]; 
           <div className="divide-y divide-[var(--border-subtle)]">
             {startlists.map((s, i) => (
               <div key={i} className="flex items-baseline justify-between py-2 px-1">
-                <span className="text-[length:var(--type-body)] font-semibold text-[var(--text-high)] truncate min-w-0">
+                <span className="text-[length:var(--type-body)] font-normal text-[var(--text-high)] truncate min-w-0">
                   {s.race_name}
                 </span>
                 {s.race_date && (

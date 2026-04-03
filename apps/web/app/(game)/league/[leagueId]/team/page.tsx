@@ -404,7 +404,7 @@ export default async function MyTeamPage({
                     photo_url: r.photo_url,
                   }}
                   bidState={isOutbid ? "outbid" : "active"}
-                  href={`/league/${leagueId}/rider/${r.id}?from=market`}
+                  href={`/league/${leagueId}/rider/${r.id}?from=recruts`}
                   rightContent={
                     <div className="flex flex-col items-end">
                       <span className={`text-[length:var(--type-body)] font-bold font-mono ${isOutbid ? "text-[var(--text-low)]" : "text-[var(--text-high)]"}`}>

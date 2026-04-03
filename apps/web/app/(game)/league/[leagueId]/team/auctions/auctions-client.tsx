@@ -10,6 +10,7 @@ import { BudgetSummary } from "@/components/budget-summary";
 import { DraftBidCard } from "@/components/draft-bid-card";
 import { RiderCard } from "@/components/rider-card";
 import { formatThousands } from "@/lib/format";
+import { X } from "lucide-react";
 import { removeDraft, updateDraftAmount, validateRound } from "./actions";
 import { releaseRider } from "@/app/(game)/league/[leagueId]/rider/[riderId]/actions";
 
@@ -238,15 +239,15 @@ export function AuctionsClient({
                   }}
                   xp={rider.xp}
                   boostPct={rider.boostPct}
-                  href={`/league/${leagueId}/rider/${rider.riderId}?from=team`}
+                  onNavigate={() => router.push(`/league/${leagueId}/rider/${rider.riderId}?from=team`)}
                   rightContent={
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <div className="flex flex-col items-end">
                         <span className="text-[length:var(--type-body)] font-bold font-mono text-[var(--text-high)]">
                           {formatThousands(rider.lockedSalary)} €
                         </span>
-                        <span className="text-[length:var(--type-caption)] font-mono text-[var(--text-low)]">
-                          +{rider.xp} XP
+                        <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+                          +<span className="font-mono">{rider.xp}</span> XP
                         </span>
                       </div>
                       {(isRound1 || hasOpenRound) && (
@@ -256,9 +257,10 @@ export function AuctionsClient({
                             e.preventDefault();
                             handleReleaseClick(rider.contractId);
                           }}
-                          className="shrink-0 rounded-[var(--radius-md)] bg-red-500/[0.12] px-2 py-1.5 text-[length:var(--type-micro)] font-medium text-red-400 transition-colors hover:bg-red-500/20"
+                          aria-label="Release rider"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-red-500/[0.12] text-red-400 transition-colors hover:bg-red-500/20"
                         >
-                          Release
+                          <X size={14} />
                         </button>
                       )}
                     </div>

@@ -68,9 +68,10 @@ export default async function AuctionsPage({
   ] = await Promise.all([
     supabase
       .from("auctions")
-      .select("id, round, opens_at, closes_at, status")
+      .select("id, name, opens_at, closes_at, status")
       .eq("league_id", leagueId)
-      .order("round", { ascending: true }),
+      .in("status", ["open", "scheduled"])
+      .order("opens_at", { ascending: true }),
     supabase
       .from("contracts")
       .select(
@@ -186,9 +187,15 @@ export default async function AuctionsPage({
   const sponsorName = (sponsorData as { name: string } | null | undefined)?.name ?? "Lotto (default)";
   const sponsorBudget = (sponsorData as { monthly_budget: number } | null | undefined)?.monthly_budget ?? 250_000;
 
+  // Parse round number from name ("Round 1" → 1)
+  function parseRoundNumber(name: string): number {
+    const match = name.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  }
+
   // Active round
   const openRound = (auctionRounds ?? []).find((r) => r.status === "open");
-  const activeRoundNumber = openRound?.round ?? null;
+  const activeRoundNumber = openRound ? parseRoundNumber(openRound.name) : null;
   const isRound1 = activeRoundNumber === 1;
 
   // Build roster riders for client
@@ -236,7 +243,7 @@ export default async function AuctionsPage({
       leagueId={leagueId}
       rounds={(auctionRounds ?? []).map((r) => ({
         id: r.id,
-        round: r.round,
+        round: parseRoundNumber(r.name),
         opens_at: r.opens_at,
         closes_at: r.closes_at,
         status: r.status,

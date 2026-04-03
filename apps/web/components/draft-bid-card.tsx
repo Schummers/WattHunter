@@ -182,11 +182,11 @@ export function DraftBidCard({
             type="text"
             readOnly
             value={`€${formatThousands(localAmount)}`}
+            autoComplete="off"
             className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-[10px] py-[9px] text-center font-mono text-[length:var(--type-emphasis)] text-[var(--text-high)]"
           />
           <span className="mt-[3px] text-[length:var(--type-micro)] text-[var(--text-low)]">
-            Min:{" "}
-            <span className="font-mono">€{formatThousands(minSalary)}</span>
+            Min: <span className="font-mono">€{formatThousands(minSalary)}</span>
           </span>
         </div>
 

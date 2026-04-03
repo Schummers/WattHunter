@@ -302,7 +302,7 @@ export function MarketClient({
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div
-          className={`flex items-center gap-0.5 rounded-lg px-2 h-7 ${
+          className={`flex items-center gap-0.5 rounded-lg px-2 h-7 transition-colors focus-within:border-[var(--accent-default)] ${
             currentBid
               ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
               : "border border-[var(--border-default)] bg-transparent"
@@ -324,6 +324,7 @@ export function MarketClient({
             onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
             onMouseDown={(e) => e.stopPropagation()}
             onFocus={(e) => e.stopPropagation()}
+            autoComplete="off"
             className={`w-20 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
               currentBid
                 ? "text-[var(--accent-default)]"
@@ -336,8 +337,8 @@ export function MarketClient({
         </div>
         {/* Min salary — only visible when there's an active bid */}
         {(bids[r.id] || savedDraftIds.has(r.id)) && (
-          <div className="text-[9px] text-[var(--text-low)] font-mono mt-px">
-            Min: €{formatThousands(minSalary)}
+          <div className="text-[length:var(--type-micro)] text-[var(--text-low)] mt-px">
+            Min: <span className="font-mono">€{formatThousands(minSalary)}</span>
           </div>
         )}
         {errors[r.id] && (
@@ -385,6 +386,9 @@ export function MarketClient({
             placeholder="Search rider or team..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
             className="flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
           />
         </div>
@@ -448,7 +452,7 @@ export function MarketClient({
                         photo_url: r.photo_url,
                       }}
                       bidState={savedDraftIds.has(r.id) || bids[r.id] ? "active" : "none"}
-                      onNavigate={() => router.push(`/league/${leagueId}/rider/${r.id}?from=market`)}
+                      onNavigate={() => router.push(`/league/${leagueId}/rider/${r.id}?from=recruts`)}
                       rightContent={renderRiderRight(r)}
                     />
                   ))}
@@ -471,7 +475,7 @@ export function MarketClient({
                   photo_url: r.photo_url,
                 }}
                 bidState={savedDraftIds.has(r.id) || bids[r.id] ? "active" : "none"}
-                onNavigate={() => router.push(`/league/${leagueId}/rider/${r.id}?from=market`)}
+                onNavigate={() => router.push(`/league/${leagueId}/rider/${r.id}?from=recruts`)}
                 rightContent={renderRiderRight(r)}
               />
             ))}
@@ -507,8 +511,8 @@ export function MarketClient({
         saving={saving}
       >
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-            {totalBidCount}/{maxSlots} slots &middot; {formatEuro(remainingBudget)}
+          <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+            <span className="font-mono">{totalBidCount}/{maxSlots}</span> slots &middot; <span className="font-mono">{formatEuro(remainingBudget)}</span>
           </span>
           <button
             type="button"
@@ -519,8 +523,8 @@ export function MarketClient({
             {saving
               ? "Saving..."
               : hasPendingBids
-                ? `Add ${pendingBids.length} to Draft Auction`
-                : "Add to Draft Auction"}
+                ? `+ Draft Auction (${pendingBids.length})`
+                : "+ Draft Auction"}
           </button>
         </div>
       </StickyBar>
