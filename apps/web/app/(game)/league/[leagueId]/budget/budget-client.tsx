@@ -127,7 +127,7 @@ export function BudgetClient({
             </div>
             <div className="border-t border-white/10 pt-1.5">
               <div className="flex items-center justify-between text-[length:var(--type-caption)]">
-                <span className="font-semibold text-[var(--text-mid)]">Phase result</span>
+                <span className="font-semibold text-[var(--text-high)]">Phase result</span>
                 <span className="font-[family-name:var(--font-geist-mono)] font-bold text-[var(--text-high)] tabular-nums">
                   {phaseResult >= 0 ? "+" : ""}{formatCompact(phaseResult)}
                 </span>
