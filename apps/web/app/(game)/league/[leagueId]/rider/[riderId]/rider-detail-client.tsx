@@ -285,12 +285,24 @@ export function RiderDetailClient({
     return bidInputHasValue;
   })();
 
-  const stickyBudgetLabel = budgetInfo
-    ? `${formatEuro(budgetInfo.treasury - (budgetInfo.totalBidAmount ?? 0))}`
-    : undefined;
+  // Dynamic budget: reflect local bid changes in real time
+  const currentBidDelta = (() => {
+    if (!bidAmount || bidAmount < minSalary) return 0;
+    if (isInDraft) return bidAmount - (draftAmount ?? 0); // delta from saved draft
+    return bidAmount; // new bid, full amount added
+  })();
+  const dynamicBudget = budgetInfo
+    ? budgetInfo.treasury - (budgetInfo.totalBidAmount ?? 0) - currentBidDelta
+    : null;
 
-  const slotLabel = budgetInfo
-    ? `${budgetInfo.currentSlots}/${budgetInfo.maxSlots} slots`
+  // Dynamic slots: +1 if entering a NEW bid (not already in draft/roster)
+  const dynamicSlots = budgetInfo
+    ? budgetInfo.currentSlots + (!isInDraft && !isInRoster && bidInputHasValue ? 1 : 0)
+    : null;
+
+  const stickyBudgetLabel = dynamicBudget !== null ? formatEuro(dynamicBudget) : undefined;
+  const slotLabel = dynamicSlots !== null
+    ? `${dynamicSlots}/${budgetInfo!.maxSlots}`
     : undefined;
 
   async function handleStickyAction() {
