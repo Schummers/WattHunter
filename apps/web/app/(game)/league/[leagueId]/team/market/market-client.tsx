@@ -327,6 +327,10 @@ export function MarketClient({
             €
           </span>
         </div>
+        {/* Min salary label */}
+        <div className="text-[10px] text-[var(--text-low)] font-mono mt-0.5">
+          Min: €{formatThousands(minSalary)}
+        </div>
         {errors[r.id] && (
           <span className="text-[length:var(--type-micro)] text-[var(--status-danger)]">
             {errors[r.id]}
@@ -434,7 +438,7 @@ export function MarketClient({
                         pcs_rank_diff: r.pcs_rank_diff,
                         photo_url: r.photo_url,
                       }}
-                      bidState={bids[r.id] ? "active" : "none"}
+                      bidState={savedDraftIds.has(r.id) || bids[r.id] ? "active" : "none"}
                       href={`/league/${leagueId}/rider/${r.id}?from=market`}
                       rightContent={renderRiderRight(r)}
                     />
@@ -456,7 +460,7 @@ export function MarketClient({
                   pcs_rank: r.pcs_rank ?? undefined,
                   photo_url: r.photo_url,
                 }}
-                bidState={bids[r.id] ? "active" : "none"}
+                bidState={savedDraftIds.has(r.id) || bids[r.id] ? "active" : "none"}
                 href={`/league/${leagueId}/rider/${r.id}?from=market`}
                 rightContent={renderRiderRight(r)}
               />

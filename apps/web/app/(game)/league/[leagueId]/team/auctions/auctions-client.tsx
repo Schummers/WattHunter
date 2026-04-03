@@ -205,7 +205,7 @@ export function AuctionsClient({
               boostPct: p.boostPct,
             }))}
             maxPolicies={maxPolicies}
-            isEditable={isRound1}
+            isEditable={activeRound === null || activeRound === 1}
           />
           <p className="text-[length:var(--type-micro)] text-[var(--text-low)] px-4 mt-1.5 leading-snug">
             Only modifiable during Round 1. Locked after validation.
@@ -280,8 +280,9 @@ export function AuctionsClient({
             <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
               Draft Bids
             </span>
-            <span className="text-[length:var(--type-caption)] font-semibold text-[var(--text-low)]">
+            <span className={`text-[length:var(--type-caption)] font-semibold ${totalCount > maxSlots ? 'text-red-400' : 'text-[var(--text-low)]'}`}>
               <span className="font-mono">{totalCount}/{maxSlots}</span> slots
+              {totalCount > maxSlots && <span className="font-normal"> — over limit</span>}
             </span>
           </div>
 
@@ -351,9 +352,9 @@ export function AuctionsClient({
         )}
       </div>
 
-      {/* Sticky validate bar */}
-      {hasOpenRound && (
-        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+56px)] left-0 right-0 bg-[var(--bg-app)] border-t border-[var(--border-default)] px-4 py-2.5 flex items-center gap-3 z-30">
+      {/* Sticky validate bar — always visible */}
+      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+56px)] left-0 right-0 bg-[var(--bg-app)] border-t border-[var(--border-default)] z-30">
+        <div className="px-4 py-2.5 flex items-center gap-3">
           {/* Left: slots + remaining */}
           <div className="shrink-0 text-left min-w-[72px]">
             <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">
@@ -368,21 +369,30 @@ export function AuctionsClient({
             </div>
           </div>
 
-          {/* Validate button */}
-          <button
-            type="button"
-            onClick={handleValidate}
-            disabled={validateDisabled}
-            className={`flex-1 rounded-[var(--radius-md)] py-3 text-center text-[length:var(--type-emphasis)] font-bold transition-all ${
-              validateDisabled
-                ? "bg-[var(--bg-surface)] text-[var(--text-ghost)] cursor-not-allowed"
-                : "bg-gradient-to-br from-[var(--accent-default)] to-[var(--accent-highlight)] text-[#020617] hover:opacity-90"
-            }`}
-          >
-            {validateSuccess ? "Round Validated" : `Validate Round ${activeRound}`}
-          </button>
+          {/* Validate button — only shown when a round is open */}
+          {hasOpenRound && (
+            <button
+              type="button"
+              onClick={handleValidate}
+              disabled={validateDisabled}
+              className={`flex-1 rounded-[var(--radius-md)] py-3 text-center text-[length:var(--type-emphasis)] font-bold transition-all ${
+                validateDisabled
+                  ? "bg-[var(--bg-surface)] text-[var(--text-ghost)] cursor-not-allowed"
+                  : "bg-gradient-to-br from-[var(--accent-default)] to-[var(--accent-highlight)] text-[#020617] hover:opacity-90"
+              }`}
+            >
+              {validateSuccess ? "Round Validated" : `Validate Round ${activeRound}`}
+            </button>
+          )}
         </div>
-      )}
+
+        {/* Deficit / over-limit warning */}
+        {(isDeficit || totalCount > maxSlots) && (
+          <div className="text-[10px] text-red-400 text-center px-4 pb-1">
+            Remove riders or lower bids to balance your budget.
+          </div>
+        )}
+      </div>
 
       {/* Release confirmation dialog */}
       {releaseConfirm && (
