@@ -5,10 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, ChevronDown } from "lucide-react";
 import { RiderCard } from "@/components/rider-card";
-import { BidAdjustCard } from "@/components/bid-adjust-card";
 import { FilterChips } from "@/components/filter-chips";
-import { StickyBar } from "@/components/sticky-bar";
-import { placeBid, cancelBid } from "@/app/(game)/league/[leagueId]/auctions/[auctionId]/actions";
+import { addDraft } from "@/app/(game)/league/[leagueId]/team/auctions/actions";
 import { smartCountdown, formatThousands, countryCodeToFlag, calcMinSalary } from "@/lib/format";
 
 interface Rider {
@@ -31,12 +29,6 @@ interface ActiveRound {
   closes_at: string;
 }
 
-interface InitialBid {
-  bid_id: string;
-  rider_id: string;
-  amount: number;
-}
-
 interface NextRound {
   id: string;
   name: string;
@@ -51,8 +43,8 @@ interface MarketClientProps {
   nextAuctionLabel?: string | null;
   maxSlots: number;
   currentSlots: number;
-  initialBids?: InitialBid[];
   treasury: number;
+  draftRiderIds?: string[];
 }
 
 const FILTER_OPTIONS = [
@@ -61,8 +53,9 @@ const FILTER_OPTIONS = [
   { label: "Speciality" },
   { label: "Nationality" },
   { label: "Age" },
-  { label: "My Bids", variant: "accent" as const },
 ];
+
+const INITIAL_DISPLAY_COUNT = 100;
 
 function getAge(birthdate: string | null): number | null {
   if (!birthdate) return null;
@@ -121,68 +114,44 @@ export function MarketClient({
   activeRound,
   nextRound,
   nextAuctionLabel,
-  maxSlots,
   currentSlots,
-  initialBids = [],
-  treasury,
+  maxSlots,
+  draftRiderIds = [],
 }: MarketClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [activeFilterIndex, setActiveFilterIndex] = useState(0);
   const activeFilter = FILTER_OPTIONS[activeFilterIndex].label;
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [displayCount, setDisplayCount] = useState(INITIAL_DISPLAY_COUNT);
 
-  // Initialize bids from server data
-  const [bids, setBids] = useState<Record<string, number>>(() => {
-    const map: Record<string, number> = {};
-    for (const b of initialBids) {
-      map[b.rider_id] = b.amount;
-    }
-    return map;
-  });
-  const [savedBids, setSavedBids] = useState<Record<string, number>>(() => {
-    const map: Record<string, number> = {};
-    for (const b of initialBids) {
-      map[b.rider_id] = b.amount;
-    }
-    return map;
-  });
-  const [saving, setSaving] = useState(false);
+  // Track which riders are in draft (optimistic)
+  const [draftSet, setDraftSet] = useState<Set<string>>(() => new Set(draftRiderIds));
+  // Per-rider loading state for "Add to Draft" button
+  const [draftingRider, setDraftingRider] = useState<string | null>(null);
+  // Per-rider bid input values (for amount when adding to draft)
+  const [bidInputs, setBidInputs] = useState<Record<string, number>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Check if there are unsaved changes
-  const hasPendingBids = useMemo(() => {
-    const bidKeys = Object.keys(bids);
-    const savedKeys = Object.keys(savedBids);
-    if (bidKeys.length !== savedKeys.length) return true;
-    return bidKeys.some((k) => bids[k] !== savedBids[k]);
-  }, [bids, savedBids]);
-
-  // Warn before leaving with unsaved bids (browser back/reload)
+  // Reset display count when filter or search changes
   useEffect(() => {
-    if (!hasPendingBids) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [hasPendingBids]);
+    setDisplayCount(INITIAL_DISPLAY_COUNT);
+  }, [activeFilterIndex, search]);
 
   const filteredRiders = useMemo(() => {
     let result = riders;
 
-    // Search filter
+    // Search filter — rider name or team only
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
         (r) =>
           r.full_name.toLowerCase().includes(q) ||
-          (r.real_team && r.real_team.toLowerCase().includes(q)) ||
-          (r.nationality && r.nationality.toLowerCase().includes(q))
+          (r.real_team && r.real_team.toLowerCase().includes(q))
       );
     }
 
-    // Category filter (simplified — full accordion views come later)
+    // Category sort
     if (activeFilter === "Speciality") {
       result = [...result].sort((a, b) =>
         (a.specialty ?? "").localeCompare(b.specialty ?? "")
@@ -251,62 +220,37 @@ export function MarketClient({
     });
   }, []);
 
-  function handleBidChange(riderId: string, value: number) {
-    if (value <= 0) {
-      setBids((prev) => {
-        const next = { ...prev };
-        delete next[riderId];
-        return next;
-      });
-    } else {
-      setBids((prev) => ({ ...prev, [riderId]: value }));
-    }
+  function handleBidInputChange(riderId: string, value: number) {
+    setBidInputs((prev) => ({ ...prev, [riderId]: value }));
   }
 
-  async function handleSave() {
-    if (!activeRound) return;
-    setSaving(true);
-    setErrors({});
-    const newErrors: Record<string, string> = {};
+  async function handleAddDraft(riderId: string, minSalary: number) {
+    const amount = bidInputs[riderId] ?? minSalary;
+    setDraftingRider(riderId);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[riderId];
+      return next;
+    });
 
-    // Cancel bids that were removed (in savedBids but not in current bids)
-    const removedRiderIds = Object.keys(savedBids).filter((rid) => !(rid in bids));
-    if (removedRiderIds.length > 0) {
-      const bidsToCancel = initialBids
-        .filter((b) => removedRiderIds.includes(b.rider_id));
-      await Promise.all(bidsToCancel.map((b) => cancelBid(b.bid_id, activeRound.id)));
-    }
+    const result = await addDraft({ leagueId, riderId, amount });
 
-    // Place or update bids
-    const bidEntries = Object.entries(bids);
-    const results = await Promise.all(
-      bidEntries.map(async ([riderId, amount]) => {
-        const result = await placeBid({
-          auctionId: activeRound.id,
-          riderId,
-          amount,
-          round: 1,
-        });
-        return { riderId, result };
-      })
-    );
-
-    for (const { riderId, result } of results) {
-      if (result.error) {
-        newErrors[riderId] = result.error;
-      }
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (result.error) {
+      setErrors((prev) => ({ ...prev, [riderId]: result.error! }));
     } else {
-      setSavedBids({ ...bids });
+      setDraftSet((prev) => new Set([...prev, riderId]));
       router.refresh();
     }
-    setSaving(false);
+    setDraftingRider(null);
   }
 
-  const totalBidAmount = Object.values(bids).reduce((s, v) => s + v, 0);
+  // Paginated flat list
+  const paginatedFlatRiders = useMemo(() => {
+    if (groupedRiders) return null;
+    return filteredRiders.slice(0, displayCount);
+  }, [filteredRiders, groupedRiders, displayCount]);
+
+  const remainingCount = groupedRiders ? 0 : Math.max(0, filteredRiders.length - displayCount);
 
   return (
     <div className="pb-20">
@@ -335,23 +279,21 @@ export function MarketClient({
         </div>
       )}
 
-      {/* Search — hidden on My Bids */}
-      {activeFilter !== "My Bids" && (
-        <div className="px-4 pt-2 pb-3">
-          <div className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2 focus-within:ring-2 focus-within:ring-[var(--accent-focus-ring)]">
-            <Search size={16} className="shrink-0 text-[var(--text-ghost)]" />
-            <input
-              type="text"
-              placeholder="Search rider, team, country..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
-            />
-          </div>
+      {/* Search */}
+      <div className="px-4 pt-2 pb-3">
+        <div className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-transparent px-3 py-2 focus-within:ring-2 focus-within:ring-[var(--accent-focus-ring)]">
+          <Search size={16} className="shrink-0 text-[var(--text-ghost)]" />
+          <input
+            type="text"
+            placeholder="Search rider or team..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
+          />
         </div>
-      )}
+      </div>
 
-      {/* Filter chips */}
+      {/* Filter chips — no horizontal scroll */}
       <div className="px-4 pb-3">
         <FilterChips
           options={FILTER_OPTIONS}
@@ -360,59 +302,12 @@ export function MarketClient({
         />
       </div>
 
-      {/* Counter — hidden on My Bids */}
-      {activeFilter !== "My Bids" && (
-        <div className="px-4 pb-2">
-          <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-            {filteredRiders.length} available
-          </span>
-        </div>
-      )}
-
-      {/* My Bids view */}
-      {activeFilter === "My Bids" && (() => {
-        const myBidRiders = riders.filter((r) => bids[r.id] != null);
-        return (
-          <div>
-            {myBidRiders.length === 0 ? (
-              <div className="px-4 py-12 text-center space-y-3">
-                <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-                  No active bids — browse the market to place your first bid.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => { setActiveFilterIndex(0); window.scrollTo({ top: 0, behavior: "instant" }); }}
-                  className="text-[length:var(--type-body)] font-semibold text-[var(--accent-default)] hover:underline"
-                >
-                  Browse market →
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div className="px-4 pb-2">
-                  <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-                    Your active bids
-                  </span>
-                </div>
-                {myBidRiders.map((r) => {
-                  const minSalary = calcMinSalary(r.pcs_points_1yr ?? 0);
-                  return (
-                    <BidAdjustCard
-                      key={r.id}
-                      rider={r}
-                      bidAmount={bids[r.id]}
-                      minSalary={minSalary}
-                      onBidChange={handleBidChange}
-                      hasUnsavedChanges={bids[r.id] !== savedBids[r.id]}
-                      leagueId={leagueId}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })()}
+      {/* Counter */}
+      <div className="px-4 pb-2">
+        <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+          {filteredRiders.length} available · {currentSlots}/{maxSlots} slots
+        </span>
+      </div>
 
       {/* Rider list */}
       <div>
@@ -445,7 +340,8 @@ export function MarketClient({
                 {expanded &&
                   groupRiders.map((r) => {
                     const minSalary = calcMinSalary(r.pcs_points_1yr ?? 0);
-                    const currentBid = bids[r.id];
+                    const inDraft = draftSet.has(r.id);
+                    const isAdding = draftingRider === r.id;
                     return (
                       <RiderCard
                         key={r.id}
@@ -458,40 +354,49 @@ export function MarketClient({
                           pcs_rank_diff: r.pcs_rank_diff,
                           photo_url: r.photo_url,
                         }}
-                        bidState={currentBid ? "active" : "none"}
+                        bidState={inDraft ? "active" : "none"}
                         href={`/league/${leagueId}/rider/${r.id}?from=market`}
                         rightContent={
                           <div className="flex flex-col items-end gap-0.5">
-                            <div
-                              className={`flex items-center gap-0.5 rounded-lg px-2 h-7 lg:pointer-events-none ${
-                                currentBid
-                                  ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
-                                  : "border border-[var(--border-default)] bg-transparent"
-                              }`}
-                            >
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                min={minSalary}
-                                step={500}
-                                placeholder={formatThousands(minSalary)}
-                                value={currentBid ? formatThousands(currentBid) : ""}
-                                onChange={(e) => {
-                                  const raw = e.target.value.replace(/\s/g, "");
-                                  const val = parseInt(raw, 10);
-                                  handleBidChange(r.id, isNaN(val) ? 0 : val);
-                                }}
-                                onClick={(e) => { if (window.innerWidth < 1024) e.stopPropagation(); }}
-                                className={`w-20 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
-                                  currentBid
-                                    ? "text-[var(--accent-default)]"
-                                    : "text-[var(--text-low)]"
-                                }`}
-                              />
-                              <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)] font-medium">
-                                €
+                            {inDraft ? (
+                              <span className="text-[length:var(--type-caption)] font-semibold text-[var(--accent-default)]">
+                                In Draft ✓
                               </span>
-                            </div>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-0.5 rounded-lg px-2 h-7 border border-[var(--border-default)] bg-transparent">
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    min={minSalary}
+                                    step={500}
+                                    placeholder={formatThousands(minSalary)}
+                                    value={bidInputs[r.id] ? formatThousands(bidInputs[r.id]) : ""}
+                                    onChange={(e) => {
+                                      const raw = e.target.value.replace(/\s/g, "");
+                                      const val = parseInt(raw, 10);
+                                      handleBidInputChange(r.id, isNaN(val) ? 0 : val);
+                                    }}
+                                    onClick={(e) => { if (window.innerWidth < 1024) e.stopPropagation(); }}
+                                    className="w-16 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none text-[var(--text-low)]"
+                                  />
+                                  <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)] font-medium">
+                                    €
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  disabled={isAdding}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAddDraft(r.id, minSalary);
+                                  }}
+                                  className="h-7 px-2 rounded-[var(--radius-md)] border border-[var(--accent-default)] text-[length:var(--type-caption)] font-semibold text-[var(--accent-default)] hover:bg-[var(--bg-surface-hover)] disabled:opacity-50 shrink-0"
+                                >
+                                  {isAdding ? "..." : "+ Draft"}
+                                </button>
+                              </div>
+                            )}
                             {errors[r.id] && (
                               <span className="text-[length:var(--type-micro)] text-[var(--status-danger)]">
                                 {errors[r.id]}
@@ -506,65 +411,90 @@ export function MarketClient({
             );
           })
         ) : (
-          /* Flat list view */
-          filteredRiders.map((r) => {
-            const minSalary = calcMinSalary(r.pcs_points_1yr ?? 0);
-            const currentBid = bids[r.id];
-            return (
-              <RiderCard
-                key={r.id}
-                rider={{
-                  id: r.id,
-                  name: formatName(r.full_name),
-                  nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
-                  team_name: r.real_team ?? undefined,
-                  pcs_rank: r.pcs_rank ?? undefined,
-                  photo_url: r.photo_url,
-                }}
-                bidState={currentBid ? "active" : "none"}
-                href={`/league/${leagueId}/rider/${r.id}?from=market`}
-                rightContent={
-                  <div className="flex flex-col items-end gap-0.5">
-                    <div
-                      className={`flex items-center gap-0.5 rounded-lg px-2 h-7 ${
-                        currentBid
-                          ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
-                          : "border border-[var(--border-default)] bg-transparent"
-                      }`}
-                    >
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        min={minSalary}
-                        step={500}
-                        placeholder={formatThousands(minSalary)}
-                        value={currentBid ? formatThousands(currentBid) : ""}
-                        onChange={(e) => {
-                          const raw = e.target.value.replace(/\s/g, "");
-                          const val = parseInt(raw, 10);
-                          handleBidChange(r.id, isNaN(val) ? 0 : val);
-                        }}
-                        onClick={(e) => e.preventDefault()}
-                        className={`w-20 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
-                          currentBid
-                            ? "text-[var(--accent-default)]"
-                            : "text-[var(--text-low)]"
-                        }`}
-                      />
-                      <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)] font-medium">
-                        €
-                      </span>
+          /* Flat list view with pagination */
+          <>
+            {(paginatedFlatRiders ?? []).map((r) => {
+              const minSalary = calcMinSalary(r.pcs_points_1yr ?? 0);
+              const inDraft = draftSet.has(r.id);
+              const isAdding = draftingRider === r.id;
+              return (
+                <RiderCard
+                  key={r.id}
+                  rider={{
+                    id: r.id,
+                    name: formatName(r.full_name),
+                    nationality_flag: r.nationality ? countryCodeToFlag(r.nationality) : undefined,
+                    team_name: r.real_team ?? undefined,
+                    pcs_rank: r.pcs_rank ?? undefined,
+                    photo_url: r.photo_url,
+                  }}
+                  bidState={inDraft ? "active" : "none"}
+                  href={`/league/${leagueId}/rider/${r.id}?from=market`}
+                  rightContent={
+                    <div className="flex flex-col items-end gap-0.5">
+                      {inDraft ? (
+                        <span className="text-[length:var(--type-caption)] font-semibold text-[var(--accent-default)]">
+                          In Draft ✓
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-0.5 rounded-lg px-2 h-7 border border-[var(--border-default)] bg-transparent">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              min={minSalary}
+                              step={500}
+                              placeholder={formatThousands(minSalary)}
+                              value={bidInputs[r.id] ? formatThousands(bidInputs[r.id]) : ""}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/\s/g, "");
+                                const val = parseInt(raw, 10);
+                                handleBidInputChange(r.id, isNaN(val) ? 0 : val);
+                              }}
+                              onClick={(e) => e.preventDefault()}
+                              className="w-16 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none text-[var(--text-low)]"
+                            />
+                            <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)] font-medium">
+                              €
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={isAdding}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddDraft(r.id, minSalary);
+                            }}
+                            className="h-7 px-2 rounded-[var(--radius-md)] border border-[var(--accent-default)] text-[length:var(--type-caption)] font-semibold text-[var(--accent-default)] hover:bg-[var(--bg-surface-hover)] disabled:opacity-50 shrink-0"
+                          >
+                            {isAdding ? "..." : "+ Draft"}
+                          </button>
+                        </div>
+                      )}
+                      {errors[r.id] && (
+                        <span className="text-[length:var(--type-micro)] text-[var(--status-danger)]">
+                          {errors[r.id]}
+                        </span>
+                      )}
                     </div>
-                    {errors[r.id] && (
-                      <span className="text-[length:var(--type-micro)] text-[var(--status-danger)]">
-                        {errors[r.id]}
-                      </span>
-                    )}
-                  </div>
-                }
-              />
-            );
-          })
+                  }
+                />
+              );
+            })}
+
+            {/* Load more */}
+            {remainingCount > 0 && (
+              <div className="px-4 py-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => setDisplayCount((c) => c + INITIAL_DISPLAY_COUNT)}
+                  className="text-[length:var(--type-body)] font-semibold text-[var(--accent-default)] hover:underline"
+                >
+                  Load more ({remainingCount} remaining)
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {filteredRiders.length === 0 && (
@@ -575,15 +505,6 @@ export function MarketClient({
           </div>
         )}
       </div>
-
-      {/* Sticky bar */}
-      <StickyBar
-        saveEnabled={hasPendingBids}
-        slotInfo={`${currentSlots + Object.keys(bids).filter((rid) => !(rid in savedBids)).length}/${maxSlots} slots`}
-        budgetInfo={`${formatThousands(treasury - totalBidAmount)} €`}
-        onSave={handleSave}
-        saving={saving}
-      />
     </div>
   );
 }

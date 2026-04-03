@@ -1,9 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { MarketClient } from "./market-client";
-import { PhaseSetup } from "./phase-setup";
 import { getLevelByNumber, getMaxSlots, getLevelForXp } from "@/lib/levels";
-import { getCurrentPhase, getPhaseRange, getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
+import { getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
 
 export default async function MarketPage({
   params,
@@ -27,7 +26,7 @@ export default async function MarketPage({
   const { data: member } = await supabase
     .from("league_members")
     .select(
-      "id, team_id, teams:team_id(id, level, cumulative_xp, treasury, phase_confirmed_id, pending_sponsor_id)"
+      "id, team_id, teams:team_id(id, level, cumulative_xp, treasury)"
     )
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
@@ -46,111 +45,6 @@ export default async function MarketPage({
   const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
   const xp = team?.cumulative_xp ?? 0;
   const level = getLevelForXp(xp);
-  const currentPhase = getCurrentPhase();
-  const phaseConfirmed = team?.phase_confirmed_id === currentPhase.id;
-
-  // ===== STATE 1: Phase Setup (not yet confirmed) =====
-  if (!phaseConfirmed) {
-    const [
-      { data: teamSponsor },
-      { data: contracts },
-      { data: policies },
-      { data: pendingSponsor },
-      { data: auctions },
-      { data: leagueInfo },
-    ] = await Promise.all([
-      supabase
-        .from("team_sponsors")
-        .select("sponsor_id, sponsors(name, monthly_budget)")
-        .eq("team_id", team?.id ?? "")
-        .maybeSingle(),
-      supabase
-        .from("contracts")
-        .select("id, rider_id, locked_salary, riders:rider_id(full_name)")
-        .eq("team_id", team?.id ?? "")
-        .eq("status", "active"),
-      supabase
-        .from("team_policies")
-        .select("id, is_active, config, policies:policy_id(name)")
-        .eq("team_id", team?.id ?? "")
-        .eq("is_active", true),
-      team?.pending_sponsor_id
-        ? supabase
-            .from("sponsors")
-            .select("name")
-            .eq("id", team.pending_sponsor_id)
-            .single()
-        : Promise.resolve({ data: null }),
-      supabase
-        .from("auctions")
-        .select("id, name, opens_at")
-        .eq("league_id", leagueId)
-        .in("status", ["scheduled", "open"])
-        .order("opens_at", { ascending: true })
-        .limit(3),
-      supabase
-        .from("leagues")
-        .select("commissioner_id")
-        .eq("id", leagueId)
-        .single(),
-    ]);
-
-    const rawSponsor = teamSponsor?.sponsors;
-    const sponsor = (Array.isArray(rawSponsor) ? rawSponsor[0] : rawSponsor) as { name: string; monthly_budget: number } | null;
-    const { start: phaseStart } = getPhaseRange(currentPhase, new Date().getFullYear());
-    const phaseStarted = new Date() >= phaseStart;
-
-    const roster = (contracts ?? []).map((c) => {
-      const rider = Array.isArray(c.riders) ? c.riders[0] : c.riders;
-      return {
-        contractId: c.id,
-        riderId: c.rider_id,
-        fullName: (rider as { full_name: string } | null)?.full_name ?? "Unknown",
-        lockedSalary: c.locked_salary,
-      };
-    });
-
-    const activePolicies = (policies ?? [])
-      .filter((p) => p.is_active)
-      .map((p) => {
-        const policy = Array.isArray(p.policies) ? p.policies[0] : p.policies;
-        return {
-          id: p.id,
-          name: (policy as { name: string } | null)?.name ?? "Unknown",
-          config: p.config ? JSON.stringify(p.config) : "—",
-        };
-      });
-
-    const rounds = (auctions ?? []).map((a) => ({
-      id: a.id,
-      name: a.name,
-      date: a.opens_at,
-    }));
-
-    const isCommissioner = leagueInfo?.commissioner_id === user.id;
-
-    const levelData = getLevelByNumber(level);
-
-    return (
-      <PhaseSetup
-        leagueId={leagueId}
-        teamId={team?.id ?? ""}
-        phase={{ id: currentPhase.id, label: currentPhase.label }}
-        phaseStarted={phaseStarted}
-        phaseStartDate={phaseStart.toISOString()}
-        sponsor={sponsor ? { name: sponsor.name, monthlyBudget: sponsor.monthly_budget } : null}
-        pendingSponsor={pendingSponsor as { name: string } | null}
-        roster={roster}
-        activePolicies={activePolicies}
-        maxPolicies={levelData.maxActive}
-        treasury={team?.treasury ?? 0}
-        rounds={rounds}
-        isCommissioner={isCommissioner}
-      />
-    );
-  }
-
-  // ===== STATE 2: Bidding (already confirmed) =====
   const minRank = getLevelByNumber(level).poolMin;
 
   const [{ data: riders }, { data: leagueTeams }] = await Promise.all([
@@ -234,20 +128,14 @@ export default async function MarketPage({
     }
   }
 
-  let initialBids: Array<{ bid_id: string; rider_id: string; amount: number }> = [];
-  if (activeRound && team?.id) {
-    const { data: existingBids } = await supabase
-      .from("auction_bids")
-      .select("id, rider_id, amount")
-      .eq("team_id", team.id)
-      .eq("auction_id", activeRound.id)
-      .eq("status", "active");
-
-    initialBids = (existingBids ?? []).map((b) => ({
-      bid_id: b.id,
-      rider_id: b.rider_id,
-      amount: b.amount,
-    }));
+  // Fetch the user's draft bids
+  let draftRiderIds: string[] = [];
+  if (team?.id) {
+    const { data: draftBids } = await supabase
+      .from("draft_bids")
+      .select("rider_id")
+      .eq("team_id", team.id);
+    draftRiderIds = (draftBids ?? []).map((d) => d.rider_id);
   }
 
   return (
@@ -259,8 +147,8 @@ export default async function MarketPage({
       nextAuctionLabel={nextAuctionLabel}
       maxSlots={getMaxSlots(level)}
       currentSlots={ownTeamSlots}
-      initialBids={initialBids}
       treasury={team?.treasury ?? 0}
+      draftRiderIds={draftRiderIds}
     />
   );
 }
