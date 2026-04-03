@@ -51,34 +51,21 @@
 ### ~~11. Policies — Changement pas immédiat en Round 1~~ ✅ DONE (2bc31f5)
 - Remplacé `isLeagueFirstCycle` par query directe "Round 1" ouvert sur la ligue.
 
-### 12. Sticky bar (slots + budget) — Absente ou cassée hors Market
-- La barre sticky avec le compteur de slots et le budget fonctionne correctement dans Market (Recruts).
-- **Manquante ou non dynamique** dans Rider Detail et Auction.
-- Doit être le même composant partout, avec mise à jour dynamique quand on ajoute/modifie un bid.
+### ~~12. Sticky bar (slots + budget) — Absente ou cassée hors Market~~ ✅ DONE (ca2855b)
+- StickyBar ajoutée dans Rider Detail + Auctions tab avec slots/budget dynamique.
 
 ### ~~13. CTA "Draft Auction" — Comportement post-save incorrect~~ ✅ DONE (2bc31f5)
 - `savedDraftIds` mis à jour après save réussi → bouton disabled immédiatement.
 
-### 14. Rider Detail — Redesign du flow bid/draft/release
-- **Bug actuel** : après avoir créé un draft, le champ input (+/-) disparaît et la barre d'action change complètement d'état. Comportement incohérent avec Market.
-- **Comportement attendu** :
-  - Le champ input (+/-) reste TOUJOURS visible (sous les 3 métriques), quel que soit l'état (no bid, draft, owned).
-  - La sticky bar en bas est IDENTIQUE partout : slots + budget dynamique + CTA.
-  - **CTA flow** :
-    1. Pas de bid → "Draft Auction" (enabled dès qu'un montant est saisi)
-    2. Après save → "Update Draft" (disabled) — redevient enabled si l'input change
-    3. Si owned → "Update Draft" remplacé par même logique (ou disabled si pas d'auction en cours)
-  - **Bouton secondaire** (rouge outline, au-dessus de la sticky bar, sous l'input) :
-    - Si draft → "Cancel Draft"
-    - Si owned → "Release Rider"
-  - Ce bouton est SÉPARÉ de la sticky bar pour garder la barre d'action cohérente sur tous les écrans.
+### ~~14. Rider Detail — Redesign du flow bid/draft/release~~ ✅ DONE (ca2855b)
+- Input bid toujours visible, StickyBar identique Market, CTA "Draft Auction"/"Update Draft".
+- Bouton secondaire Cancel Draft / Release Rider sous l'input (pas dans la sticky bar).
 
 ### ~~15. Auction History — Bouton mène vers des pages inexistantes~~ ✅ DONE
 - Redirigé vers `/team/market/history` (même page que Market).
 
-### 16. Bouton "Edit dates" (commissioner) — Caché derrière la bottom nav
-- Le bouton pour modifier les dates de round est masqué par la bottom navigation mobile.
-- **Fix** : positionner en sticky au-dessus de la bottom nav.
+### ~~16. Bouton "Edit dates" (commissioner) — Caché derrière la bottom nav~~ ✅ DONE (ca2855b)
+- Sticky button offset dynamique au-dessus de la bottom nav mobile.
 
 ### ~~17. GitHub Actions cron jobs — Mettre en pause~~ ✅ DONE
 - Cron schedule commenté dans `resolve-auctions.yml`, `workflow_dispatch` conservé.
@@ -87,25 +74,15 @@
 - Cause : policy RLS UPDATE manquante sur `contracts`. L'update était silencieusement bloqué.
 - Fix : migration `20260403300000_contracts_update_own.sql` + appliquée sur Supabase distant.
 
-### 19. Release rider — Message incohérent entre pages
-- Page Auction : dit "release gratuit, pas de fee".
-- Page Rider Detail : dit "tu as déjà payé son salaire, tu vas le perdre".
-- **Règle** : en Round 1 (= entre début de la phase d'enchère et fin du round 1), le release est gratuit.
-- Harmoniser le message sur toutes les pages.
-- Clarifier la définition exacte de "être en Round 1" (début = ouverture enchère, fin = deadline round 1).
+### ~~19. Release rider — Message incohérent entre pages~~ ✅ DONE (ca2855b)
+- Message harmonisé partout : "Free release — phase salary not refunded".
 
 ### ~~20. Budget summary — Trop de rouge~~ ✅ DONE
 - Labels salaires/bids passés en `text-mid` (neutre). Rouge conservé uniquement sur "Remaining" en déficit.
 
-### 21. Auction sticky bar — CTA "Validate Round 1"
-- Réutiliser le même système que Market : slots + budget dynamique dans la sticky bar.
-- Le CTA = "Validate Round 1" (au lieu de "Draft Auction").
-- **Modale de confirmation** au clic : expliquer que après la deadline du round 1, sponsor/policy/bids sont verrouillés et les coureurs seront attribués.
-- **Re-validation** : même après avoir validé, le joueur peut modifier (sponsor, policy, bids) tant que la deadline n'est pas passée → le bouton repasse en enabled et il faut revalider.
-- **Message si disabled** (texte blanc, pas rouge) :
-  - Trop de coureurs → "Too many riders"
-  - Déficit → "Budget deficit"
-  - Les deux → afficher les deux messages
+### ~~21. Auction sticky bar — CTA "Validate Round 1"~~ ✅ DONE (ca2855b)
+- StickyBar avec "Validate Round X" / "Re-validate" (disabled après validation, re-enabled sur modification).
+- Warning blanc "Too many riders", rouge "Budget deficit".
 
 ### ~~22. Pending Bids — Simplifier~~ ✓ DONE (2026-04-03)
 - ~~N'afficher que les coureurs en draft dans la section Pending Bids.~~
@@ -130,11 +107,8 @@
 - Bonus sponsor : mis à jour après chaque course (résultats).
 - **Pas d'historique sponsor par phase** : actuellement `team_sponsors` ne stocke que le sponsor actif → les phases passées montrent le sponsor actuel au lieu de celui qui était actif à l'époque. À corriger si on veut un historique fidèle.
 
-### 23. Bid increment — Passer de 500 à 100
-- Les enchères doivent être par multiples de **100 €** (pas 500).
-- Les boutons +/- incrémentent/décrémentent de 100.
-- La validation input doit vérifier `amount % 100 === 0`.
-- **Impacte** : Market, Auction, Rider Detail — tous les champs input de bid.
+### ~~23. Bid increment — Passer de 500 à 100~~ ✅ DONE (2bc31f5)
+- Zod, inputs, bid-adjust-card, migration DB — tous passés à 100.
 
 ---
 
@@ -146,10 +120,8 @@
 ### ~~7. Mettre à jour GAME_RULES.md~~ ✅ DONE (2026-04-03)
 - Sponsor/policies Round 1 immédiat, release gratuit, commissioner round dates, tiers vérifiés.
 
-### 8. Mettre à jour CLAUDE.md ⏳ TODO
-- Vérifier que les commandes, la structure, et les règles critiques sont à jour
-- Ajouter les nouveaux composants créés (config-cards, round-blocks, draft-bid-card, etc.)
-- Ajouter la route commissioner `/team/auctions/rounds/`
+### ~~8. Mettre à jour CLAUDE.md~~ ✅ DONE (f905fba)
+- Architecture, composants, game constants (bid 100), server actions documentés.
 
-### 9. Vérifier la documentation in-game 🔄 EN COURS
+### ~~9. Vérifier la documentation in-game~~ ✅ DONE (0ef3df4)
 - Page d'aide (?) dans le topbar — vérifier que les règles affichées sont cohérentes avec les mécaniques implémentées.
