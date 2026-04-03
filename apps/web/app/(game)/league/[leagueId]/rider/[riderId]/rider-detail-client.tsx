@@ -130,7 +130,7 @@ export function RiderDetailClient({
 }: RiderDetailClientProps) {
   const router = useRouter();
   const [tabIndex, setTabIndex] = useState(0);
-  const [bidAmount, setBidAmount] = useState<number | null>(draftAmount ?? minSalary);
+  const [bidAmount, setBidAmount] = useState<number | null>(draftAmount ?? null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bidInputRef = useRef<HTMLInputElement>(null);

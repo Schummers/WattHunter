@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { ChevronRight, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MovementTag } from "@/components/movement-tag";
@@ -25,7 +25,7 @@ interface DraftBidCardProps {
   onNavigate: () => void;
 }
 
-const INCREMENT = 500;
+const INCREMENT = 100;
 
 function resolvePhotoUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
@@ -57,17 +57,13 @@ export function DraftBidCard({
 }: DraftBidCardProps) {
   const [localAmount, setLocalAmount] = useState(amount);
   const [inputValue, setInputValue] = useState(String(amount));
-  const [, startTransition] = useTransition();
-
   const flag = rider.nationality ? countryCodeToFlag(rider.nationality) : null;
   const movement = getRankMovement(rider.pcs_rank, rider.pcs_rank_prev);
 
   function commitAmount(next: number) {
     setLocalAmount(next);
     setInputValue(String(next));
-    startTransition(() => {
-      onAmountChange(next);
-    });
+    onAmountChange(next);
   }
 
   function handleDecrement() {
