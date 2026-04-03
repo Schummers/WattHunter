@@ -6,12 +6,16 @@ import { AUCTION_PHASES, formatPhaseRange } from "@/lib/phases";
 interface PhaseNavigatorProps {
   currentIndex: number;
   onChange: (index: number) => void;
+  /** If provided, prevents navigating past this index (e.g. the real current phase) */
+  maxIndex?: number;
 }
 
-export function PhaseNavigator({ currentIndex, onChange }: PhaseNavigatorProps) {
+export function PhaseNavigator({ currentIndex, onChange, maxIndex }: PhaseNavigatorProps) {
   const phase = AUCTION_PHASES[currentIndex];
   const isFirst = currentIndex === 0;
-  const isLast = currentIndex === AUCTION_PHASES.length - 1;
+  const isLast =
+    currentIndex === AUCTION_PHASES.length - 1 ||
+    (maxIndex !== undefined && currentIndex >= maxIndex);
 
   return (
     <div className="flex items-center justify-between px-4 py-3">
