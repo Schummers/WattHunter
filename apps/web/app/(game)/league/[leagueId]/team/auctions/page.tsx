@@ -216,6 +216,18 @@ export default async function AuctionsPage({
   const activeRoundNumber = openRound ? parseRoundNumber(openRound.name) : null;
   const isRound1 = activeRoundNumber === 1;
 
+  // Has the user already validated this round? Check auction_bids.
+  let existingAuctionBids: { rider_id: string; amount: number }[] = [];
+  if (openRound && team) {
+    const { data } = await supabase
+      .from("auction_bids")
+      .select("rider_id, amount")
+      .eq("auction_id", openRound.id)
+      .eq("team_id", team.id)
+      .eq("status", "active");
+    existingAuctionBids = data ?? [];
+  }
+
   // Pending sponsor (for notification when not Round 1)
   const pendingSponsorId = (team as { pending_sponsor_id?: string | null })?.pending_sponsor_id ?? null;
   let pendingSponsorName: string | null = null;
@@ -296,6 +308,7 @@ export default async function AuctionsPage({
       drafts={drafts}
       maxSlots={maxSlots}
       isCommissioner={isCommissioner}
+      existingAuctionBids={existingAuctionBids}
     />
   );
 }

@@ -318,13 +318,14 @@ export async function validateRound(input: { leagueId: string }) {
     };
   }
 
-  // --- 9. Convert drafts → auction_bids (delete old + insert to allow re-validation) ---
-  // Remove previous auction_bids for this team/auction so re-validation replaces them
+  // --- 9. Convert drafts → auction_bids (cancel old + insert to allow re-validation) ---
+  // Cancel previous auction_bids so re-validation replaces them
   const { error: clearBidsError } = await supabase
     .from("auction_bids")
-    .delete()
+    .update({ status: "cancelled" })
     .eq("auction_id", auction.id)
-    .eq("team_id", teamId);
+    .eq("team_id", teamId)
+    .eq("status", "active");
 
   if (clearBidsError) return { error: clearBidsError.message };
 

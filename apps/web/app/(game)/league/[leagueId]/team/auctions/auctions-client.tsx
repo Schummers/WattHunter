@@ -78,6 +78,7 @@ interface AuctionsClientProps {
   drafts: DraftBid[];
   maxSlots: number;
   isCommissioner: boolean;
+  existingAuctionBids: { rider_id: string; amount: number }[];
 }
 
 // ---------------------------------------------------------------------------
@@ -100,6 +101,7 @@ export function AuctionsClient({
   drafts: initialDrafts,
   maxSlots,
   isCommissioner,
+  existingAuctionBids,
 }: AuctionsClientProps) {
   const router = useRouter();
   const [drafts, setDrafts] = useState<DraftBid[]>(initialDrafts);
@@ -122,8 +124,25 @@ export function AuctionsClient({
   const isDeficit = remaining < 0;
 
   const hasOpenRound = activeRound !== null;
+
+  // Determine if modifications were made since last validation
+  const existingMap = new Map(existingAuctionBids.map(b => [b.rider_id, b.amount]));
+  let hasModifications = false;
+  if (drafts.length !== existingAuctionBids.length) {
+    hasModifications = true;
+  } else {
+    for (const d of drafts) {
+      if (existingMap.get(d.riderId) !== d.amount) {
+        hasModifications = true;
+        break;
+      }
+    }
+  }
+
+  const alreadyValidatedRound = existingAuctionBids.length > 0 || validateSuccess;
+  
   const validateDisabled =
-    !hasOpenRound || isDeficit || totalCount > maxSlots || validateSuccess;
+    !hasOpenRound || isDeficit || totalCount > maxSlots || (alreadyValidatedRound && !hasModifications);
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -395,8 +414,8 @@ export function AuctionsClient({
         deficitMessage={isDeficit ? "Budget deficit — lower your bids to validate." : undefined}
         warningMessage={totalCount > maxSlots ? "Too many riders — remove some to validate." : undefined}
         buttonLabel={
-          validateSuccess
-            ? "Re-validate"
+          alreadyValidatedRound
+            ? (hasModifications ? `Re-validate Round ${activeRound}` : "No modifications")
             : hasOpenRound
               ? `Validate Round ${activeRound}`
               : "No Open Round"
