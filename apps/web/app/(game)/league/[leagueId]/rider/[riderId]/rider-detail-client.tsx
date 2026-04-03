@@ -269,7 +269,8 @@ export function RiderDetailClient({
   }
 
   return (
-    <div className="space-y-6">
+    <>
+    <div className={`space-y-6${!hideBidSection && !inRail && (!isInRoster) ? " pb-20" : ""}`}>
       {!inRail && <BackHeader label={BACK_LABELS[context]} onBack={handleBack} />}
 
       {/* Hero — horizontal layout (RD-3) */}
@@ -422,35 +423,6 @@ export function RiderDetailClient({
         </div>
       )}
 
-      {/* StickyBar — Add to Draft / Cancel Draft (mobile only when not in rail) */}
-      {!hideBidSection && !inRail && (
-        <>
-          {/* State 2: In draft → Cancel Draft via StickyBar */}
-          {!isInRoster && isInDraft && (
-            <StickyBar
-              saveEnabled={!saving}
-              onSave={handleRemoveDraft}
-              saving={saving}
-              slotInfo={budgetInfo ? `${budgetInfo.currentSlots}/${budgetInfo.maxSlots}` : undefined}
-              budgetInfo={budgetInfo ? `€${formatThousands(budgetInfo.treasury)}` : undefined}
-              buttonLabel={saving ? "Removing..." : "Cancel Draft"}
-            />
-          )}
-
-          {/* State 3: Not in roster, not in draft → Add to Draft via StickyBar */}
-          {!isInRoster && !isInDraft && (
-            <StickyBar
-              saveEnabled={!saving && bidAmount !== null && bidAmount >= minSalary}
-              onSave={handleAddDraft}
-              saving={saving}
-              slotInfo={budgetInfo ? `${budgetInfo.currentSlots}/${budgetInfo.maxSlots}` : undefined}
-              budgetInfo={budgetInfo ? `€${formatThousands(budgetInfo.treasury)}` : undefined}
-              buttonLabel="Add to Draft"
-            />
-          )}
-        </>
-      )}
-
       {/* In-rail action buttons (desktop rail — not sticky) */}
       {!hideBidSection && inRail && (
         <div className="px-4 space-y-2">
@@ -478,7 +450,7 @@ export function RiderDetailClient({
                 disabled={saving || bidAmount === null || bidAmount < minSalary}
                 onClick={handleAddDraft}
               >
-                {saving ? "Adding..." : "Add to Draft"}
+                {saving ? "Adding..." : "Add to Draft Auction"}
               </Button>
               {error && (
                 <p className="text-[length:var(--type-caption)] text-[var(--status-danger)] text-center">{error}</p>
@@ -525,6 +497,36 @@ export function RiderDetailClient({
         )}
       </div>
     </div>
+
+    {/* StickyBar — Add to Draft / Cancel Draft (mobile only when not in rail) */}
+    {!hideBidSection && !inRail && (
+      <>
+        {/* State 2: In draft → Cancel Draft via StickyBar */}
+        {!isInRoster && isInDraft && (
+          <StickyBar
+            saveEnabled={!saving}
+            onSave={handleRemoveDraft}
+            saving={saving}
+            slotInfo={budgetInfo ? `${budgetInfo.currentSlots}/${budgetInfo.maxSlots} slots` : undefined}
+            budgetInfo={budgetInfo ? `€${formatThousands(budgetInfo.treasury)}` : undefined}
+            buttonLabel={saving ? "Removing..." : "Cancel Draft"}
+          />
+        )}
+
+        {/* State 3: Not in roster, not in draft → Add to Draft via StickyBar */}
+        {!isInRoster && !isInDraft && (
+          <StickyBar
+            saveEnabled={!saving && bidAmount !== null && bidAmount >= minSalary}
+            onSave={handleAddDraft}
+            saving={saving}
+            slotInfo={budgetInfo ? `${budgetInfo.currentSlots}/${budgetInfo.maxSlots} slots` : undefined}
+            budgetInfo={budgetInfo ? `€${formatThousands(budgetInfo.treasury)}` : undefined}
+            buttonLabel="Add to Draft Auction"
+          />
+        )}
+      </>
+    )}
+    </>
   );
 }
 
