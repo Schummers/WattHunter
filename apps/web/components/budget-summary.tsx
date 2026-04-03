@@ -3,21 +3,17 @@
 import { formatThousands } from "@/lib/format";
 
 interface BudgetSummaryProps {
-  sponsorIncome: number;
-  rosterSalaries: number;
-  rosterCount: number;
+  treasury: number;
   draftBidsTotal: number;
   draftCount: number;
 }
 
 export function BudgetSummary({
-  sponsorIncome,
-  rosterSalaries,
-  rosterCount,
+  treasury,
   draftBidsTotal,
   draftCount,
 }: BudgetSummaryProps) {
-  const remaining = sponsorIncome - rosterSalaries - draftBidsTotal;
+  const remaining = treasury - draftBidsTotal;
   const isDeficit = remaining < 0;
 
   return (
@@ -26,23 +22,13 @@ export function BudgetSummary({
         isDeficit ? "border-red-500/30" : "border-[var(--border-default)]"
       }`}
     >
-      {/* Sponsor income */}
+      {/* Treasury */}
       <div className="flex items-center justify-between py-[3px]">
         <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-          Sponsor income
+          Treasury
         </span>
         <span className="font-mono text-[length:var(--type-caption)] text-[var(--accent-highlight)]">
-          +€{formatThousands(sponsorIncome)}
-        </span>
-      </div>
-
-      {/* Roster salaries */}
-      <div className="flex items-center justify-between py-[3px]">
-        <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-          Roster salaries ({rosterCount})
-        </span>
-        <span className="font-mono text-[length:var(--type-caption)] text-[var(--text-mid)]">
-          −€{formatThousands(rosterSalaries)}
+          €{formatThousands(treasury)}
         </span>
       </div>
 

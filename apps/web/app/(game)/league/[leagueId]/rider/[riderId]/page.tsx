@@ -253,8 +253,6 @@ export default async function RiderDetailPage({
     currentSlots: number;
     maxSlots: number;
     treasury: number;
-    sponsorBudget: number;
-    rosterSalaries: number;
     totalDraftBidsAmount: number;
     draftBidsCount: number;
   } | undefined;
@@ -272,42 +270,27 @@ export default async function RiderDetailPage({
       const maxSlots = getMaxSlots(level);
 
       const [
-        { data: activeContracts },
-        { data: teamSponsor },
+        { count: contractCount },
         { data: draftBids },
       ] = await Promise.all([
         supabase
           .from("contracts")
-          .select("id, locked_salary")
+          .select("id", { count: "exact", head: true })
           .eq("team_id", memberForBudget.team_id)
           .eq("status", "active"),
-        supabase
-          .from("team_sponsors")
-          .select("sponsors:sponsor_id(monthly_budget)")
-          .eq("team_id", memberForBudget.team_id)
-          .maybeSingle(),
         supabase
           .from("draft_bids")
           .select("amount")
           .eq("team_id", memberForBudget.team_id),
       ]);
 
-      const contractCount = (activeContracts ?? []).length;
-      const rosterSalaries = (activeContracts ?? []).reduce((sum, c) => sum + (c.locked_salary ?? 0), 0);
-
-      const sponsorRaw = teamSponsor?.sponsors;
-      const sponsorEntry = Array.isArray(sponsorRaw) ? sponsorRaw[0] : sponsorRaw;
-      const sponsorBudget = (sponsorEntry as { monthly_budget?: number } | null)?.monthly_budget ?? 0;
-
       const totalDraftBidsAmount = (draftBids ?? []).reduce((sum, b) => sum + (b.amount ?? 0), 0);
       const draftBidsCount = (draftBids ?? []).length;
 
       budgetInfo = {
-        currentSlots: contractCount,
+        currentSlots: contractCount ?? 0,
         maxSlots,
-        treasury: budgetTeam?.treasury ?? 200000,
-        sponsorBudget,
-        rosterSalaries,
+        treasury: budgetTeam?.treasury ?? 0,
         totalDraftBidsAmount,
         draftBidsCount,
       };

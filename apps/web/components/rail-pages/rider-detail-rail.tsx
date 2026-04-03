@@ -29,7 +29,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
     activeAuctionId: string | null;
     contractData: { locked_salary: number; status: string } | null;
     ownerInfo: { display_name: string; team_name: string } | null;
-    budgetInfo?: { currentSlots: number; maxSlots: number; treasury: number; sponsorBudget: number; rosterSalaries: number; totalDraftBidsAmount: number; draftBidsCount: number };
+    budgetInfo?: { currentSlots: number; maxSlots: number; treasury: number; totalDraftBidsAmount: number; draftBidsCount: number };
     gameXp: number;
     totalBonus: number;
   } | null>(null);
@@ -106,7 +106,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
       let currentBidAmount: number | null = null;
       let activeAuctionId: string | null = null;
       let ownerInfo: { display_name: string; team_name: string } | null = null;
-      let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; sponsorBudget: number; rosterSalaries: number; totalDraftBidsAmount: number; draftBidsCount: number } | undefined;
+      let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; totalDraftBidsAmount: number; draftBidsCount: number } | undefined;
       let userTeamId: string | null = null;
 
       if (user) {
@@ -169,34 +169,19 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
               const maxSlots = getMaxSlots(level);
 
               const [
-                { data: activeContractsData, count: contractCount },
-                { data: teamSponsorData },
+                { count: contractCount },
                 { data: draftBidsData },
               ] = await Promise.all([
                 supabase
                   .from("contracts")
-                  .select("locked_salary", { count: "exact" })
+                  .select("id", { count: "exact", head: true })
                   .eq("team_id", member.team_id)
                   .eq("status", "active"),
-                supabase
-                  .from("team_sponsors")
-                  .select("sponsors(monthly_budget)")
-                  .eq("team_id", member.team_id)
-                  .maybeSingle(),
                 supabase
                   .from("draft_bids")
                   .select("amount")
                   .eq("team_id", member.team_id),
               ]);
-
-              const rosterSalaries = (activeContractsData ?? []).reduce(
-                (sum, c) => sum + (c.locked_salary ?? 0),
-                0
-              );
-
-              const sponsorRaw = teamSponsorData?.sponsors;
-              const sponsorEntry = Array.isArray(sponsorRaw) ? sponsorRaw[0] : sponsorRaw;
-              const sponsorBudget = (sponsorEntry as { monthly_budget?: number } | null)?.monthly_budget ?? 0;
 
               const totalDraftBidsAmount = (draftBidsData ?? []).reduce(
                 (sum, b) => sum + (b.amount ?? 0),
@@ -207,9 +192,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
               budgetInfo = {
                 currentSlots: contractCount ?? 0,
                 maxSlots,
-                treasury: teamData.treasury ?? 200000,
-                sponsorBudget,
-                rosterSalaries,
+                treasury: teamData.treasury ?? 0,
                 totalDraftBidsAmount,
                 draftBidsCount,
               };

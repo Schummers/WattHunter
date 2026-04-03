@@ -5,6 +5,7 @@ import { ChevronRight, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MovementTag } from "@/components/movement-tag";
 import { countryCodeToFlag, formatThousands } from "@/lib/format";
+import { BID_INCREMENT } from "@/lib/budget";
 
 interface DraftBidCardProps {
   rider: {
@@ -25,7 +26,7 @@ interface DraftBidCardProps {
   onNavigate: () => void;
 }
 
-const INCREMENT = 100;
+const INCREMENT = BID_INCREMENT;
 
 function resolvePhotoUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined;

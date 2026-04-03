@@ -66,7 +66,6 @@ describe("confirmPhaseSetup", () => {
       if (callCount === 1) {
         return makeChain({
           id: TEAM_ID,
-          treasury: 200_000,
           league_id: LEAGUE_ID,
           phase_confirmed_id: 4, // already confirmed for phase 4 (current)
           pending_sponsor_id: null,
@@ -79,17 +78,16 @@ describe("confirmPhaseSetup", () => {
     expect(result).toEqual({ error: "Already confirmed for this phase" });
   });
 
-  it("performs payday: sponsor income, salary deduction, updates treasury", async () => {
+  it("applies sponsor + policy changes and marks phase confirmed", async () => {
     let callCount = 0;
 
-    mockFrom.mockImplementation((table: string) => {
+    mockFrom.mockImplementation(() => {
       callCount++;
 
       // 1. Team fetch
       if (callCount === 1) {
         return makeChain({
           id: TEAM_ID,
-          treasury: 100_000,
           league_id: LEAGUE_ID,
           phase_confirmed_id: 3, // last confirmed phase 3, current is 4
           pending_sponsor_id: null,
@@ -101,35 +99,14 @@ describe("confirmPhaseSetup", () => {
         return makeChain([]);
       }
 
-      // 3. team_sponsors fetch (with sponsor data)
-      if (callCount === 3) {
-        return makeChain({
-          sponsor_id: SPONSOR_ID,
-          sponsors: { id: SPONSOR_ID, name: "Groupama-FDJ", monthly_budget: 450_000 },
-        });
-      }
-
-      // 4. treasury_log insert (sponsor payment)
-      if (callCount === 4) {
-        return makeChain(null);
-      }
-
-      // 5. contracts fetch (active contracts for salary)
-      if (callCount === 5) {
-        return makeChain([
-          { id: "c1", rider_id: "r1", locked_salary: 50_000 },
-          { id: "c2", rider_id: "r2", locked_salary: 30_000 },
-        ]);
-      }
-
-      // All other calls succeed
+      // All other calls succeed (teams.update for mark confirmed)
       return makeChain(null);
     });
 
     const result = await confirmPhaseSetup(TEAM_ID);
 
     expect(result).toHaveProperty("success", true);
-    // Treasury: 100K + 450K (sponsor) - 80K (salaries) = 470K
-    expect(result).toHaveProperty("treasuryAfter", 470_000);
+    expect(result).toHaveProperty("phaseId", 4);
+    expect(result).toHaveProperty("phaseLabel", "Giro d'Italia");
   });
 });

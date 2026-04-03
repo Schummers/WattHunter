@@ -5,15 +5,13 @@ Each auction row represents one round. Resolution flow:
   - Only resolve auctions where closes_at < now() (expired).
   - Resolve ALL active bids for the expired auction.
   - Highest bid per rider wins; tiebreak = earliest placed_at.
-  - Winner: status → 'won', contract created, first month salary debited.
+  - Winner: status → 'won', contract created.
   - Losers: status → 'outbid'.
   - After resolution: auction.status → 'closed', next scheduled auction → 'open'.
 
 Economy rules:
   - The winning bid amount becomes the rider's locked_salary (monthly salary).
-  - The first month's salary is debited from treasury at auction time.
-  - Subsequent monthly salaries are deducted by the monthly finance job.
-  - treasury_log records the deduction with amount = -locked_salary.
+  - Salaries are deducted by the monthly payday job (run_payday), not at auction time.
   - NEVER authorize a bid if treasury < total active bids (enforced at bid time in API;
     resolution here trusts the bid was valid when placed)
 """
@@ -53,22 +51,6 @@ def _get_current_phase_id(d: date | None = None) -> int:
     return _PHASES[-1][0]  # fallback: last phase
 
 
-def _log_treasury_debit(
-    supabase: Client,
-    team_id: str,
-    amount: int,
-    description: str,
-    rider_id: str,
-) -> None:
-    """Insert a treasury_log entry for a debit. All treasury_log writes go through this helper."""
-    supabase.table("treasury_log").insert({
-        "team_id": team_id,
-        "type": "auction_purchase",
-        "amount": -amount,
-        "description": description,
-        "rider_id": rider_id,
-    }).execute()
-
 
 async def resolve_current_round(
     supabase: Client,
@@ -92,9 +74,7 @@ async def resolve_current_round(
          c. Winning bid = highest amount; tiebreak = earliest placed_at.
          d. Mark winner as 'won', losers as 'outbid'.
          e. Create a contract with locked_salary = winner amount.
-         f. Debit first month's salary from team treasury.
-         g. Insert treasury_log entry with amount = -locked_salary.
-         h. Mark rider.is_active_in_game = True.
+         f. Mark rider.is_active_in_game = True.
       3. Close the auction and open the next scheduled one.
 
     Returns a summary dict with per-auction results.
@@ -219,7 +199,7 @@ async def resolve_current_round(
                             ).eq("id", loser["id"]).execute()
                         continue
 
-                    # Create contract with first salary marked as paid
+                    # Create contract
                     supabase.table("contracts").insert({
                         "team_id": winner["team_id"],
                         "rider_id": rider_id,
@@ -231,26 +211,6 @@ async def resolve_current_round(
                         "phase_recruited_id": _get_current_phase_id(today),
                     }).execute()
 
-                    # Debit first month's salary from team treasury
-                    team_resp = supabase.table("teams").select(
-                        "treasury"
-                    ).eq("id", winner["team_id"]).single().execute()
-                    current_treasury = team_resp.data["treasury"] if team_resp.data else 200000
-
-                    new_treasury = current_treasury - locked_salary
-                    supabase.table("teams").update({
-                        "treasury": new_treasury,
-                    }).eq("id", winner["team_id"]).execute()
-
-                    # Log the treasury deduction
-                    _log_treasury_debit(
-                        supabase,
-                        team_id=winner["team_id"],
-                        amount=locked_salary,
-                        description=f"Auction {auction.get('name', '')} — {rider_name} — salary {locked_salary} EUR/month",
-                        rider_id=rider_id,
-                    )
-
                     # Mark rider as active in the game
                     supabase.table("riders").update(
                         {"is_active_in_game": True}
@@ -258,7 +218,7 @@ async def resolve_current_round(
 
                     logger.info(
                         f"  {rider_name}: won by team {winner['team_id']} "
-                        f"at {locked_salary} EUR/mois (treasury: {current_treasury} → {new_treasury})"
+                        f"at {locked_salary} EUR/month"
                     )
 
                     resolved_count += 1

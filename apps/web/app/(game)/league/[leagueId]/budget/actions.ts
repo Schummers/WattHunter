@@ -13,7 +13,7 @@ const SaveSponsorSchema = z.object({
  * Save sponsor selection.
  *
  * Two modes:
- *   - First sponsor (no existing team_sponsors row): immediate upsert + first payment
+ *   - First sponsor (no existing team_sponsors row): immediate upsert (no payment — payday handled separately)
  *   - Change sponsor (has existing): sets teams.pending_sponsor_id, effective at next payday
  */
 export async function saveSponsor(input: { teamId: string; sponsorId: string }) {
@@ -61,25 +61,11 @@ export async function saveSponsor(input: { teamId: string; sponsorId: string }) 
 
   if (!existingSponsor) {
     // --- First sponsor selection (onboarding) ---
-    // Immediate upsert + first payment (this IS the first payday)
+    // Immediate upsert — no payment credited here, payday handled separately
     await supabase.from("team_sponsors").insert({
       team_id: teamId,
       sponsor_id: sponsorId,
       activated_at: new Date().toISOString(),
-    });
-
-    // First sponsor payment
-    const newTreasury = team.treasury + sponsor.monthly_budget;
-    await supabase
-      .from("teams")
-      .update({ treasury: newTreasury })
-      .eq("id", teamId);
-
-    await supabase.from("treasury_log").insert({
-      team_id: teamId,
-      type: "sponsor_payment",
-      amount: sponsor.monthly_budget,
-      description: `First sponsor payment — ${sponsor.name}`,
     });
 
     revalidatePath(`/league/${team.league_id}`);
