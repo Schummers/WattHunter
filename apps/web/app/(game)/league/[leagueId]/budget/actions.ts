@@ -86,11 +86,41 @@ export async function saveSponsor(input: { teamId: string; sponsorId: string }) 
     return { success: true as const, sponsorName: sponsor.name, immediate: true };
   }
 
-  // --- Sponsor change (pending, effective next payday) ---
+  // --- Sponsor change ---
   if (existingSponsor.sponsor_id === sponsorId) {
     return { success: false as const, error: "Already your active sponsor" };
   }
 
+  // Check if we're in Round 1 (first open round of current auction phase)
+  const { data: openAuction } = await supabase
+    .from("auctions")
+    .select("id, name")
+    .eq("league_id", team.league_id)
+    .eq("status", "open")
+    .order("opens_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const isRound1 = openAuction?.name === "Round 1";
+
+  if (isRound1) {
+    // Round 1: immediate effect — replace active sponsor
+    await supabase
+      .from("team_sponsors")
+      .update({ sponsor_id: sponsorId, activated_at: new Date().toISOString() })
+      .eq("team_id", teamId);
+
+    // Clear any pending if set
+    await supabase
+      .from("teams")
+      .update({ pending_sponsor_id: null })
+      .eq("id", teamId);
+
+    revalidatePath(`/league/${team.league_id}`);
+    return { success: true as const, sponsorName: sponsor.name, immediate: true };
+  }
+
+  // Round 2+ or between phases: save as pending, effective next phase
   await supabase
     .from("teams")
     .update({ pending_sponsor_id: sponsorId })

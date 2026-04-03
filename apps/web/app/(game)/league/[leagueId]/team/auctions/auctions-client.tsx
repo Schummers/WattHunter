@@ -68,6 +68,7 @@ interface AuctionsClientProps {
   isRound1: boolean;
   sponsorName: string;
   sponsorBudget: number;
+  pendingSponsorName: string | null;
   activePolicies: PolicyDisplay[];
   maxPolicies: number;
   rosterRiders: RosterRider[];
@@ -86,6 +87,7 @@ export function AuctionsClient({
   isRound1,
   sponsorName,
   sponsorBudget,
+  pendingSponsorName,
   activePolicies,
   maxPolicies,
   rosterRiders,
@@ -209,8 +211,15 @@ export function AuctionsClient({
             maxPolicies={maxPolicies}
             isEditable={activeRound === null || activeRound === 1}
           />
+          {pendingSponsorName && !isRound1 && (
+            <p className="text-[length:var(--type-caption)] text-[var(--accent-default)] px-4 mt-1.5 leading-snug">
+              {pendingSponsorName} will be active from next auction phase.
+            </p>
+          )}
           <p className="text-[length:var(--type-micro)] text-[var(--text-low)] px-4 mt-1.5 leading-snug">
-            Only modifiable during Round 1. Locked after validation.
+            {isRound1
+              ? "Changes take effect immediately during Round 1."
+              : "Only modifiable during Round 1. Locked after validation."}
           </p>
         </section>
 

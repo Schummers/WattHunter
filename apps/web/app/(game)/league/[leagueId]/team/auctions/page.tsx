@@ -37,7 +37,7 @@ export default async function AuctionsPage({
   // Get member + team
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, team_id, teams:team_id(id, name, cumulative_xp, level, treasury)")
+    .select("id, team_id, teams:team_id(id, name, cumulative_xp, level, treasury, pending_sponsor_id)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
@@ -198,6 +198,18 @@ export default async function AuctionsPage({
   const activeRoundNumber = openRound ? parseRoundNumber(openRound.name) : null;
   const isRound1 = activeRoundNumber === 1;
 
+  // Pending sponsor (for notification when not Round 1)
+  const pendingSponsorId = (team as { pending_sponsor_id?: string | null })?.pending_sponsor_id ?? null;
+  let pendingSponsorName: string | null = null;
+  if (pendingSponsorId) {
+    const { data: pendingSponsor } = await supabase
+      .from("sponsors")
+      .select("name")
+      .eq("id", pendingSponsorId)
+      .single();
+    pendingSponsorName = pendingSponsor?.name ?? null;
+  }
+
   // Build roster riders for client
   const rosterRiders = (activeContracts ?? []).map((tr) => {
     const r = Array.isArray(tr.riders) ? tr.riders[0] : tr.riders;
@@ -252,6 +264,7 @@ export default async function AuctionsPage({
       isRound1={isRound1}
       sponsorName={sponsorName}
       sponsorBudget={sponsorBudget}
+      pendingSponsorName={pendingSponsorName}
       activePolicies={activePoliciesDisplay}
       maxPolicies={maxActivePolicies}
       rosterRiders={rosterRiders}
