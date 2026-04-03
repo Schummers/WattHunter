@@ -1,8 +1,10 @@
 name: Resolve Auction Rounds
 
 on:
-  schedule:
-    - cron: '5 23 * * *'   # 23:05 UTC = 00:05 CET (hiver) / 01:05 CEST (été)
+  # schedule:
+  #   - cron: '5 23 * * *'   # 23:05 UTC = 00:05 CET (hiver) / 01:05 CEST (été)
+  # Paused: auction resolutions are managed manually for now.
+  # Uncomment the schedule block above to re-enable automatic nightly runs.
   workflow_dispatch:         # trigger manuel
 
 jobs:

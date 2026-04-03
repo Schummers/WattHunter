@@ -44,27 +44,19 @@
 
 ## Bugs (trouvés 2026-04-03)
 
-### 10. Home — Prochaines courses absentes en phase Classiques
-- La section "Next Races" ne s'affiche pas quand on est dans la phase Classiques.
-- Devrait afficher toutes les courses WT jusqu'au Giro inclus.
-- Vérifier le filtre de dates / phase dans la query.
+### ~~10. Home — Prochaines courses absentes en phase Classiques~~ ✅ DONE (2bc31f5)
+- Phase window étendue pour matcher getCurrentPhase boundary (next phase start - 1 day).
 
-### 11. Policies — Changement pas immédiat en Round 1
-- Quand on change une policy, elle est sauvegardée mais pas activée immédiatement.
-- En Round 1, les changements de policy devraient avoir un effet immédiat (cf. règle produit).
-- Vérifier la logique `pending` vs `active` : en Round 1, le changement doit être `active` directement.
-- Question ouverte : faut-il une date de début ET une date de fin pour chaque round ?
+### ~~11. Policies — Changement pas immédiat en Round 1~~ ✅ DONE (2bc31f5)
+- Remplacé `isLeagueFirstCycle` par query directe "Round 1" ouvert sur la ligue.
 
 ### 12. Sticky bar (slots + budget) — Absente ou cassée hors Market
 - La barre sticky avec le compteur de slots et le budget fonctionne correctement dans Market (Recruts).
 - **Manquante ou non dynamique** dans Rider Detail et Auction.
 - Doit être le même composant partout, avec mise à jour dynamique quand on ajoute/modifie un bid.
 
-### 13. CTA "Draft Auction" — Comportement post-save incorrect
-- Après avoir sauvegardé les bids, le bouton reste cliquable (couleur active) alors qu'il devrait repasser en `disabled`.
-- Le compteur dans le bouton ne compte que les bids modifiés dans la session courante, pas ceux déjà en draft (sessions précédentes).
-- **Comportement attendu** : après save → bouton disabled sans compteur, jusqu'à ce qu'un nouveau bid soit modifié (changement d'input).
-- Questionner l'utilité du compteur dans le bouton : l'info est déjà dans la sticky bar (slots + budget juste à côté).
+### ~~13. CTA "Draft Auction" — Comportement post-save incorrect~~ ✅ DONE (2bc31f5)
+- `savedDraftIds` mis à jour après save réussi → bouton disabled immédiatement.
 
 ### 14. Rider Detail — Redesign du flow bid/draft/release
 - **Bug actuel** : après avoir créé un draft, le champ input (+/-) disparaît et la barre d'action change complètement d'état. Comportement incohérent avec Market.
@@ -80,22 +72,19 @@
     - Si owned → "Release Rider"
   - Ce bouton est SÉPARÉ de la sticky bar pour garder la barre d'action cohérente sur tous les écrans.
 
-### 15. Auction History — Bouton mène vers des pages inexistantes
-- Le bouton "History" dans l'onglet Auction (Team) renvoie vers des pages jamais designées/développées.
-- **Fix** : réutiliser exactement le même parcours que le bouton History de Market (même pages, même navigation).
-- Supprimer les pages fantômes créées pour Auction History.
+### ~~15. Auction History — Bouton mène vers des pages inexistantes~~ ✅ DONE
+- Redirigé vers `/team/market/history` (même page que Market).
 
 ### 16. Bouton "Edit dates" (commissioner) — Caché derrière la bottom nav
 - Le bouton pour modifier les dates de round est masqué par la bottom navigation mobile.
 - **Fix** : positionner en sticky au-dessus de la bottom nav.
 
-### 17. GitHub Actions cron jobs — Mettre en pause
-- L'utilisateur veut gérer manuellement les résolutions d'enchères pour l'instant.
-- Désactiver ou mettre en pause les GitHub Actions avec cron jobs (ne pas supprimer).
+### ~~17. GitHub Actions cron jobs — Mettre en pause~~ ✅ DONE
+- Cron schedule commenté dans `resolve-auctions.yml`, `workflow_dispatch` conservé.
 
-### 18. Release rider — Action cassée
-- La modale de release s'affiche mais le clic ne fait rien — le coureur n'est pas libéré.
-- Bug fonctionnel bloquant à investiguer.
+### ~~18. Release rider — Action cassée~~ ✅ DONE
+- Cause : policy RLS UPDATE manquante sur `contracts`. L'update était silencieusement bloqué.
+- Fix : migration `20260403300000_contracts_update_own.sql` + appliquée sur Supabase distant.
 
 ### 19. Release rider — Message incohérent entre pages
 - Page Auction : dit "release gratuit, pas de fee".
@@ -104,10 +93,8 @@
 - Harmoniser le message sur toutes les pages.
 - Clarifier la définition exacte de "être en Round 1" (début = ouverture enchère, fin = deadline round 1).
 
-### 20. Budget summary — Trop de rouge
-- Actuellement tout le bloc summary utilise du rouge.
-- **Fix** : labels (Sponsoring, Roster Salary, Draft Bids, Remaining) tous en blanc / couleur primaire.
-- Seul le montant "Remaining" passe en rouge quand il est en déficit.
+### ~~20. Budget summary — Trop de rouge~~ ✅ DONE
+- Labels salaires/bids passés en `text-mid` (neutre). Rouge conservé uniquement sur "Remaining" en déficit.
 
 ### 21. Auction sticky bar — CTA "Validate Round 1"
 - Réutiliser le même système que Market : slots + budget dynamique dans la sticky bar.

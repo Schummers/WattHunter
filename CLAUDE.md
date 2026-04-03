@@ -85,6 +85,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 - Enchère = salaire mensuel récurrent (pas un achat unique)
 - Salaire mensuel = pts_PCS × 2 000 / 12 (pas de plafond)
 - Salaire plancher (enchère min) : 5 000 €/mois
+- Incrément d'enchère : 100 €/mois (pas 500)
 - Release = gratuit (salaire de la phase non remboursé)
 - Durée d'enchère : chaque round dure de sa date jusqu'à la date du round suivant (dernier round = fin de journée)
 - 8 niveaux alignés sur les 8 phases WT (Season Start → Vuelta)
@@ -113,14 +114,59 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 watthunter/
 ├── apps/web/                    # Next.js 16 App Router
 │   ├── app/(auth)/              # Login, signup, onboarding, league create/join
-│   ├── app/(game)/league/[id]/  # Main game shell (auth guard + responsive layout)
+│   ├── app/(game)/league/[leagueId]/  # Main game shell (auth guard + responsive layout)
 │   │   ├── page.tsx             # Home / Lobby
-│   │   ├── team/                # My Team, Recruts, Policies, Levels, History
-│   │   │   ├── auctions/        # Auctions sub-tab (draft bids, round validation)
+│   │   ├── team/                # My Team
+│   │   │   ├── auctions/        # Draft bids tab
+│   │   │   │   └── rounds/      # Round validation
+│   │   │   ├── market/          # Recruits tab
+│   │   │   │   └── history/     # Auction history
+│   │   │   └── policies/        # Policies tab
+│   │   ├── budget/              # Budget P&L
+│   │   │   ├── marketplace/     # Sponsor marketplace
+│   │   │   └── transactions/    # Transaction log
 │   │   ├── rider/[riderId]/     # Rider Detail (PCS + Game stats)
-│   │   ├── auctions/            # Auction calendar, detail, results
+│   │   ├── auctions/            # Auction calendar
+│   │   │   └── [auctionId]/     # Auction detail + results
+│   │   ├── ranking/             # League ranking
+│   │   ├── levels/              # Level progression
+│   │   ├── help/                # Game guide
 │   │   └── settings/            # Settings page
-│   ├── components/              # App components (rider-card, bottom-nav, topbar, sidebar, etc.)
+│   ├── components/              # App components
+│   │   ├── rider-card.tsx       # Roster card, bid states, open slot
+│   │   ├── metric-box.tsx       # Geist Mono values, accent highlight
+│   │   ├── pill.tsx             # Tag v3 (4 variants, non-interactive)
+│   │   ├── segmented-control.tsx # Filter Chips v3
+│   │   ├── sub-tabs.tsx         # Underline sub-tabs, hide-on-scroll
+│   │   ├── sticky-bar.tsx       # Save bar (unsaved bids)
+│   │   ├── back-header.tsx      # ArrowLeft + label
+│   │   ├── team-level-card.tsx  # Level card (home + default variants)
+│   │   ├── phase-navigator.tsx  # Phase selector
+│   │   ├── sponsor-bonus-card.tsx
+│   │   ├── sponsor-bonus-details.tsx
+│   │   ├── config-cards.tsx     # Commissioner config cards
+│   │   ├── round-blocks.tsx     # Auction round timeline blocks
+│   │   ├── draft-bid-card.tsx   # Draft bid entry card
+│   │   ├── bid-adjust-card.tsx  # Bid adjustment card
+│   │   ├── budget-summary.tsx   # Budget P&L summary header
+│   │   ├── movement-tag.tsx     # +/- movement indicator tag
+│   │   ├── brand-card.tsx       # Sponsor brand card (marketplace)
+│   │   ├── info-card.tsx        # Generic info/stat card
+│   │   ├── game-guide-accordion.tsx
+│   │   ├── onboarding-cards.tsx
+│   │   ├── form-field.tsx       # Form field wrapper
+│   │   ├── transaction-row.tsx  # Transaction log row
+│   │   ├── filter-chips.tsx     # Filter chip group
+│   │   ├── detail-rail.tsx      # Desktop detail rail container
+│   │   ├── rail-link.tsx        # Rail navigation link
+│   │   ├── rail-router.tsx      # Rail routing logic
+│   │   ├── rail-pages/          # Rail page components
+│   │   │   ├── rider-detail-rail.tsx
+│   │   │   ├── policies-rail.tsx
+│   │   │   └── levels-rail.tsx
+│   │   ├── bottom-nav.tsx
+│   │   ├── topbar.tsx
+│   │   └── sidebar.tsx
 │   ├── components/ui/           # Shadcn components (button, badge, avatar, etc.)
 │   ├── hooks/                   # Shared hooks (use-scroll-direction)
 │   └── lib/supabase/            # Clients Supabase (browser + server)
@@ -133,6 +179,13 @@ watthunter/
 ├── docs/research/               # Design system research
 └── CLAUDE.md
 ```
+
+### Server Actions clés
+- `app/(game)/league/[leagueId]/actions.ts` — confirmPhaseSetup (remplace Pipeline D finance)
+- `app/(game)/league/[leagueId]/team/auctions/actions.ts` — draft bids CRUD
+- `app/(game)/league/[leagueId]/team/auctions/rounds/actions.ts` — round validation
+- `app/(game)/league/[leagueId]/team/market/actions.ts` — recruits + release
+- `app/(game)/league/[leagueId]/team/policies/actions.ts` — policy management
 
 ## Gestion du contexte (compression)
 - **Fichier de session** : `~/.claude/projects/-Users-jonathanschummers-Documents-WattHunter/memory/sessions/YYYY-MM-DD.md`

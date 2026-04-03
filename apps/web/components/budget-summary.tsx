@@ -41,7 +41,7 @@ export function BudgetSummary({
         <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
           Roster salaries ({rosterCount})
         </span>
-        <span className="font-mono text-[length:var(--type-caption)] text-red-400">
+        <span className="font-mono text-[length:var(--type-caption)] text-[var(--text-mid)]">
           −€{formatThousands(rosterSalaries)}
         </span>
       </div>
@@ -51,7 +51,7 @@ export function BudgetSummary({
         <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
           Draft bids ({draftCount})
         </span>
-        <span className="font-mono text-[length:var(--type-caption)] text-red-400">
+        <span className="font-mono text-[length:var(--type-caption)] text-[var(--text-mid)]">
           −€{formatThousands(draftBidsTotal)}
         </span>
       </div>

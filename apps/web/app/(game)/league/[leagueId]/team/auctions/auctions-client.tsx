@@ -179,7 +179,7 @@ export function AuctionsClient({
               Rounds
             </span>
             <Link
-              href={`/league/${leagueId}/auctions`}
+              href={`/league/${leagueId}/team/market/history`}
               className="text-[length:var(--type-body)] link-tertiary text-[var(--accent-default)]"
             >
               History &rarr;
