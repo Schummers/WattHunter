@@ -49,7 +49,7 @@ export default async function AuctionDetailPage({
       .from("auction_bids")
       .select("id, rider_id, team_id, amount, round, status")
       .eq("auction_id", auctionId),
-    supabase.from("contracts").select("rider_id").eq("status", "active"),
+    supabase.from("contracts").select("rider_id").eq("status", "active").eq("league_id", leagueId),
     supabase.from("contracts").select("locked_salary").eq("status", "active").eq("team_id", team?.id),
     supabase.from("team_sponsors").select("sponsors(monthly_budget)").eq("team_id", team?.id).maybeSingle(),
   ]);
