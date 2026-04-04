@@ -140,7 +140,7 @@ async def calculate_daily_scores(
 
     # --- Step 2: Get all active/notice contracts with rider info for policy matching ---
     contracts = supabase.table("contracts").select(
-        "id, team_id, rider_id, purchased_at, release_date, "
+        "id, team_id, rider_id, purchased_at, release_date, released_at, "
         "riders:rider_id(specialty, nationality, real_team, birthdate)"
     ).in_("status", ["active", "notice"]).execute()
 
@@ -212,9 +212,10 @@ async def calculate_daily_scores(
                         purchased_dt = date.fromisoformat(str(purchased_at_raw)[:10])
                         if race_dt < purchased_dt:
                             continue
-                    release_date_raw = contract.get("release_date")
-                    if release_date_raw:
-                        release_dt = date.fromisoformat(str(release_date_raw))
+                    # Prefer released_at (set by current code); fall back to legacy release_date
+                    released_raw = contract.get("released_at") or contract.get("release_date")
+                    if released_raw:
+                        release_dt = date.fromisoformat(str(released_raw)[:10])
                         if race_dt > release_dt:
                             continue
 
