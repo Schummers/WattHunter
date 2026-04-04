@@ -269,10 +269,8 @@ def run_payday(supabase: Client, league_id: str) -> dict:
       3. Credit sponsor income
       4. Deduct active contract salaries
       5. Update treasury
-      6. Bankruptcy cascade (if treasury < -10_000)
-      7. Mark phase as confirmed
+      6. Mark phase as confirmed
     """
-    BANKRUPTCY_THRESHOLD = -10_000
     now_iso = datetime.utcnow().isoformat()
     phase_id = _get_current_phase_id()
 
@@ -376,60 +374,7 @@ def run_payday(supabase: Client, league_id: str) -> dict:
             # --- Step 5: Update treasury ---
             supabase.table("teams").update({"treasury": treasury}).eq("id", team_id).execute()
 
-            # --- Step 6: Bankruptcy cascade ---
-            released_riders: list[str] = []
-
-            if treasury < BANKRUPTCY_THRESHOLD and contracts:
-                logger.warning(f"[Payday] Team {team_id} — BANKRUPTCY triggered (treasury={treasury})")
-
-                # Fetch cumulative XP per rider
-                xp_resp = supabase.table("rider_xp_daily").select(
-                    "rider_id, xp_gained"
-                ).eq("team_id", team_id).execute()
-
-                rider_xp: dict[str, int] = {}
-                for row in (xp_resp.data or []):
-                    rid = row["rider_id"]
-                    rider_xp[rid] = rider_xp.get(rid, 0) + int(row.get("xp_gained") or 0)
-
-                # Sort by highest cumulative XP first
-                sorted_contracts = sorted(
-                    contracts,
-                    key=lambda c: rider_xp.get(c["rider_id"], 0),
-                    reverse=True,
-                )
-
-                for contract in sorted_contracts:
-                    if treasury >= BANKRUPTCY_THRESHOLD:
-                        break
-
-                    contract_salary = int(contract.get("locked_salary") or 0)
-
-                    supabase.table("contracts").update({
-                        "status": "released",
-                        "released_at": now_iso,
-                    }).eq("id", contract["id"]).execute()
-
-                    treasury += contract_salary
-
-                    supabase.table("treasury_log").insert({
-                        "team_id": team_id,
-                        "type": "bankruptcy_release",
-                        "amount": contract_salary,
-                        "description": f"Bankruptcy salary refund — rider {contract['rider_id']}",
-                        "rider_id": contract["rider_id"],
-                    }).execute()
-
-                    released_riders.append(contract["rider_id"])
-                    logger.info(
-                        f"[Payday] Team {team_id} — released rider {contract['rider_id']} "
-                        f"(refund +{contract_salary}, treasury now {treasury})"
-                    )
-
-                # Update treasury after bankruptcy releases
-                supabase.table("teams").update({"treasury": treasury}).eq("id", team_id).execute()
-
-            # --- Step 7: Mark phase as confirmed ---
+            # --- Step 6: Mark phase as confirmed ---
             supabase.table("teams").update({
                 "phase_confirmed_id": phase_id,
                 "phase_confirmed_at": now_iso,
@@ -437,7 +382,7 @@ def run_payday(supabase: Client, league_id: str) -> dict:
 
             logger.info(
                 f"[Payday] Team {team_id} — DONE. treasury_after={treasury}, "
-                f"released={released_riders}, phase_confirmed={phase_id}"
+                f"phase_confirmed={phase_id}"
             )
 
             payday_results.append({
@@ -445,7 +390,6 @@ def run_payday(supabase: Client, league_id: str) -> dict:
                 "treasury_after": treasury,
                 "sponsor_budget": sponsor_budget,
                 "total_salary": total_salary,
-                "released": released_riders,
                 "phase_id": phase_id,
             })
 
