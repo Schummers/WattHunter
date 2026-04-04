@@ -31,6 +31,7 @@ interface RiderRow {
   ownerName: string | null;
   teamId: string | null;
   isMyRider: boolean;
+  isFormer: boolean;
 }
 
 interface Race {
@@ -257,7 +258,7 @@ export function RankingClient({
                       {isAllRaces && <MovementTag movement={rider.movement} />}
                     </div>
                     <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-                      {rider.ownerName ? `@${rider.ownerName}` : "Not recruited"}
+                      {rider.ownerName ? `@${rider.ownerName}` : rider.isFormer ? "Free agent" : "Not recruited"}
                     </span>
                   </div>
 
