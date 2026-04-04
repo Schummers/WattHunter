@@ -14,13 +14,16 @@ interface RoundBlocksProps {
 }
 
 function formatRoundDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(iso).toLocaleDateString("en-US", {
+    timeZone: "Europe/Paris",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function formatRoundTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("en-US", {
+  return new Date(iso).toLocaleTimeString("en-US", {
+    timeZone: "Europe/Paris",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,

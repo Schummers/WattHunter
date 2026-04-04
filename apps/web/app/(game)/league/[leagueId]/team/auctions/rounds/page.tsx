@@ -3,15 +3,17 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { RoundsClient } from "./rounds-client";
 
-/** Extract "YYYY-MM-DD" and "HH:MM" from an ISO timestamp string. */
+/** Extract "YYYY-MM-DD" and "HH:MM" from an ISO timestamp, converted to Europe/Paris time. */
 function splitDateTime(iso: string | null): { date: string; time: string } {
   if (!iso) return { date: "", time: "" };
-  // Parse as a Date and extract local Paris-like display — but since we only
-  // need the stored date/time fields for display, we split at 'T'.
-  const withoutTz = iso.replace(/([+-]\d{2}:\d{2}|Z)$/, "");
-  const [datePart, timePart] = withoutTz.split("T");
-  const time = timePart ? timePart.slice(0, 5) : "00:00"; // "HH:MM"
-  return { date: datePart ?? "", time };
+  const d = new Date(iso);
+  const date = d.toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" }); // "YYYY-MM-DD"
+  const time = d.toLocaleTimeString("en-GB", {
+    timeZone: "Europe/Paris",
+    hour: "2-digit",
+    minute: "2-digit",
+  }); // "HH:MM"
+  return { date, time };
 }
 
 export default async function EditRoundDatesPage({
