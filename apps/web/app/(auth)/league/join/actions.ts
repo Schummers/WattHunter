@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getLevelByNumber } from "@/lib/levels";
 
 const joinLeagueSchema = z.object({
   code: z
@@ -36,7 +37,7 @@ export async function joinLeague(
 
   const { data: league } = await supabase
     .from("leagues")
-    .select("id, name, status, max_players")
+    .select("id, name, status, max_players, starting_level")
     .eq("invite_code", code)
     .single();
 
@@ -78,12 +79,17 @@ export async function joinLeague(
       { onConflict: "id" }
     );
 
+  const startLevel = league.starting_level ?? 1;
+  const levelData = getLevelByNumber(startLevel);
+
   const { data: team, error: teamError } = await supabase
     .from("teams")
     .insert({
       user_id: user.id,
       league_id: league.id,
       name: displayName,
+      level: startLevel,
+      cumulative_xp: levelData.xp,
     })
     .select("id")
     .single();
@@ -93,17 +99,20 @@ export async function joinLeague(
     return { error: "Failed to create team." };
   }
 
-  // Auto-assign Lotto (T1) as default sponsor (single sponsor per team)
-  const { data: lotto } = await supabase
-    .from("sponsors")
-    .select("id")
-    .eq("slug", "lotto")
-    .single();
+  // Auto-assign default sponsor based on starting level (mirrors createLeague logic)
+  const defaultSlug = startLevel <= 1 ? "lotto" : startLevel === 2 ? "astana" : null;
+  if (defaultSlug) {
+    const { data: defaultSponsor } = await supabase
+      .from("sponsors")
+      .select("id")
+      .eq("slug", defaultSlug)
+      .single();
 
-  if (lotto) {
-    await supabase
-      .from("team_sponsors")
-      .insert({ team_id: team.id, sponsor_id: lotto.id, activated_at: new Date().toISOString() });
+    if (defaultSponsor) {
+      await supabase
+        .from("team_sponsors")
+        .insert({ team_id: team.id, sponsor_id: defaultSponsor.id, activated_at: new Date().toISOString() });
+    }
   }
 
   const { error: joinError } = await supabase.from("league_members").insert({
