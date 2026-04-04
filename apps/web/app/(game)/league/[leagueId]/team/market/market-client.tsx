@@ -8,7 +8,7 @@ import { RiderCard } from "@/components/rider-card";
 import { FilterChips } from "@/components/filter-chips";
 import { StickyBar } from "@/components/sticky-bar";
 import { addDraft } from "@/app/(game)/league/[leagueId]/team/auctions/actions";
-import { smartCountdown, formatThousands, countryCodeToFlag, calcMinSalary, formatEuro } from "@/lib/format";
+import { formatRoundCountdown, formatThousands, countryCodeToFlag, calcMinSalary, formatEuro } from "@/lib/format";
 import { computeAvailableBudget } from "@/lib/budget";
 
 interface Rider {
@@ -227,7 +227,7 @@ export function MarketClient({
     if (groupedRiders && groupedRiders.length > 0) {
       setExpandedGroups(new Set([groupedRiders[0][0]]));
     }
-  }, [activeFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeFilter]);
 
   const toggleGroup = useCallback((groupName: string) => {
     setExpandedGroups((prev) => {
@@ -374,7 +374,17 @@ export function MarketClient({
       {activeRound ? (
         <div className="flex items-center justify-between px-4 pt-4 pb-0">
           <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-            {activeRound.name} &middot; {smartCountdown(activeRound.closes_at)}
+            {(() => {
+              const { text, urgent } = formatRoundCountdown(activeRound.closes_at, "open");
+              return (
+                <>
+                  {activeRound.name}{" "}
+                  <span className={urgent ? "text-[var(--warning)]" : ""}>
+                    &middot; {text}
+                  </span>
+                </>
+              );
+            })()}
           </span>
           <Link href={`/league/${leagueId}/team/market/history`} className="text-[length:var(--type-body)] link-tertiary">
             History &rarr;

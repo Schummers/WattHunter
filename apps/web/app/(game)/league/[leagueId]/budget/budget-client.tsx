@@ -47,7 +47,7 @@ export function BudgetClient({
   leagueId,
   treasury,
   income,
-  outgoing: _outgoing,
+
   transactions,
   currentSponsor,
   phaseIndex,

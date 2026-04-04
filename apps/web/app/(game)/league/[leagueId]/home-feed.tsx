@@ -3,20 +3,9 @@
 import { InfoCard } from "@/components/info-card";
 import { OnboardingCards } from "@/components/onboarding-cards";
 import { getPhaseRaces, formatRaceDate, type UpcomingRace } from "@/lib/calendar";
+import { formatRoundCountdown } from "@/lib/format";
 import { getCurrentPhase, getPhaseRange, getNextPhase } from "@/lib/phases";
 import { Timer, ChevronRight, Calendar } from "lucide-react";
-
-function timeUntil(dateStr: string): string {
-  const target = new Date(dateStr);
-  const now = new Date();
-  const diff = target.getTime() - now.getTime();
-  if (diff <= 0) return "now";
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const days = Math.floor(hours / 24);
-  if (days > 0) return `${days}d ${hours % 24}h`;
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  return `${hours}h ${minutes}m`;
-}
 
 interface ActiveAuction {
   id: string;
@@ -111,21 +100,18 @@ export function HomeFeed({
                             {auction.name}
                           </p>
                           <p className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-                            {auction.status === "open" ? (
-                              <>
-                                Closes in{" "}
-                                <span className="font-semibold text-[var(--warning)]">
-                                  {timeUntil(auction.closes_at)}
+                            {(() => {
+                              const status = auction.status === "open" ? "open" : "scheduled";
+                              const target = auction.status === "open" ? auction.closes_at : auction.opens_at;
+                              const { text, urgent } = formatRoundCountdown(target, status);
+                              return (
+                                <span
+                                  className={`font-semibold ${urgent ? "text-[var(--warning)]" : "text-[var(--text-high)]"}`}
+                                >
+                                  {text}
                                 </span>
-                              </>
-                            ) : (
-                              <>
-                                Opens in{" "}
-                                <span className="font-semibold text-[var(--text-high)]">
-                                  {timeUntil(auction.opens_at)}
-                                </span>
-                              </>
-                            )}
+                              );
+                            })()}
                           </p>
                         </div>
                       </div>

@@ -154,13 +154,11 @@ function SponsorCard({
 }
 
 export function MarketplaceClient({
-  leagueId,
   teamId,
   teamLevel,
   sponsors,
   currentSponsor,
   nextPhaseName,
-  isImmediate,
   pendingSponsorId,
   backLabel = "Budget",
 }: MarketplaceClientProps) {

@@ -81,7 +81,6 @@ export function RiderCard({
     return inner;
   }
 
-  const hasBid = bidState === "active" || bidState === "outbid";
   const bgClass = "";
 
   const hoverClass = !href ? "" : "hover:bg-[var(--bg-surface-hover)]";

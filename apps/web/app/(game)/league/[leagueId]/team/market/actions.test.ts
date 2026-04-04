@@ -45,8 +45,6 @@ function makeChain(data: unknown = null, error: unknown = null) {
 const USER_ID = "aaaaaaaa-0000-0000-0000-000000000001";
 const TEAM_ID = "bbbbbbbb-0000-0000-0000-000000000001";
 const LEAGUE_ID = "eeeeeeee-0000-0000-0000-000000000001";
-const SPONSOR_ID = "ffffffff-0000-0000-0000-000000000001";
-
 describe("confirmPhaseSetup", () => {
   beforeEach(() => {
     vi.clearAllMocks();

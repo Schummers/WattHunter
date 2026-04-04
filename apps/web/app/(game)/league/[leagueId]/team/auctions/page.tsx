@@ -3,7 +3,7 @@ import { getUser } from "@/lib/supabase/get-user";
 import { getLevelForXp, getMaxSlots } from "@/lib/levels";
 import { getMaxActivePolicies, POLICY_TYPES } from "@/lib/policies";
 import { calcMinSalary, countryCodeToFlag } from "@/lib/format";
-import { calculateBoost, riderMatchesPolicy } from "@/lib/boost";
+import { riderMatchesPolicy } from "@/lib/boost";
 import { AuctionsClient } from "./auctions-client";
 
 function formatName(fullName: string): string {
