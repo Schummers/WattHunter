@@ -43,6 +43,45 @@ export function calcMinSalary(pcsPoints: number): number {
   return Math.max(SALARY_FLOOR, Math.floor(raw / 100) * 100);
 }
 
+/**
+ * Format a round countdown with label and urgency flag.
+ * - status "open"      → "closes in Xd Yh" (urgent when ≤ 48h remain)
+ * - status "scheduled" → "opens in Xd Yh"  (urgent when ≤ 48h remain)
+ */
+export function formatRoundCountdown(
+  target: Date | string,
+  status: "open" | "scheduled"
+): { text: string; urgent: boolean } {
+  const end = typeof target === "string" ? new Date(target) : target;
+  const now = new Date();
+  const diffMs = end.getTime() - now.getTime();
+
+  const label = status === "open" ? "closes in" : "opens in";
+
+  if (diffMs <= 0) {
+    return { text: `${label} 0h`, urgent: true };
+  }
+
+  const totalMinutes = Math.floor(diffMs / (1000 * 60));
+  const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  const minutes = totalMinutes % 60;
+
+  let timeStr: string;
+  if (days > 0) {
+    timeStr = `${days}d ${hours}h`;
+  } else if (totalHours > 0) {
+    timeStr = `${totalHours}h ${minutes}m`;
+  } else {
+    timeStr = `${minutes}m`;
+  }
+
+  const urgent = diffMs <= 48 * 60 * 60 * 1000;
+
+  return { text: `${label} ${timeStr}`, urgent };
+}
+
 /** Smart countdown: "in X days" or "in X hours" depending on remaining time. */
 export function smartCountdown(target: Date | string): string {
   const end = typeof target === "string" ? new Date(target) : target;
