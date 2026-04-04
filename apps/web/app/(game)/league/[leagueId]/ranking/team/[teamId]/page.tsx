@@ -106,16 +106,30 @@ export default async function TeamDetailPage({
   const [{ data: leagueContractsRaw }, { data: leagueXpRaw }] = await Promise.all([
     supabase
       .from("contracts")
-      .select("rider_id")
+      .select("rider_id, status, released_at")
       .in("team_id", leagueTeamIds.length > 0 ? leagueTeamIds : ["__none__"])
-      .eq("status", "active"),
+      .in("status", ["active", "released"]),
     supabase
       .from("rider_xp_daily")
       .select("rider_id, xp_gained, race_slug")
       .in("team_id", leagueTeamIds.length > 0 ? leagueTeamIds : ["__none__"]),
   ]);
 
-  const leagueRiderIds = [...new Set((leagueContractsRaw ?? []).map((c) => c.rider_id))];
+  // Deduplicate: active beats released; latest released_at wins among released
+  const leagueContractByRider = new Map<string, { rider_id: string; status: string; released_at?: string | null }>();
+  for (const c of leagueContractsRaw ?? []) {
+    const existing = leagueContractByRider.get(c.rider_id);
+    if (!existing) {
+      leagueContractByRider.set(c.rider_id, c);
+    } else if (c.status === "active" && existing.status !== "active") {
+      leagueContractByRider.set(c.rider_id, c);
+    } else if (c.status === "released" && existing.status === "released") {
+      const cTime = c.released_at ?? "";
+      const eTime = existing.released_at ?? "";
+      if (cTime > eTime) leagueContractByRider.set(c.rider_id, c);
+    }
+  }
+  const leagueRiderIds = [...leagueContractByRider.keys()];
 
   const leagueRiderXp: Record<string, number> = {};
   for (const r of leagueXpRaw ?? []) {
