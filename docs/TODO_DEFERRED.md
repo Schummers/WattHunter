@@ -4,6 +4,16 @@
 
 ---
 
+## UI / UX
+
+### RD-13. Rider Detail page — SegmentedControl incohérent ⏳ DEFERRED
+- La page rider detail affiche ou non un SegmentedControl (onglets PCS + historique jeu) selon le point d'entrée (`?from=recruits|team|ranking`).
+- Avec l'ajout des free agents dans le Rider Ranking, un 4ème état apparaît : `?from=ranking` sur un free agent (pas de contrat actif).
+- **Objectif** : unifier l'affichage — toujours montrer les 2 onglets (PCS info + game history avec nom d'équipe par ligne), indépendamment du `?from`.
+- **Effort estimé** : moyen (refactor de la logique conditionnelle dans `rider/[riderId]/page.tsx`).
+
+---
+
 ## Fonctionnel
 
 ### 1. Auto-validation joueur inactif ⏳ DEFERRED

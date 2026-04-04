@@ -54,9 +54,9 @@ export default async function RankingPage({
         .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]),
       supabase
         .from("contracts")
-        .select("id, team_id, rider_id, status, riders:rider_id(id, full_name, nationality, photo_url, pcs_rank)")
+        .select("id, team_id, rider_id, status, released_at, riders:rider_id(id, full_name, nationality, photo_url, pcs_rank)")
         .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"])
-        .eq("status", "active"),
+        .in("status", ["active", "released"]),
       supabase
         .from("rider_xp_daily")
         .select("rider_id, team_id, race_slug, xp_gained, date")
@@ -74,8 +74,24 @@ export default async function RankingPage({
   // All active/notice contracts in league, join riders
   const contracts = contractsRaw ?? [];
 
+  // Deduplicate by rider_id: active beats released; latest released_at wins among released
+  const contractByRider = new Map<string, typeof contracts[number]>();
+  for (const c of contracts) {
+    const existing = contractByRider.get(c.rider_id);
+    if (!existing) {
+      contractByRider.set(c.rider_id, c);
+    } else if (c.status === "active" && existing.status !== "active") {
+      contractByRider.set(c.rider_id, c);
+    } else if (c.status === "released" && existing.status === "released") {
+      const cTime = (c as { released_at?: string | null }).released_at ?? "";
+      const eTime = (existing as { released_at?: string | null }).released_at ?? "";
+      if (cTime > eTime) contractByRider.set(c.rider_id, c);
+    }
+  }
+  const dedupedContracts = [...contractByRider.values()];
+
   // Get all rider IDs in league
-  const riderIds = [...new Set(contracts.map((c) => c.rider_id))];
+  const riderIds = dedupedContracts.map((c) => c.rider_id);
 
   const xpData = xpDataRaw ?? [];
 
@@ -228,17 +244,21 @@ export default async function RankingPage({
   }));
 
   // Build rider data with owner info
-  const riderOwnerMap: Record<string, { teamId: string; teamName: string; ownerName: string }> = {};
-  for (const c of contracts) {
-    const team = teams.find((t) => t.id === c.team_id);
-    riderOwnerMap[c.rider_id] = {
-      teamId: c.team_id,
-      teamName: team?.name ?? "",
-      ownerName: ownerByTeamId[c.team_id] ?? "Unknown",
-    };
+  const riderOwnerMap: Record<string, { teamId: string; teamName: string; ownerName: string } | null> = {};
+  for (const c of dedupedContracts) {
+    if (c.status === "active") {
+      const team = teams.find((t) => t.id === c.team_id);
+      riderOwnerMap[c.rider_id] = {
+        teamId: c.team_id,
+        teamName: team?.name ?? "",
+        ownerName: ownerByTeamId[c.team_id] ?? "Unknown",
+      };
+    } else {
+      riderOwnerMap[c.rider_id] = null; // free agent
+    }
   }
 
-  const ridersData = contracts.map((c) => {
+  const ridersData = dedupedContracts.map((c) => {
     const rider = Array.isArray(c.riders) ? c.riders[0] : c.riders;
     const r = rider as { id: string; full_name: string; nationality: string | null; photo_url: string | null; pcs_rank: number | null };
     const owner = riderOwnerMap[c.rider_id];
@@ -252,7 +272,8 @@ export default async function RankingPage({
       movement: riderMovement[c.rider_id] ?? 0,
       ownerName: owner?.ownerName ?? null,
       teamId: owner?.teamId ?? null,
-      isMyRider: c.team_id === myTeamId,
+      isMyRider: c.status === "active" && c.team_id === myTeamId,
+      isFormer: c.status === "released",
     };
   }).sort((a, b) => b.xp - a.xp);
 
