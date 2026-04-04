@@ -34,7 +34,7 @@ function makeChain(data: unknown = null, error: unknown = null) {
       if (prop === "error") return error;
       if (prop === "count") return result.count;
       if (prop === "then") return undefined;
-      return (..._args: unknown[]) => new Proxy({} as Record<string, unknown>, handler);
+      return () => new Proxy({} as Record<string, unknown>, handler);
     },
   };
   return new Proxy({} as Record<string, unknown>, handler);

@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { RiderDetailClient } from "./rider-detail-client";
 import { getMaxSlots } from "@/lib/levels";
 import { calcMinSalary } from "@/lib/format";
-import { getCurrentPhase } from "@/lib/phases";
+
 
 type RiderContext = "market" | "team" | "ranking";
 

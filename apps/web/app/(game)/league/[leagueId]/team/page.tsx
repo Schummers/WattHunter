@@ -6,7 +6,7 @@ import { RiderCard } from "@/components/rider-card";
 import { BrandCard } from "@/components/brand-card";
 import { getMaxSlots, getProgressPct, getNextLevel, getLevelForXp } from "@/lib/levels";
 import { countryCodeToFlag } from "@/lib/format";
-import { calculateBoost, riderMatchesPolicy } from "@/lib/boost";
+import { riderMatchesPolicy } from "@/lib/boost";
 import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
 
 
@@ -132,8 +132,6 @@ export default async function MyTeamPage({
       birthdate: (r as { birthdate?: string | null })?.birthdate ?? null,
     };
   });
-
-  const boostPct = calculateBoost(boostPolicies, boostRiders);
 
   // Per-rider boost calculation
   const riderBoosts: Record<string, number> = {};
