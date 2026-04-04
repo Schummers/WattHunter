@@ -74,6 +74,7 @@ export async function createLeague(
       invite_code: inviteCode,
       commissioner_id: user.id,
       max_players: 20,
+      starting_level,
     })
     .select("id")
     .single();
