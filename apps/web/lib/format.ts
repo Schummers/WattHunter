@@ -43,55 +43,28 @@ export function calcMinSalary(pcsPoints: number): number {
   return Math.max(SALARY_FLOOR, Math.floor(raw / 100) * 100);
 }
 
-/**
- * Format a round countdown with label and urgency flag.
- * - status "open"      → "closes in Xd Yh" (urgent when ≤ 48h remain)
- * - status "scheduled" → "opens in Xd Yh"  (urgent when ≤ 48h remain)
+/** Unified round countdown. Returns display text and urgency flag for color styling.
+ *  text: "closes in 1d 5h" | "opens in 18h" | "closes in < 1h" | "ended"
+ *  urgent: true when ≤ 48h remain (use --warning color token)
  */
 export function formatRoundCountdown(
   target: Date | string,
   status: "open" | "scheduled"
 ): { text: string; urgent: boolean } {
   const end = typeof target === "string" ? new Date(target) : target;
-  const now = new Date();
-  const diffMs = end.getTime() - now.getTime();
+  const diffMs = end.getTime() - Date.now();
 
-  const label = status === "open" ? "closes in" : "opens in";
+  if (diffMs <= 0) return { text: "ended", urgent: false };
 
-  if (diffMs <= 0) {
-    return { text: `${label} 0h`, urgent: true };
-  }
+  const prefix = status === "open" ? "closes in" : "opens in";
+  const urgent = diffMs <= 48 * 60 * 60 * 1000;
 
-  const totalMinutes = Math.floor(diffMs / (1000 * 60));
   const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
-  const minutes = totalMinutes % 60;
 
-  let timeStr: string;
-  if (days > 0) {
-    timeStr = `${days}d ${hours}h`;
-  } else if (totalHours > 0) {
-    timeStr = `${totalHours}h ${minutes}m`;
-  } else {
-    timeStr = `${minutes}m`;
-  }
-
-  const urgent = diffMs <= 48 * 60 * 60 * 1000;
-
-  return { text: `${label} ${timeStr}`, urgent };
-}
-
-/** Smart countdown: "in X days" or "in X hours" depending on remaining time. */
-export function smartCountdown(target: Date | string): string {
-  const end = typeof target === "string" ? new Date(target) : target;
-  const now = new Date();
-  const diffMs = end.getTime() - now.getTime();
-  if (diffMs <= 0) return "ended";
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  if (diffHours < 1) return "in < 1 hour";
-  if (diffHours < 24) return `in ${diffHours} hour${diffHours > 1 ? "s" : ""}`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `in ${diffDays} day${diffDays > 1 ? "s" : ""}`;
+  if (totalHours < 1) return { text: `${prefix} < 1h`, urgent };
+  if (days > 0) return { text: `${prefix} ${days}d ${hours}h`, urgent };
+  return { text: `${prefix} ${totalHours}h`, urgent };
 }
 
