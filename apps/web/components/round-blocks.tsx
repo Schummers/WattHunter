@@ -56,10 +56,10 @@ export function RoundBlocks({ rounds, activeRound }: RoundBlocksProps) {
                 isActive ? "text-[var(--text-high)]" : "text-[var(--text-mid)]"
               }`}
             >
-              {formatRoundDate(r.closes_at)}
+              {formatRoundDate(r.opens_at)}
             </span>
             <span className="font-mono text-[length:var(--type-micro)] text-[var(--text-low)]">
-              {formatRoundTime(r.closes_at)}
+              {formatRoundTime(r.opens_at)}
             </span>
           </div>
         );
