@@ -227,7 +227,7 @@ export function MarketClient({
     if (groupedRiders && groupedRiders.length > 0) {
       setExpandedGroups(new Set([groupedRiders[0][0]]));
     }
-  }, [activeFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeFilter]);
 
   const toggleGroup = useCallback((groupName: string) => {
     setExpandedGroups((prev) => {

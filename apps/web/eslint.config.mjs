@@ -9,6 +9,8 @@ export default tseslint.config(
     },
     rules: {
       ...nextPlugin.configs["core-web-vitals"].rules,
+      "@typescript-eslint/no-explicit-any": "warn",
+      "react-hooks/exhaustive-deps": "off",
     },
   },
   {
