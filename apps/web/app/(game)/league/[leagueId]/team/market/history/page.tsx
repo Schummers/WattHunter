@@ -35,7 +35,7 @@ export default async function AuctionHistoryPage({
 
   // Fetch bids for all closed rounds
   const roundIds = (rounds ?? []).map((r) => r.id);
-  let bidsByRound: Record<
+  const bidsByRound: Record<
     string,
     Array<{
       id: string;

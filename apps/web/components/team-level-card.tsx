@@ -2,7 +2,7 @@
 
 import { RailLink } from "@/components/rail-link";
 import { Progress } from "@/components/ui/progress";
-import { getNextLevel, getProgressPct, getNewUnlocks, getLevelByNumber } from "@/lib/levels";
+import { getNextLevel, getProgressPct, getNewUnlocks } from "@/lib/levels";
 
 interface TeamLevelCardProps {
   leagueId: string;
@@ -22,7 +22,6 @@ export function TeamLevelCard({
   variant = "default",
 }: TeamLevelCardProps) {
   const next = getNextLevel(currentLevel);
-  const current = getLevelByNumber(currentLevel);
   const pct = getProgressPct(currentXp, currentLevel);
   const isMaxLevel = !next;
   const unlocks = isMaxLevel ? [] : getNewUnlocks(currentLevel + 1);

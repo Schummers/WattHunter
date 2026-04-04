@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { BackHeader } from "@/components/back-header";
 import { LevelsTimeline } from "./levels-timeline";
-import { LEVELS, getProgressPct, getNextLevel, getLevelForXp } from "@/lib/levels";
+import { getProgressPct, getNextLevel, getLevelForXp } from "@/lib/levels";
 
 export default async function LevelsPage({
   params,

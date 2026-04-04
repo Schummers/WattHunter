@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { MarketplaceClient } from "./marketplace-client";
-import { getCurrentPhase, getNextPhase, isInAuctionWindow, isLeagueFirstCycle } from "@/lib/phases";
+import { getNextPhase, isInAuctionWindow, isLeagueFirstCycle } from "@/lib/phases";
 import type { SponsorRow, TeamSponsor } from "@/lib/sponsors";
 
 interface Props {

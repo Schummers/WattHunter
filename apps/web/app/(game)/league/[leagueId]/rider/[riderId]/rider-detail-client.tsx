@@ -116,9 +116,6 @@ export function RiderDetailClient({
   raceResults,
   context,
   minSalary,
-  currentBidId,
-  currentBidAmount,
-  activeAuctionId,
   contractData,
   ownerInfo,
   budgetInfo,
@@ -127,7 +124,6 @@ export function RiderDetailClient({
   gameXp,
   totalBonus,
   draftAmount,
-  currentRound,
 }: RiderDetailClientProps) {
   const router = useRouter();
   const [tabIndex, setTabIndex] = useState(0);

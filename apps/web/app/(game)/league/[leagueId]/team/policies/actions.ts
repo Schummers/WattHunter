@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
-import { getCurrentPhase, getNextPhase, isInAuctionWindow } from "@/lib/phases";
+import { getCurrentPhase, getNextPhase } from "@/lib/phases";
 
 const PolicyInputSchema = z.object({
   slug: z.string(),

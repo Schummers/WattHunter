@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { Lock, Info, Save, Target, Globe, Users, Clock } from "lucide-react";
+import { Lock, Save, Target, Globe, Users, Clock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StickyBar } from "@/components/sticky-bar";
