@@ -53,7 +53,7 @@ export default async function BudgetPage({
       .maybeSingle(),
     supabase
       .from("treasury_log")
-      .select("*, riders:rider_id(photo_url, last_name, first_name)")
+      .select("*, riders:rider_id(photo_url, full_name)")
       .eq("team_id", team.id)
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString())
@@ -97,7 +97,7 @@ export default async function BudgetPage({
 
   // Flatten rider join data for client component
   const mappedTransactions = (transactions ?? []).map((t: Record<string, unknown>) => {
-    const rider = t.riders as { photo_url: string | null; last_name: string; first_name: string } | null;
+    const rider = t.riders as { photo_url: string | null; full_name: string } | null;
     return {
       id: t.id as string,
       type: t.type as string,
@@ -105,7 +105,7 @@ export default async function BudgetPage({
       description: t.description as string | null,
       created_at: t.created_at as string,
       rider_photo_url: rider?.photo_url ?? null,
-      rider_name: rider ? `${rider.first_name} ${rider.last_name}` : null,
+      rider_name: rider?.full_name ?? null,
     };
   });
 

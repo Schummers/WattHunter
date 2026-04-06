@@ -190,7 +190,7 @@ const HELP_SECTIONS: HelpSection[] = [
         </Formula>
         <p>
           At the start of each phase you <strong>confirm your setup</strong> (sponsor, roster,
-          policies) before bidding opens. Confirming triggers the payday: sponsor income is added
+          strategies) before bidding opens. Confirming triggers the payday: sponsor income is added
           and salaries are deducted. Then the 3 auction rounds open on consecutive days.
         </p>
       </Prose>
@@ -304,7 +304,7 @@ const HELP_SECTIONS: HelpSection[] = [
           team&apos;s cumulative score.
         </p>
         <Formula>
-          <p>Rider XP = PCS_points_of_the_day × (1 + sum_of_active_policy_bonuses)</p>
+          <p>Rider XP = PCS_points_of_the_day × (1 + sum_of_active_strategy_bonuses)</p>
           <p>Team XP = sum(all riders&apos; XP)</p>
         </Formula>
         <Table
@@ -313,33 +313,33 @@ const HELP_SECTIONS: HelpSection[] = [
             ["Calculation time", "Daily at 09:00 UTC"],
             ["Accumulation", "Cumulative — XP never decreases"],
             ["Ranking", "League-wide, sorted by total Team XP"],
-            ["Policy boost", "Additive — each matching policy adds +5%"],
+            ["Strategy boost", "Additive — each matching strategy adds +5%"],
           ]}
         />
         <p>
           <strong>Example:</strong> Your rider scores 40 PCS points today. You have 2 active
-          policies and the rider matches both (+10% total). Rider XP = 40 × 1.10 = 44 XP
+          strategies and the rider matches both (+10% total). Rider XP = 40 × 1.10 = 44 XP
           added to your team.
         </p>
       </Prose>
     ),
   },
 
-  /* 7. Policies */
+  /* 7. Strategies */
   {
-    id: "policies",
-    title: "Policies (XP Boosters)",
-    subtitle: "4 policy types to multiply your XP",
+    id: "strategies",
+    title: "Strategies (XP Boosters)",
+    subtitle: "4 strategy types to multiply your XP",
     icon: Shield,
     content: (
       <Prose>
         <p>
-          Policies are <strong>XP multipliers</strong> that reward you for building a
+          Strategies are <strong>XP multipliers</strong> that reward you for building a
           thematic roster. Each matching rider gets a <strong>+5% XP bonus</strong> per
-          active policy they qualify for.
+          active strategy they qualify for.
         </p>
         <Table
-          headers={["Policy", "Bonus", "Unlock level", "Configuration"]}
+          headers={["Strategy", "Bonus", "Unlock level", "Configuration"]}
           rows={[
             ["Speciality", "+5% per matching specialty", "Level 1", "Choose a specialty (Sprinter, GC, etc.)"],
             ["Nationality", "+5% per matching nationality", "Level 3", "Choose a country"],
@@ -348,18 +348,18 @@ const HELP_SECTIONS: HelpSection[] = [
           ]}
         />
         <Formula>
-          <p>Max active policies: 1 (Level 1-2) | 2 (Level 3-6) | 3 (Level 7-8)</p>
-          <p>Bonuses are additive across policies</p>
+          <p>Max active strategies: 1 (Level 1-2) | 2 (Level 3-6) | 3 (Level 7-8)</p>
+          <p>Bonuses are additive across strategies</p>
         </Formula>
         <p>
-          <strong>Policy change timing:</strong>
+          <strong>Strategy change timing:</strong>
         </p>
         <ul>
           <li>
-            In <strong>Round 1</strong> of a phase: policy changes take effect <strong>immediately</strong>
+            In <strong>Round 1</strong> of a phase: strategy changes take effect <strong>immediately</strong>
           </li>
           <li>
-            In <strong>Round 2+</strong>: policy changes are <strong>pending</strong> and take effect
+            In <strong>Round 2+</strong>: strategy changes are <strong>pending</strong> and take effect
             at the next payday (next phase confirmation)
           </li>
         </ul>
@@ -381,20 +381,20 @@ const HELP_SECTIONS: HelpSection[] = [
     content: (
       <Prose>
         <Table
-          headers={["Level", "Phase", "XP", "Slots", "Policies", "Rider pool", "New unlock"]}
+          headers={["Level", "Phase", "XP", "Slots", "Strategies", "Rider pool", "New unlock"]}
           rows={[
-            ["1", "Season Start",   "0",     "6",  "1", "#300–600", "Speciality policy + Lotto T1 (250K)"],
+            ["1", "Season Start",   "0",     "6",  "1", "#300–600", "Speciality strategy + Lotto T1 (250K)"],
             ["2", "Classics P1",    "25",    "7",  "1", "#200–600", "Astana T2 (350K)"],
-            ["3", "Classics P2",    "150",   "8",  "2", "#100–600", "Nationality policy + T3 sponsors (450K)"],
+            ["3", "Classics P2",    "150",   "8",  "2", "#100–600", "Nationality strategy + T3 sponsors (450K)"],
             ["4", "Giro",           "350",   "9",  "2", "#30–600",  "—"],
-            ["5", "Pre-Tour",       "600",   "10", "2", "#20–600",  "Teams policy + T4 sponsors (650K)"],
+            ["5", "Pre-Tour",       "600",   "10", "2", "#20–600",  "Teams strategy + T4 sponsors (650K)"],
             ["6", "Tour",           "900",   "11", "2", "#10–600",  "—"],
-            ["7", "Post-Tour",      "1,500", "12", "3", "#4–600",   "Age policies + T5 sponsors (1M)"],
+            ["7", "Post-Tour",      "1,500", "12", "3", "#4–600",   "Age strategies + T5 sponsors (1M)"],
             ["8", "Vuelta",         "2,000", "12", "3", "#1–600",   "T6 UAE Team Emirates (1.25M)"],
           ]}
         />
         <Formula>
-          <p>Higher level = more roster slots + access to better-ranked riders + more policy slots</p>
+          <p>Higher level = more roster slots + access to better-ranked riders + more strategy slots</p>
         </Formula>
         <p>
           <strong>T3 sponsors (Level 3):</strong> Groupama (FR) and Movistar (ES) are GC-oriented.
@@ -469,6 +469,7 @@ const HELP_SECTIONS: HelpSection[] = [
             at the next payday. Your current sponsor remains active for race bonuses until then.
           </li>
         </ul>
+
       </Prose>
     ),
   },

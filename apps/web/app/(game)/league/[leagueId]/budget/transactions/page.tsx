@@ -26,13 +26,13 @@ export default async function AllTransactionsPage({
 
   const { data: transactions } = await supabase
     .from("treasury_log")
-    .select("*, riders:rider_id(photo_url, last_name, first_name)")
+    .select("*, riders:rider_id(photo_url, full_name)")
     .eq("team_id", team.id)
     .order("created_at", { ascending: false });
 
   // Flatten rider join data for client component
   const mappedTransactions = (transactions ?? []).map((t: Record<string, unknown>) => {
-    const rider = t.riders as { photo_url: string | null; last_name: string; first_name: string } | null;
+    const rider = t.riders as { photo_url: string | null; full_name: string } | null;
     return {
       id: t.id as string,
       type: t.type as string,
@@ -40,7 +40,7 @@ export default async function AllTransactionsPage({
       description: t.description as string | null,
       created_at: t.created_at as string,
       rider_photo_url: rider?.photo_url ?? null,
-      rider_name: rider ? `${rider.first_name} ${rider.last_name}` : null,
+      rider_name: rider?.full_name ?? null,
     };
   });
 

@@ -466,12 +466,6 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
     bonus_result = await process_race_bonuses(supabase, all_imported_slugs)
     print(f"  Sponsor bonuses: {bonus_result.get('bonuses_created', 0)} bonuses credited")
 
-    # Treasury validation
-    from validation import validate_treasury
-    validation = await validate_treasury(supabase)
-    if validation.get("divergences"):
-        print(f"WARNING: {len(validation['divergences'])} treasury divergences detected")
-
     # Post-import verification: show contracted riders + imported points for manual cross-check
     if all_imported_slugs:
         print()

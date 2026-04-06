@@ -6,8 +6,8 @@ import { RiderCard } from "@/components/rider-card";
 import { BrandCard } from "@/components/brand-card";
 import { getMaxSlots, getProgressPct, getNextLevel, getLevelForXp } from "@/lib/levels";
 import { countryCodeToFlag } from "@/lib/format";
-import { riderMatchesPolicy } from "@/lib/boost";
-import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
+import { riderMatchesStrategy } from "@/lib/boost";
+import { STRATEGY_TYPES, getMaxActiveStrategies } from "@/lib/strategies";
 
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -70,7 +70,7 @@ export default async function MyTeamPage({
     { data: teamRiders },
     { count: teamsAbove },
     { count: totalTeams },
-    { data: activePolicies },
+    { data: activeStrategies },
   ] = await Promise.all([
     supabase
       .from("contracts")
@@ -89,8 +89,8 @@ export default async function MyTeamPage({
       .select("id", { count: "exact", head: true })
       .eq("league_id", leagueId),
     supabase
-      .from("team_policies")
-      .select("policy_id, config, policies:policy_id(slug, xp_bonus)")
+      .from("team_strategies")
+      .select("strategy_id, config, strategies:strategy_id(slug, xp_bonus)")
       .eq("team_id", team?.id)
       .eq("is_active", true),
   ]);
@@ -114,8 +114,8 @@ export default async function MyTeamPage({
   const maxSlots = getMaxSlots(level);
   const riderCount = teamRiders?.length ?? 0;
 
-  const boostPolicies = (activePolicies ?? []).map((tp) => {
-    const p = Array.isArray(tp.policies) ? tp.policies[0] : tp.policies;
+  const boostStrategies = (activeStrategies ?? []).map((tp) => {
+    const p = Array.isArray(tp.strategies) ? tp.strategies[0] : tp.strategies;
     return {
       slug: (p as { slug: string })?.slug ?? "",
       xp_bonus: (p as { xp_bonus: number })?.xp_bonus ?? 0,
@@ -145,8 +145,8 @@ export default async function MyTeamPage({
         specialty: r.specialty ?? null,
         birthdate: (r as { birthdate?: string | null })?.birthdate ?? null,
       };
-      const matchCount = boostPolicies.filter((p) =>
-        riderMatchesPolicy(riderData, p)
+      const matchCount = boostStrategies.filter((p) =>
+        riderMatchesStrategy(riderData, p)
       ).length;
       if (matchCount > 0) {
         riderBoosts[r.id] = matchCount * 5;
@@ -164,19 +164,19 @@ export default async function MyTeamPage({
   const nextLevel = getNextLevel(level);
   const isMaxLevel = !nextLevel;
 
-  // Policy slots data
-  const maxActivePolicies = getMaxActivePolicies(level);
-  const activePolicySlots = boostPolicies.map((bp) => {
-    const policyType = POLICY_TYPES.find((pt) => pt.slug === bp.slug);
-    if (!policyType) return null;
-    const configValue = bp.config?.[policyType.paramKey] ?? null;
+  // Strategy slots data
+  const maxActiveStrategies = getMaxActiveStrategies(level);
+  const activeStrategySlots = boostStrategies.map((bp) => {
+    const strategyType = STRATEGY_TYPES.find((pt) => pt.slug === bp.slug);
+    if (!strategyType) return null;
+    const configValue = bp.config?.[strategyType.paramKey] ?? null;
     return {
       slug: bp.slug,
-      icon: policyType.icon,
-      name: policyType.name,
+      icon: strategyType.icon,
+      name: strategyType.name,
       value: configValue,
-      boostPct: boostPolicies.length > 0
-        ? boostRiders.filter((r) => riderMatchesPolicy(r, bp)).length * 5
+      boostPct: boostStrategies.length > 0
+        ? boostRiders.filter((r) => riderMatchesStrategy(r, bp)).length * 5
         : 0,
     };
   }).filter(Boolean);
@@ -198,14 +198,14 @@ export default async function MyTeamPage({
         </RailLink>
       </div>
 
-      {/* MT-3: Policy Slots Section */}
+      {/* MT-3: Strategy Slots Section */}
       <div>
         <div className="flex items-center justify-between px-4 mb-2">
           <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-            Policies
+            Strategies
           </span>
           <RailLink
-            href={`/league/${leagueId}/team/policies`}
+            href={`/league/${leagueId}/team/strategies`}
             className="text-[length:var(--type-body)] link-tertiary"
           >
             See all &rarr;
@@ -213,13 +213,13 @@ export default async function MyTeamPage({
         </div>
 
         <div>
-          {/* Active policy slots */}
-          {activePolicySlots.map((slot) => {
+          {/* Active strategy slots */}
+          {activeStrategySlots.map((slot) => {
             const IconComp = ICON_MAP[slot!.icon];
             return (
               <RailLink
                 key={slot!.slug}
-                href={`/league/${leagueId}/team/policies`}
+                href={`/league/${leagueId}/team/strategies`}
               >
                 <div className="relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] hover:bg-[var(--bg-subtle)] transition-colors">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--bg-surface)]">
@@ -245,10 +245,10 @@ export default async function MyTeamPage({
           })}
 
           {/* Empty slots (unlocked but inactive) */}
-          {Array.from({ length: Math.max(0, maxActivePolicies - activePolicySlots.length) }).map((_, i) => (
+          {Array.from({ length: Math.max(0, maxActiveStrategies - activeStrategySlots.length) }).map((_, i) => (
             <RailLink
               key={`empty-${i}`}
-              href={`/league/${leagueId}/team/policies`}
+              href={`/league/${leagueId}/team/strategies`}
             >
               <div className="relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] hover:bg-[var(--bg-subtle)] transition-colors">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--border-default)]">

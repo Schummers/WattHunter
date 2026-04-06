@@ -2,7 +2,7 @@
 Daily scoring job — WattHunter PCS Sync Microservice.
 
 For each contracted rider with pcs_points > 0 (from race_results):
-  1. Apply per-rider policy matching → XP gained
+  1. Apply per-rider strategy matching → XP gained
   2. Upsert into rider_xp_daily (keyed by team_id, rider_id, race_slug)
   3. Update teams.cumulative_xp and teams.level
   4. Snapshot team_ranking_daily for movement tracking
@@ -28,19 +28,19 @@ def compute_level(xp: float) -> int:
     return 1
 
 
-def _rider_matches_policy(
-    policy_slug: str,
+def _rider_matches_strategy(
+    strategy_slug: str,
     config: dict,
     rider: dict,
 ) -> bool:
-    """Check if a rider matches a policy's config criteria."""
-    if policy_slug == "specialist":
+    """Check if a rider matches a strategy's config criteria."""
+    if strategy_slug == "specialist":
         return (rider.get("specialty") or "").lower() == (config.get("specialty") or "").lower()
-    elif policy_slug == "national_pride":
+    elif strategy_slug == "national_pride":
         return (rider.get("nationality") or "").lower() == (config.get("nationality") or "").lower()
-    elif policy_slug == "team_chemistry":
+    elif strategy_slug == "team_chemistry":
         return (rider.get("real_team") or "").lower() == (config.get("team") or "").lower()
-    elif policy_slug == "young_blood":
+    elif strategy_slug == "young_blood":
         max_age = config.get("max_age", 25)
         birthdate = rider.get("birthdate")
         if not birthdate:
@@ -52,7 +52,7 @@ def _rider_matches_policy(
             return age <= max_age
         except (ValueError, TypeError):
             return False
-    elif policy_slug == "road_warriors":
+    elif strategy_slug == "road_warriors":
         birthdate = rider.get("birthdate")
         if not birthdate:
             return False
@@ -68,15 +68,15 @@ def _rider_matches_policy(
 
 def _compute_rider_bonus(
     rider_info: dict,
-    team_policies: list[dict],
+    team_strategies: list[dict],
 ) -> float:
-    """Sum xp_bonus for all policies that match this rider."""
+    """Sum xp_bonus for all strategies that match this rider."""
     total = 0.0
-    for policy in team_policies:
-        slug = policy.get("slug", "")
-        xp_bonus = float(policy.get("xp_bonus", 0) or 0)
-        config = policy.get("config") or {}
-        if _rider_matches_policy(slug, config, rider_info):
+    for strategy in team_strategies:
+        slug = strategy.get("slug", "")
+        xp_bonus = float(strategy.get("xp_bonus", 0) or 0)
+        config = strategy.get("config") or {}
+        if _rider_matches_strategy(slug, config, rider_info):
             total += xp_bonus
     return total
 
@@ -88,7 +88,7 @@ async def calculate_daily_scores(
     """
     For each contracted rider with pcs_points > 0 in race_results:
       - Filter by race_slugs if provided, otherwise by today's date (backward compat)
-      - Apply per-rider policy matching → XP
+      - Apply per-rider strategy matching → XP
       - Upsert rider_xp_daily (keyed by team_id, rider_id, race_slug)
       - Update team cumulative_xp and level
       - Snapshot team_ranking_daily
@@ -157,22 +157,22 @@ async def calculate_daily_scores(
         team_id = c["team_id"]
         team_contracts.setdefault(team_id, []).append(c)
 
-    # --- Step 3: Get policies with slug and config for per-rider matching ---
-    policies = supabase.table("team_policies").select(
-        "team_id, config, policies(slug, xp_bonus)"
+    # --- Step 3: Get strategies with slug and config for per-rider matching ---
+    strategies = supabase.table("team_strategies").select(
+        "team_id, config, strategies:strategy_id(slug, xp_bonus)"
     ).eq("is_active", True).execute()
 
-    # Build per-team policy list: [{slug, xp_bonus, config}, ...]
-    team_policies: dict[str, list[dict]] = {}
-    for p in policies.data or []:
-        team_id = p["team_id"]
-        policy_data = p.get("policies") or {}
+    # Build per-team strategy list: [{slug, xp_bonus, config}, ...]
+    team_strategies: dict[str, list[dict]] = {}
+    for s in strategies.data or []:
+        team_id = s["team_id"]
+        strategy_data = s.get("strategies") or {}
         entry = {
-            "slug": policy_data.get("slug", ""),
-            "xp_bonus": float(policy_data.get("xp_bonus", 0) or 0),
-            "config": p.get("config") or {},
+            "slug": strategy_data.get("slug", ""),
+            "xp_bonus": float(strategy_data.get("xp_bonus", 0) or 0),
+            "config": s.get("config") or {},
         }
-        team_policies.setdefault(team_id, []).append(entry)
+        team_strategies.setdefault(team_id, []).append(entry)
 
     # Track all league_ids for snapshot step
     league_ids_seen: set[str] = set()
@@ -198,9 +198,9 @@ async def calculate_daily_scores(
                 "birthdate": rider_join.get("birthdate"),
             }
 
-            # Task 2: per-rider policy bonus
-            policies_for_team = team_policies.get(team_id, [])
-            bonus = _compute_rider_bonus(rider_info, policies_for_team)
+            # Task 2: per-rider strategy bonus
+            strategies_for_team = team_strategies.get(team_id, [])
+            bonus = _compute_rider_bonus(rider_info, strategies_for_team)
 
             for entry in race_entries:
                 # Contract-date guard: only score races during contract period
@@ -231,7 +231,7 @@ async def calculate_daily_scores(
                         "contract_id": contract["id"],
                         "date": entry.get("race_date", today),
                         "raw_pcs_points": raw_points,
-                        "policy_bonus": bonus,
+                        "strategy_bonus": bonus,
                         "xp_gained": round(xp, 2),
                         "race_slug": race_slug,
                     }, on_conflict="team_id,rider_id,race_slug").execute()

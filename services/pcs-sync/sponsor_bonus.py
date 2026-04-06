@@ -333,11 +333,11 @@ async def process_race_bonuses(
                             f"Sponsor bonus: {result_type} rank {rank} "
                             f"in {race_slug} (×{multiplier})"
                         ),
-                        "race_slug": race_slug,
                         "rider_id": rider_id,
                     }
                 ).execute()
             except Exception as exc:
+                logger.error(f"[SponsorBonus] Treasury credit FAILED for team={team_id}, bonus={final_bonus}: {exc}")
                 errors.append(f"treasury credit team={team_id}: {exc}")
 
     return {

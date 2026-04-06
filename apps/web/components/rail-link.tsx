@@ -6,7 +6,7 @@ import { useRail } from "@/contexts/rail-context";
 const RAIL_PATTERNS = [
   /\/league\/[^/]+\/rider\//,
   /\/league\/[^/]+\/levels$/,
-  /\/league\/[^/]+\/team\/policies$/,
+  /\/league\/[^/]+\/team\/strategies$/,
 ];
 
 function isRailEligible(href: string): boolean {

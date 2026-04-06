@@ -4,7 +4,7 @@ import { lazy, Suspense, useMemo } from "react";
 
 const RiderDetailRail = lazy(() => import("./rail-pages/rider-detail-rail"));
 const LevelsRail = lazy(() => import("./rail-pages/levels-rail"));
-const PoliciesRail = lazy(() => import("./rail-pages/policies-rail"));
+const StrategiesRail = lazy(() => import("./rail-pages/strategies-rail"));
 
 interface RailRouterProps {
   path: string;
@@ -24,10 +24,10 @@ function parsePath(path: string) {
     return { type: "levels" as const, leagueId: match[1] };
   }
 
-  // /league/[leagueId]/team/policies
-  match = path.match(/\/league\/([^/]+)\/team\/policies$/);
+  // /league/[leagueId]/team/strategies
+  match = path.match(/\/league\/([^/]+)\/team\/strategies$/);
   if (match) {
-    return { type: "policies" as const, leagueId: match[1] };
+    return { type: "strategies" as const, leagueId: match[1] };
   }
 
   return null;
@@ -54,8 +54,8 @@ export function RailRouter({ path }: RailRouterProps) {
       {parsed.type === "levels" && (
         <LevelsRail leagueId={parsed.leagueId} />
       )}
-      {parsed.type === "policies" && (
-        <PoliciesRail leagueId={parsed.leagueId} />
+      {parsed.type === "strategies" && (
+        <StrategiesRail leagueId={parsed.leagueId} />
       )}
     </Suspense>
   );

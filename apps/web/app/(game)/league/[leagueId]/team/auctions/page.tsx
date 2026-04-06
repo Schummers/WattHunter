@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { getLevelForXp, getMaxSlots } from "@/lib/levels";
-import { getMaxActivePolicies, POLICY_TYPES } from "@/lib/policies";
+import { getMaxActiveStrategies, STRATEGY_TYPES } from "@/lib/strategies";
 import { calcMinSalary, countryCodeToFlag } from "@/lib/format";
-import { riderMatchesPolicy } from "@/lib/boost";
+import { riderMatchesStrategy } from "@/lib/boost";
 import { getCurrentPhase } from "@/lib/phases";
 import { AuctionsClient } from "./auctions-client";
 
@@ -57,7 +57,7 @@ export default async function AuctionsPage({
   const xp = team?.cumulative_xp ?? 0;
   const level = getLevelForXp(xp);
   const maxSlots = getMaxSlots(level);
-  const maxActivePolicies = getMaxActivePolicies(level);
+  const maxActiveStrategies = getMaxActiveStrategies(level);
 
   // Check commissioner
   const { data: league } = await supabase
@@ -72,7 +72,7 @@ export default async function AuctionsPage({
     { data: auctionRounds },
     { data: activeContracts },
     { data: draftBids },
-    { data: activePolicies },
+    { data: activeStrategies },
     { data: teamSponsor },
   ] = await Promise.all([
     supabase
@@ -96,8 +96,8 @@ export default async function AuctionsPage({
       .eq("team_id", team?.id)
       .eq("league_id", leagueId),
     supabase
-      .from("team_policies")
-      .select("policy_id, config, policies:policy_id(slug, xp_bonus)")
+      .from("team_strategies")
+      .select("strategy_id, config, strategies:strategy_id(slug, xp_bonus)")
       .eq("team_id", team?.id)
       .eq("is_active", true),
     supabase
@@ -124,13 +124,13 @@ export default async function AuctionsPage({
     xpByRider[row.rider_id] = (xpByRider[row.rider_id] ?? 0) + row.xp_gained;
   }
 
-  // Build boost policies
-  const boostPolicies = (activePolicies ?? []).map((tp) => {
-    const p = Array.isArray(tp.policies) ? tp.policies[0] : tp.policies;
+  // Build boost strategies
+  const boostStrategies = (activeStrategies ?? []).map((ts) => {
+    const s = Array.isArray(ts.strategies) ? ts.strategies[0] : ts.strategies;
     return {
-      slug: (p as { slug: string })?.slug ?? "",
-      xp_bonus: (p as { xp_bonus: number })?.xp_bonus ?? 0,
-      config: tp.config as Record<string, string> | null,
+      slug: (s as { slug: string })?.slug ?? "",
+      xp_bonus: (s as { xp_bonus: number })?.xp_bonus ?? 0,
+      config: ts.config as Record<string, string> | null,
     };
   });
 
@@ -145,7 +145,7 @@ export default async function AuctionsPage({
       specialty: r.specialty ?? null,
       birthdate: (r as { birthdate?: string | null })?.birthdate ?? null,
     };
-    const matchCount = boostPolicies.filter((p) => riderMatchesPolicy(riderData, p)).length;
+    const matchCount = boostStrategies.filter((p) => riderMatchesStrategy(riderData, p)).length;
     if (matchCount > 0) {
       riderBoosts[r.id] = matchCount * 5;
     }
@@ -162,17 +162,17 @@ export default async function AuctionsPage({
       specialty: r.specialty ?? null,
       birthdate: (r as { birthdate?: string | null })?.birthdate ?? null,
     };
-    const matchCount = boostPolicies.filter((p) => riderMatchesPolicy(riderData, p)).length;
+    const matchCount = boostStrategies.filter((p) => riderMatchesStrategy(riderData, p)).length;
     if (matchCount > 0) {
       draftBoosts[r.id] = matchCount * 5;
     }
   }
 
-  // Active policies for display (boost % reflects roster + draft riders combined)
-  const activePoliciesDisplay = boostPolicies.map((bp) => {
-    const policyType = POLICY_TYPES.find((pt) => pt.slug === bp.slug);
-    if (!policyType) return null;
-    const configValue = bp.config?.[policyType.paramKey] ?? null;
+  // Active strategies for display (boost % reflects roster + draft riders combined)
+  const activeStrategiesDisplay = boostStrategies.map((bp) => {
+    const strategyType = STRATEGY_TYPES.find((pt) => pt.slug === bp.slug);
+    if (!strategyType) return null;
+    const configValue = bp.config?.[strategyType.paramKey] ?? null;
     const rosterRiderData = (activeContracts ?? []).map((tr) => {
       const r = Array.isArray(tr.riders) ? tr.riders[0] : tr.riders;
       return {
@@ -192,10 +192,10 @@ export default async function AuctionsPage({
       };
     });
     const combinedRiders = [...rosterRiderData, ...draftRiderData];
-    const matchCount = combinedRiders.filter((r) => riderMatchesPolicy(r, bp)).length;
+    const matchCount = combinedRiders.filter((r) => riderMatchesStrategy(r, bp)).length;
     return {
       slug: bp.slug,
-      name: configValue ? `${policyType.name}: ${configValue}` : policyType.name,
+      name: configValue ? `${strategyType.name}: ${configValue}` : strategyType.name,
       boostPct: matchCount * 5,
     };
   }).filter((p): p is { slug: string; name: string; boostPct: number } => p !== null);
@@ -304,8 +304,8 @@ export default async function AuctionsPage({
       phaseConfirmed={phaseConfirmed}
       sponsorName={sponsorName}
       pendingSponsorName={pendingSponsorName}
-      activePolicies={activePoliciesDisplay}
-      maxPolicies={maxActivePolicies}
+      activeStrategies={activeStrategiesDisplay}
+      maxStrategies={maxActiveStrategies}
       treasury={team?.treasury ?? 0}
       sponsorIncome={sponsorBudget}
       activeSalaries={activeSalaries}

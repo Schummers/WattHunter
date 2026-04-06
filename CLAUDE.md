@@ -90,8 +90,8 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 - Durée d'enchère : chaque round dure de sa date jusqu'à la date du round suivant (dernier round = fin de journée)
 - 8 niveaux alignés sur les 8 phases WT (Season Start → Vuelta)
 - Slots coureurs : 6 (Nv.1) → 7 → 8 → 9 → 10 → 11 → 12 (Nv.7-8)
-- Politiques actives max : 1 (Nv.1-2) → 2 (Nv.3-6) → 3 (Nv.7-8)
-- 4 types de policies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)
+- Stratégies actives max : 1 (Nv.1-2) → 2 (Nv.3-6) → 3 (Nv.7-8)
+- 4 types de strategies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)
 - Pool = Top 600 PCS global (12 mois glissants), gating par rang selon niveau
 - Pool min : Nv.1=#300 | Nv.2=#200 | Nv.3=#100 | Nv.4=#30 | Nv.5=#20 | Nv.6=#10 | Nv.7=#4 | Nv.8=#1
 - XP : Nv.2=25 | Nv.3=150 | Nv.4=350 | Nv.5=600 | Nv.6=900 | Nv.7=1500 | Nv.8=2000
@@ -121,7 +121,7 @@ watthunter/
 │   │   │   │   └── rounds/      # Round validation
 │   │   │   ├── market/          # Recruits tab
 │   │   │   │   └── history/     # Auction history
-│   │   │   └── policies/        # Policies tab
+│   │   │   └── strategies/       # Strategies tab
 │   │   ├── budget/              # Budget P&L
 │   │   │   ├── marketplace/     # Sponsor marketplace
 │   │   │   └── transactions/    # Transaction log
@@ -162,7 +162,7 @@ watthunter/
 │   │   ├── rail-router.tsx      # Rail routing logic
 │   │   ├── rail-pages/          # Rail page components
 │   │   │   ├── rider-detail-rail.tsx
-│   │   │   ├── policies-rail.tsx
+│   │   │   ├── strategies-rail.tsx
 │   │   │   └── levels-rail.tsx
 │   │   ├── bottom-nav.tsx
 │   │   ├── topbar.tsx
@@ -174,7 +174,7 @@ watthunter/
 ├── supabase/
 │   ├── migrations/              # 15+ tables SQL
 │   ├── functions/               # Edge Functions
-│   └── seed/                    # Politiques + sponsors
+│   └── seed/                    # Stratégies + sponsors
 ├── docs/plans/                  # Design docs + implementation plans
 ├── docs/research/               # Design system research
 └── CLAUDE.md
@@ -185,7 +185,7 @@ watthunter/
 - `app/(game)/league/[leagueId]/team/auctions/actions.ts` — draft bids CRUD
 - `app/(game)/league/[leagueId]/team/auctions/rounds/actions.ts` — round validation
 - `app/(game)/league/[leagueId]/team/market/actions.ts` — recruits + release
-- `app/(game)/league/[leagueId]/team/policies/actions.ts` — policy management
+- `app/(game)/league/[leagueId]/team/strategies/actions.ts` — strategy management
 
 ## Gestion du contexte (compression)
 - **Fichier de session** : `~/.claude/projects/-Users-jonathanschummers-Documents-WattHunter/memory/sessions/YYYY-MM-DD.md`

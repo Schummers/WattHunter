@@ -159,13 +159,13 @@ At payday, after `treasury += sponsor_budget − salaries`:
 ### Daily XP
 
 ```
-Rider XP = daily_PCS_points × (1 + sum of active policy bonuses)
+Rider XP = daily_PCS_points × (1 + sum of active strategy bonuses)
 Team XP  = sum of XP from all roster riders
 ```
 
 ### Level progression (8 levels aligned to WT phases)
 
-| Level | WT Phase | XP Required | Slots | Max Policies | PCS Pool | Policy Unlocked | Sponsor Unlocked |
+| Level | WT Phase | XP Required | Slots | Max Strategies | PCS Pool | Strategy Unlocked | Sponsor Unlocked |
 |-------|----------|-------------|-------|--------------|----------|-----------------|-----------------|
 | 1 | Season Start | 0 | 6 | 1 | #300–600 | Speciality | Lotto T1 (250K) |
 | 2 | Classics P1 | 25 | 7 | 1 | #200–600 | — | Astana T2 (350K) |
@@ -178,12 +178,12 @@ Team XP  = sum of XP from all roster riders
 
 ---
 
-## 8. Policies
+## 8. Strategies
 
 4 types, +5% XP each. Max active: 1 (Lv.1–2) → 2 (Lv.3–6) → 3 (Lv.7–8).
 Types unlocked by level: Speciality (Lv.1) → Nationality (Lv.3) → Teams (Lv.5) → Age (Lv.7).
 
-| Policy | Bonus | Configuration |
+| Strategy | Bonus | Configuration |
 |--------|-------|---------------|
 | Specialist | +5% for riders of a chosen specialty | Player's choice |
 | National Pride | +5% for riders of a chosen nationality | Player's choice |
@@ -193,8 +193,8 @@ Types unlocked by level: Speciality (Lv.1) → Nationality (Lv.3) → Teams (Lv.
 Bonuses are **additive**. Example: National Pride (Belgium) + Specialist (Sprinter) = +10%.
 
 **Timing:**
-- In **Round 1** of a phase: policy changes take effect **immediately**
-- In **Round 2+**: policy changes are **pending** and take effect at the next payday
+- In **Round 1** of a phase: strategy changes take effect **immediately**
+- In **Round 2+**: strategy changes are **pending** and take effect at the next payday
 
 ---
 
@@ -272,7 +272,7 @@ Only multiplier: ×2 for a Grand Tour stage.
 ### Payday (phase confirmation)
 
 At the start of each phase, the player **confirms** their configuration:
-1. Adjust sponsor, releases, policies — no money movement yet
+1. Adjust sponsor, releases, strategies — no money movement yet
 2. Click "Confirm"
 3. Calculation: `treasury += sponsor_budget − sum(salaries)`
 4. If treasury < −10,000 → bankruptcy cascade (§4.5)
@@ -296,11 +296,11 @@ At the start of each phase, the player **confirms** their configuration:
 | Bankruptcy: releases first | Highest cumulative XP rider |
 | Bid increment | 100 EUR (multiples of 100) |
 | Max slots | 6 (Lv.1) → 12 (Lv.7–8) |
-| Max policies | 1 (Lv.1–2) → 2 (Lv.3–6) → 3 (Lv.7–8) |
+| Max strategies | 1 (Lv.1–2) → 2 (Lv.3–6) → 3 (Lv.7–8) |
 | Rider pool | Top 600 PCS global (rolling 12 months) |
 | XP Level 8 (max) | 2,000 |
 | Max players per league | 20 |
-| Sponsor / policy Round 1 | Immediate effect |
-| Sponsor / policy Round 2+ | Pending — takes effect at next payday |
+| Sponsor / strategy Round 1 | Immediate effect |
+| Sponsor / strategy Round 2+ | Pending — takes effect at next payday |
 | Release effect | Start of next phase (except bankruptcy: immediate) |
 | Commissioner round dates | Editable at any time before round closes |

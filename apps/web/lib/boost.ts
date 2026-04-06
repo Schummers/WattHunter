@@ -1,11 +1,11 @@
 /**
- * Calculate total XP boost percentage from active team policies matched against roster riders.
+ * Calculate total XP boost percentage from active team strategies matched against roster riders.
  *
- * Each active policy grants `xp_bonus` (e.g. 0.05 = 5%) per rider that matches its config.
- * Total boost = sum of (xp_bonus × matching riders count) for all active policies.
+ * Each active strategy grants `xp_bonus` (e.g. 0.05 = 5%) per rider that matches its config.
+ * Total boost = sum of (xp_bonus × matching riders count) for all active strategies.
  */
 
-export interface PolicyWithConfig {
+export interface StrategyWithConfig {
   xp_bonus: number;
   slug: string;
   config: Record<string, string> | null;
@@ -28,9 +28,9 @@ function getAge(birthdate: string | null): number | null {
   return age;
 }
 
-export function riderMatchesPolicy(rider: RiderForBoost, policy: PolicyWithConfig): boolean {
-  const cfg = policy.config;
-  switch (policy.slug) {
+export function riderMatchesStrategy(rider: RiderForBoost, strategy: StrategyWithConfig): boolean {
+  const cfg = strategy.config;
+  switch (strategy.slug) {
     case "national_pride":
       return !!cfg?.nationality && rider.nationality === cfg.nationality;
     case "team_chemistry":
@@ -52,14 +52,14 @@ export function riderMatchesPolicy(rider: RiderForBoost, policy: PolicyWithConfi
 }
 
 export function calculateBoost(
-  activePolicies: PolicyWithConfig[],
+  activeStrategies: StrategyWithConfig[],
   riders: RiderForBoost[]
 ): number {
   let totalBoost = 0;
 
-  for (const policy of activePolicies) {
-    const matchCount = riders.filter((r) => riderMatchesPolicy(r, policy)).length;
-    totalBoost += policy.xp_bonus * matchCount;
+  for (const strategy of activeStrategies) {
+    const matchCount = riders.filter((r) => riderMatchesStrategy(r, strategy)).length;
+    totalBoost += strategy.xp_bonus * matchCount;
   }
 
   return Math.round(totalBoost * 100);

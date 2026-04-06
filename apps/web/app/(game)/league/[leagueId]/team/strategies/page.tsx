@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { BackHeader } from "@/components/back-header";
-import { POLICY_TYPES } from "@/lib/policies";
-import { PoliciesClient } from "./policies-client";
+import { STRATEGY_TYPES } from "@/lib/strategies";
+import { StrategiesClient } from "./strategies-client";
 import { getCurrentPhase, getNextPhase, isInAuctionWindow } from "@/lib/phases";
 
-export default async function PoliciesPage({
+export default async function StrategiesPage({
   params,
 }: {
   params: Promise<{ leagueId: string }>;
@@ -19,7 +19,7 @@ export default async function PoliciesPage({
     return (
       <div className="px-4 py-8">
         <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-          Please sign in to view policies.
+          Please sign in to view strategies.
         </p>
       </div>
     );
@@ -40,18 +40,18 @@ export default async function PoliciesPage({
 
   // All remaining queries depend only on teamId — run in parallel
   const [
-    { data: dbPolicies },
-    { data: teamPolicies },
+    { data: dbStrategies },
+    { data: teamStrategies },
     { data: nationalitiesData },
     { data: teamsData },
     { data: contracts },
   ] = await Promise.all([
     supabase
-      .from("policies")
+      .from("strategies")
       .select("id, slug"),
     supabase
-      .from("team_policies")
-      .select("policy_id, is_active, config, pending_is_active, pending_config")
+      .from("team_strategies")
+      .select("strategy_id, is_active, config, pending_is_active, pending_config")
       .eq("team_id", teamId),
     supabase
       .from("riders")
@@ -70,41 +70,41 @@ export default async function PoliciesPage({
       .eq("status", "active"),
   ]);
 
-  // Build initial policies map
-  const policyIdToSlug: Record<string, string> = {};
-  for (const p of dbPolicies ?? []) {
-    policyIdToSlug[p.id] = p.slug;
+  // Build initial strategies map
+  const strategyIdToSlug: Record<string, string> = {};
+  for (const s of dbStrategies ?? []) {
+    strategyIdToSlug[s.id] = s.slug;
   }
 
   const nextPhase = getNextPhase(getCurrentPhase());
   const nextPhaseName = nextPhase?.label ?? null;
 
-  const initialPolicies: Record<string, {
+  const initialStrategies: Record<string, {
     isActive: boolean;
     config: Record<string, string> | null;
     hasPending?: boolean;
     pendingIsActive?: boolean;
     pendingConfig?: Record<string, string> | null;
   }> = {};
-  for (const pt of POLICY_TYPES) {
-    initialPolicies[pt.slug] = { isActive: false, config: null };
+  for (const st of STRATEGY_TYPES) {
+    initialStrategies[st.slug] = { isActive: false, config: null };
   }
-  for (const tp of teamPolicies ?? []) {
-    const slug = policyIdToSlug[tp.policy_id];
-    if (slug && initialPolicies[slug] !== undefined) {
+  for (const ts of teamStrategies ?? []) {
+    const slug = strategyIdToSlug[ts.strategy_id];
+    if (slug && initialStrategies[slug] !== undefined) {
       // When a pending change exists, display the pending (intended) state so
       // the toggle reflects what the user last saved rather than the stale
       // current state. This prevents the UI from appearing as though the save
       // had no effect after a page reload.
-      const hasPending = tp.pending_is_active != null;
-      initialPolicies[slug] = {
-        isActive: hasPending ? (tp.pending_is_active ?? tp.is_active) : tp.is_active,
+      const hasPending = ts.pending_is_active != null;
+      initialStrategies[slug] = {
+        isActive: hasPending ? (ts.pending_is_active ?? ts.is_active) : ts.is_active,
         config: hasPending
-          ? ((tp.pending_config as Record<string, string> | null) ?? (tp.config as Record<string, string> | null))
-          : (tp.config as Record<string, string> | null),
+          ? ((ts.pending_config as Record<string, string> | null) ?? (ts.config as Record<string, string> | null))
+          : (ts.config as Record<string, string> | null),
         hasPending,
-        pendingIsActive: tp.pending_is_active ?? undefined,
-        pendingConfig: tp.pending_config as Record<string, string> | null ?? undefined,
+        pendingIsActive: ts.pending_is_active ?? undefined,
+        pendingConfig: ts.pending_config as Record<string, string> | null ?? undefined,
       };
     }
   }
@@ -127,15 +127,15 @@ export default async function PoliciesPage({
       <BackHeader label="My Team" />
 
       <h1 className="px-4 pt-4 text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
-        Team Policies
+        Team Strategies
       </h1>
 
       <div className="px-4 pt-4">
-        <PoliciesClient
+        <StrategiesClient
           teamId={teamId}
           leagueId={leagueId}
           level={level}
-          initialPolicies={initialPolicies}
+          initialStrategies={initialStrategies}
           nationalities={nationalities}
           teams={teams}
           rosterRiders={rosterRiders}

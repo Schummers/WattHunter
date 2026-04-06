@@ -52,7 +52,7 @@ watthunter/
 │   │   │       │   ├── page.tsx        # My Team (roster actif)
 │   │   │       │   ├── market/         # Recruts (marche des coureurs)
 │   │   │       │   │   └── history/    # Historique encheres de l'equipe
-│   │   │       │   ├── policies/       # Politiques actives de l'equipe
+│   │   │       │   ├── strategies/     # Strategies actives de l'equipe
 │   │   │       │   └── auctions/       # Draft bids + validation des rounds
 │   │   │       │       └── rounds/     # Calendrier des rounds (commissioner)
 │   │   │       ├── budget/             # Finances (P&L, tresorerie)
@@ -95,7 +95,7 @@ watthunter/
 │   │   ├── rail-pages/          # Contenu du detail rail par contexte
 │   │   │   ├── rider-detail-rail.tsx
 │   │   │   ├── levels-rail.tsx
-│   │   │   └── policies-rail.tsx
+│   │   │   └── strategies-rail.tsx
 │   │   ├── sidebar.tsx          # Navigation desktop (180px, bg-subtle)
 │   │   ├── topbar.tsx           # TopBar mobile (32px, logo + league chevron + avatar)
 │   │   └── bottom-nav.tsx       # Navigation mobile (4 tabs, hide-on-scroll)
@@ -108,7 +108,7 @@ watthunter/
 │       │   └── middleware.ts    # Refresh session + protection routes
 │       ├── levels.ts            # Source unique donnees niveaux + helpers
 │       ├── format.ts            # countryCodeToFlag, formatEuro, formatThousands, smartCountdown
-│       └── boost.ts             # calculateBoost (5 types de policies vs roster riders)
+│       └── boost.ts             # calculateBoost (5 types de strategies vs roster riders)
 ├── services/pcs-sync/           # Python — sync procyclingstats (local only)
 │   ├── run_pipeline.py          # CLI entry point (5 pipelines: A/B/C/E + bonus)
 │   ├── sync.py                  # Playwright + procyclingstats parser (top 600)
@@ -211,7 +211,7 @@ watthunter/
 ```
 
 - **Sidebar :** 180px fixe, bg-subtle, items de navigation + sous-items (My Team / Recruts)
-- **Detail Rail :** panneau contextuel (rider detail, levels, policies) — flex:2, min 380px
+- **Detail Rail :** panneau contextuel (rider detail, levels, strategies) — flex:2, min 380px
 
 ---
 
@@ -270,7 +270,7 @@ users ←──── league_members ────→ leagues
   └── teams ───────┘                  │
        │                              │
        ├── contracts → riders         │
-       ├── team_policies → policies   │
+       ├── team_strategies → strategies │
        ├── team_sponsors → sponsors   │
        ├── treasury_log               │
        └── rider_xp_daily             │
@@ -289,7 +289,7 @@ users ←──── league_members ────→ leagues
 | Fichier | Description |
 |---------|-------------|
 | `20260221000000_initial_schema.sql` | Schema initial + RLS + contraintes |
-| `20260221150828_seed_policies_sponsors.sql` | 5 politiques + 10 sponsors |
+| `20260221150828_seed_policies_sponsors.sql` | 5 strategies + 10 sponsors |
 | `20260222*` | Fixes RLS (recursion, leagues select, max_players) |
 | `20260227000000_auction_rounds_and_scoring.sql` | auction_bids (round + status), rider_pcs_history |
 | `20260228*` | Trigger new_user, policy teams_select_own, auctions commissioner |
@@ -298,7 +298,7 @@ users ←──── league_members ────→ leagues
 | `20260305200000_top500_level_gating.sql` | Gating pool par niveau |
 | `20260305210000_treasury_200k.sql` | Tresorerie depart 200 000€ |
 | `20260306000000_enrich_riders.sql` | birthdate, birth_place, height_cm, weight_kg + rider_teams |
-| `20260309*` | team_policies unique, contracts select league |
+| `20260309*` | team_strategies unique, contracts select league |
 | `20260311000000_sponsors_overhaul.sql` | Refonte sponsors (6 tiers, 13 sponsors) |
 | `20260312-20260322*` | Fixes pcs_rank, contracts unique, XP decimal, RLS, scoring |
 | `20260402000000_level_rework_8_levels.sql` | 8 niveaux alignes phases WT |
@@ -373,7 +373,7 @@ $$;
 
 ### 8 niveaux alignes sur les 8 phases WT
 
-| Nv. | Phase | XP requis | Slots | Policies max | Pool min |
+| Nv. | Phase | XP requis | Slots | Strategies max | Pool min |
 |-----|-------|-----------|-------|-------------|---------|
 | 1 | Season Start | 0 | 6 | 1 | #300 |
 | 2 | — | 25 | 7 | 1 | #200 |
@@ -482,7 +482,7 @@ $$;
 - [x] Budget P&L (tresorerie, sponsor income, salaires)
 - [x] Sponsor Marketplace (selection sponsor, bonus cards)
 - [x] Transaction history
-- [x] Policies (activation, configuration, 4 types)
+- [x] Strategies (activation, configuration, 4 types)
 - [x] Ranking ligue + profil equipe adverse
 - [x] Settings (team name, leave league)
 - [x] Pipeline PCS A (init-riders, top 600)

@@ -1,4 +1,4 @@
-export const POLICY_TYPES = [
+export const STRATEGY_TYPES = [
   {
     slug: "specialist",
     icon: "Target",
@@ -37,12 +37,12 @@ export const POLICY_TYPES = [
   },
 ] as const;
 
-export type PolicyType = (typeof POLICY_TYPES)[number];
+export type StrategyType = (typeof STRATEGY_TYPES)[number];
 
-export function getMaxActivePolicies(level: number): number {
+export function getMaxActiveStrategies(level: number): number {
   return level >= 7 ? 3 : level >= 3 ? 2 : 1;
 }
 
-export function getPolicyBySlug(slug: string): PolicyType | undefined {
-  return POLICY_TYPES.find((p) => p.slug === slug);
+export function getStrategyBySlug(slug: string): StrategyType | undefined {
+  return STRATEGY_TYPES.find((p) => p.slug === slug);
 }

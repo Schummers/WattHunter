@@ -116,8 +116,8 @@ Sky-500 est utilisé dans **3 contextes uniquement** :
 | Usage | Exemples | Token |
 |-------|----------|-------|
 | **Gradients décoratifs** | Branded card mesh, border beam animation, progress bar fill | `--accent-label` |
-| **Badge background** | `rgba(14, 165, 233, 0.10)` — fond des badges boost/policy | `--badge-bg` |
-| **Badge text** | Texte dans les badges boost "+12%", labels de type policy | `--accent-label` |
+| **Badge background** | `rgba(14, 165, 233, 0.10)` — fond des badges boost/strategy | `--badge-bg` |
+| **Badge text** | Texte dans les badges boost "+12%", labels de type strategy | `--accent-label` |
 
 > **Ce qui n'est PAS sky-500 :** les hero stats (= `--cyan-400`), les labels de section (= `--text-low`), les noms/data (= `--text-high`). Seuls les gradients et badges utilisent sky.
 
@@ -1018,7 +1018,7 @@ Read-only metadata indicators. Used to display status, category, or classificati
 | Variant | Background | Text color | Border | Usage |
 |---------|-----------|-----------|--------|-------|
 | **default** | transparent | `--text-low` | `--border-default` (1px) | Neutral metadata: team name, round number, generic info |
-| **highlighted** | `--badge-bg` (sky@10%) | `--accent-label` (sky-500) | transparent | Emphasis metadata: boost %, policy type, XP badge |
+| **highlighted** | `--badge-bg` (sky@10%) | `--accent-label` (sky-500) | transparent | Emphasis metadata: boost %, strategy type, XP badge |
 | **success** | `rgba(16,185,129,0.10)` | `--success` (#10b981) | transparent | Positive state: completed, gained, won |
 | **warning** | `rgba(245,158,11,0.08)` | `--warning` (#f59e0b) | transparent | Attention state: pending, expiring, at risk |
 
@@ -1112,11 +1112,11 @@ A locked row may contain a default tag with lock icon: `<span class="tag tag-def
 | Context | Variant | Example |
 |---------|---------|---------|
 | Roster — boost badge | highlighted | `+12%` |
-| My Team — policy slot | highlighted | `⛰️ +5%` |
+| My Team — strategy slot | highlighted | `⛰️ +5%` |
 | Progression — completed | success | `✓ Completed` |
-| Policies — pending | warning | `⏳ Pending` |
+| Strategies — pending | warning | `⏳ Pending` |
 | Rider detail — team | default | `Ineos Grenadiers` |
-| Policies — locked type | default (in locked row) | `🔒 Lv.5` |
+| Strategies — locked type | default (in locked row) | `🔒 Lv.5` |
 | Transactions — type | default | `Salary` |
 
 ### Do's and Don'ts

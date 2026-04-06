@@ -318,24 +318,24 @@ def run_payday(supabase: Client, league_id: str) -> dict:
                 ).eq("id", team_id).execute()
                 logger.info(f"[Payday] Team {team_id} — applied pending sponsor {team['pending_sponsor_id']}")
 
-            # --- Step 2: Apply pending policy changes ---
-            pending_policies_resp = supabase.table("team_policies").select(
+            # --- Step 2: Apply pending strategy changes ---
+            pending_strategies_resp = supabase.table("team_strategies").select(
                 "id, pending_is_active, pending_config"
             ).eq("team_id", team_id).not_.is_("pending_is_active", "null").execute()
 
-            for policy in (pending_policies_resp.data or []):
-                if policy["pending_is_active"] is False:
-                    supabase.table("team_policies").delete().eq("id", policy["id"]).execute()
-                    logger.info(f"[Payday] Team {team_id} — deleted policy {policy['id']}")
+            for strategy in (pending_strategies_resp.data or []):
+                if strategy["pending_is_active"] is False:
+                    supabase.table("team_strategies").delete().eq("id", strategy["id"]).execute()
+                    logger.info(f"[Payday] Team {team_id} — deleted strategy {strategy['id']}")
                 else:
-                    supabase.table("team_policies").update({
-                        "is_active": policy["pending_is_active"],
-                        "config": policy["pending_config"],
+                    supabase.table("team_strategies").update({
+                        "is_active": strategy["pending_is_active"],
+                        "config": strategy["pending_config"],
                         "activated_at": now_iso,
                         "pending_is_active": None,
                         "pending_config": None,
-                    }).eq("id", policy["id"]).execute()
-                    logger.info(f"[Payday] Team {team_id} — activated policy {policy['id']}")
+                    }).eq("id", strategy["id"]).execute()
+                    logger.info(f"[Payday] Team {team_id} — activated strategy {strategy['id']}")
 
             # --- Step 3: Credit sponsor income ---
             sponsor_resp = supabase.table("team_sponsors").select(

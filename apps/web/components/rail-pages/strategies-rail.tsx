@@ -2,20 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
-import { POLICY_TYPES } from "@/lib/policies";
+import { STRATEGY_TYPES } from "@/lib/strategies";
 import { isInAuctionWindow as checkAuctionWindow } from "@/lib/phases";
-import { PoliciesClient } from "@/app/(game)/league/[leagueId]/team/policies/policies-client";
+import { StrategiesClient } from "@/app/(game)/league/[leagueId]/team/strategies/strategies-client";
 
 interface Props {
   leagueId: string;
 }
 
-export default function PoliciesRail({ leagueId }: Props) {
+export default function StrategiesRail({ leagueId }: Props) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{
     teamId: string;
     level: number;
-    initialPolicies: Record<string, { isActive: boolean; config: Record<string, string> | null }>;
+    initialStrategies: Record<string, { isActive: boolean; config: Record<string, string> | null }>;
     nationalities: string[];
     teams: string[];
     rosterRiders: { nationality: string | null; real_team: string | null; specialty: string | null; birthdate: string | null }[];
@@ -42,22 +42,22 @@ export default function PoliciesRail({ leagueId }: Props) {
       const teamId = (team as any)?.id ?? "";
       const level = (team as any)?.level ?? 1;
 
-      // Fetch policies DB
-      const { data: dbPolicies } = await supabase.from("policies").select("id, slug");
-      const { data: teamPolicies } = await supabase
-        .from("team_policies")
-        .select("policy_id, is_active, config")
+      // Fetch strategies DB
+      const { data: dbStrategies } = await supabase.from("strategies").select("id, slug");
+      const { data: teamStrategies } = await supabase
+        .from("team_strategies")
+        .select("strategy_id, is_active, config")
         .eq("team_id", teamId);
 
-      const policyIdToSlug: Record<string, string> = {};
-      for (const p of dbPolicies ?? []) policyIdToSlug[p.id] = p.slug;
+      const strategyIdToSlug: Record<string, string> = {};
+      for (const p of dbStrategies ?? []) strategyIdToSlug[p.id] = p.slug;
 
-      const initialPolicies: Record<string, { isActive: boolean; config: Record<string, string> | null }> = {};
-      for (const pt of POLICY_TYPES) initialPolicies[pt.slug] = { isActive: false, config: null };
-      for (const tp of teamPolicies ?? []) {
-        const slug = policyIdToSlug[tp.policy_id];
-        if (slug && initialPolicies[slug] !== undefined) {
-          initialPolicies[slug] = { isActive: tp.is_active, config: tp.config as Record<string, string> | null };
+      const initialStrategies: Record<string, { isActive: boolean; config: Record<string, string> | null }> = {};
+      for (const pt of STRATEGY_TYPES) initialStrategies[pt.slug] = { isActive: false, config: null };
+      for (const tp of teamStrategies ?? []) {
+        const slug = strategyIdToSlug[tp.strategy_id];
+        if (slug && initialStrategies[slug] !== undefined) {
+          initialStrategies[slug] = { isActive: tp.is_active, config: tp.config as Record<string, string> | null };
         }
       }
 
@@ -88,7 +88,7 @@ export default function PoliciesRail({ leagueId }: Props) {
       });
 
       if (!cancelled) {
-        setData({ teamId, level, initialPolicies, nationalities, teams, rosterRiders });
+        setData({ teamId, level, initialStrategies: initialStrategies, nationalities, teams, rosterRiders });
         setLoading(false);
       }
     }
@@ -109,7 +109,7 @@ export default function PoliciesRail({ leagueId }: Props) {
     return (
       <div className="px-4 py-8">
         <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-          Unable to load policies.
+          Unable to load strategies.
         </p>
       </div>
     );
@@ -117,11 +117,11 @@ export default function PoliciesRail({ leagueId }: Props) {
 
   return (
     <div className="px-4 pt-4">
-      <PoliciesClient
+      <StrategiesClient
         teamId={data.teamId}
         leagueId={leagueId}
         level={data.level}
-        initialPolicies={data.initialPolicies}
+        initialStrategies={data.initialStrategies}
         nationalities={data.nationalities}
         teams={data.teams}
         rosterRiders={data.rosterRiders}

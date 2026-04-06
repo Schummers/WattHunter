@@ -56,7 +56,7 @@ interface DraftBid {
   boostPct: number;
 }
 
-interface PolicyDisplay {
+interface StrategyDisplay {
   slug: string;
   name: string;
   boostPct: number;
@@ -73,8 +73,8 @@ interface AuctionsClientProps {
   activeSalaries: number;
   treasury: number;
   pendingSponsorName: string | null;
-  activePolicies: PolicyDisplay[];
-  maxPolicies: number;
+  activeStrategies: StrategyDisplay[];
+  maxStrategies: number;
   rosterRiders: RosterRider[];
   drafts: DraftBid[];
   maxSlots: number;
@@ -97,8 +97,8 @@ export function AuctionsClient({
   activeSalaries,
   treasury,
   pendingSponsorName,
-  activePolicies,
-  maxPolicies,
+  activeStrategies,
+  maxStrategies,
   rosterRiders,
   drafts: initialDrafts,
   maxSlots,
@@ -234,23 +234,23 @@ export function AuctionsClient({
           )}
         </section>
 
-        {/* Section: Sponsor & Policies */}
+        {/* Section: Sponsor & Strategies */}
         <section>
           <div className="px-4 mb-2">
             <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-              Sponsor &amp; Policies
+              Sponsor &amp; Strategies
             </span>
           </div>
           <ConfigCards
             leagueId={leagueId}
             sponsorName={sponsorName}
             sponsorBudget={sponsorIncome}
-            policies={activePolicies.map((p) => ({
+            strategies={activeStrategies.map((p) => ({
               name: p.name,
               value: p.name,
               boostPct: p.boostPct,
             }))}
-            maxPolicies={maxPolicies}
+            maxStrategies={maxStrategies}
             isEditable={true}
           />
           {pendingSponsorName && !isRound1 && (

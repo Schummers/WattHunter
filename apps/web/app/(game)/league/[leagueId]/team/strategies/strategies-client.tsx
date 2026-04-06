@@ -6,10 +6,10 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StickyBar } from "@/components/sticky-bar";
 import { Tag } from "@/components/pill";
-import { POLICY_TYPES, getMaxActivePolicies } from "@/lib/policies";
-import { riderMatchesPolicy } from "@/lib/boost";
+import { STRATEGY_TYPES, getMaxActiveStrategies } from "@/lib/strategies";
+import { riderMatchesStrategy } from "@/lib/boost";
 import { countryCodeToFlag } from "@/lib/format";
-import { savePolicies } from "./actions";
+import { saveStrategies } from "./actions";
 
 const SPECIALTY_LABELS: Record<string, string> = { GC: "GC", Sprint: "Sprint", TT: "TT", OneDay: "One-day" };
 
@@ -20,7 +20,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: 
   Clock,
 };
 
-interface PolicyState {
+interface StrategyState {
   isActive: boolean;
   config: Record<string, string> | null;
   hasPending?: boolean;
@@ -35,11 +35,11 @@ interface RosterRider {
   birthdate: string | null;
 }
 
-interface PoliciesClientProps {
+interface StrategiesClientProps {
   teamId: string;
   leagueId: string;
   level: number;
-  initialPolicies: Record<string, PolicyState>;
+  initialStrategies: Record<string, StrategyState>;
   nationalities: string[];
   teams: string[];
   rosterRiders: RosterRider[];
@@ -47,59 +47,59 @@ interface PoliciesClientProps {
   isInAuctionWindow: boolean;
 }
 
-export function PoliciesClient({
+export function StrategiesClient({
   teamId,
   leagueId,
   level,
-  initialPolicies,
+  initialStrategies,
   nationalities,
   teams,
   rosterRiders,
   nextPhaseName,
   isInAuctionWindow,
-}: PoliciesClientProps) {
-  const [localPolicies, setLocalPolicies] = useState<Record<string, PolicyState>>(initialPolicies);
-  const [savedPolicies, setSavedPolicies] = useState<Record<string, PolicyState>>(initialPolicies);
+}: StrategiesClientProps) {
+  const [localStrategies, setLocalStrategies] = useState<Record<string, StrategyState>>(initialStrategies);
+  const [savedStrategies, setSavedStrategies] = useState<Record<string, StrategyState>>(initialStrategies);
   const [saving, setSaving] = useState(false);
   const [savedBanner, setSavedBanner] = useState<"immediate" | "pending" | false>(false);
 
-  const maxActive = getMaxActivePolicies(level);
-  const activeCount = Object.values(localPolicies).filter((p) => p.isActive).length;
-  const hasPendingOnLoad = Object.values(initialPolicies).some((p) => p.hasPending);
+  const maxActive = getMaxActiveStrategies(level);
+  const activeCount = Object.values(localStrategies).filter((s) => s.isActive).length;
+  const hasPendingOnLoad = Object.values(initialStrategies).some((s) => s.hasPending);
 
   const hasChanges = useMemo(() => {
-    return JSON.stringify(localPolicies) !== JSON.stringify(savedPolicies);
-  }, [localPolicies, savedPolicies]);
+    return JSON.stringify(localStrategies) !== JSON.stringify(savedStrategies);
+  }, [localStrategies, savedStrategies]);
 
   // Coverage calculation
   const { coveredCount, totalRiders, boostPct } = useMemo(() => {
-    const activePols = POLICY_TYPES
-      .filter((pt) => localPolicies[pt.slug]?.isActive)
-      .map((pt) => ({
-        slug: pt.slug,
+    const activeStrats = STRATEGY_TYPES
+      .filter((st) => localStrategies[st.slug]?.isActive)
+      .map((st) => ({
+        slug: st.slug,
         xp_bonus: 0.05,
-        config: localPolicies[pt.slug]?.config ?? null,
+        config: localStrategies[st.slug]?.config ?? null,
       }));
 
     const total = rosterRiders.length;
-    if (total === 0 || activePols.length === 0) {
+    if (total === 0 || activeStrats.length === 0) {
       return { coveredCount: 0, totalRiders: total, boostPct: 0 };
     }
 
     const covered = rosterRiders.filter((rider) =>
-      activePols.some((pol) => riderMatchesPolicy(rider, pol))
+      activeStrats.some((strat) => riderMatchesStrategy(rider, strat))
     ).length;
 
-    const boost = activePols.reduce((sum, pol) => {
-      const matches = rosterRiders.filter((r) => riderMatchesPolicy(r, pol)).length;
+    const boost = activeStrats.reduce((sum, strat) => {
+      const matches = rosterRiders.filter((r) => riderMatchesStrategy(r, strat)).length;
       return sum + matches * 5;
     }, 0);
 
     return { coveredCount: covered, totalRiders: total, boostPct: boost };
-  }, [localPolicies, rosterRiders]);
+  }, [localStrategies, rosterRiders]);
 
   const handleToggle = useCallback((slug: string, checked: boolean) => {
-    setLocalPolicies((prev) => ({
+    setLocalStrategies((prev) => ({
       ...prev,
       [slug]: { ...prev[slug], isActive: checked },
     }));
@@ -107,7 +107,7 @@ export function PoliciesClient({
   }, []);
 
   const handleConfigChange = useCallback((slug: string, key: string, value: string) => {
-    setLocalPolicies((prev) => ({
+    setLocalStrategies((prev) => ({
       ...prev,
       [slug]: {
         ...prev[slug],
@@ -119,15 +119,15 @@ export function PoliciesClient({
 
   async function handleSave() {
     setSaving(true);
-    const payload = POLICY_TYPES.map((pt) => ({
-      slug: pt.slug,
-      isActive: localPolicies[pt.slug]?.isActive ?? false,
-      config: localPolicies[pt.slug]?.config ?? null,
+    const payload = STRATEGY_TYPES.map((st) => ({
+      slug: st.slug,
+      isActive: localStrategies[st.slug]?.isActive ?? false,
+      config: localStrategies[st.slug]?.config ?? null,
     }));
-    const result = await savePolicies(teamId, leagueId, payload);
+    const result = await saveStrategies(teamId, leagueId, payload);
     setSaving(false);
     if (result.success) {
-      setSavedPolicies({ ...localPolicies });
+      setSavedStrategies({ ...localStrategies });
       setSavedBanner(result.immediate ? "immediate" : "pending");
     } else if (result.error) {
       alert(result.error);
@@ -136,7 +136,7 @@ export function PoliciesClient({
 
   return (
     <div className="space-y-4 pb-24">
-      {/* PO-6: Pending / saved banner */}
+      {/* Pending / saved banner */}
       {savedBanner === "immediate" ? (
         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
           <div className="flex items-center gap-2">
@@ -155,14 +155,14 @@ export function PoliciesClient({
             </p>
           </div>
           <ul className="mt-1.5 space-y-0.5">
-            {POLICY_TYPES.filter((pt) => localPolicies[pt.slug]?.isActive).map((pt) => {
-              const config = localPolicies[pt.slug]?.config;
-              const value = config?.[pt.paramKey] ?? null;
-              const IconComp = ICON_MAP[pt.icon];
+            {STRATEGY_TYPES.filter((st) => localStrategies[st.slug]?.isActive).map((st) => {
+              const config = localStrategies[st.slug]?.config;
+              const value = config?.[st.paramKey] ?? null;
+              const IconComp = ICON_MAP[st.icon];
               return (
-                <li key={pt.slug} className="flex items-center gap-1.5 text-[length:var(--type-caption)] text-[var(--text-low)]">
+                <li key={st.slug} className="flex items-center gap-1.5 text-[length:var(--type-caption)] text-[var(--text-low)]">
                   {IconComp && <IconComp size={12} />}
-                  {pt.name}{value ? ` · ${value}` : ""}
+                  {st.name}{value ? ` · ${value}` : ""}
                 </li>
               );
             })}
@@ -178,7 +178,7 @@ export function PoliciesClient({
         </div>
       )}
 
-      {/* PO-4: Section header */}
+      {/* Section header */}
       <div className="flex items-center justify-between">
         <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
           Slots
@@ -191,19 +191,19 @@ export function PoliciesClient({
       {/* Separator */}
       <div className="border-t border-[var(--border-subtle)]" />
 
-      {/* PO-1: Flat list of all 4 types */}
+      {/* Flat list of all 4 types */}
       <div className="divide-y divide-[var(--border-subtle)]">
-        {POLICY_TYPES.map((policy) => {
-          const isUnlocked = level >= policy.unlockLevel;
-          const isActive = localPolicies[policy.slug]?.isActive ?? false;
+        {STRATEGY_TYPES.map((strategy) => {
+          const isUnlocked = level >= strategy.unlockLevel;
+          const isActive = localStrategies[strategy.slug]?.isActive ?? false;
           const maxReached = !isActive && activeCount >= maxActive;
-          const config = localPolicies[policy.slug]?.config;
-          const hasPending = initialPolicies[policy.slug]?.hasPending ?? false;
-          const IconComp = ICON_MAP[policy.icon];
+          const config = localStrategies[strategy.slug]?.config;
+          const hasPending = initialStrategies[strategy.slug]?.hasPending ?? false;
+          const IconComp = ICON_MAP[strategy.icon];
 
           return (
             <div
-              key={policy.slug}
+              key={strategy.slug}
               className={`py-4 ${!isUnlocked ? "opacity-40" : ""}`}
             >
               <div className="flex items-center gap-3">
@@ -216,12 +216,12 @@ export function PoliciesClient({
                         isUnlocked ? "text-[var(--text-high)]" : "text-[var(--text-ghost)]"
                       }`}
                     >
-                      {policy.name}
+                      {strategy.name}
                     </span>
                     {!isUnlocked && (
                       <Tag variant="default">
                         <Lock size={10} className="inline mr-0.5" />
-                        Lv.{policy.unlockLevel}
+                        Lv.{strategy.unlockLevel}
                       </Tag>
                     )}
                     {hasPending && !savedBanner && (
@@ -235,42 +235,42 @@ export function PoliciesClient({
                       isUnlocked ? "text-[var(--text-mid)]" : "text-[var(--text-ghost)]"
                     }`}
                   >
-                    {policy.description}
+                    {strategy.description}
                   </p>
                 </div>
 
-                {/* PO-2: Toggle on RIGHT */}
+                {/* Toggle on RIGHT */}
                 <Switch
                   checked={isActive}
                   disabled={!isUnlocked || maxReached}
-                  onCheckedChange={(checked) => handleToggle(policy.slug, checked)}
+                  onCheckedChange={(checked) => handleToggle(strategy.slug, checked)}
                   className={`shrink-0 ${!isUnlocked ? "opacity-30" : ""}`}
                 />
               </div>
 
-              {/* PO-3: Select dropdown (conditional) */}
+              {/* Select dropdown (conditional) */}
               {isActive && isUnlocked && (
                 <div className="mt-3">
-                  {policy.slug === "specialist" && (
+                  {strategy.slug === "specialist" && (
                     <Select
                       value={config?.specialty ?? ""}
-                      onValueChange={(v) => handleConfigChange(policy.slug, "specialty", v)}
+                      onValueChange={(v) => handleConfigChange(strategy.slug, "specialty", v)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select specialty" />
                       </SelectTrigger>
                       <SelectContent>
-                        {policy.options!.map((opt) => (
+                        {strategy.options!.map((opt) => (
                           <SelectItem key={opt} value={opt}>{SPECIALTY_LABELS[opt] ?? opt}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   )}
 
-                  {policy.slug === "national_pride" && (
+                  {strategy.slug === "national_pride" && (
                     <Select
                       value={config?.nationality ?? ""}
-                      onValueChange={(v) => handleConfigChange(policy.slug, "nationality", v)}
+                      onValueChange={(v) => handleConfigChange(strategy.slug, "nationality", v)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select nationality" />
@@ -285,10 +285,10 @@ export function PoliciesClient({
                     </Select>
                   )}
 
-                  {policy.slug === "team_chemistry" && (
+                  {strategy.slug === "team_chemistry" && (
                     <Select
                       value={config?.team ?? ""}
-                      onValueChange={(v) => handleConfigChange(policy.slug, "team", v)}
+                      onValueChange={(v) => handleConfigChange(strategy.slug, "team", v)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select team" />
@@ -301,16 +301,16 @@ export function PoliciesClient({
                     </Select>
                   )}
 
-                  {policy.slug === "young_blood" && (
+                  {strategy.slug === "young_blood" && (
                     <Select
                       value={config?.max_age ?? ""}
-                      onValueChange={(v) => handleConfigChange(policy.slug, "max_age", v)}
+                      onValueChange={(v) => handleConfigChange(strategy.slug, "max_age", v)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select max age" />
                       </SelectTrigger>
                       <SelectContent>
-                        {policy.options!.map((opt) => (
+                        {strategy.options!.map((opt) => (
                           <SelectItem key={opt} value={opt}>Under {opt}</SelectItem>
                         ))}
                       </SelectContent>
@@ -323,7 +323,7 @@ export function PoliciesClient({
         })}
       </div>
 
-      {/* PO-5: Sticky footer */}
+      {/* Sticky footer */}
       <StickyBar saveEnabled={hasChanges} onSave={handleSave} saving={saving}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
