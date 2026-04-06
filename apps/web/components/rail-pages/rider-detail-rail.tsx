@@ -29,7 +29,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
     activeAuctionId: string | null;
     contractData: { locked_salary: number; status: string } | null;
     ownerInfo: { display_name: string; team_name: string } | null;
-    budgetInfo?: { currentSlots: number; maxSlots: number; treasury: number; sponsorIncome: number; activeSalaries: number; totalDraftBidsAmount: number; draftBidsCount: number };
+    budgetInfo?: { currentSlots: number; maxSlots: number; treasury: number; sponsorIncome: number; activeSalaries: number; totalDraftBidsAmount: number; draftBidsCount: number; phaseConfirmed: boolean };
     gameXp: number;
     totalBonus: number;
   } | null>(null);
@@ -106,7 +106,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
       let currentBidAmount: number | null = null;
       let activeAuctionId: string | null = null;
       let ownerInfo: { display_name: string; team_name: string } | null = null;
-      let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; sponsorIncome: number; activeSalaries: number; totalDraftBidsAmount: number; draftBidsCount: number } | undefined;
+      let budgetInfo: { currentSlots: number; maxSlots: number; treasury: number; sponsorIncome: number; activeSalaries: number; totalDraftBidsAmount: number; draftBidsCount: number; phaseConfirmed: boolean } | undefined;
       let userTeamId: string | null = null;
 
       if (user) {
@@ -160,7 +160,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
           if (context === "market") {
             const { data: teamData } = await supabase
               .from("teams")
-              .select("level, treasury")
+              .select("level, treasury, phase_confirmed_id")
               .eq("id", member.team_id)
               .single();
 
@@ -204,6 +204,8 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
                 sponsorIncome = (sp as { monthly_budget: number }).monthly_budget ?? 0;
               }
 
+              const { getCurrentPhase } = await import("@/lib/phases");
+              const phaseConfirmedId = (teamData as { phase_confirmed_id?: number | null }).phase_confirmed_id ?? null;
               budgetInfo = {
                 currentSlots,
                 maxSlots,
@@ -212,6 +214,7 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
                 activeSalaries,
                 totalDraftBidsAmount,
                 draftBidsCount,
+                phaseConfirmed: phaseConfirmedId === getCurrentPhase().id,
               };
             }
           }

@@ -6,6 +6,7 @@ interface TreasuryWidgetProps {
   sponsorIncome: number;
   activeSalaries: number;
   activeBidsTotal: number;
+  phaseConfirmed?: boolean;
 }
 
 export function TreasuryWidget({
@@ -13,12 +14,14 @@ export function TreasuryWidget({
   sponsorIncome,
   activeSalaries,
   activeBidsTotal,
+  phaseConfirmed = false,
 }: TreasuryWidgetProps) {
   const available = computeAvailableBudget(
     treasury,
     sponsorIncome,
     activeSalaries,
-    activeBidsTotal
+    activeBidsTotal,
+    phaseConfirmed
   );
 
   return (

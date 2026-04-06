@@ -39,6 +39,7 @@ interface RiderDialogProps {
   sponsorIncome: number;
   activeSalaries: number;
   activeBidsTotal: number;
+  phaseConfirmed?: boolean;
   auctionId: string;
   currentRound: number;
   onClose: () => void;
@@ -60,6 +61,7 @@ export function RiderDialog({
   sponsorIncome,
   activeSalaries,
   activeBidsTotal,
+  phaseConfirmed = false,
   auctionId,
   currentRound,
   onClose,
@@ -77,7 +79,8 @@ export function RiderDialog({
     treasury,
     sponsorIncome,
     activeSalaries,
-    activeBidsTotal + numAmount - (existingBid?.amount ?? 0)
+    activeBidsTotal + numAmount - (existingBid?.amount ?? 0),
+    phaseConfirmed
   );
   const isValid =
     numAmount >= rider.monthly_salary &&

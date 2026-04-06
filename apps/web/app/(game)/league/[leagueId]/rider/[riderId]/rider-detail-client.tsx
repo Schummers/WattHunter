@@ -72,6 +72,7 @@ interface RiderDetailClientProps {
     activeSalaries: number;
     totalDraftBidsAmount: number;
     draftBidsCount: number;
+    phaseConfirmed: boolean;
   };
   inRail?: boolean;
   hideBidSection?: boolean;
@@ -295,7 +296,8 @@ export function RiderDetailClient({
         budgetInfo.treasury,
         budgetInfo.sponsorIncome,
         budgetInfo.activeSalaries,
-        budgetInfo.totalDraftBidsAmount + currentBidDelta
+        budgetInfo.totalDraftBidsAmount + currentBidDelta,
+        budgetInfo.phaseConfirmed
       )
     : null;
 

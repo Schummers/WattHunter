@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { RiderDetailClient } from "./rider-detail-client";
 import { getMaxSlots } from "@/lib/levels";
 import { calcMinSalary } from "@/lib/format";
+import { getCurrentPhase } from "@/lib/phases";
 
 
 type RiderContext = "market" | "team" | "ranking";
@@ -257,11 +258,12 @@ export default async function RiderDetailPage({
     activeSalaries: number;
     totalDraftBidsAmount: number;
     draftBidsCount: number;
+    phaseConfirmed: boolean;
   } | undefined;
   if ((context === "market" || from === "recruts") && user) {
     const { data: memberForBudget } = await supabase
       .from("league_members")
-      .select("team_id, teams:team_id(level, treasury)")
+      .select("team_id, teams:team_id(level, treasury, phase_confirmed_id)")
       .eq("league_id", leagueId)
       .eq("user_id", user.id)
       .single();
@@ -303,6 +305,7 @@ export default async function RiderDetailPage({
         sponsorIncome = (sp as { monthly_budget: number }).monthly_budget ?? 0;
       }
 
+      const phaseConfirmedId = (budgetTeam as { phase_confirmed_id?: number | null })?.phase_confirmed_id ?? null;
       budgetInfo = {
         currentSlots,
         maxSlots,
@@ -311,6 +314,7 @@ export default async function RiderDetailPage({
         activeSalaries,
         totalDraftBidsAmount,
         draftBidsCount,
+        phaseConfirmed: phaseConfirmedId === getCurrentPhase().id,
       };
     }
   }
