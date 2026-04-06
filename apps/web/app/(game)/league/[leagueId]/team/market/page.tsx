@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { MarketClient } from "./market-client";
 import { getLevelByNumber, getMaxSlots, getLevelForXp } from "@/lib/levels";
-import { getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
+import { getNextAuctionDate, formatAuctionDate, getCurrentPhase } from "@/lib/phases";
 
 export default async function MarketPage({
   params,
@@ -26,7 +26,7 @@ export default async function MarketPage({
   const { data: member } = await supabase
     .from("league_members")
     .select(
-      "id, team_id, teams:team_id(id, level, cumulative_xp, treasury)"
+      "id, team_id, teams:team_id(id, level, cumulative_xp, treasury, phase_confirmed_id)"
     )
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
@@ -46,6 +46,8 @@ export default async function MarketPage({
   const xp = team?.cumulative_xp ?? 0;
   const level = getLevelForXp(xp);
   const minRank = getLevelByNumber(level).poolMin;
+  const phaseConfirmedId = (team as { phase_confirmed_id?: number | null })?.phase_confirmed_id ?? null;
+  const phaseConfirmed = phaseConfirmedId === getCurrentPhase().id;
 
   const [
     { data: riders },
@@ -179,6 +181,7 @@ export default async function MarketPage({
       treasury={team?.treasury ?? 0}
       sponsorIncome={sponsorIncome}
       activeSalaries={activeSalaries}
+      phaseConfirmed={phaseConfirmed}
       draftBids={draftBidMap}
     />
   );

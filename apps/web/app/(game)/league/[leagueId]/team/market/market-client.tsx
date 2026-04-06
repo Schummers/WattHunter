@@ -53,6 +53,7 @@ interface MarketClientProps {
   treasury: number;
   sponsorIncome: number;
   activeSalaries: number;
+  phaseConfirmed?: boolean;
   draftBids?: DraftBid[];
 }
 
@@ -128,6 +129,7 @@ export function MarketClient({
   treasury,
   sponsorIncome,
   activeSalaries,
+  phaseConfirmed = false,
   draftBids: initialDraftBids = [],
 }: MarketClientProps) {
   const router = useRouter();
@@ -299,7 +301,8 @@ export function MarketClient({
     treasury,
     sponsorIncome,
     activeSalaries,
-    allDraftTotal
+    allDraftTotal,
+    phaseConfirmed
   );
 
   // Paginated flat list
