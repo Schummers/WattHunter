@@ -80,7 +80,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 - Sponsor par défaut (Lotto T1) : 250 000 € / phase (fixe)
 - 6 tiers sponsors : T1(Nv.1) T2(Nv.2) T3(Nv.3) T4(Nv.5) T5(Nv.7) T6(Nv.8)
 - Bonus sponsor = crédités sur résultats de course (voir design spec)
-- Multiplicateurs : ×2 Monument/Grand Tour, ×1.5 nationalité (T1-T4)
+- Multiplicateurs : ×2 Monument/Grand Tour, ×1.25 nationalité (T1-T4)
 - Finance par phase : income sponsor + salaires déductés 1x par phase WT
 - Enchère = salaire mensuel récurrent (pas un achat unique)
 - Salaire mensuel = pts_PCS × 2 000 / 12 (pas de plafond)

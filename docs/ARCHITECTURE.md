@@ -388,7 +388,7 @@ $$;
 - 1 sponsor par equipe, gating par niveau uniquement
 - T1=200k→300k (Nv.1), T2=400k (Nv.3), T3=550k (Nv.4), T4=750k (Nv.6), T5=1M (Nv.8)
 - Bonus sponsor = credites sur resultats de course
-- Multiplicateurs : x2 Monument/Grand Tour, x1.5 nationalite (T1-T4)
+- Multiplicateurs : x2 Monument/Grand Tour, x1.25 nationalite (T1-T4)
 
 ### Politiques (4 types)
 - Speciality (Nv.1), Nationality (Nv.3), Teams (Nv.5), Age (Nv.7)

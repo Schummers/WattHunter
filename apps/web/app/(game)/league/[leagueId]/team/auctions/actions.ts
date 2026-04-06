@@ -6,6 +6,7 @@ import { z } from "zod/v4";
 import { calcMinSalary } from "@/lib/format";
 import { getMaxSlots } from "@/lib/levels";
 import { computeAvailableBudget } from "@/lib/budget";
+import { getCurrentPhase } from "@/lib/phases";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -237,7 +238,7 @@ export async function validateRound(input: { leagueId: string }) {
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id, treasury, level")
+    .select("id, treasury, level, phase_confirmed_id")
     .eq("id", teamId)
     .single();
 
@@ -294,11 +295,13 @@ export async function validateRound(input: { leagueId: string }) {
   const activeSalaries = contractList.reduce((sum, c) => sum + (c.locked_salary ?? 0), 0);
 
   // --- 6. Budget check ---
+  const phaseConfirmed = (team as { phase_confirmed_id?: number | null }).phase_confirmed_id === getCurrentPhase().id;
   const remaining = computeAvailableBudget(
     team.treasury,
     sponsorIncome,
     activeSalaries,
-    draftTotal
+    draftTotal,
+    phaseConfirmed
   );
   if (remaining < 0) {
     return {

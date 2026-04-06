@@ -115,7 +115,7 @@ function BaseBonusContent({ sponsor }: { sponsor: SponsorRow }) {
             {nationalities
               .map((nat) => NATIONALITY_DEMONYMS[nat] ?? nat)
               .join(" / ")}{" "}
-            rider: all bonuses ×1.5
+            rider: all bonuses ×1.25
           </span>
         </div>
       )}

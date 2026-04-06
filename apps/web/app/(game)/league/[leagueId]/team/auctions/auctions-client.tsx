@@ -67,6 +67,7 @@ interface AuctionsClientProps {
   rounds: Round[];
   activeRound: number | null;
   isRound1: boolean;
+  phaseConfirmed: boolean;
   sponsorName: string;
   sponsorIncome: number;
   activeSalaries: number;
@@ -90,6 +91,7 @@ export function AuctionsClient({
   rounds,
   activeRound,
   isRound1,
+  phaseConfirmed,
   sponsorName,
   sponsorIncome,
   activeSalaries,
@@ -119,7 +121,8 @@ export function AuctionsClient({
     treasury,
     sponsorIncome,
     activeSalaries,
-    draftBidsTotal
+    draftBidsTotal,
+    phaseConfirmed
   );
   const isDeficit = remaining < 0;
 
@@ -381,6 +384,7 @@ export function AuctionsClient({
             activeSalaries={activeSalaries}
             draftBidsTotal={draftBidsTotal}
             draftCount={draftCount}
+            phaseConfirmed={phaseConfirmed}
           />
         </section>
 

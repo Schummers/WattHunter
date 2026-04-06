@@ -4,6 +4,7 @@ import { getLevelForXp, getMaxSlots } from "@/lib/levels";
 import { getMaxActivePolicies, POLICY_TYPES } from "@/lib/policies";
 import { calcMinSalary, countryCodeToFlag } from "@/lib/format";
 import { riderMatchesPolicy } from "@/lib/boost";
+import { getCurrentPhase } from "@/lib/phases";
 import { AuctionsClient } from "./auctions-client";
 
 function formatName(fullName: string): string {
@@ -37,7 +38,7 @@ export default async function AuctionsPage({
   // Get member + team
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, team_id, teams:team_id(id, name, cumulative_xp, level, treasury, pending_sponsor_id)")
+    .select("id, team_id, teams:team_id(id, name, cumulative_xp, level, treasury, pending_sponsor_id, phase_confirmed_id)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
@@ -215,6 +216,9 @@ export default async function AuctionsPage({
   const openRound = (auctionRounds ?? []).find((r) => r.status === "open");
   const activeRoundNumber = openRound ? parseRoundNumber(openRound.name) : null;
   const isRound1 = activeRoundNumber === 1;
+  const currentPhase = getCurrentPhase();
+  const phaseConfirmedId = (team as { phase_confirmed_id?: number | null })?.phase_confirmed_id ?? null;
+  const phaseConfirmed = phaseConfirmedId === currentPhase.id;
 
   // Has the user already validated this round? Check auction_bids.
   let existingAuctionBids: { rider_id: string; amount: number }[] = [];
@@ -297,6 +301,7 @@ export default async function AuctionsPage({
       }))}
       activeRound={activeRoundNumber}
       isRound1={isRound1}
+      phaseConfirmed={phaseConfirmed}
       sponsorName={sponsorName}
       pendingSponsorName={pendingSponsorName}
       activePolicies={activePoliciesDisplay}

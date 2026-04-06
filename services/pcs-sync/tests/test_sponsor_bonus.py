@@ -240,40 +240,40 @@ class TestCalculateBonusT1T4:
         assert mult == 1.0
         assert final == 2000
 
-    def test_nationality_match_x15(self):
-        """Rider nationality matches sponsor → ×1.5."""
+    def test_nationality_match_x125(self):
+        """Rider nationality matches sponsor → ×1.25."""
         from sponsor_bonus import calculate_bonus
         # Alpecin is BE/NL — rider is BE
         base, mult, final = calculate_bonus(ALPECIN, "one_day", 5, "BE", "race/amstel-gold/2026")
         assert base == 10000
-        assert mult == 1.5
-        assert final == 15000
+        assert mult == 1.25
+        assert final == 12500
 
     def test_nationality_compound_match(self):
         """Rider matches one of compound nationality codes."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(ALPECIN, "one_day", 5, "NL", "race/amstel-gold/2026")
-        assert mult == 1.5
+        assert mult == 1.25
 
-    def test_nationality_no_match_no_x15(self):
-        """Rider nationality doesn't match → no ×1.5."""
+    def test_nationality_no_match_no_x125(self):
+        """Rider nationality doesn't match → no ×1.25."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(ALPECIN, "one_day", 5, "FR", "race/amstel-gold/2026")
         assert mult == 1.0
 
     def test_stacked_grand_tour_plus_nationality(self):
-        """Grand tour GC + nationality match → ×2 × ×1.5 = ×3.0."""
+        """Grand tour GC + nationality match → ×2 × ×1.25 = ×2.5."""
         from sponsor_bonus import calculate_bonus
         # Alpecin BE/NL rider from BE wins Tour de France GC
         base, mult, final = calculate_bonus(ALPECIN, "grand_tour", 3, "BE", "race/tour-de-france/2026")
         assert base == 5000
-        assert mult == 3.0
-        assert final == 15000
+        assert mult == 2.5
+        assert final == 12500
 
     def test_no_nationality_multiplier_for_t1_t2(self):
-        """Lotto (T1) has no nationality → ×1.5 never applies even if rider matches."""
+        """Lotto (T1) has no nationality → ×1.25 never applies even if rider matches."""
         from sponsor_bonus import calculate_bonus
-        # Lotto has nationality=None — rider from any country should not get ×1.5
+        # Lotto has nationality=None — rider from any country should not get ×1.25
         base, mult, final = calculate_bonus(LOTTO, "gc", 1, "BE", "race/paris-nice/2026")
         assert mult == 1.0
 
@@ -340,7 +340,7 @@ class TestCalculateBonusT5T6:
     def test_t5_no_nationality_multiplier(self):
         """T5 Visma: no nationality multiplier even if rider matches (T5-T6 rule)."""
         from sponsor_bonus import calculate_bonus
-        # Hypothetical: Visma with nationality would still not apply ×1.5
+        # Hypothetical: Visma with nationality would still not apply ×1.25
         visma_with_nat = {**VISMA, "nationality": "NL"}
         base, mult, final = calculate_bonus(visma_with_nat, "gc", 1, "NL", "race/paris-nice/2026")
         assert mult == 1.0

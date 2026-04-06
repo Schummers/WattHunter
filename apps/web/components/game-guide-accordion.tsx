@@ -277,14 +277,14 @@ const HELP_SECTIONS: HelpSection[] = [
           headers={["Result type", "Multiplier", "Condition"]}
           rows={[
             ["Monument or Grand Tour result", "×2", "T1-T4 sponsors (applied to all 3 bonus lines)"],
-            ["Rider nationality matches sponsor", "×1.5", "T1-T4 sponsors only (T1 and T2 have no nationality)"],
-            ["Monument + matching nationality", "×3", "Both multipliers stack multiplicatively"],
+            ["Rider nationality matches sponsor", "×1.25", "T1-T4 sponsors only (T1 and T2 have no nationality)"],
+            ["Monument + matching nationality", "×2.5", "Both multipliers stack multiplicatively"],
           ]}
         />
         <p>
           <strong>Example (Groupama sponsor, French GC specialist):</strong> Your French rider
           finishes 5th in the Tour de France GC. Groupama pays a 20K GC bonus × 2 (Grand Tour) ×
-          1.5 (French nationality) = <strong>60K bonus</strong> credited to your treasury that day.
+          1.25 (French nationality) = <strong>50K bonus</strong> credited to your treasury that day.
         </p>
       </Prose>
     ),
@@ -445,7 +445,7 @@ const HELP_SECTIONS: HelpSection[] = [
         <p>
           <strong>Race bonuses (T1-T4):</strong> Each sponsor has 3 bonus lines — GC, One-Day,
           and Stage — that trigger when your riders finish within the qualifying threshold.
-          Multipliers stack: ×2 for Monuments/Grand Tours, ×1.5 if the rider&apos;s nationality
+          Multipliers stack: ×2 for Monuments/Grand Tours, ×1.25 if the rider&apos;s nationality
           matches the sponsor&apos;s. T1 and T2 have no nationality bonus.
         </p>
         <p>

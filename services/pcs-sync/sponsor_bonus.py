@@ -129,12 +129,12 @@ def _calculate_bonus_t1_t4(
     elif result_type == "stage" and _is_grand_tour_slug(race_slug):
         multiplier *= 2.0
 
-    # ×1.5 for nationality match (T1-T4 only, but only when sponsor has a nationality)
+    # ×1.25 for nationality match (T1-T4 only, but only when sponsor has a nationality)
     sponsor_nat = sponsor.get("nationality")
     if sponsor_nat and rider_nationality:
         allowed = expand_sponsor_nationality(sponsor_nat)
         if rider_nationality in allowed:
-            multiplier *= 1.5
+            multiplier *= 1.25
 
     final = int(base * multiplier)
     return (base, multiplier, final)

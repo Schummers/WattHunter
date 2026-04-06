@@ -113,7 +113,7 @@ export function SponsorBonusDetails({ sponsor }: { sponsor: SponsorRow }) {
             {nationalityFlags && (
               <li className="flex items-center gap-2">
                 <span className="font-mono font-bold text-[var(--text-high)] px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-app)] border border-[var(--border-default)] text-[length:var(--type-caption)]">
-                  ×1.5
+                  ×1.25
                 </span>
                 <span>for riders {nationalityFlags}</span>
               </li>

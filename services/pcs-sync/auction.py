@@ -228,6 +228,10 @@ async def resolve_current_round(
                         f"Auction {auction_id} rider {rider_id}: {e}"
                     )
 
+            # Clean up draft_bids for riders that now have active contracts
+            if league_id:
+                _cleanup_stale_drafts(supabase, league_id)
+
             # Always close an expired auction after resolution
             _close_auction(supabase, auction_id, league_id)
 
@@ -276,9 +280,9 @@ def run_payday(supabase: Client, league_id: str) -> dict:
 
     logger.info(f"[Payday] Starting payday for league {league_id} — phase {phase_id}")
 
-    # Fetch all teams in the league
+    # Fetch all teams in the league (include phase_confirmed_id for idempotency)
     teams_resp = supabase.table("teams").select(
-        "id, treasury, pending_sponsor_id"
+        "id, treasury, pending_sponsor_id, phase_confirmed_id"
     ).eq("league_id", league_id).execute()
 
     if not teams_resp.data:
@@ -290,6 +294,12 @@ def run_payday(supabase: Client, league_id: str) -> dict:
     for team in teams_resp.data:
         team_id = team["id"]
         try:
+            # Idempotency guard: skip if phase already confirmed for this team
+            if team.get("phase_confirmed_id") == phase_id:
+                logger.info(f"[Payday] Team {team_id} — already confirmed for phase {phase_id}, skipping")
+                payday_results.append({"team_id": team_id, "skipped": True})
+                continue
+
             treasury = int(team["treasury"] or 0)
             logger.info(f"[Payday] Team {team_id} — treasury before: {treasury}")
 
@@ -420,3 +430,36 @@ def _close_auction(supabase: Client, auction_id: str, league_id: str | None = No
             next_name = next_auction.data[0]["name"]
             supabase.table("auctions").update({"status": "open"}).eq("id", next_id).execute()
             logger.info(f"Next auction {next_name} ({next_id}) opened.")
+
+
+def _cleanup_stale_drafts(supabase: Client, league_id: str) -> None:
+    """Remove draft_bids for riders that already have active contracts in the league."""
+    # Get all rider_ids with active contracts in this league
+    contracts_resp = supabase.table("contracts").select(
+        "rider_id"
+    ).eq("league_id", league_id).eq("status", "active").execute()
+
+    if not contracts_resp.data:
+        return
+
+    contracted_rider_ids = [c["rider_id"] for c in contracts_resp.data]
+
+    # Get all team_ids in this league
+    teams_resp = supabase.table("teams").select("id").eq("league_id", league_id).execute()
+    if not teams_resp.data:
+        return
+
+    team_ids = [t["id"] for t in teams_resp.data]
+
+    # Delete draft_bids for contracted riders belonging to teams in this league
+    deleted_count = 0
+    for team_id in team_ids:
+        for rider_id in contracted_rider_ids:
+            resp = supabase.table("draft_bids").delete().eq(
+                "team_id", team_id
+            ).eq("rider_id", rider_id).execute()
+            if resp.data:
+                deleted_count += len(resp.data)
+
+    if deleted_count > 0:
+        logger.info(f"Cleaned up {deleted_count} stale draft_bids for league {league_id}")

@@ -9,6 +9,7 @@ interface BudgetSummaryProps {
   activeSalaries: number;
   draftBidsTotal: number;
   draftCount: number;
+  phaseConfirmed?: boolean;
 }
 
 export function BudgetSummary({
@@ -17,12 +18,14 @@ export function BudgetSummary({
   activeSalaries,
   draftBidsTotal,
   draftCount,
+  phaseConfirmed = false,
 }: BudgetSummaryProps) {
   const remaining = computeAvailableBudget(
     treasury,
     sponsorIncome,
     activeSalaries,
-    draftBidsTotal
+    draftBidsTotal,
+    phaseConfirmed
   );
   const isDeficit = remaining < 0;
 
@@ -42,25 +45,29 @@ export function BudgetSummary({
         </span>
       </div>
 
-      {/* Sponsor Income */}
-      <div className="flex items-center justify-between py-[3px]">
-        <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-          Upcoming Sponsor
-        </span>
-        <span className="font-mono text-[length:var(--type-caption)] text-[#4ade80]">
-          +€{formatThousands(sponsorIncome)}
-        </span>
-      </div>
+      {/* Sponsor Income — only shown before phase confirmation (Round 1) */}
+      {!phaseConfirmed && (
+        <div className="flex items-center justify-between py-[3px]">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+            Upcoming Sponsor
+          </span>
+          <span className="font-mono text-[length:var(--type-caption)] text-[#4ade80]">
+            +€{formatThousands(sponsorIncome)}
+          </span>
+        </div>
+      )}
 
-      {/* Active Salaries */}
-      <div className="flex items-center justify-between py-[3px]">
-        <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-          Active Roster Payroll
-        </span>
-        <span className="font-mono text-[length:var(--type-caption)] text-red-400">
-          −€{formatThousands(activeSalaries)}
-        </span>
-      </div>
+      {/* Active Salaries — only shown before phase confirmation (Round 1) */}
+      {!phaseConfirmed && (
+        <div className="flex items-center justify-between py-[3px]">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+            Active Roster Payroll
+          </span>
+          <span className="font-mono text-[length:var(--type-caption)] text-red-400">
+            −€{formatThousands(activeSalaries)}
+          </span>
+        </div>
+      )}
 
       {/* Draft bids */}
       <div className="flex items-center justify-between py-[3px]">
