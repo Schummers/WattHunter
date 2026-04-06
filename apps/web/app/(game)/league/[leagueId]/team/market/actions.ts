@@ -77,13 +77,13 @@ export async function setRoundDates(input: {
 }
 
 /**
- * Confirm phase setup — applies sponsor and policy changes, then marks the phase confirmed.
+ * Confirm phase setup — applies sponsor and strategy changes, then marks the phase confirmed.
  * Financial operations (sponsor credit, salary deduction, bankruptcy check) are handled
  * by the payday section in auction.py.
  *
  * Sequence:
  *   1. Apply pending sponsor change (if any)
- *   2. Apply pending policy changes (if any)
+ *   2. Apply pending strategy changes (if any)
  *   3. Mark phase as confirmed
  */
 export async function confirmPhaseSetup(teamId: string) {
@@ -127,22 +127,22 @@ export async function confirmPhaseSetup(teamId: string) {
       .eq("id", teamId);
   }
 
-  // --- Step 2: Apply pending policy changes ---
-  const { data: pendingPolicies } = await supabase
-    .from("team_policies")
+  // --- Step 2: Apply pending strategy changes ---
+  const { data: pendingStrategies } = await supabase
+    .from("team_strategies")
     .select("id, pending_is_active, pending_config")
     .eq("team_id", teamId)
     .not("pending_is_active", "is", null);
 
-  if (pendingPolicies && pendingPolicies.length > 0) {
-    for (const p of pendingPolicies) {
+  if (pendingStrategies && pendingStrategies.length > 0) {
+    for (const p of pendingStrategies) {
       if (p.pending_is_active === false) {
-        // Deactivate: delete the policy row
-        await supabase.from("team_policies").delete().eq("id", p.id);
+        // Deactivate: delete the strategy row
+        await supabase.from("team_strategies").delete().eq("id", p.id);
       } else {
         // Activate: apply pending state
         await supabase
-          .from("team_policies")
+          .from("team_strategies")
           .update({
             is_active: p.pending_is_active,
             config: p.pending_config,

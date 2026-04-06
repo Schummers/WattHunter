@@ -73,7 +73,7 @@ export async function leaveLeague(leagueId: string) {
     return { error: "Release all riders before leaving the league" };
   }
 
-  // Cleanup: cancel active bids, remove team sponsors, team policies
+  // Cleanup: cancel active bids, remove team sponsors, team strategies
   await supabase
     .from("auction_bids")
     .update({ status: "cancelled" })
@@ -86,7 +86,7 @@ export async function leaveLeague(leagueId: string) {
     .eq("team_id", team.id);
 
   await supabase
-    .from("team_policies")
+    .from("team_strategies")
     .delete()
     .eq("team_id", team.id);
 

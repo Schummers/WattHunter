@@ -13,7 +13,7 @@ export default function TeamLayout({
   const params = useParams<{ leagueId: string }>();
   const leagueId = params.leagueId;
   const hideTabs =
-    pathname.includes("/policies") || pathname.includes("/auctions/");
+    pathname.includes("/strategies") || pathname.includes("/auctions/");
 
   return (
     <>

@@ -1,12 +1,12 @@
 export const LEVELS = [
-  { level: 1, xp: 0, slots: 6, pool: "#300-600", poolMin: 300, policy: "Speciality", maxActive: 1, sponsor: "Lotto · 250K" },
-  { level: 2, xp: 25, slots: 7, pool: "#200-600", poolMin: 200, policy: null, maxActive: 1, sponsor: "Astana · 350K" },
-  { level: 3, xp: 150, slots: 8, pool: "#100-600", poolMin: 100, policy: "Nationality", maxActive: 2, sponsor: "T3 · 450K (×4)" },
-  { level: 4, xp: 350, slots: 9, pool: "#30-600", poolMin: 30, policy: null, maxActive: 2, sponsor: null },
-  { level: 5, xp: 600, slots: 10, pool: "#20-600", poolMin: 20, policy: "Teams", maxActive: 2, sponsor: "T4 · 650K (×4)" },
-  { level: 6, xp: 900, slots: 11, pool: "#10-600", poolMin: 10, policy: null, maxActive: 2, sponsor: null },
-  { level: 7, xp: 1500, slots: 12, pool: "#4-600", poolMin: 4, policy: "Age", maxActive: 3, sponsor: "T5 · 1M (×2)" },
-  { level: 8, xp: 2000, slots: 12, pool: "#1-600", poolMin: 1, policy: null, maxActive: 3, sponsor: "T6 UAE · 1.25M" },
+  { level: 1, xp: 0, slots: 6, pool: "#300-600", poolMin: 300, strategy: "Speciality", maxActive: 1, sponsor: "Lotto · 250K" },
+  { level: 2, xp: 25, slots: 7, pool: "#200-600", poolMin: 200, strategy: null, maxActive: 1, sponsor: "Astana · 350K" },
+  { level: 3, xp: 150, slots: 8, pool: "#100-600", poolMin: 100, strategy: "Nationality", maxActive: 2, sponsor: "T3 · 450K (×4)" },
+  { level: 4, xp: 350, slots: 9, pool: "#30-600", poolMin: 30, strategy: null, maxActive: 2, sponsor: null },
+  { level: 5, xp: 600, slots: 10, pool: "#20-600", poolMin: 20, strategy: "Teams", maxActive: 2, sponsor: "T4 · 650K (×4)" },
+  { level: 6, xp: 900, slots: 11, pool: "#10-600", poolMin: 10, strategy: null, maxActive: 2, sponsor: null },
+  { level: 7, xp: 1500, slots: 12, pool: "#4-600", poolMin: 4, strategy: "Age", maxActive: 3, sponsor: "T5 · 1M (×2)" },
+  { level: 8, xp: 2000, slots: 12, pool: "#1-600", poolMin: 1, strategy: null, maxActive: 3, sponsor: "T6 UAE · 1.25M" },
 ] as const;
 
 export type LevelData = (typeof LEVELS)[number];
@@ -53,12 +53,12 @@ export function getNewUnlocks(level: number): string[] {
     pills.push(`Pool ${current.pool}`);
   }
 
-  if (current.policy) {
-    pills.push(`Policy: ${current.policy}`);
+  if (current.strategy) {
+    pills.push(`Strategy: ${current.strategy}`);
   }
 
   if (prev && current.maxActive !== prev.maxActive) {
-    pills.push(`${current.maxActive} max policies`);
+    pills.push(`${current.maxActive} max strategies`);
   }
 
   if (current.sponsor) {
@@ -97,12 +97,12 @@ export function getUnlockDescriptions(level: number): string[] {
     descriptions.push(`Access riders ranked **#${poolStart}**`);
   }
 
-  if (current.policy) {
-    descriptions.push(`Unlock **${current.policy}** policy type`);
+  if (current.strategy) {
+    descriptions.push(`Unlock **${current.strategy}** strategy type`);
   }
 
   if (prev && current.maxActive !== prev.maxActive) {
-    descriptions.push(`Use **${current.maxActive} policies** at the same time`);
+    descriptions.push(`Use **${current.maxActive} strategies** at the same time`);
   }
 
   if (current.sponsor) {
