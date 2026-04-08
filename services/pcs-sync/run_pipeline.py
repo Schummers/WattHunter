@@ -251,6 +251,52 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
 
     imported_slugs = []
 
+    # Direct stage import: when slug contains /stage-N, bypass get_stage_urls()
+    # and import that single stage directly.
+    import re as _re
+    stage_match = _re.match(r"^(.+)/stage-(\d+)$", race_slug)
+    if stage_match:
+        parent_slug = stage_match.group(1)
+        stage_url = race_slug
+
+        print(f"--- Direct stage import: {stage_url} ---")
+        ctx = await browser.new_context(user_agent=USER_AGENT)
+        page = await ctx.new_page()
+        try:
+            result = await import_race_results(
+                supabase, page,
+                race_slug=parent_slug,
+                race_name=race_name,
+                race_date=race_date,
+                stage_url=stage_url,
+            )
+            print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
+            imported_slugs.append(result.get("race_slug", stage_url))
+        except Exception as exc:
+            print(f"  Skipped (no results yet): {exc}")
+        await ctx.close()
+
+        # Import GC from parent slug
+        print("\n--- Importing GC results ---")
+        print("  Waiting 15s before GC page...")
+        await asyncio.sleep(15)
+        ctx_gc = await browser.new_context(user_agent=USER_AGENT)
+        gc_page = await ctx_gc.new_page()
+        try:
+            gc_result = await import_gc_results(
+                supabase, gc_page,
+                race_slug=parent_slug,
+                race_name=race_name,
+                race_date=race_date,
+            )
+            print(f"  GC imported: {gc_result['imported']}, skipped: {gc_result['skipped']}")
+            imported_slugs.append(f"{parent_slug}/gc")
+        except Exception as exc:
+            print(f"  GC import failed: {exc}")
+        await ctx_gc.close()
+
+        return imported_slugs
+
     race_entry = lookup_race(race_slug)
     is_stage_race = race_entry and race_entry.get("type") == "stage-race"
 
