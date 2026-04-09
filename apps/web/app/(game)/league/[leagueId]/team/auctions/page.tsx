@@ -4,7 +4,7 @@ import { getLevelForXp, getMaxSlots } from "@/lib/levels";
 import { getMaxActiveStrategies, STRATEGY_TYPES } from "@/lib/strategies";
 import { calcMinSalary, countryCodeToFlag } from "@/lib/format";
 import { riderMatchesStrategy } from "@/lib/boost";
-import { getCurrentPhase } from "@/lib/phases";
+import { getCurrentPhase, getNextAuctionDate } from "@/lib/phases";
 import { AuctionsClient } from "./auctions-client";
 
 function formatName(fullName: string): string {
@@ -79,7 +79,6 @@ export default async function AuctionsPage({
       .from("auctions")
       .select("id, name, opens_at, closes_at, status")
       .eq("league_id", leagueId)
-      .in("status", ["open", "scheduled"])
       .order("opens_at", { ascending: true }),
     supabase
       .from("contracts")
@@ -212,8 +211,29 @@ export default async function AuctionsPage({
     return match ? parseInt(match[0], 10) : 0;
   }
 
+  // Current phase rounds = last 3 auctions
+  const allRounds = auctionRounds ?? [];
+  const currentPhaseRounds = allRounds.slice(-3);
+  const allCurrentClosed = currentPhaseRounds.length === 3 && currentPhaseRounds.every((r) => r.status === "closed");
+
+  // When all 3 closed → compute next phase default dates
+  let displayRounds = currentPhaseRounds;
+  if (allCurrentClosed) {
+    const next = getNextAuctionDate(new Date());
+    if (next?.phase.auctionDates) {
+      const year = new Date().getFullYear();
+      displayRounds = next.phase.auctionDates.map((ad, i) => ({
+        id: `next-${i + 1}`,
+        name: `Round ${i + 1}`,
+        opens_at: new Date(Date.UTC(year, ad.month - 1, ad.day, 12, 0, 0)).toISOString(),
+        closes_at: new Date(Date.UTC(year, ad.month - 1, ad.day, 21, 59, 59)).toISOString(),
+        status: "scheduled",
+      }));
+    }
+  }
+
   // Active round
-  const openRound = (auctionRounds ?? []).find((r) => r.status === "open");
+  const openRound = displayRounds.find((r) => r.status === "open");
   const activeRoundNumber = openRound ? parseRoundNumber(openRound.name) : null;
   const isRound1 = activeRoundNumber === 1;
   const currentPhase = getCurrentPhase();
@@ -292,7 +312,7 @@ export default async function AuctionsPage({
   return (
     <AuctionsClient
       leagueId={leagueId}
-      rounds={(auctionRounds ?? []).map((r) => ({
+      rounds={displayRounds.map((r) => ({
         id: r.id,
         round: parseRoundNumber(r.name),
         opens_at: r.opens_at,
