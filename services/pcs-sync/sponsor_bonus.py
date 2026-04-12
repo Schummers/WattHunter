@@ -31,9 +31,10 @@ def classify_result_type(
 ) -> str:
     """Return one of: 'stage', 'monument', 'grand_tour', 'gc', 'one_day'.
 
-    Priority rule: if *stage* is not None → always 'stage'.
+    Priority rule: if *stage* is a numeric stage (not 'gc') → 'stage'.
+    If stage == 'gc' → fall through to race_class-based classification.
     """
-    if stage is not None:
+    if stage is not None and stage != "gc":
         return "stage"
 
     if race_class == "monument":

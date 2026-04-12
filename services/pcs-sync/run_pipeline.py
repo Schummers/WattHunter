@@ -73,9 +73,9 @@ def lookup_race(slug: str) -> Optional[Dict]:
     for race in calendar:
         if race.get("slug") == slug:
             return race
-    # Fallback: strip /stage-N and try parent slug
+    # Fallback: strip /stage-N or /gc and try parent slug
     import re
-    m = re.match(r"^(.+)/stage-(\d+)$", slug)
+    m = re.match(r"^(.+)/(?:stage-\d+|gc)$", slug)
     if m:
         parent_slug = m.group(1)
         for race in calendar:
@@ -110,6 +110,11 @@ def race_meta(slug: str) -> Tuple[str, str]:
         stage_date = start + timedelta(days=stage_num - 1)
         date_val = stage_date.isoformat()
         name = f"{name} — Stage {stage_num}"
+
+    # For /gc slugs, use end_date (final day of stage race)
+    if slug.endswith("/gc") and entry.get("end_date"):
+        date_val = entry["end_date"]
+        name = f"{name} — GC"
 
     return name, date_val
 
@@ -251,9 +256,30 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
 
     imported_slugs = []
 
+    # Direct GC import: when slug ends with /gc, import only the GC results.
+    import re as _re
+    gc_match = _re.match(r"^(.+)/gc$", race_slug)
+    if gc_match:
+        parent_slug = gc_match.group(1)
+        print(f"--- Direct GC import: {race_slug} ---")
+        ctx_gc = await browser.new_context(user_agent=USER_AGENT)
+        gc_page = await ctx_gc.new_page()
+        try:
+            gc_result = await import_gc_results(
+                supabase, gc_page,
+                race_slug=parent_slug,
+                race_name=race_name,
+                race_date=race_date,
+            )
+            print(f"  GC imported: {gc_result['imported']}, skipped: {gc_result['skipped']}")
+            imported_slugs.append(f"{parent_slug}/gc")
+        except Exception as exc:
+            print(f"  GC import failed: {exc}")
+        await ctx_gc.close()
+        return imported_slugs
+
     # Direct stage import: when slug contains /stage-N, bypass get_stage_urls()
     # and import that single stage directly.
-    import re as _re
     stage_match = _re.match(r"^(.+)/stage-(\d+)$", race_slug)
     if stage_match:
         parent_slug = stage_match.group(1)
