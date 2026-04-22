@@ -47,6 +47,41 @@ _GT_PHASE_MAP = {
     "vuelta-a-espana": 8,
 }
 
+# Rank-ceiling per classification — bonuses decay linearly from `top` (rank 1) down
+# to 1 (rank = top). Ranks outside the top zero out.
+CLASSIF_TOP = {"gc": 10, "points": 5, "kom": 3}
+
+# Matching a rider's role to a classification doubles the base bonus (×1.5 actually).
+CLASSIF_ROLE_MATCH = {
+    "gc_leader": "gc",
+    "sprinter":  "points",
+    "climber":   "kom",
+}
+
+
+def _classif_bonus(classif_rows: list[dict], role: str) -> float:
+    """Sum of classification bonuses. For each ranked classification within the
+    configured top-N, the base bonus is `top + 1 - rank` (so rank 1 = top). If the
+    rider's role matches the classification, the bonus is multiplied by ×1.5.
+    """
+    total = 0.0
+    for row in classif_rows or []:
+        ctype = row.get("classification_type")
+        rank = row.get("rank")
+        top = CLASSIF_TOP.get(ctype)
+        if top is None or rank is None:
+            continue
+        try:
+            r = int(rank)
+        except (TypeError, ValueError):
+            continue
+        if r < 1 or r > top:
+            continue
+        base = (top + 1) - r
+        match_mult = 1.5 if CLASSIF_ROLE_MATCH.get(role) == ctype else 1.0
+        total += base * match_mult
+    return total
+
 
 def _is_gt_slug(slug: str) -> bool:
     return slug.startswith(GT_RACE_PREFIXES)
@@ -256,6 +291,18 @@ async def calculate_daily_scores(
             if key not in gt_roles:  # first (latest) wins due to order desc
                 gt_roles[key] = r["role"]
 
+    # --- Step 3c: Daily classifications for the current GT stage(s).
+    # Indexed by (race_slug, rider_id) so each rider-stage pair gets its own bonus.
+    classif_by_key: dict[tuple[str, str], list[dict]] = {}
+    if gt_slugs:
+        classif_resp = supabase.table("gt_daily_classifications").select(
+            "race_slug, rider_id, classification_type, rank"
+        ).in_("race_slug", gt_slugs).execute()
+        for row in (classif_resp.data or []):
+            classif_by_key.setdefault(
+                (row["race_slug"], row["rider_id"]), []
+            ).append(row)
+
     # Track all league_ids for snapshot step
     league_ids_seen: set[str] = set()
 
@@ -304,13 +351,18 @@ async def calculate_daily_scores(
                 raw_points = entry["pcs_points"]
                 race_slug = entry["race_slug"]
 
-                # GT role multiplier — only when rider is a member of this team's GT squad
+                # GT role multiplier + daily classif bonus — only for GT squad members
                 role_mult = 1.0
+                classif_pts = 0.0
                 if _is_gt_slug(race_slug) and (team_id, rider_id) in gt_squad_members:
                     role = gt_roles.get((team_id, rider_id), "domestique")
                     role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
+                    classif_pts = _classif_bonus(
+                        classif_by_key.get((race_slug, rider_id), []),
+                        role,
+                    )
 
-                xp = raw_points * role_mult * (1 + bonus)
+                xp = raw_points * role_mult * (1 + bonus) + classif_pts
 
                 # Upsert rider_xp_daily (conflict key: team_id + rider_id + race_slug)
                 try:
