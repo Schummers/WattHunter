@@ -205,10 +205,12 @@ export function SponsorBonusCard({
   sponsor,
   expanded,
   onToggle,
+  gtGoalsPreview,
 }: {
   sponsor: SponsorRow;
   expanded: boolean;
   onToggle: () => void;
+  gtGoalsPreview?: React.ReactNode;
 }) {
   const nationalities = sponsor.nationality
     ? sponsor.nationality.split("/").map((c) => c.trim())
@@ -258,6 +260,7 @@ export function SponsorBonusCard({
           ) : (
             <BaseBonusContent sponsor={sponsor} />
           )}
+          {gtGoalsPreview}
         </div>
       )}
     </div>
