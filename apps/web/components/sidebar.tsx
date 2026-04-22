@@ -50,7 +50,7 @@ interface SidebarProps {
   leagueId: string;
   leagueName: string;
   leagues: League[];
-  unlockedTabs: ("home" | "team" | "budget" | "ranking")[];
+  unlockedTabs: ("home" | "auction" | "team" | "budget" | "ranking")[];
 }
 
 export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: SidebarProps) {
