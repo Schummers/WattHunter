@@ -52,6 +52,39 @@ USER_AGENT = (
 
 CALENDAR_PATH = os.path.join(os.path.dirname(__file__), "wt_calendar_2026.json")
 
+GT_SLUG_PREFIXES = (
+    "race/giro-d-italia/",
+    "race/tour-de-france/",
+    "race/vuelta-a-espana/",
+)
+
+
+def _is_gt_stage(slug: str) -> bool:
+    """True when the slug is a Grand Tour stage URL (e.g. race/giro-d-italia/2026/stage-4)."""
+    return slug.startswith(GT_SLUG_PREFIXES) and "/stage-" in slug
+
+
+async def _fetch_gt_classifications(supabase, browser, parent_slug: str, stage_url: str) -> None:
+    """Fetch gc/points/kom classifications after a GT stage import, using a fresh context."""
+    if not _is_gt_stage(stage_url):
+        return
+    from sync_race import import_daily_classifications
+
+    print("  Fetching daily classifications (gc/points/kom)...")
+    ctx_c = await browser.new_context(user_agent=USER_AGENT)
+    page_c = await ctx_c.new_page()
+    try:
+        counts = await import_daily_classifications(
+            supabase, page_c,
+            race_slug=parent_slug,
+            stage_url=stage_url,
+        )
+        print(f"    gc={counts['gc']} points={counts['points']} kom={counts['kom']}")
+    except Exception as exc:
+        print(f"    Classif fetch failed: {exc}")
+    finally:
+        await ctx_c.close()
+
 
 # ---------------------------------------------------------------------------
 # Calendar helpers
@@ -288,6 +321,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
         print(f"--- Direct stage import: {stage_url} ---")
         ctx = await browser.new_context(user_agent=USER_AGENT)
         page = await ctx.new_page()
+        stage_imported = False
         try:
             result = await import_race_results(
                 supabase, page,
@@ -298,9 +332,13 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
             )
             print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
             imported_slugs.append(result.get("race_slug", stage_url))
+            stage_imported = result.get("imported", 0) > 0
         except Exception as exc:
             print(f"  Skipped (no results yet): {exc}")
         await ctx.close()
+
+        if stage_imported:
+            await _fetch_gt_classifications(supabase, browser, parent_slug, stage_url)
 
         # Import GC from parent slug
         print("\n--- Importing GC results ---")
@@ -342,6 +380,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
                 print(f"\n--- Stage {target_stage}/{len(stage_urls)}: {stage_url} ---")
                 ctx = await browser.new_context(user_agent=USER_AGENT)
                 page = await ctx.new_page()
+                stage_imported = False
                 try:
                     result = await import_race_results(
                         supabase, page,
@@ -355,9 +394,12 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
                         imported_slugs.append(result["race_slug"])
                     else:
                         imported_slugs.append(stage_url)
+                    stage_imported = result.get("imported", 0) > 0
                 except Exception as exc:
                     print(f"  Skipped (no results yet): {exc}")
                 await ctx.close()
+                if stage_imported:
+                    await _fetch_gt_classifications(supabase, browser, race_slug, stage_url)
             else:
                 print(f"  WARNING: target stage {target_stage} > {len(stage_urls)} stages found. Skipping.")
         else:
@@ -367,6 +409,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
                 print(f"\n--- Stage {i + 1}/{len(stage_urls)}: {stage_url} ---")
                 ctx = await browser.new_context(user_agent=USER_AGENT)
                 page = await ctx.new_page()
+                stage_imported = False
                 try:
                     result = await import_race_results(
                         supabase, page,
@@ -380,9 +423,12 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
                         imported_slugs.append(result["race_slug"])
                     else:
                         imported_slugs.append(stage_url)
+                    stage_imported = result.get("imported", 0) > 0
                 except Exception as exc:
                     print(f"  Skipped (no results yet): {exc}")
                 await ctx.close()
+                if stage_imported:
+                    await _fetch_gt_classifications(supabase, browser, race_slug, stage_url)
                 if i < len(stage_urls) - 1:
                     print("  Waiting 15s before next stage...")
                     await asyncio.sleep(15)
