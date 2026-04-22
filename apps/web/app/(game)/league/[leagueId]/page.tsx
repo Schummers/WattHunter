@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { LobbyView } from "./lobby-view";
 import { HomeFeed } from "./home-feed";
+import { HomeGtBanner } from "@/components/home-gt-banner";
 import { getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
 
 
@@ -87,10 +88,13 @@ export default async function LeagueDashboardPage({
   }
 
   return (
-    <HomeFeed
-      leagueId={leagueId}
-      activeAuction={activeAuction}
-      nextAuctionLabel={nextAuctionLabel}
-    />
+    <>
+      <HomeGtBanner leagueId={leagueId} />
+      <HomeFeed
+        leagueId={leagueId}
+        activeAuction={activeAuction}
+        nextAuctionLabel={nextAuctionLabel}
+      />
+    </>
   );
 }
