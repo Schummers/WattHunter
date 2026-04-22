@@ -9,6 +9,7 @@ import logging
 from datetime import date
 from typing import Optional, List, Dict, Any
 
+import procyclingstats.utils as _pcs_utils
 from procyclingstats import Stage, Race, Ranking, RaceStartlist
 from supabase import Client
 
@@ -16,6 +17,18 @@ from sync import fetch_html, calculate_monthly_salary, get_supabase, format_ride
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+# Monkey-patch procyclingstats format_time to handle PCS "same time" markers
+# PCS uses "0-", ",," or empty strings for riders finishing on the same time
+_original_format_time = _pcs_utils.format_time
+
+def _patched_format_time(time: str) -> str:
+    cleaned = time.strip().rstrip("-").strip()
+    if not cleaned or cleaned == "0" or cleaned == ",,":
+        return "0:00:00"
+    return _original_format_time(cleaned)
+
+_pcs_utils.format_time = _patched_format_time
 
 # Race slug → race_class mapping for sponsor eligibility
 RACE_CLASS_MAP = {
