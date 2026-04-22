@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/segmented-control";
 import { BackHeader } from "@/components/back-header";
 import { StickyBar } from "@/components/sticky-bar";
-import { addDraft, removeDraft } from "@/app/(game)/league/[leagueId]/team/auctions/actions";
+import { addDraft, removeDraft } from "@/app/(game)/league/[leagueId]/auction/actions";
 import { releaseRider } from "./actions";
 import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
@@ -139,9 +139,9 @@ export function RiderDetailClient({
 
   function handleBack() {
     if (context === "market") {
-      router.push(`/league/${leagueId}/team/market`);
+      router.push(`/league/${leagueId}/auction/market`);
     } else if (context === "auctions") {
-      router.push(`/league/${leagueId}/team/auctions`);
+      router.push(`/league/${leagueId}/auction`);
     } else {
       router.back();
     }

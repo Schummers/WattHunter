@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
     href: (id) => `/league/${id}/team`,
     subItems: [
       { label: "My Team", href: (id) => `/league/${id}/team` },
-      { label: "Market", href: (id) => `/league/${id}/team/market` },
+      { label: "Market", href: (id) => `/league/${id}/auction/market` },
     ],
   },
   { key: "budget", label: "Budget", icon: BadgeEuro, href: (id) => `/league/${id}/budget` },

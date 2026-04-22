@@ -87,7 +87,7 @@ export function HomeFeed({
                 return (
                   <InfoCard
                     key={`auction-${auction.id}`}
-                    href={`/league/${leagueId}/team/market`}
+                    href={`/league/${leagueId}/auction/market`}
                     className="p-4"
                   >
                     <div className="flex items-center justify-between">
@@ -128,7 +128,7 @@ export function HomeFeed({
                 return (
                   <InfoCard
                     key="auction-next"
-                    href={`/league/${leagueId}/team/market`}
+                    href={`/league/${leagueId}/auction/market`}
                     className="p-4"
                   >
                     <div className="flex items-center justify-between">
