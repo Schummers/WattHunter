@@ -492,6 +492,69 @@ async def import_season_rankings(
     }
 
 
+async def import_daily_classifications(
+    supabase: Client,
+    page,
+    *,
+    race_slug: str,
+    stage_url: str,
+) -> Dict[str, int]:
+    """Fetch gc/points/kom classifications for a single GT stage and upsert.
+
+    Stores top 50 GC, top 20 points, top 10 KOM for safety; scoring reads only
+    the top 10/5/3 respectively. Swallows errors per classification so a single
+    failed fetch does not abort the whole call.
+    """
+    counts = {"gc": 0, "points": 0, "kom": 0}
+    stage_label = stage_url.split("/")[-1]
+
+    riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+    rider_map: Dict[str, str] = {
+        r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+    }
+
+    html = await fetch_html(page, stage_url)
+    stage = Stage(stage_url, html=html, update_html=False)
+
+    fetchers = [
+        ("gc", lambda: stage.gc()[:50]),
+        ("points", lambda: stage.points()[:20]),
+        ("kom", lambda: stage.kom()[:10]),
+    ]
+
+    for kind, fetch in fetchers:
+        try:
+            entries = fetch() or []
+        except Exception as exc:
+            logger.warning("Failed to fetch %s for %s: %s", kind, stage_url, exc)
+            continue
+
+        for entry in entries:
+            rider_url = entry.get("rider_url", "")
+            rank = entry.get("rank")
+            if not rider_url or rank is None:
+                continue
+            rid = rider_map.get(rider_url)
+            if not rid:
+                continue
+            try:
+                supabase.table("gt_daily_classifications").upsert(
+                    {
+                        "race_slug": stage_url,
+                        "stage": stage_label,
+                        "rider_id": rid,
+                        "classification_type": kind,
+                        "rank": int(rank),
+                    },
+                    on_conflict="race_slug,rider_id,classification_type",
+                ).execute()
+                counts[kind] += 1
+            except Exception as exc:
+                logger.error("Failed classif upsert (%s, %s): %s", kind, rid, exc)
+
+    return counts
+
+
 async def import_startlist(
     supabase: Client,
     page,
