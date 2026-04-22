@@ -210,12 +210,6 @@ export function AuctionsClient({
             <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
               Rounds
             </span>
-            <Link
-              href={`/league/${leagueId}/team/market/history`}
-              className="text-[length:var(--type-body)] link-tertiary text-[var(--accent-default)]"
-            >
-              History &rarr;
-            </Link>
           </div>
           {rounds.length > 0 ? (
             <RoundBlocks rounds={rounds} activeRound={activeRound} />
@@ -226,7 +220,7 @@ export function AuctionsClient({
           )}
           {isCommissioner && (
             <Link
-              href={`/league/${leagueId}/team/auctions/rounds`}
+              href={`/league/${leagueId}/auction/rounds`}
               className="block px-4 mt-1.5 text-[length:var(--type-caption)] text-[var(--accent-default)]"
             >
               Edit round dates &rarr;

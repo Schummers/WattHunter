@@ -230,3 +230,169 @@ async def test_imports_startlist():
     assert result["skipped"] == 1
     assert result["total_in_startlist"] == 2
     assert result["errors"] == []
+
+
+# ---------------------------------------------------------------------------
+# 7. test_import_race_results_sets_is_itt_for_itt_stage
+# ---------------------------------------------------------------------------
+
+
+async def test_import_race_results_sets_is_itt_for_itt_stage():
+    """ITT stage → race_results upsert payload has is_itt=True."""
+    import sync_race
+
+    fake_results = [{"rider_url": PCS_SLUG_MATCH, "pcs_points": 30, "rank": 1}]
+
+    mock_stage_instance = MagicMock()
+    mock_stage_instance.results.return_value = fake_results
+    # stage_type is a method on procyclingstats.Stage
+    mock_stage_instance.stage_type.return_value = "ITT"
+
+    mock_stage = MagicMock(return_value=mock_stage_instance)
+
+    sb = make_supabase(
+        [{"id": RIDER_ID, "pcs_slug": PCS_SLUG_MATCH}],  # riders select
+        [],                                              # race_results upsert
+    )
+
+    with _patch_fetch_html(), patch("sync_race.Stage", mock_stage):
+        result = await sync_race.import_race_results(
+            sb, page=MagicMock(),
+            race_slug="race/paris-nice/2026",
+            race_name="Paris-Nice",
+            race_date="2026-03-08",
+            stage_url="race/paris-nice/2026/stage-3",
+        )
+
+    assert result["imported"] == 1
+    payload = sb._last_upsert_payload("race_results")
+    assert payload["is_itt"] is True
+
+
+async def test_import_race_results_flag_false_for_non_itt_stage():
+    """Regular road stage → is_itt=False in upsert payload."""
+    import sync_race
+
+    fake_results = [{"rider_url": PCS_SLUG_MATCH, "pcs_points": 20, "rank": 5}]
+
+    mock_stage_instance = MagicMock()
+    mock_stage_instance.results.return_value = fake_results
+    mock_stage_instance.stage_type.return_value = "Road stage"
+
+    mock_stage = MagicMock(return_value=mock_stage_instance)
+
+    sb = make_supabase(
+        [{"id": RIDER_ID, "pcs_slug": PCS_SLUG_MATCH}],
+        [],
+    )
+
+    with _patch_fetch_html(), patch("sync_race.Stage", mock_stage):
+        await sync_race.import_race_results(
+            sb, page=MagicMock(),
+            race_slug=RACE_SLUG, race_name=RACE_NAME, race_date=RACE_DATE,
+            stage_url=STAGE_URL,
+        )
+
+    payload = sb._last_upsert_payload("race_results")
+    assert payload["is_itt"] is False
+
+
+# ---------------------------------------------------------------------------
+# 8. import_daily_classifications — gc/points/kom upserts
+# ---------------------------------------------------------------------------
+
+
+async def test_import_daily_classifications_upserts_three_types():
+    """Each of gc/points/kom is upserted with rider_id + rank."""
+    import sync_race
+
+    mock_stage_instance = MagicMock()
+    mock_stage_instance.gc.return_value = [
+        {"rider_url": "rider/a", "rank": 1},
+        {"rider_url": "rider/b", "rank": 2},
+    ]
+    mock_stage_instance.points.return_value = [{"rider_url": "rider/a", "rank": 3}]
+    mock_stage_instance.kom.return_value = [{"rider_url": "rider/b", "rank": 1}]
+
+    mock_stage = MagicMock(return_value=mock_stage_instance)
+
+    stage_url = "race/giro-d-italia/2026/stage-4"
+    sb = make_supabase(
+        [
+            {"id": "rid-a", "pcs_slug": "rider/a"},
+            {"id": "rid-b", "pcs_slug": "rider/b"},
+        ],
+    )
+
+    with _patch_fetch_html(), patch("sync_race.Stage", mock_stage):
+        result = await sync_race.import_daily_classifications(
+            sb, page=MagicMock(),
+            race_slug="race/giro-d-italia/2026",
+            stage_url=stage_url,
+        )
+
+    assert result["gc"] == 2
+    assert result["points"] == 1
+    assert result["kom"] == 1
+
+    classif_rows = sb.upserts["gt_daily_classifications"]
+    assert len(classif_rows) == 4
+    types = [r["classification_type"] for r in classif_rows]
+    assert types.count("gc") == 2
+    assert types.count("points") == 1
+    assert types.count("kom") == 1
+    assert all(r["race_slug"] == stage_url for r in classif_rows)
+    assert all(r["stage"] == "stage-4" for r in classif_rows)
+
+
+async def test_import_daily_classifications_skips_unknown_riders():
+    """Riders not in our DB are skipped silently."""
+    import sync_race
+
+    mock_stage_instance = MagicMock()
+    mock_stage_instance.gc.return_value = [
+        {"rider_url": "rider/known", "rank": 1},
+        {"rider_url": "rider/unknown", "rank": 2},
+    ]
+    mock_stage_instance.points.return_value = []
+    mock_stage_instance.kom.return_value = []
+
+    mock_stage = MagicMock(return_value=mock_stage_instance)
+
+    sb = make_supabase([{"id": "rid-k", "pcs_slug": "rider/known"}])
+
+    with _patch_fetch_html(), patch("sync_race.Stage", mock_stage):
+        result = await sync_race.import_daily_classifications(
+            sb, page=MagicMock(),
+            race_slug="race/giro-d-italia/2026",
+            stage_url="race/giro-d-italia/2026/stage-4",
+        )
+
+    assert result["gc"] == 1
+    assert result["points"] == 0
+    assert result["kom"] == 0
+
+
+async def test_import_daily_classifications_swallows_classif_error():
+    """If one of gc/points/kom throws, others still upsert."""
+    import sync_race
+
+    mock_stage_instance = MagicMock()
+    mock_stage_instance.gc.side_effect = RuntimeError("boom")
+    mock_stage_instance.points.return_value = [{"rider_url": "rider/a", "rank": 1}]
+    mock_stage_instance.kom.return_value = []
+
+    mock_stage = MagicMock(return_value=mock_stage_instance)
+
+    sb = make_supabase([{"id": "rid-a", "pcs_slug": "rider/a"}])
+
+    with _patch_fetch_html(), patch("sync_race.Stage", mock_stage):
+        result = await sync_race.import_daily_classifications(
+            sb, page=MagicMock(),
+            race_slug="race/giro-d-italia/2026",
+            stage_url="race/giro-d-italia/2026/stage-4",
+        )
+
+    assert result["gc"] == 0
+    assert result["points"] == 1
+    assert result["kom"] == 0

@@ -32,7 +32,7 @@ function formatRoundTime(iso: string): string {
 
 export function RoundBlocks({ rounds, activeRound }: RoundBlocksProps) {
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 px-4">
       {rounds.map((r) => {
         const isClosed = r.status === "closed";
         const isActive = r.round === activeRound && !isClosed;

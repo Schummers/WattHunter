@@ -1,8 +1,8 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useParams } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import { SubTabs } from "@/components/sub-tabs";
+import { getGTSubTabLabel } from "@/lib/gt-phases";
 
 export default function TeamLayout({
   children,
@@ -12,8 +12,11 @@ export default function TeamLayout({
   const pathname = usePathname();
   const params = useParams<{ leagueId: string }>();
   const leagueId = params.leagueId;
-  const hideTabs =
-    pathname.includes("/strategies") || pathname.includes("/auctions/");
+
+  // Strategies page keeps its own page-level hide (unchanged access from My Team card).
+  const hideTabs = pathname.includes("/strategies");
+
+  const gtLabel = getGTSubTabLabel(); // "Giro Team" / "Tour Team" / "Vuelta Team" / "GT Team"
 
   return (
     <>
@@ -21,8 +24,7 @@ export default function TeamLayout({
         <SubTabs
           tabs={[
             { label: "My Team", href: `/league/${leagueId}/team` },
-            { label: "Market", href: `/league/${leagueId}/team/market` },
-            { label: "Auctions", href: `/league/${leagueId}/team/auctions` },
+            { label: gtLabel, href: `/league/${leagueId}/team/gt` },
           ]}
         />
       )}

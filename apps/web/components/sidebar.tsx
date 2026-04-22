@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   House,
+  Gavel,
   Users,
   BadgeEuro,
   Trophy,
@@ -16,30 +17,47 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getGTSubTabLabel } from "@/lib/gt-phases";
+
+type NavKey = "home" | "auction" | "team" | "budget" | "ranking";
 
 interface NavItem {
-  key: "home" | "team" | "budget" | "ranking";
+  key: NavKey;
   label: string;
   icon: LucideIcon;
   href: (leagueId: string) => string;
   subItems?: { label: string; href: (leagueId: string) => string }[];
 }
 
-const navItems: NavItem[] = [
-  { key: "home", label: "Home", icon: House, href: (id) => `/league/${id}` },
-  {
-    key: "team",
-    label: "Team",
-    icon: Users,
-    href: (id) => `/league/${id}/team`,
-    subItems: [
-      { label: "My Team", href: (id) => `/league/${id}/team` },
-      { label: "Market", href: (id) => `/league/${id}/team/market` },
-    ],
-  },
-  { key: "budget", label: "Budget", icon: BadgeEuro, href: (id) => `/league/${id}/budget` },
-  { key: "ranking", label: "Ranking", icon: Trophy, href: (id) => `/league/${id}/ranking` },
-];
+function buildNavItems(): NavItem[] {
+  const gtLabel = getGTSubTabLabel();
+  return [
+    { key: "home", label: "Home", icon: House, href: (id) => `/league/${id}` },
+    {
+      key: "auction",
+      label: "Auction",
+      icon: Gavel,
+      href: (id) => `/league/${id}/auction`,
+      subItems: [
+        { label: "Auctions", href: (id) => `/league/${id}/auction` },
+        { label: "Market", href: (id) => `/league/${id}/auction/market` },
+        { label: "History", href: (id) => `/league/${id}/auction/history` },
+      ],
+    },
+    {
+      key: "team",
+      label: "Team",
+      icon: Users,
+      href: (id) => `/league/${id}/team`,
+      subItems: [
+        { label: "My Team", href: (id) => `/league/${id}/team` },
+        { label: gtLabel, href: (id) => `/league/${id}/team/gt` },
+      ],
+    },
+    { key: "budget", label: "Budget", icon: BadgeEuro, href: (id) => `/league/${id}/budget` },
+    { key: "ranking", label: "Ranking", icon: Trophy, href: (id) => `/league/${id}/ranking` },
+  ];
+}
 
 interface League {
   id: string;
@@ -50,7 +68,7 @@ interface SidebarProps {
   leagueId: string;
   leagueName: string;
   leagues: League[];
-  unlockedTabs: ("home" | "team" | "budget" | "ranking")[];
+  unlockedTabs: ("home" | "auction" | "team" | "budget" | "ranking")[];
 }
 
 export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: SidebarProps) {
@@ -59,6 +77,7 @@ export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: Sidebar
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const hasMultiple = leagues.length > 1;
+  const navItems = buildNavItems();
 
   useEffect(() => {
     if (!open) return;

@@ -37,7 +37,7 @@ export default async function EditRoundDatesPage({
     .single();
 
   if (!league || league.commissioner_id !== user.id) {
-    redirect(`/league/${leagueId}/team/auctions`);
+    redirect(`/league/${leagueId}/auction`);
   }
 
   // Fetch open/scheduled auction rounds

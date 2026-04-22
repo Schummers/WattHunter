@@ -71,7 +71,7 @@ export async function setRoundDates(input: {
   }
 
   // 6. Revalidate
-  revalidatePath(`/league/${leagueId}/team/market`);
+  revalidatePath(`/league/${leagueId}/auction/market`);
 
   return { success: true };
 }

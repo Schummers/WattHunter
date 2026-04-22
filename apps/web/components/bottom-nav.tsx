@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Users, BadgeEuro, Trophy, type LucideIcon } from "lucide-react";
+import { House, Gavel, Users, BadgeEuro, Trophy, type LucideIcon } from "lucide-react";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
+export type NavTabKey = "home" | "auction" | "team" | "budget" | "ranking";
+
 interface NavTab {
-  key: "home" | "team" | "budget" | "ranking";
+  key: NavTabKey;
   label: string;
   icon: LucideIcon;
   href: (leagueId: string) => string;
@@ -14,6 +16,7 @@ interface NavTab {
 
 const tabs: NavTab[] = [
   { key: "home", label: "Home", icon: House, href: (id) => `/league/${id}` },
+  { key: "auction", label: "Auction", icon: Gavel, href: (id) => `/league/${id}/auction` },
   { key: "team", label: "Team", icon: Users, href: (id) => `/league/${id}/team` },
   { key: "budget", label: "Budget", icon: BadgeEuro, href: (id) => `/league/${id}/budget` },
   { key: "ranking", label: "Ranking", icon: Trophy, href: (id) => `/league/${id}/ranking` },
@@ -21,7 +24,7 @@ const tabs: NavTab[] = [
 
 interface BottomNavProps {
   leagueId: string;
-  unlockedTabs: ("home" | "team" | "budget" | "ranking")[];
+  unlockedTabs: NavTabKey[];
 }
 
 export function BottomNav({ leagueId, unlockedTabs }: BottomNavProps) {

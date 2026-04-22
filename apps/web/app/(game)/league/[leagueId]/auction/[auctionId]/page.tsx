@@ -97,7 +97,7 @@ export default async function AuctionDetailPage({
           <span>Resolves at midnight</span>
           <span>·</span>
           <Link
-            href={`/league/${leagueId}/auctions/${auctionId}/results`}
+            href={`/league/${leagueId}/auction/${auctionId}/results`}
             className="text-[var(--accent-default)] hover:underline"
           >
             View results

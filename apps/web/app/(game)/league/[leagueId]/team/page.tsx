@@ -303,7 +303,7 @@ export default async function MyTeamPage({
               key={`open-${i}`}
               rider={{ id: "", name: "" }}
               isOpenSlot
-              href={`/league/${leagueId}/team/market`}
+              href={`/league/${leagueId}/auction/market`}
             />
           ))}
         </div>

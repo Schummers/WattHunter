@@ -119,8 +119,8 @@ export async function addDraft(input: {
 
   if (upsertError) return { error: upsertError.message };
 
-  revalidatePath(`/league/${leagueId}/team/auctions`);
-  revalidatePath(`/league/${leagueId}/team/market`);
+  revalidatePath(`/league/${leagueId}/auction`);
+  revalidatePath(`/league/${leagueId}/auction/market`);
   return { success: true };
 }
 
@@ -155,8 +155,8 @@ export async function removeDraft(input: {
 
   if (deleteError) return { error: deleteError.message };
 
-  revalidatePath(`/league/${leagueId}/team/auctions`);
-  revalidatePath(`/league/${leagueId}/team/market`);
+  revalidatePath(`/league/${leagueId}/auction`);
+  revalidatePath(`/league/${leagueId}/auction/market`);
   return { success: true };
 }
 
@@ -206,8 +206,8 @@ export async function updateDraftAmount(input: {
 
   if (updateError) return { error: updateError.message };
 
-  revalidatePath(`/league/${leagueId}/team/auctions`);
-  revalidatePath(`/league/${leagueId}/team/market`);
+  revalidatePath(`/league/${leagueId}/auction`);
+  revalidatePath(`/league/${leagueId}/auction/market`);
   return { success: true };
 }
 
@@ -351,7 +351,7 @@ export async function validateRound(input: { leagueId: string }) {
 
   // Draft bids are kept — player can modify amounts and re-validate
 
-  revalidatePath(`/league/${leagueId}/team/auctions`);
-  revalidatePath(`/league/${leagueId}/auctions`);
+  revalidatePath(`/league/${leagueId}/auction`);
+  revalidatePath(`/league/${leagueId}/auction`);
   return { success: true };
 }

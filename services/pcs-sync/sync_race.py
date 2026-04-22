@@ -73,6 +73,19 @@ def _classify_race(race_slug: str) -> Optional[str]:
     return None
 
 
+def _detect_itt(stage) -> bool:
+    """True if the Stage's profile indicates an individual/team time trial."""
+    try:
+        attr = getattr(stage, "stage_type", None)
+        stype = attr() if callable(attr) else attr
+    except Exception:
+        return False
+    if not stype:
+        return False
+    s = str(stype).strip().upper()
+    return s in ("ITT", "TTT")
+
+
 async def get_stage_urls(page, race_slug: str) -> List[Dict[str, str]]:
     """Return stage URL dicts for a multi-stage race, or [] for one-day races.
 
@@ -136,6 +149,7 @@ async def import_race_results(
                     "race_date": race_date or None,
                     "pcs_points": int(entry.get("pcs_points") or entry.get("points", 0) or 0),
                     "rank": entry.get("rank"),
+                    "is_itt": _detect_itt(stage),
                 }
             race_class = _classify_race(race_slug)
             if race_class:
@@ -210,6 +224,7 @@ async def import_gc_results(
                 "race_date": race_date or None,
                 "pcs_points": int(entry.get("pcs_points") or 0),
                 "rank": entry.get("rank"),
+                "is_itt": False,
             }
             race_class = _classify_race(race_slug)
             if race_class:
@@ -475,6 +490,69 @@ async def import_season_rankings(
         "total_upserted": total_upserted,
         "errors": errors,
     }
+
+
+async def import_daily_classifications(
+    supabase: Client,
+    page,
+    *,
+    race_slug: str,
+    stage_url: str,
+) -> Dict[str, int]:
+    """Fetch gc/points/kom classifications for a single GT stage and upsert.
+
+    Stores top 50 GC, top 20 points, top 10 KOM for safety; scoring reads only
+    the top 10/5/3 respectively. Swallows errors per classification so a single
+    failed fetch does not abort the whole call.
+    """
+    counts = {"gc": 0, "points": 0, "kom": 0}
+    stage_label = stage_url.split("/")[-1]
+
+    riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+    rider_map: Dict[str, str] = {
+        r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+    }
+
+    html = await fetch_html(page, stage_url)
+    stage = Stage(stage_url, html=html, update_html=False)
+
+    fetchers = [
+        ("gc", lambda: stage.gc()[:50]),
+        ("points", lambda: stage.points()[:20]),
+        ("kom", lambda: stage.kom()[:10]),
+    ]
+
+    for kind, fetch in fetchers:
+        try:
+            entries = fetch() or []
+        except Exception as exc:
+            logger.warning("Failed to fetch %s for %s: %s", kind, stage_url, exc)
+            continue
+
+        for entry in entries:
+            rider_url = entry.get("rider_url", "")
+            rank = entry.get("rank")
+            if not rider_url or rank is None:
+                continue
+            rid = rider_map.get(rider_url)
+            if not rid:
+                continue
+            try:
+                supabase.table("gt_daily_classifications").upsert(
+                    {
+                        "race_slug": stage_url,
+                        "stage": stage_label,
+                        "rider_id": rid,
+                        "classification_type": kind,
+                        "rank": int(rank),
+                    },
+                    on_conflict="race_slug,rider_id,classification_type",
+                ).execute()
+                counts[kind] += 1
+            except Exception as exc:
+                logger.error("Failed classif upsert (%s, %s): %s", kind, rid, exc)
+
+    return counts
 
 
 async def import_startlist(

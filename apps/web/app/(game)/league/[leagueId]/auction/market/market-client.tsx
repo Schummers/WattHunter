@@ -2,12 +2,11 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Search, ChevronDown } from "lucide-react";
 import { RiderCard } from "@/components/rider-card";
 import { FilterChips } from "@/components/filter-chips";
 import { StickyBar } from "@/components/sticky-bar";
-import { addDraft } from "@/app/(game)/league/[leagueId]/team/auctions/actions";
+import { addDraft } from "@/app/(game)/league/[leagueId]/auction/actions";
 import { formatRoundCountdown, formatThousands, countryCodeToFlag, calcMinSalary, formatEuro } from "@/lib/format";
 import { computeAvailableBudget } from "@/lib/budget";
 
@@ -389,9 +388,6 @@ export function MarketClient({
               );
             })()}
           </span>
-          <Link href={`/league/${leagueId}/team/market/history`} className="text-[length:var(--type-body)] link-tertiary">
-            History &rarr;
-          </Link>
         </div>
       ) : (
         <div className="flex items-center justify-between px-4 pt-4 pb-0">
@@ -402,9 +398,6 @@ export function MarketClient({
                 ? nextAuctionLabel
                 : "Waiting for first auction"}
           </span>
-          <Link href={`/league/${leagueId}/team/market/history`} className="text-[length:var(--type-body)] link-tertiary">
-            History &rarr;
-          </Link>
         </div>
       )}
 
