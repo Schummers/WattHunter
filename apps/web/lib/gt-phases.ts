@@ -3,6 +3,19 @@ import { AUCTION_PHASES, getCurrentPhase, type AuctionPhase } from "./phases";
 export const GT_PHASE_IDS = [4, 6, 8] as const;
 export type GtPhaseId = (typeof GT_PHASE_IDS)[number];
 
+/**
+ * Dev override — if `NEXT_PUBLIC_DEV_GT_FORCE_DATE` is set (e.g. "2026-05-15"),
+ * all GT helpers below act as if today were that date. Leave unset in prod.
+ */
+function resolveDate(date: Date): Date {
+  const override = process.env.NEXT_PUBLIC_DEV_GT_FORCE_DATE;
+  if (override) {
+    const parsed = new Date(override);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return date;
+}
+
 /** Canonical race-slug prefix per GT phase (used to scope XP / bonus queries). */
 export const GT_RACE_SLUG_PREFIX: Record<GtPhaseId, string> = {
   4: "race/giro-d-italia",
@@ -30,17 +43,19 @@ export function isGTPhaseId(id: number): id is GtPhaseId {
 
 /** Returns the current GT phase if we're inside one, otherwise null. */
 export function getCurrentGTPhase(date: Date = new Date()): AuctionPhase | null {
-  const phase = getCurrentPhase(date);
+  const effective = resolveDate(date);
+  const phase = getCurrentPhase(effective);
   return isGTPhaseId(phase.id) ? phase : null;
 }
 
 /** Returns the next GT phase (strictly after `date`), or null if all 3 are past. */
 export function getNextGTPhase(date: Date = new Date()): AuctionPhase | null {
-  const year = date.getFullYear();
+  const effective = resolveDate(date);
+  const year = effective.getFullYear();
   for (const p of AUCTION_PHASES) {
     if (!isGTPhaseId(p.id)) continue;
     const start = new Date(year, p.startMonth - 1, p.startDay);
-    if (start > date) return p;
+    if (start > effective) return p;
   }
   return null;
 }

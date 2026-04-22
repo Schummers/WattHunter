@@ -52,8 +52,9 @@ export function RiderCard({
   const isMuted = bidState === "outbid" || bidState === "not-accepted";
 
   if (isOpenSlot) {
+    const isInteractive = Boolean(href || onNavigate);
     const inner = (
-      <div className={`relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] transition-colors ${href ? "hover:bg-[var(--bg-surface-hover)]" : ""}`}>
+      <div className={`relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] transition-colors ${isInteractive ? "hover:bg-[var(--bg-surface-hover)]" : ""}`}>
         {/* Avatar placeholder */}
         <div className="flex flex-col items-center gap-0.5">
           <div className="flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-[var(--border-default)]">
@@ -69,7 +70,7 @@ export function RiderCard({
         </div>
 
         {/* Chevron */}
-        {href && (
+        {isInteractive && (
           <ChevronRight size={14} className="shrink-0 text-[var(--text-ghost)]" />
         )}
       </div>
@@ -77,6 +78,13 @@ export function RiderCard({
 
     if (href) {
       return <RailLink href={href}>{inner}</RailLink>;
+    }
+    if (onNavigate) {
+      return (
+        <button type="button" onClick={onNavigate} className="w-full text-left">
+          {inner}
+        </button>
+      );
     }
     return inner;
   }

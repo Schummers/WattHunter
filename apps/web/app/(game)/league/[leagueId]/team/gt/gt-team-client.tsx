@@ -35,31 +35,31 @@ const ROLE_ORDER: Array<{
     role: "gc_leader",
     label: "GC Leader",
     max: 1,
-    desc: "×1.5 on all PCS points + daily top 10 GC classif bonus.",
+    desc: "×1.5 on stage + GC points AND + top-10 GC bonus daily",
   },
   {
     role: "sprinter",
     label: "Sprinter",
     max: 1,
-    desc: "×1.5 on all PCS points + daily top 5 points classif bonus.",
+    desc: "×1.5 on stage + GC points AND + top-5 points bonus daily",
   },
   {
     role: "climber",
     label: "Climber",
     max: 1,
-    desc: "×1.5 on all PCS points + daily top 3 KOM classif bonus.",
+    desc: "×1.5 on stage + GC points AND + top-3 KOM bonus daily",
   },
   {
     role: "tt_specialist",
     label: "TT Specialist",
     max: 1,
-    desc: "×2 on ITT stage PCS points only.",
+    desc: "×2 on ITT stage points only",
   },
   {
     role: "stage_hunter",
     label: "Stage Hunter",
     max: 2,
-    desc: "×1.5 on stage PCS points only (max 2 riders).",
+    desc: "×1.5 on stage",
   },
   {
     role: "domestique",
@@ -109,9 +109,9 @@ export function GtTeamClient({
     }));
 
   return (
-    <div className="flex flex-col gap-6 px-4 pb-24 pt-4">
+    <div className="flex flex-col gap-6 py-4 pb-24">
       {/* Section 1 — Sponsors Goals */}
-      <section>
+      <section className="px-4">
         <h2 className="mb-3 text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
           Sponsors Goals
         </h2>
@@ -131,9 +131,9 @@ export function GtTeamClient({
 
       {/* Section 2 — Team Composition */}
       <section className="flex flex-col gap-4">
-        <div>
+        <div className="px-4">
           <h2 className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-            Team Composition for {gtShortName}
+            Team Composition
           </h2>
           <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
             Change a role before 11:00 CET to apply today.
@@ -154,17 +154,17 @@ export function GtTeamClient({
                 onClick={() =>
                   isAssignable && setSheetRole(block.role as Exclude<GtRole, "domestique">)
                 }
-                className="flex items-center justify-between py-1 text-left"
+                className="flex items-center justify-between px-4 pt-1 pb-0 text-left"
                 disabled={!isAssignable}
               >
-                <span className="text-[length:var(--type-label)] font-semibold uppercase tracking-wide text-[var(--text-mid)]">
+                <span className="text-[length:var(--type-label)] font-semibold uppercase tracking-wide text-[var(--text-high)]">
                   {block.label.toUpperCase()}
                 </span>
                 <span className="text-[length:var(--type-label)] text-[var(--text-low)]">
                   {headerCount}
                 </span>
               </button>
-              <p className="mb-2 text-[length:var(--type-micro)] text-[var(--text-low)]">
+              <p className="mb-1 px-4 text-[length:var(--type-micro)] text-[var(--text-low)]">
                 {block.desc}
               </p>
 
