@@ -73,6 +73,19 @@ def _classify_race(race_slug: str) -> Optional[str]:
     return None
 
 
+def _detect_itt(stage) -> bool:
+    """True if the Stage's profile indicates an individual/team time trial."""
+    try:
+        attr = getattr(stage, "stage_type", None)
+        stype = attr() if callable(attr) else attr
+    except Exception:
+        return False
+    if not stype:
+        return False
+    s = str(stype).strip().upper()
+    return s in ("ITT", "TTT")
+
+
 async def get_stage_urls(page, race_slug: str) -> List[Dict[str, str]]:
     """Return stage URL dicts for a multi-stage race, or [] for one-day races.
 
@@ -136,6 +149,7 @@ async def import_race_results(
                     "race_date": race_date or None,
                     "pcs_points": int(entry.get("pcs_points") or entry.get("points", 0) or 0),
                     "rank": entry.get("rank"),
+                    "is_itt": _detect_itt(stage),
                 }
             race_class = _classify_race(race_slug)
             if race_class:
@@ -210,6 +224,7 @@ async def import_gc_results(
                 "race_date": race_date or None,
                 "pcs_points": int(entry.get("pcs_points") or 0),
                 "rank": entry.get("rank"),
+                "is_itt": False,
             }
             race_class = _classify_race(race_slug)
             if race_class:
