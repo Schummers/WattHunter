@@ -400,16 +400,21 @@ async def calculate_daily_scores(
             delta_xp = round(total_xp - prev_xp, 2)
             new_xp = team_row.data["cumulative_xp"] + delta_xp
 
-            # Task 3: auto level-up
+            # Task 3: auto level-up (monotonic — no regression, per Level Curve Stretch grandfather rule)
             current_level = team_row.data.get("level", 1)
-            new_level = compute_level(new_xp)
+            computed_level = compute_level(new_xp)
+            new_level = max(current_level, computed_level)  # grandfather: never regress
 
             update_data: dict = {
                 "cumulative_xp": new_xp,
             }
-            if new_level != current_level:
+            if new_level > current_level:
                 update_data["level"] = new_level
                 logger.info(f"Team {team_id} level up: {current_level} → {new_level} (XP: {new_xp})")
+            elif computed_level < current_level:
+                logger.debug(
+                    f"Team {team_id} grandfathered at Lv.{current_level} (computed would be Lv.{computed_level} with {new_xp} XP)"
+                )
 
             supabase.table("teams").update(update_data).eq("id", team_id).execute()
 
