@@ -159,7 +159,7 @@ def test_compute_level():
     assert compute_level(150) == 3
     assert compute_level(349) == 3
     assert compute_level(350) == 4
-    assert compute_level(2000) == 8
+    assert compute_level(2400) == 8
     assert compute_level(99999) == 8
 
 

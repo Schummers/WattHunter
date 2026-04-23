@@ -18,7 +18,7 @@ from supabase import Client
 logger = logging.getLogger(__name__)
 
 # Level thresholds — must match apps/web/lib/levels.ts (8 levels)
-LEVEL_THRESHOLDS = [0, 25, 150, 350, 600, 900, 1500, 2000]
+LEVEL_THRESHOLDS = [0, 25, 150, 350, 600, 1200, 1800, 2400]
 
 # --- GT mode --------------------------------------------------------------
 GT_RACE_PREFIXES = (
