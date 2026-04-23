@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { MarketClient } from "./market-client";
-import { getLevelByNumber, getMaxSlots, getLevelForXp } from "@/lib/levels";
+import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
 import { getNextAuctionDate, formatAuctionDate, getCurrentPhase } from "@/lib/phases";
 
 export default async function MarketPage({
@@ -44,7 +44,7 @@ export default async function MarketPage({
 
   const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
   const xp = team?.cumulative_xp ?? 0;
-  const level = getLevelForXp(xp);
+  const level = team?.level ?? 1;
   const minRank = getLevelByNumber(level).poolMin;
   const phaseConfirmedId = (team as { phase_confirmed_id?: number | null })?.phase_confirmed_id ?? null;
   const phaseConfirmed = phaseConfirmedId === getCurrentPhase().id;

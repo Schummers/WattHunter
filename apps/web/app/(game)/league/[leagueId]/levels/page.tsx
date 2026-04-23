@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { BackHeader } from "@/components/back-header";
 import { LevelsTimeline } from "./levels-timeline";
-import { getProgressPct, getNextLevel, getLevelForXp } from "@/lib/levels";
+import { getProgressPct, getNextLevel } from "@/lib/levels";
 
 export default async function LevelsPage({
   params,
@@ -36,7 +36,7 @@ export default async function LevelsPage({
     ? Array.isArray(member.teams) ? member.teams[0] : member.teams
     : null;
   const currentXp = team?.cumulative_xp ?? 0;
-  const currentLevel = getLevelForXp(currentXp);
+  const currentLevel = team?.level ?? 1;
   const progressPct = getProgressPct(currentXp, currentLevel);
   const nextLevel = getNextLevel(currentLevel);
 

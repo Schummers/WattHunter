@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { RiderCard } from "@/components/rider-card";
 import { BrandCard } from "@/components/brand-card";
-import { getMaxSlots, getProgressPct, getNextLevel, getLevelForXp } from "@/lib/levels";
+import { getMaxSlots, getProgressPct, getNextLevel } from "@/lib/levels";
 import { countryCodeToFlag } from "@/lib/format";
 import { riderMatchesStrategy } from "@/lib/boost";
 import { STRATEGY_TYPES, getMaxActiveStrategies } from "@/lib/strategies";
@@ -110,7 +110,7 @@ export default async function MyTeamPage({
 
   const rank = (teamsAbove ?? 0) + 1;
   const teamCount = totalTeams ?? 0;
-  const level = getLevelForXp(xp);
+  const level = team?.level ?? 1;
   const maxSlots = getMaxSlots(level);
   const riderCount = teamRiders?.length ?? 0;
 

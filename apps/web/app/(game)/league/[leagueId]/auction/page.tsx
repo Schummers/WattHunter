@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
-import { getLevelForXp, getMaxSlots } from "@/lib/levels";
+import { getMaxSlots } from "@/lib/levels";
 import { getMaxActiveStrategies, STRATEGY_TYPES } from "@/lib/strategies";
 import { calcMinSalary, countryCodeToFlag } from "@/lib/format";
 import { riderMatchesStrategy } from "@/lib/boost";
@@ -55,7 +55,7 @@ export default async function AuctionsPage({
 
   const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
   const xp = team?.cumulative_xp ?? 0;
-  const level = getLevelForXp(xp);
+  const level = team?.level ?? 1;
   const maxSlots = getMaxSlots(level);
   const maxActiveStrategies = getMaxActiveStrategies(level);
 

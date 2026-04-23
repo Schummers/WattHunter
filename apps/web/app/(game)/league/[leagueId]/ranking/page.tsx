@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { RankingClient } from "./ranking-client";
-import { getLevelForXp } from "@/lib/levels";
 
 export default async function RankingPage({
   params,
@@ -236,7 +235,7 @@ export default async function RankingPage({
     id: t.id,
     name: t.name,
     xp: t.cumulative_xp,
-    level: getLevelForXp(t.cumulative_xp),
+    level: t.level,
     rank: i + 1,
     movement: teamMovement[t.id] ?? 0,
     isMe: t.id === myTeamId,
