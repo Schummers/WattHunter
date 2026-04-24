@@ -157,3 +157,58 @@ def test_record_overtake_skips_when_trigger_exists():
     # Boost upsert should NOT have been called.
     table_names = [c.args[0] for c in client.table.call_args_list]
     assert "remontada_boosts" not in table_names
+
+
+from remontada import get_active_multiplier
+
+def _mock_boost_lookup(boost_row):
+    client = MagicMock()
+    resp = MagicMock()
+    resp.data = boost_row  # dict or None
+    (client.table.return_value
+        .select.return_value
+        .eq.return_value
+        .eq.return_value
+        .maybe_single.return_value
+        .execute.return_value) = resp
+    return client
+
+def test_multiplier_returns_default_when_no_boost():
+    client = _mock_boost_lookup(None)
+    mult = get_active_multiplier(client, team_id="t-1", gt_identifier="giro-d-italia", stage_number=5)
+    assert mult == 1.0
+
+def test_multiplier_returns_2x_when_stage_within_window():
+    # triggered at stage 3, expires after stage 6 → active for stages 4, 5, 6.
+    client = _mock_boost_lookup({
+        "triggered_at_stage": 3,
+        "expires_after_stage": 6,
+        "multiplier": 2.0,
+    })
+    assert get_active_multiplier(client, team_id="t-1", gt_identifier="giro-d-italia", stage_number=5) == 2.0
+
+def test_multiplier_returns_default_when_stage_before_trigger():
+    # Boost triggered at stage 5; we're scoring stage 4 (earlier). Should be 1.0.
+    client = _mock_boost_lookup({
+        "triggered_at_stage": 5,
+        "expires_after_stage": 8,
+        "multiplier": 2.0,
+    })
+    assert get_active_multiplier(client, team_id="t-1", gt_identifier="giro-d-italia", stage_number=4) == 1.0
+
+def test_multiplier_returns_default_when_stage_after_expiry():
+    client = _mock_boost_lookup({
+        "triggered_at_stage": 3,
+        "expires_after_stage": 6,
+        "multiplier": 2.0,
+    })
+    assert get_active_multiplier(client, team_id="t-1", gt_identifier="giro-d-italia", stage_number=7) == 1.0
+
+def test_multiplier_boundary_on_trigger_stage_is_default():
+    # Spec: boost applies to the NEXT 3 stages after trigger, not the trigger stage itself.
+    client = _mock_boost_lookup({
+        "triggered_at_stage": 3,
+        "expires_after_stage": 6,
+        "multiplier": 2.0,
+    })
+    assert get_active_multiplier(client, team_id="t-1", gt_identifier="giro-d-italia", stage_number=3) == 1.0

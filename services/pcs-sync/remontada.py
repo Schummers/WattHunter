@@ -132,3 +132,33 @@ def record_overtake(
     }, on_conflict="team_id,gt_identifier").execute()
 
     return True
+
+
+def get_active_multiplier(
+    supabase: Client,
+    *,
+    team_id: str,
+    gt_identifier: str,
+    stage_number: int,
+) -> float:
+    """Return the boost multiplier active for this team at this GT stage, else 1.0.
+
+    Window semantics: a boost triggered at stage T covers stages T+1..T+BOOST_WINDOW_STAGES
+    (i.e., expires_after_stage inclusive). The trigger stage itself (T) is NOT boosted.
+    """
+    resp = (
+        supabase.table("remontada_boosts")
+        .select("triggered_at_stage, expires_after_stage, multiplier")
+        .eq("team_id", team_id)
+        .eq("gt_identifier", gt_identifier)
+        .maybe_single()
+        .execute()
+    )
+    row = resp.data
+    if not row:
+        return 1.0
+    if stage_number <= row["triggered_at_stage"]:
+        return 1.0
+    if stage_number > row["expires_after_stage"]:
+        return 1.0
+    return float(row["multiplier"])
