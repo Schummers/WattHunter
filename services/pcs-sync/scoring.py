@@ -14,6 +14,7 @@ import logging
 import re
 from datetime import date, datetime
 from supabase import Client
+from remontada import get_gt_identifier, get_stage_number, get_active_multiplier
 
 logger = logging.getLogger(__name__)
 
@@ -351,9 +352,11 @@ async def calculate_daily_scores(
                 raw_points = entry["pcs_points"]
                 race_slug = entry["race_slug"]
 
-                # GT role multiplier + daily classif bonus — only for GT squad members
+                # GT role multiplier + daily classif bonus — only for GT squad members.
                 role_mult = 1.0
                 classif_pts = 0.0
+                gt_id = get_gt_identifier(race_slug)
+                stage_no = get_stage_number(race_slug)
                 if _is_gt_slug(race_slug) and (team_id, rider_id) in gt_squad_members:
                     role = gt_roles.get((team_id, rider_id), "domestique")
                     role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
@@ -362,7 +365,17 @@ async def calculate_daily_scores(
                         role,
                     )
 
-                xp = raw_points * role_mult * (1 + bonus) + classif_pts
+                # Remontada Boost (Mech 1): 2x when active for this team at this GT stage.
+                remontada_mult = 1.0
+                if gt_id and stage_no is not None:
+                    remontada_mult = get_active_multiplier(
+                        supabase,
+                        team_id=team_id,
+                        gt_identifier=gt_id,
+                        stage_number=stage_no,
+                    )
+
+                xp = (raw_points * role_mult * (1 + bonus) + classif_pts) * remontada_mult
 
                 # Upsert rider_xp_daily (conflict key: team_id + rider_id + race_slug)
                 try:
@@ -373,6 +386,7 @@ async def calculate_daily_scores(
                         "date": entry.get("race_date", today),
                         "raw_pcs_points": raw_points,
                         "strategy_bonus": bonus,
+                        "remontada_mult": remontada_mult,
                         "xp_gained": round(xp, 2),
                         "race_slug": race_slug,
                     }, on_conflict="team_id,rider_id,race_slug").execute()

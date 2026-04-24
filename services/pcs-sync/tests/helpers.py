@@ -21,7 +21,7 @@ def make_chain(data=None, upserts=None, updates=None, inserts=None, table_name=N
     m.execute.return_value = MagicMock(data=data if data is not None else [])
     for attr in (
         "select", "eq", "neq", "gt", "gte", "lt", "lte", "in_", "like", "ilike",
-        "single", "maybeSingle",
+        "single", "maybeSingle", "maybe_single",
         "order", "limit",
     ):
         getattr(m, attr).return_value = m

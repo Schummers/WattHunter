@@ -79,13 +79,15 @@ def _base_mocks(
         [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": role, "applied_at": "2026-05-10T09:00:00Z"}],
         # 7. gt_daily_classifications
         normalized_classif,
-        # 8. rider_xp_daily upsert
+        # 8. remontada_boosts (None = no active boost → multiplier defaults to 1.0)
+        None,
+        # 9. rider_xp_daily upsert
         [],
-        # 9. teams select
+        # 10. teams select
         {"id": TEAM_ID, "cumulative_xp": starting_cumulative_xp, "level": 1, "league_id": LEAGUE_ID},
-        # 10. teams update
+        # 11. teams update
         [],
-        # 11. teams (league snapshot)
+        # 12. teams (league snapshot)
         [{"id": TEAM_ID, "cumulative_xp": 150}],
     )
 
@@ -385,6 +387,7 @@ async def test_rider_not_in_squad_no_multiplier():
         [],  # gt_squad empty
         [],  # gt_role_assignments empty
         [],  # gt_daily_classifications empty
+        None,  # remontada_boosts (no active boost)
         [],  # rider_xp_daily upsert
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
         [],
