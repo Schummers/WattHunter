@@ -2,6 +2,7 @@
 // Spec: docs/plans/2026-04-23-anti-runaway-system-design.md §4
 
 import { LEVELS } from "@/lib/levels";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * Return the lowest level (1..8) whose pool includes this rider's PCS rank.
@@ -64,4 +65,33 @@ export function computeCoUnlockStatus(args: {
     playersNeededToUnlock,
     isUnlocked: playersAtOrAboveLevel >= playersRequired,
   };
+}
+
+/**
+ * Fetch the list of team levels in a league. Used to compute co-unlock status for
+ * multiple riders in one call (fetch once, compute many).
+ */
+export async function fetchLeagueTeamLevels(leagueId: string): Promise<number[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("teams")
+    .select("level")
+    .eq("league_id", leagueId);
+  if (error || !data) return [];
+  return data.map((t) => t.level ?? 1);
+}
+
+/**
+ * Server-side convenience: fetch team levels once, return a status function.
+ * Use this in page components when you want to compute lock status for many riders.
+ */
+export async function buildCoUnlockChecker(
+  leagueId: string,
+): Promise<(riderPcsRank: number | null) => CoUnlockStatus> {
+  const levels = await fetchLeagueTeamLevels(leagueId);
+  return (riderPcsRank) =>
+    computeCoUnlockStatus({
+      riderPcsRank,
+      leagueTeamLevels: levels,
+    });
 }
