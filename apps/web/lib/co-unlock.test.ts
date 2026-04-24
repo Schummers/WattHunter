@@ -109,3 +109,14 @@ describe("computeCoUnlockStatus", () => {
     expect(status.isUnlocked).toBe(true);
   });
 });
+
+describe("co-unlock error message format (used by placeBid)", () => {
+  it("produces the pluralized template that placeBid echoes back", () => {
+    const status = computeCoUnlockStatus({
+      riderPcsRank: 1,
+      leagueTeamLevels: [8, 5, 4],
+    });
+    const message = `Locked — unlock when ${status.playersNeededToUnlock} more player(s) reach Lv.${status.minLevel}`;
+    expect(message).toBe("Locked — unlock when 1 more player(s) reach Lv.8");
+  });
+});

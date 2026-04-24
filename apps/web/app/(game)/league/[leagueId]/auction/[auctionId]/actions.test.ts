@@ -300,6 +300,7 @@ describe("placeBid — budget check", () => {
       .mockReturnValueOnce(makeChain(null))                               // existingBid
       .mockReturnValueOnce(makeChain([]))                                 // existing contracts
       .mockReturnValueOnce(makeChain([]))                                 // activeBids (empty)
+      .mockReturnValueOnce(makeChain([{ level: 8 }, { level: 8 }]))      // co-unlock: fetchLeagueTeamLevels
       .mockReturnValueOnce(makeChain(null, null, 0))                     // contracts count (slot check)
       .mockReturnValueOnce(makeChain(null, null));                        // insert success
 

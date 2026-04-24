@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
+import { computeCoUnlockStatus, fetchLeagueTeamLevels } from "@/lib/co-unlock";
 import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
 
 function minRankForLevel(level: number): number {
@@ -114,6 +115,19 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
 
   if (rider.pcs_rank && rider.pcs_rank < minRankForLevel(team.level)) {
     return { error: "Insufficient level for this rider" };
+  }
+
+  // Co-Unlock Rule (Mech 2): block bid unless ≥2 teams in the league have the required level.
+  // Grandfathering is forward-only: existing contracts are untouched.
+  const leagueTeamLevels = await fetchLeagueTeamLevels(auction.league_id);
+  const coUnlockStatus = computeCoUnlockStatus({
+    riderPcsRank: rider.pcs_rank ?? null,
+    leagueTeamLevels,
+  });
+  if (!coUnlockStatus.isUnlocked) {
+    return {
+      error: `Locked — unlock when ${coUnlockStatus.playersNeededToUnlock} more player(s) reach Lv.${coUnlockStatus.minLevel}`,
+    };
   }
 
   // Slot overflow check (RC-5): contracts + active bids must not exceed max slots
