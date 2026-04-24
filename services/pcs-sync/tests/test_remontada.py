@@ -56,3 +56,53 @@ def test_snapshot_empty_league():
     client = _mock_teams_resp([])
     snap = snapshot_league_ranking(client, "league-uuid")
     assert snap == []
+
+
+from remontada import detect_overtakes
+
+def test_detect_no_overtakes_when_unchanged():
+    before = [("a", 1), ("b", 2), ("c", 3)]
+    after = [("a", 1), ("b", 2), ("c", 3)]
+    assert detect_overtakes(before, after) == []
+
+def test_detect_simple_overtake_hors_podium():
+    # b was 2nd, c was 3rd. c moved to 2nd, b to 3rd. c is overtaker of b.
+    # But c ends up at rank 2 — IN podium — so not eligible (overtaker must END hors-podium).
+    # Eligibility rule: overtaker's NEW rank must be >= 4.
+    before = [("a", 1), ("b", 2), ("c", 3)]
+    after = [("a", 1), ("c", 2), ("b", 3)]
+    assert detect_overtakes(before, after) == []
+
+def test_detect_overtake_behind_podium():
+    # 4-team league: team d (rank 4) overtakes team c (rank 3).
+    # d ends up at rank 3 — IN podium — so not eligible.
+    before = [("a", 1), ("b", 2), ("c", 3), ("d", 4)]
+    after = [("a", 1), ("b", 2), ("d", 3), ("c", 4)]
+    assert detect_overtakes(before, after) == []
+
+def test_detect_overtake_deep_field():
+    # 5-team league: team e (rank 5) overtakes team d (rank 4). e ends at rank 4 — still hors-podium.
+    before = [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5)]
+    after = [("a", 1), ("b", 2), ("c", 3), ("e", 4), ("d", 5)]
+    assert detect_overtakes(before, after) == [("e", "d")]
+
+def test_detect_overtake_multi_leap():
+    # team e (rank 5) leaps past d (rank 4) AND c (rank 3) in one scoring event, ending at rank 3.
+    # e ends at podium — not eligible.
+    before = [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5)]
+    after = [("a", 1), ("b", 2), ("e", 3), ("c", 4), ("d", 5)]
+    assert detect_overtakes(before, after) == []
+
+def test_detect_overtake_multi_leap_staying_hors_podium():
+    # 6-team league: team f (rank 6) leaps past e (rank 5) AND d (rank 4), ending at rank 4.
+    # f ends at rank 4 — hors-podium — eligible. Both (f, e) and (f, d) are triggers.
+    before = [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5), ("f", 6)]
+    after = [("a", 1), ("b", 2), ("c", 3), ("f", 4), ("d", 5), ("e", 6)]
+    # f passed both d and e; both pairs recorded.
+    assert sorted(detect_overtakes(before, after)) == [("f", "d"), ("f", "e")]
+
+def test_detect_small_league_under_four_players():
+    # Rule: mechanic inactive when league has <4 players (no hors-podium possible).
+    before = [("a", 1), ("b", 2), ("c", 3)]
+    after = [("a", 1), ("c", 2), ("b", 3)]
+    assert detect_overtakes(before, after) == []

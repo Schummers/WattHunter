@@ -44,3 +44,39 @@ def snapshot_league_ranking(
     # Defensive re-sort: treat None as 0.
     rows.sort(key=lambda r: -(r.get("cumulative_xp") or 0))
     return [(row["id"], rank) for rank, row in enumerate(rows, start=1)]
+
+
+def detect_overtakes(
+    before: list[tuple[str, int]],
+    after: list[tuple[str, int]],
+) -> list[tuple[str, str]]:
+    """Return [(overtaker_team_id, overtaken_team_id), ...] for each eligible overtake.
+
+    Eligibility (per spec §3.2):
+      - League must have >= 4 teams (non-podium slot must exist).
+      - Overtaker's new rank must be >= 4 (ended hors-podium).
+      - Overtaken team must have ended BELOW the overtaker in 'after' AND been ABOVE in 'before'.
+    """
+    if len(after) < 4:
+        return []
+
+    before_rank = {team_id: rank for team_id, rank in before}
+    after_rank = {team_id: rank for team_id, rank in after}
+
+    overtakes: list[tuple[str, str]] = []
+    for team_id, new_rank in after_rank.items():
+        if new_rank < 4:
+            continue  # overtaker must end hors-podium
+        old_rank = before_rank.get(team_id)
+        if old_rank is None or old_rank <= new_rank:
+            continue  # team didn't move up
+        # Every team that was above us before AND is below us now = a pair overtaken.
+        for other_id, other_new_rank in after_rank.items():
+            if other_id == team_id:
+                continue
+            other_old_rank = before_rank.get(other_id)
+            if other_old_rank is None:
+                continue
+            if other_old_rank < old_rank and other_new_rank > new_rank:
+                overtakes.append((team_id, other_id))
+    return overtakes
