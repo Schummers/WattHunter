@@ -4,6 +4,7 @@ import { RailLink } from "@/components/rail-link";
 import { ChevronRight, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MovementTag } from "@/components/movement-tag";
+import { RiderLockBadge } from "@/components/rider-lock-badge";
 
 interface RiderCardProps {
   rider: {
@@ -20,6 +21,9 @@ interface RiderCardProps {
   bidState?: "active" | "outbid" | "not-accepted" | "none";
   outbidMessage?: string;
   isOpenSlot?: boolean;
+  isLocked?: boolean;
+  lockMinLevel?: number;
+  lockPlayersNeeded?: number;
   href?: string;
   onNavigate?: () => void;
   rightContent?: React.ReactNode;
@@ -45,11 +49,14 @@ export function RiderCard({
   bidState = "none",
   outbidMessage,
   isOpenSlot,
+  isLocked,
+  lockMinLevel,
+  lockPlayersNeeded,
   href,
   onNavigate,
   rightContent,
 }: RiderCardProps) {
-  const isMuted = bidState === "outbid" || bidState === "not-accepted";
+  const isMuted = bidState === "outbid" || bidState === "not-accepted" || isLocked;
 
   if (isOpenSlot) {
     const isInteractive = Boolean(href || onNavigate);
@@ -170,8 +177,12 @@ export function RiderCard({
         avatarAndName
       )}
 
-      {/* Right side: XP or custom content */}
-      {rightContent ? (
+      {/* Right side: lock badge, XP, or custom content */}
+      {isLocked && lockMinLevel != null && lockPlayersNeeded != null ? (
+        <div className="shrink-0">
+          <RiderLockBadge minLevel={lockMinLevel} playersNeeded={lockPlayersNeeded} />
+        </div>
+      ) : rightContent ? (
         <div className="shrink-0">{rightContent}</div>
       ) : xp != null ? (
         <div className="flex flex-col items-end shrink-0">
