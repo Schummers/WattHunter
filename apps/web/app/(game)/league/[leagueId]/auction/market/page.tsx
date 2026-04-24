@@ -44,7 +44,6 @@ export default async function MarketPage({
   }
 
   const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
-  const xp = team?.cumulative_xp ?? 0;
   const level = team?.level ?? 1;
   const minRank = getLevelByNumber(level).poolMin;
   const checkLock = await buildCoUnlockChecker(leagueId);

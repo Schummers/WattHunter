@@ -54,7 +54,6 @@ export default async function AuctionsPage({
   }
 
   const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
-  const xp = team?.cumulative_xp ?? 0;
   const level = team?.level ?? 1;
   const maxSlots = getMaxSlots(level);
   const maxActiveStrategies = getMaxActiveStrategies(level);

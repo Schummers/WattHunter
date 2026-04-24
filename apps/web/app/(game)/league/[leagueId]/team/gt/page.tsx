@@ -77,7 +77,6 @@ export default async function GtTeamPage({
         phaseId={phaseId}
         year={year}
         gtFullName={GT_FULL_NAME[phaseId]}
-        gtShortName={GT_SHORT_NAME[phaseId]}
         squad={squad}
         sponsor={sponsor ?? null}
         goals={goals}

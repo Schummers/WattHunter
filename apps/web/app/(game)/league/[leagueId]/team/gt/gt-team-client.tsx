@@ -74,7 +74,6 @@ interface Props {
   phaseId: 4 | 6 | 8;
   year: number;
   gtFullName: string;
-  gtShortName: string;
   squad: SquadEntry[];
   sponsor?: SponsorRow | null;
   goals: GtGoal[];
@@ -84,7 +83,6 @@ export function GtTeamClient({
   teamId,
   phaseId,
   year,
-  gtShortName,
   squad,
   sponsor,
   goals,
