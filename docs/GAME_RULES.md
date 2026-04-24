@@ -2,7 +2,7 @@
 
 > **Living document** — Updated with every rule change.
 > Source of truth for implemented and planned game mechanics.
-> Last updated: 2026-04-03
+> Last updated: 2026-04-24
 
 ## Overview
 
@@ -170,11 +170,11 @@ Team XP  = sum of XP from all roster riders
 | 1 | Season Start | 0 | 6 | 1 | #300–600 | Speciality | Lotto T1 (250K) |
 | 2 | Classics P1 | 25 | 7 | 1 | #200–600 | — | Astana T2 (350K) |
 | 3 | Classics P2 | 150 | 8 | 2 | #100–600 | Nationality | T3 · 450K (×4) |
-| 4 | Giro | 350 | 9 | 2 | #30–600 | — | — |
+| 4 | Giro | 350 | 9 | 2 | #30–600 | — | T4 · 650K (×4) |
 | 5 | Pre-Tour | 600 | 10 | 2 | #20–600 | Teams | T4 · 650K (×4) |
-| 6 | Tour de France | 900 | 11 | 2 | #10–600 | — | — |
-| 7 | Post-Tour | 1,500 | 12 | 3 | #4–600 | Age | T5 · 1M (×2) |
-| 8 | La Vuelta | 2,000 | 12 | 3 | #1–600 | — | T6 UAE · 1.25M |
+| 6 | Tour de France | 1,200 | 11 | 2 | #10–600 | — | T5 · 1M (×2) |
+| 7 | Post-Tour | 1,800 | 12 | 3 | #4–600 | Age | T5 · 1M (×2) |
+| 8 | La Vuelta | 2,400 | 12 | 3 | #1–600 | — | T6 UAE · 1.25M |
 
 ---
 
@@ -210,9 +210,9 @@ Bonuses are **additive**. Example: National Pride (Belgium) + Specialist (Sprint
 | T2 | 2 | 350,000 EUR | Astana | Neutral |
 | T3 | 3 | 450,000 EUR | Groupama-FDJ (FR), Movistar (ES) | GC |
 | T3 | 3 | 450,000 EUR | Alpecin-Deceuninck (BE/NL), Uno-X (DK/NO) | One-Day |
-| T4 | 5 | 650,000 EUR | Ineos Grenadiers (GB), Decathlon AG2R (FR) | GC |
-| T4 | 5 | 650,000 EUR | Soudal Quick-Step (BE), Lidl-Trek (US/IT) | One-Day |
-| T5 | 7 | 1,000,000 EUR | Visma-Lease a Bike (prestige), Red Bull-Bora (regular) | GC |
+| T4 | 4 | 650,000 EUR | Ineos Grenadiers (GB), Decathlon AG2R (FR) | GC |
+| T4 | 4 | 650,000 EUR | Soudal Quick-Step (BE), Lidl-Trek (US/IT) | One-Day |
+| T5 | 6 | 1,000,000 EUR | Visma-Lease a Bike (prestige), Red Bull-Bora (regular) | GC |
 | T6 | 8 | 1,250,000 EUR | UAE Team Emirates | Neutral |
 
 ### Race result bonuses
@@ -298,9 +298,44 @@ At the start of each phase, the player **confirms** their configuration:
 | Max slots | 6 (Lv.1) → 12 (Lv.7–8) |
 | Max strategies | 1 (Lv.1–2) → 2 (Lv.3–6) → 3 (Lv.7–8) |
 | Rider pool | Top 600 PCS global (rolling 12 months) |
-| XP Level 8 (max) | 2,000 |
+| XP Level 8 (max) | 2,400 |
 | Max players per league | 20 |
 | Sponsor / strategy Round 1 | Immediate effect |
 | Sponsor / strategy Round 2+ | Pending — takes effect at next payday |
 | Release effect | Start of next phase (except bankruptcy: immediate) |
 | Commissioner round dates | Editable at any time before round closes |
+
+---
+
+## 12. Anti-Runaway System
+
+> Spec complète : `docs/plans/2026-04-23-anti-runaway-system-design.md`
+> Implémenté sur `main` — 2026-04-24
+
+3 mécanismes toujours actifs (league-wide, pas d'opt-in commissioner) pour limiter les écarts structurels entre le leader et les joueurs hors-podium.
+
+### 12.1 Remontada Boost (Mécanisme 1)
+
+- **Scope** : Grand Tours uniquement (Giro, Tour de France, Vuelta).
+- **Éligibilité** : joueurs classés rank 4+ dans la ligue au moment du trigger. Inactif si la ligue a <4 joueurs.
+- **Trigger** : le joueur A dépasse le joueur B dans le classement ligue → boost déclenché pour A.
+- **Contrainte anti-ping-pong** : 1 trigger max par paire ordonnée A→B par GT. Reset au GT suivant.
+- **Reward** : tous les points de A pendant les **3 prochaines stages effectives** sont multipliés par **2x**.
+- **Cumul** : si A déclenche un autre overtake pendant son boost, le timer se refresh à 3 stages (pas de stacking — reste 2x).
+- **UX** : banner 🔥 "Remontada Boost active" affiché sur la sub-tab GT de la page Team. Indicateur passif 🔥 visible dans le classement ligue.
+
+### 12.2 Co-Unlock Rule (Mécanisme 2)
+
+- **Règle** : un joueur peut enchérir sur un coureur uniquement si **≥2 joueurs de la ligue** ont le niveau requis pour accéder à ce coureur.
+- **Mapping** (rang PCS → niveau requis) : identique au pool gating (§3).
+- **Grandfathering forward-only** : contrats existants au déploiement conservés. La règle s'applique uniquement aux nouvelles enchères.
+- **Release exclusif** : si le seul joueur éligible release un coureur, celui-ci passe en état "locked" jusqu'à ce qu'un 2e joueur atteigne le niveau.
+- **UX** : coureurs locked visibles uniquement pour les joueurs éligibles, avec icône cadenas et message "Unlock when N more players reach Lv.X".
+
+### 12.3 Level Curve Stretch (Mécanisme 3)
+
+- **Principe** : les seuils XP de Lv.6, Lv.7 et Lv.8 sont relevés pour ralentir la progression end-game.
+- **Nouveaux seuils** : Lv.6 = 1 200 XP | Lv.7 = 1 800 XP | Lv.8 = 2 400 XP (Lv.1–5 inchangés).
+- **Sponsor remapping** : T4 avancé de Lv.5 → Lv.4 ; T5 avancé de Lv.7 → Lv.6 ; T6 reste à Lv.8.
+- **Grandfathering** : aucun joueur ne régresse. Le niveau actuel est conservé ; seule la barre de progression vers le prochain niveau s'ajuste.
+- **Effet** : les joueurs restent clustered aux niveaux 4–6 plus longtemps, réduisant l'asymétrie slots/budget/pool entre leader et laggards.

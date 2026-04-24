@@ -1,7 +1,7 @@
 # WattHunter — Architecture
 
 > **Document vivant** — Mis a jour a chaque decision d'architecture.
-> Derniere mise a jour : 2026-04-03
+> Derniere mise a jour : 2026-04-24
 
 ---
 
@@ -282,6 +282,10 @@ users ←──── league_members ────→ leagues
               ──→ rider_season_rankings
               ──→ rider_teams
               ──→ rider_pcs_history
+
+       remontada_boost_triggers  # 1 trigger par paire ordonnée A→B par GT (PK composée)
+       remontada_boosts          # boost actif : bénéficiaire, GT, stages restantes, mult 2x
+       -- rider_xp_daily.remontada_mult : colonne ajoutée (multiplicateur appliqué lors du scoring)
 ```
 
 ### Migrations appliquees (40+)
@@ -306,6 +310,7 @@ users ←──── league_members ────→ leagues
 | `20260402400000_phase_economy.sql` | Finance par phase (salaires + sponsor 1x/phase) |
 | `20260403000000_auction_update_commissioner.sql` | Policy update encheres commissaire |
 | `20260403100000_draft_bids_and_economy.sql` | Draft bids + mecanismes economiques |
+| `20260424000000_anti_runaway_system.sql` | Remontada Boost tables + Level Curve Stretch seuils + Co-Unlock Rule |
 
 ### RLS — Architecture
 
@@ -350,6 +355,11 @@ $$;
 | **E — Enrich riders** | `enrich-riders [--start N --end M]` | 1x/an | ~1h/100 coureurs |
 | **Bonus** | Via `sponsor_bonus.py` | Apres chaque course | Automatique |
 
+### Scoring pipeline (scoring.py)
+- **Steps A–D** : calcul XP quotidien par rider (pts PCS × stratégie bonuses)
+- **Step 5c — Détection d'overtake** : après chaque événement de scoring, le classement ligue est recalculé et comparé au snapshot précédent. Si un joueur hors-podium (rank 4+) dépasse un autre joueur et que la paire A→B n'a pas encore triggé dans ce GT, un `remontada_boost_trigger` est inséré et un `remontada_boost` actif est créé (ou refreshé) pour A.
+- **Step 5d — Application du multiplicateur** : si un boost actif existe pour un joueur lors du scoring, `remontada_mult = 2.0` est enregistré dans `rider_xp_daily` et les XP du joueur sont doublés pour cet événement.
+
 ### Pool coureurs
 - Top 600 PCS global (12 mois glissants)
 - Gating par rang selon niveau d'equipe : Nv.1=#300 | Nv.2=#200 | Nv.3=#100 | ... | Nv.8=#1
@@ -380,13 +390,13 @@ $$;
 | 3 | — | 150 | 8 | 2 | #100 |
 | 4 | Giro | 350 | 9 | 2 | #30 |
 | 5 | — | 600 | 10 | 2 | #20 |
-| 6 | Tour | 900 | 11 | 2 | #10 |
-| 7 | — | 1500 | 12 | 3 | #4 |
-| 8 | Vuelta | 2000 | 12 | 3 | #1 |
+| 6 | Tour | 1200 | 11 | 2 | #10 |
+| 7 | — | 1800 | 12 | 3 | #4 |
+| 8 | Vuelta | 2400 | 12 | 3 | #1 |
 
 ### Sponsors (6 tiers, 13 sponsors)
 - 1 sponsor par equipe, gating par niveau uniquement
-- T1=200k→300k (Nv.1), T2=400k (Nv.3), T3=550k (Nv.4), T4=750k (Nv.6), T5=1M (Nv.8)
+- T1=250k (Nv.1), T2=350k (Nv.2), T3=450k (Nv.3), T4=650k (Nv.4-5), T5=1M (Nv.6-7), T6=1.25M (Nv.8)
 - Bonus sponsor = credites sur resultats de course
 - Multiplicateurs : x2 Monument/Grand Tour, x1.25 nationalite (T1-T4)
 
@@ -493,6 +503,7 @@ $$;
 - [x] Resolution 3-round sealed-bid (auction.py)
 - [x] XP quotidien (scoring.py)
 - [x] Tests automatises (pytest 22+, vitest 17+)
+- [x] Anti-Runaway System (Remontada Boost + Co-Unlock Rule + Level Curve Stretch)
 
 ### A implementer (pre-alpha)
 

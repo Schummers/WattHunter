@@ -78,7 +78,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 - Trésorerie départ : 200 000 €
 - 1 sponsor par équipe, gating par niveau uniquement (pas de conditions d'éligibilité)
 - Sponsor par défaut (Lotto T1) : 250 000 € / phase (fixe)
-- 6 tiers sponsors : T1(Nv.1) T2(Nv.2) T3(Nv.3) T4(Nv.5) T5(Nv.7) T6(Nv.8)
+- 6 tiers sponsors : T1(Nv.1) T2(Nv.2) T3(Nv.3) T4(Nv.4) T5(Nv.6) T6(Nv.8)
 - Bonus sponsor = crédités sur résultats de course (voir design spec)
 - Multiplicateurs : ×2 Monument/Grand Tour, ×1.25 nationalité (T1-T4)
 - Finance par phase : income sponsor + salaires déductés 1x par phase WT
@@ -94,7 +94,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 - 4 types de strategies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)
 - Pool = Top 600 PCS global (12 mois glissants), gating par rang selon niveau
 - Pool min : Nv.1=#300 | Nv.2=#200 | Nv.3=#100 | Nv.4=#30 | Nv.5=#20 | Nv.6=#10 | Nv.7=#4 | Nv.8=#1
-- XP : Nv.2=25 | Nv.3=150 | Nv.4=350 | Nv.5=600 | Nv.6=900 | Nv.7=1500 | Nv.8=2000
+- XP : Nv.2=25 | Nv.3=150 | Nv.4=350 | Nv.5=600 | Nv.6=1200 | Nv.7=1800 | Nv.8=2400
 
 
 ## Blockers ouverts (résoudre avant alpha)
