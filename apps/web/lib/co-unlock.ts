@@ -24,3 +24,44 @@ export function getMinLevelForRiderRank(pcsRank: number): number {
   }
   return 1; // fallback — rank out of pool entirely, doesn't gate bidding on its own
 }
+
+export type CoUnlockStatus = {
+  minLevel: number;
+  playersAtOrAboveLevel: number;
+  playersNeededToUnlock: number; // how many more need to reach minLevel
+  isUnlocked: boolean;
+};
+
+/** Pure function — given team levels and a rider rank, return whether bidding is unlocked. */
+export function computeCoUnlockStatus(args: {
+  riderPcsRank: number | null;
+  leagueTeamLevels: number[];
+  playersRequired?: number; // defaults to 2 per spec §4.1
+}): CoUnlockStatus {
+  const playersRequired = args.playersRequired ?? 2;
+
+  // No rank → no co-unlock gate. Keep the rider open.
+  if (args.riderPcsRank == null) {
+    return {
+      minLevel: 1,
+      playersAtOrAboveLevel: args.leagueTeamLevels.length,
+      playersNeededToUnlock: 0,
+      isUnlocked: true,
+    };
+  }
+
+  const minLevel = getMinLevelForRiderRank(args.riderPcsRank);
+  const playersAtOrAboveLevel = args.leagueTeamLevels.filter(
+    (l) => l >= minLevel,
+  ).length;
+  const playersNeededToUnlock = Math.max(
+    0,
+    playersRequired - playersAtOrAboveLevel,
+  );
+  return {
+    minLevel,
+    playersAtOrAboveLevel,
+    playersNeededToUnlock,
+    isUnlocked: playersAtOrAboveLevel >= playersRequired,
+  };
+}

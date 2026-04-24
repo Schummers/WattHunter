@@ -50,3 +50,62 @@ describe("getMinLevelForRiderRank", () => {
     expect(getMinLevelForRiderRank(1000)).toBe(1);
   });
 });
+
+import { computeCoUnlockStatus } from "./co-unlock";
+
+describe("computeCoUnlockStatus", () => {
+  // Pure function: given league team levels and a rider rank, return the lock status.
+  it("unlocked when 2 teams at required level", () => {
+    const status = computeCoUnlockStatus({
+      riderPcsRank: 1, // needs Lv.8
+      leagueTeamLevels: [8, 8, 7, 6, 5],
+    });
+    expect(status).toEqual({
+      minLevel: 8,
+      playersAtOrAboveLevel: 2,
+      playersNeededToUnlock: 0,
+      isUnlocked: true,
+    });
+  });
+
+  it("locked when only 1 team at required level", () => {
+    const status = computeCoUnlockStatus({
+      riderPcsRank: 1, // needs Lv.8
+      leagueTeamLevels: [8, 7, 6, 5, 4],
+    });
+    expect(status).toEqual({
+      minLevel: 8,
+      playersAtOrAboveLevel: 1,
+      playersNeededToUnlock: 1,
+      isUnlocked: false,
+    });
+  });
+
+  it("unlocked for low-rank rider accessible by most teams", () => {
+    const status = computeCoUnlockStatus({
+      riderPcsRank: 300,
+      leagueTeamLevels: [3, 2, 1, 1],
+    });
+    expect(status.isUnlocked).toBe(true);
+    expect(status.minLevel).toBe(1);
+    expect(status.playersAtOrAboveLevel).toBe(4);
+  });
+
+  it("locked when no team has reached the required level yet", () => {
+    const status = computeCoUnlockStatus({
+      riderPcsRank: 1, // needs Lv.8
+      leagueTeamLevels: [6, 5, 4, 3],
+    });
+    expect(status.isUnlocked).toBe(false);
+    expect(status.playersAtOrAboveLevel).toBe(0);
+    expect(status.playersNeededToUnlock).toBe(2);
+  });
+
+  it("always unlocked when rider has no rank (defensive)", () => {
+    const status = computeCoUnlockStatus({
+      riderPcsRank: null,
+      leagueTeamLevels: [1],
+    });
+    expect(status.isUnlocked).toBe(true);
+  });
+});
