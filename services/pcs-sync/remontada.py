@@ -23,3 +23,24 @@ def get_stage_number(race_slug: str) -> Optional[int]:
         return None
     m = _STAGE_PATTERN.search(race_slug)
     return int(m.group(1)) if m else None
+
+
+from supabase import Client
+
+
+def snapshot_league_ranking(
+    supabase: Client,
+    league_id: str,
+) -> list[tuple[str, int]]:
+    """Return [(team_id, rank), ...] sorted by cumulative_xp desc, rank starting at 1."""
+    resp = (
+        supabase.table("teams")
+        .select("id, cumulative_xp")
+        .eq("league_id", league_id)
+        .order("cumulative_xp", desc=True)
+        .execute()
+    )
+    rows = resp.data or []
+    # Defensive re-sort: treat None as 0.
+    rows.sort(key=lambda r: -(r.get("cumulative_xp") or 0))
+    return [(row["id"], rank) for rank, row in enumerate(rows, start=1)]
