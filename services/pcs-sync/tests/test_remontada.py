@@ -106,3 +106,54 @@ def test_detect_small_league_under_four_players():
     before = [("a", 1), ("b", 2), ("c", 3)]
     after = [("a", 1), ("c", 2), ("b", 3)]
     assert detect_overtakes(before, after) == []
+
+
+from remontada import record_overtake
+
+def _mock_upsert_client():
+    client = MagicMock()
+    # trigger insert returns a mock "inserted" response by default
+    client.table.return_value.insert.return_value.execute.return_value = MagicMock(data=[{}])
+    client.table.return_value.upsert.return_value.execute.return_value = MagicMock(data=[{}])
+    return client
+
+def test_record_overtake_inserts_trigger_and_upserts_boost():
+    client = _mock_upsert_client()
+    record_overtake(
+        client,
+        league_id="league-1",
+        gt_identifier="giro-d-italia",
+        overtaker_team_id="team-a",
+        overtaken_team_id="team-b",
+        triggered_at_stage=3,
+    )
+    # Assert: one insert on triggers, one upsert on boosts.
+    insert_call = client.table.call_args_list[0]
+    assert insert_call.args == ("remontada_boost_triggers",)
+    # Simpler assertion: at least one call was on remontada_boosts.
+    table_names = [c.args[0] for c in client.table.call_args_list]
+    assert "remontada_boost_triggers" in table_names
+    assert "remontada_boosts" in table_names
+
+def test_record_overtake_skips_when_trigger_exists():
+    # Supabase insert into triggers with unique constraint raises on conflict.
+    # Our helper catches 23505 (unique_violation) and returns False without touching boosts.
+    client = MagicMock()
+    from postgrest.exceptions import APIError
+
+    # APIError needs a dict-shaped message; simulate unique violation.
+    err = APIError({"code": "23505", "message": "duplicate key"})
+    client.table.return_value.insert.return_value.execute.side_effect = err
+
+    applied = record_overtake(
+        client,
+        league_id="league-1",
+        gt_identifier="giro-d-italia",
+        overtaker_team_id="team-a",
+        overtaken_team_id="team-b",
+        triggered_at_stage=3,
+    )
+    assert applied is False
+    # Boost upsert should NOT have been called.
+    table_names = [c.args[0] for c in client.table.call_args_list]
+    assert "remontada_boosts" not in table_names

@@ -80,3 +80,55 @@ def detect_overtakes(
             if other_old_rank < old_rank and other_new_rank > new_rank:
                 overtakes.append((team_id, other_id))
     return overtakes
+
+
+from postgrest.exceptions import APIError
+
+BOOST_WINDOW_STAGES = 3
+DEFAULT_MULTIPLIER = 2.0
+
+def record_overtake(
+    supabase: Client,
+    *,
+    league_id: str,
+    gt_identifier: str,
+    overtaker_team_id: str,
+    overtaken_team_id: str,
+    triggered_at_stage: int,
+) -> bool:
+    """Insert an anti-ping-pong trigger and upsert the active boost.
+
+    Returns True if the overtake was NEW (trigger inserted + boost applied),
+    False if the trigger already existed (ping-pong prevented — no boost change).
+
+    Reset cumul: upsert on (team_id, gt_identifier) replaces expires_after_stage with
+    triggered_at_stage + BOOST_WINDOW_STAGES, keeping multiplier at DEFAULT_MULTIPLIER.
+    """
+    # 1) Try to insert the trigger (unique key enforces 1 per pair per GT).
+    try:
+        supabase.table("remontada_boost_triggers").insert({
+            "league_id": league_id,
+            "gt_identifier": gt_identifier,
+            "overtaker_team_id": overtaker_team_id,
+            "overtaken_team_id": overtaken_team_id,
+            "triggered_at_stage": triggered_at_stage,
+        }).execute()
+    except APIError as e:
+        # unique_violation on primary key → pair already triggered this GT.
+        if getattr(e, "code", None) == "23505" or "23505" in str(e):
+            return False
+        raise
+
+    # 2) Upsert the boost (Reset behavior: refresh expires_after_stage).
+    supabase.table("remontada_boosts").upsert({
+        "league_id": league_id,
+        "team_id": overtaker_team_id,
+        "gt_identifier": gt_identifier,
+        "triggered_at_stage": triggered_at_stage,
+        "expires_after_stage": triggered_at_stage + BOOST_WINDOW_STAGES,
+        "multiplier": DEFAULT_MULTIPLIER,
+        "overtaken_team_id": overtaken_team_id,
+        "updated_at": "now()",
+    }, on_conflict="team_id,gt_identifier").execute()
+
+    return True
