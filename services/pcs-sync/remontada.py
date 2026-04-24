@@ -3,6 +3,7 @@
 See docs/plans/2026-04-23-anti-runaway-system-design.md §3."""
 from __future__ import annotations
 import re
+from datetime import datetime, timezone
 from typing import Optional
 
 GT_SLUGS = ("giro-d-italia", "tour-de-france", "vuelta-a-espana")
@@ -128,7 +129,7 @@ def record_overtake(
         "expires_after_stage": triggered_at_stage + BOOST_WINDOW_STAGES,
         "multiplier": DEFAULT_MULTIPLIER,
         "overtaken_team_id": overtaken_team_id,
-        "updated_at": "now()",
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }, on_conflict="team_id,gt_identifier").execute()
 
     return True

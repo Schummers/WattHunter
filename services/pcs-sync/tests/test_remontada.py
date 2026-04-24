@@ -212,3 +212,32 @@ def test_multiplier_boundary_on_trigger_stage_is_default():
         "multiplier": 2.0,
     })
     assert get_active_multiplier(client, team_id="t-1", gt_identifier="giro-d-italia", stage_number=3) == 1.0
+
+
+def test_record_overtake_updated_at_is_iso_parseable():
+    """Regression: the upsert payload must send a real ISO timestamp, not the literal string 'now()'.
+    Postgres doesn't special-case 'now()' (with parens), so the cast to timestamptz would fail."""
+    from datetime import datetime
+
+    client = _mock_upsert_client()
+    record_overtake(
+        client,
+        league_id="lg-1",
+        gt_identifier="giro-d-italia",
+        overtaker_team_id="team-a",
+        overtaken_team_id="team-b",
+        triggered_at_stage=3,
+    )
+
+    # Find the upsert call payload.
+    upsert_calls = [
+        c for c in client.table.return_value.upsert.call_args_list
+    ]
+    assert len(upsert_calls) == 1, "Expected one upsert call"
+    payload = upsert_calls[0].args[0]
+    updated_at = payload.get("updated_at")
+    assert updated_at, "updated_at must be present"
+    # datetime.fromisoformat raises ValueError on anything not ISO-8601.
+    # This guards against regressions like "now()" or "CURRENT_TIMESTAMP".
+    parsed = datetime.fromisoformat(updated_at)
+    assert parsed is not None
