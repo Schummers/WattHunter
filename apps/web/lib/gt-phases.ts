@@ -77,3 +77,32 @@ export function getGTBannerText(date: Date = new Date()): string | null {
   if (!cur) return null;
   return `🏁 ${GT_FULL_NAME[cur.id as GtPhaseId]} in progress — manage your squad →`;
 }
+
+/** Canonical GT identifier per phase (matches remontada_boosts.gt_identifier). */
+export const GT_IDENTIFIER: Record<
+  GtPhaseId,
+  "giro-d-italia" | "tour-de-france" | "vuelta-a-espana"
+> = {
+  4: "giro-d-italia",
+  6: "tour-de-france",
+  8: "vuelta-a-espana",
+};
+
+/**
+ * Approximate current GT stage number (1-indexed) based on days elapsed since
+ * the GT's start date. Returns null if we are not currently inside a GT phase.
+ *
+ * NOTE: This is an approximation — actual races have 2 rest days so the
+ * estimate may drift by up to 2. Acceptable for MVP banner display.
+ */
+export function getCurrentGTStage(date: Date = new Date()): number | null {
+  const effective = resolveDate(date);
+  const phase = getCurrentGTPhase(effective);
+  if (!phase) return null;
+  const year = effective.getFullYear();
+  const start = new Date(year, phase.startMonth - 1, phase.startDay);
+  const daysElapsed = Math.floor(
+    (effective.getTime() - start.getTime()) / 86_400_000,
+  );
+  return Math.max(1, Math.min(21, daysElapsed + 1));
+}

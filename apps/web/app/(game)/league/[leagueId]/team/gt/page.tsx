@@ -3,12 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import {
   getCurrentGTPhase,
   getNextGTPhase,
+  getCurrentGTStage,
   GT_FULL_NAME,
   GT_SHORT_NAME,
+  GT_IDENTIFIER,
   type GtPhaseId,
 } from "@/lib/gt-phases";
 import { ensureGtSquad, getSquadWithRoles } from "./actions";
 import { GtTeamClient } from "./gt-team-client";
+import { RemontadaBannerSlot } from "./_remontada-banner-slot";
 import { getGoalsForSponsor } from "@/lib/gt-goals";
 import type { SponsorRow } from "@/lib/sponsors";
 
@@ -58,17 +61,28 @@ export default async function GtTeamPage({
     : teamSponsor?.sponsors) as SponsorRow | null | undefined;
   const goals = sponsor ? getGoalsForSponsor(sponsor.slug) : [];
 
+  const currentStage = getCurrentGTStage();
+
   return (
-    <GtTeamClient
-      teamId={team.id}
-      phaseId={phaseId}
-      year={year}
-      gtFullName={GT_FULL_NAME[phaseId]}
-      gtShortName={GT_SHORT_NAME[phaseId]}
-      squad={squad}
-      sponsor={sponsor ?? null}
-      goals={goals}
-    />
+    <>
+      {currentStage !== null && (
+        <RemontadaBannerSlot
+          teamId={team.id}
+          gtIdentifier={GT_IDENTIFIER[phaseId]}
+          currentStageNumber={currentStage}
+        />
+      )}
+      <GtTeamClient
+        teamId={team.id}
+        phaseId={phaseId}
+        year={year}
+        gtFullName={GT_FULL_NAME[phaseId]}
+        gtShortName={GT_SHORT_NAME[phaseId]}
+        squad={squad}
+        sponsor={sponsor ?? null}
+        goals={goals}
+      />
+    </>
   );
 }
 
