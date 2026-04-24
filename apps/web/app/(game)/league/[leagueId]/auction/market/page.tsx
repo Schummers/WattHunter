@@ -3,6 +3,7 @@ import { getUser } from "@/lib/supabase/get-user";
 import { MarketClient } from "./market-client";
 import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
 import { getNextAuctionDate, formatAuctionDate, getCurrentPhase } from "@/lib/phases";
+import { buildCoUnlockChecker } from "@/lib/co-unlock";
 
 export default async function MarketPage({
   params,
@@ -46,6 +47,7 @@ export default async function MarketPage({
   const xp = team?.cumulative_xp ?? 0;
   const level = team?.level ?? 1;
   const minRank = getLevelByNumber(level).poolMin;
+  const checkLock = await buildCoUnlockChecker(leagueId);
   const phaseConfirmedId = (team as { phase_confirmed_id?: number | null })?.phase_confirmed_id ?? null;
   const phaseConfirmed = phaseConfirmedId === getCurrentPhase().id;
 
@@ -88,13 +90,19 @@ export default async function MarketPage({
 
   const availableRiders = (riders ?? [])
     .filter((r) => !ownedRiderIds.has(r.id))
-    .map((r) => ({
-      ...r,
-      pcs_rank_diff:
-        r.pcs_rank != null && r.pcs_rank_prev != null
-          ? r.pcs_rank_prev - r.pcs_rank
-          : null,
-    }));
+    .map((r) => {
+      const status = checkLock(r.pcs_rank ?? null);
+      return {
+        ...r,
+        pcs_rank_diff:
+          r.pcs_rank != null && r.pcs_rank_prev != null
+            ? r.pcs_rank_prev - r.pcs_rank
+            : null,
+        isLocked: !status.isUnlocked,
+        lockMinLevel: status.minLevel,
+        lockPlayersNeeded: status.playersNeededToUnlock,
+      };
+    });
 
   const [
     { data: activeRound },

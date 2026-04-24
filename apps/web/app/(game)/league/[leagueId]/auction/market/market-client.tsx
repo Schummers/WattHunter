@@ -21,6 +21,9 @@ interface Rider {
   specialty: string | null;
   pcs_points_1yr: number | null;
   birthdate: string | null;
+  isLocked?: boolean;
+  lockMinLevel?: number;
+  lockPlayersNeeded?: number;
 }
 
 interface ActiveRound {
@@ -478,6 +481,9 @@ export function MarketClient({
                       bidState={savedDraftIds.has(r.id) || bids[r.id] ? "active" : "none"}
                       onNavigate={() => router.push(`/league/${leagueId}/rider/${r.id}?from=recruts`)}
                       rightContent={renderRiderRight(r)}
+                      isLocked={r.isLocked}
+                      lockMinLevel={r.lockMinLevel}
+                      lockPlayersNeeded={r.lockPlayersNeeded}
                     />
                   ))}
               </div>
@@ -501,6 +507,9 @@ export function MarketClient({
                 bidState={savedDraftIds.has(r.id) || bids[r.id] ? "active" : "none"}
                 onNavigate={() => router.push(`/league/${leagueId}/rider/${r.id}?from=recruts`)}
                 rightContent={renderRiderRight(r)}
+                isLocked={r.isLocked}
+                lockMinLevel={r.lockMinLevel}
+                lockPlayersNeeded={r.lockPlayersNeeded}
               />
             ))}
 
