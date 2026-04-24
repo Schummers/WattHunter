@@ -73,7 +73,7 @@ export async function saveStrategies(
 
   if (existingStrategies) {
     for (const es of existingStrategies) {
-      const slug = Array.isArray(es.strategies) ? es.strategies[0]?.slug : (es.strategies as any)?.slug;
+      const slug = Array.isArray(es.strategies) ? es.strategies[0]?.slug : (es.strategies as { slug: string } | null)?.slug;
       if (slug) {
         projectedState[slug] = immediate ? es.is_active : (es.pending_is_active ?? es.is_active);
       }

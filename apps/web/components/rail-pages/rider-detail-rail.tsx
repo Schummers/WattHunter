@@ -18,10 +18,22 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<{
-    rider: any;
-    rankings: any[];
-    startlists: any[];
-    raceResults: any[];
+    rider: {
+      id: string;
+      full_name: string;
+      nationality: string | null;
+      team_name: string | null;
+      pcs_rank: number | null;
+      pcs_points_1yr: number | null;
+      photo_url: string | null;
+      specialty: string | null;
+      birthdate: string | null;
+      height_cm: number | null;
+      weight_kg: number | null;
+    };
+    rankings: { rider_id: string; season: number; points: number | null; rank: number | null; team: string | null }[];
+    startlists: { race_name: string; race_date: string | null }[];
+    raceResults: { race_name: string; race_date: string | null; pcs_points: number | null; xp_gained: number | null; rank: number | null; team_id: string | null }[];
     context: RiderContext;
     minSalary: number;
     currentBidId: string | null;
@@ -231,8 +243,9 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
 
         if (ownerContract) {
           const ownerTeam = Array.isArray(ownerContract.teams) ? ownerContract.teams[0] : ownerContract.teams;
-          if (ownerTeam && (ownerTeam as any).league_id === leagueId) {
-            ownerInfo = { display_name: "", team_name: (ownerTeam as any).name };
+          const ot = ownerTeam as { league_id?: string | null; name?: string | null } | null | undefined;
+          if (ot && ot.league_id === leagueId) {
+            ownerInfo = { display_name: "", team_name: ot.name ?? "" };
           }
         }
       }
@@ -259,15 +272,15 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
           rider: {
             id: rider.id,
             full_name: rider.full_name,
-            nationality: rider.nationality,
-            team_name: rider.real_team,
-            pcs_rank: rider.pcs_rank,
-            pcs_points_1yr: rider.pcs_points_1yr,
-            photo_url: rider.photo_url,
-            specialty: rider.specialty,
-            birthdate: rider.birthdate,
-            height_cm: rider.height_cm,
-            weight_kg: rider.weight_kg,
+            nationality: rider.nationality ?? null,
+            team_name: rider.real_team ?? null,
+            pcs_rank: rider.pcs_rank ?? null,
+            pcs_points_1yr: rider.pcs_points_1yr ?? null,
+            photo_url: rider.photo_url ?? null,
+            specialty: rider.specialty ?? null,
+            birthdate: rider.birthdate ?? null,
+            height_cm: rider.height_cm ?? null,
+            weight_kg: rider.weight_kg ?? null,
           },
           rankings: (rankings ?? []).map((r) => ({
             rider_id: r.rider_id,
@@ -284,6 +297,9 @@ export default function RiderDetailRail({ leagueId, riderId, from }: Props) {
             race_name: r.race_name,
             race_date: r.race_date,
             pcs_points: r.pcs_points,
+            xp_gained: null,
+            rank: null,
+            team_id: null,
           })),
           context,
           minSalary,

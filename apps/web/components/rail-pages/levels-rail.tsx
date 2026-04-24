@@ -31,9 +31,9 @@ export default function LevelsRail({ leagueId }: Props) {
 
       if (!cancelled && member) {
         const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
-        const xp = (team as any)?.cumulative_xp ?? 0;
-        setCurrentXp(xp);
-        setCurrentLevel((team as any)?.level ?? 1);
+        const t = team as { cumulative_xp?: number | null; level?: number | null } | null | undefined;
+        setCurrentXp(t?.cumulative_xp ?? 0);
+        setCurrentLevel(t?.level ?? 1);
       }
       if (!cancelled) setLoading(false);
     }

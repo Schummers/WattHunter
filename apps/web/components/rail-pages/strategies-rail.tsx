@@ -39,8 +39,9 @@ export default function StrategiesRail({ leagueId }: Props) {
       if (!member || cancelled) { setLoading(false); return; }
 
       const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
-      const teamId = (team as any)?.id ?? "";
-      const level = (team as any)?.level ?? 1;
+      const t = team as { id?: string | null; level?: number | null } | null | undefined;
+      const teamId = t?.id ?? "";
+      const level = t?.level ?? 1;
 
       // Fetch strategies DB
       const { data: dbStrategies } = await supabase.from("strategies").select("id, slug");
@@ -83,7 +84,7 @@ export default function StrategiesRail({ leagueId }: Props) {
           nationality: r?.nationality ?? null,
           real_team: r?.real_team ?? null,
           specialty: r?.specialty ?? null,
-          birthdate: (r as any)?.birthdate ?? null,
+          birthdate: (r as { birthdate?: string | null } | null | undefined)?.birthdate ?? null,
         };
       });
 
