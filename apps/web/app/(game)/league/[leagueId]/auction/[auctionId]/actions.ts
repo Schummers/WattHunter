@@ -125,8 +125,9 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
     leagueTeamLevels,
   });
   if (!coUnlockStatus.isUnlocked) {
+    const playerWord = coUnlockStatus.playersNeededToUnlock === 1 ? "player reaches" : "players reach";
     return {
-      error: `Locked — unlock when ${coUnlockStatus.playersNeededToUnlock} more player(s) reach Lv.${coUnlockStatus.minLevel}`,
+      error: `Locked — unlock when ${coUnlockStatus.playersNeededToUnlock} more ${playerWord} Lv.${coUnlockStatus.minLevel}`,
     };
   }
 

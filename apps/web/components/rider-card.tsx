@@ -23,7 +23,8 @@ interface RiderCardProps {
   isOpenSlot?: boolean;
   isLocked?: boolean;
   lockMinLevel?: number;
-  lockPlayersNeeded?: number;
+  lockPlayersAtLevel?: number;
+  lockPlayersRequired?: number;
   href?: string;
   onNavigate?: () => void;
   rightContent?: React.ReactNode;
@@ -51,7 +52,8 @@ export function RiderCard({
   isOpenSlot,
   isLocked,
   lockMinLevel,
-  lockPlayersNeeded,
+  lockPlayersAtLevel,
+  lockPlayersRequired,
   href,
   onNavigate,
   rightContent,
@@ -178,9 +180,9 @@ export function RiderCard({
       )}
 
       {/* Right side: lock badge, XP, or custom content */}
-      {isLocked && lockMinLevel != null && lockPlayersNeeded != null ? (
+      {isLocked && lockMinLevel != null && lockPlayersAtLevel != null ? (
         <div className="shrink-0">
-          <RiderLockBadge minLevel={lockMinLevel} playersNeeded={lockPlayersNeeded} />
+          <RiderLockBadge minLevel={lockMinLevel} playersAtLevel={lockPlayersAtLevel} playersRequired={lockPlayersRequired} />
         </div>
       ) : rightContent ? (
         <div className="shrink-0">{rightContent}</div>

@@ -100,7 +100,8 @@ export default async function MarketPage({
             : null,
         isLocked: !status.isUnlocked,
         lockMinLevel: status.minLevel,
-        lockPlayersNeeded: status.playersNeededToUnlock,
+        lockPlayersAtLevel: status.playersAtOrAboveLevel,
+        lockPlayersRequired: 2,
       };
     });
 

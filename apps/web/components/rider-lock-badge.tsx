@@ -6,19 +6,21 @@ import { Lock } from "lucide-react";
 
 type Props = {
   minLevel: number;
-  playersNeeded: number;
+  playersAtLevel: number;
+  playersRequired?: number; // default 2
 };
 
-export function RiderLockBadge({ minLevel, playersNeeded }: Props) {
-  const playerWord = playersNeeded === 1 ? "player" : "players";
+export function RiderLockBadge({ minLevel, playersAtLevel, playersRequired = 2 }: Props) {
+  const tooltipText = `Unlocks when ${playersRequired} players in the league reach Lv.${minLevel}.`;
   return (
     <div
       className="flex items-center gap-1 rounded-[var(--radius-pill)] bg-[var(--bg-surface-hover)] px-2 py-0.5"
-      title={`Unlock when ${playersNeeded} more ${playerWord} reach Lv.${minLevel}`}
+      title={tooltipText}
+      aria-label={tooltipText}
     >
       <Lock className="h-3 w-3 text-[var(--text-mid)]" aria-hidden />
       <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-        Lv.{minLevel} · {playersNeeded} needed
+        {playersAtLevel}/{playersRequired} · Lv.{minLevel}
       </span>
     </div>
   );

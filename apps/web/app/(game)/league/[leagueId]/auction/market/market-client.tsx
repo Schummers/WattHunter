@@ -23,7 +23,8 @@ interface Rider {
   birthdate: string | null;
   isLocked?: boolean;
   lockMinLevel?: number;
-  lockPlayersNeeded?: number;
+  lockPlayersAtLevel?: number;
+  lockPlayersRequired?: number;
 }
 
 interface ActiveRound {
@@ -483,7 +484,8 @@ export function MarketClient({
                       rightContent={renderRiderRight(r)}
                       isLocked={r.isLocked}
                       lockMinLevel={r.lockMinLevel}
-                      lockPlayersNeeded={r.lockPlayersNeeded}
+                      lockPlayersAtLevel={r.lockPlayersAtLevel}
+                      lockPlayersRequired={r.lockPlayersRequired}
                     />
                   ))}
               </div>
@@ -509,7 +511,8 @@ export function MarketClient({
                 rightContent={renderRiderRight(r)}
                 isLocked={r.isLocked}
                 lockMinLevel={r.lockMinLevel}
-                lockPlayersNeeded={r.lockPlayersNeeded}
+                lockPlayersAtLevel={r.lockPlayersAtLevel}
+                lockPlayersRequired={r.lockPlayersRequired}
               />
             ))}
 
