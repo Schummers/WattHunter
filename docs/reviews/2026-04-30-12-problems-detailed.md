@@ -274,15 +274,39 @@ Lu directement les lignes 95-110. Le bug est mécanique et reproductible.
 
 ---
 
-# #4 — `apps/web/middleware.ts` n'existe pas
+# #4 — ~~`apps/web/middleware.ts` n'existe pas~~ — **FAUX POSITIF**
 
-## Le problème
+## ⚠️ Correction (2026-05-01, après vérification runtime)
 
-Next.js exécute un middleware uniquement s'il existe à `apps/web/middleware.ts` (ou `src/middleware.ts`). Le projet a `lib/supabase/middleware.ts` qui exporte `updateSession()` pour rafraîchir les cookies Supabase, mais **rien ne l'appelle**. Conséquence : les cookies Supabase ne sont jamais rafraîchis sur navigation, et la défense d'auth est uniquement page-par-page.
+**Ce finding est faux.** Next.js 16 a déprécié `middleware.ts` au profit de `proxy.ts`. Le projet a déjà `apps/web/proxy.ts` (vérifié à l'exécution avec `preview_start` + logs Next.js : `proxy.ts: 80ms` apparaît dans chaque requête).
 
-## Preuve
+Le code de `apps/web/proxy.ts` est :
+```ts
+import { type NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
-Vérifié : `ls apps/web/middleware.ts` retourne "No such file or directory". `lib/supabase/middleware.ts:4` exporte `updateSession` qui n'est importé nulle part dans `apps/web/`.
+export async function proxy(request: NextRequest) {
+  return await updateSession(request);
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+};
+```
+
+→ `updateSession` EST appelé sur chaque navigation. La session Supabase est rafraîchie correctement.
+
+**Aucune action nécessaire.** Section ci-dessous conservée en tant que trace historique.
+
+---
+
+## ~~Le problème~~ (texte original — invalidé)
+
+~~Next.js exécute un middleware uniquement s'il existe à `apps/web/middleware.ts` (ou `src/middleware.ts`). Le projet a `lib/supabase/middleware.ts` qui exporte `updateSession()` pour rafraîchir les cookies Supabase, mais **rien ne l'appelle**. Conséquence : les cookies Supabase ne sont jamais rafraîchis sur navigation, et la défense d'auth est uniquement page-par-page.~~
+
+## ~~Preuve~~
+
+~~Vérifié : `ls apps/web/middleware.ts` retourne "No such file or directory". `lib/supabase/middleware.ts:4` exporte `updateSession` qui n'est importé nulle part dans `apps/web/`.~~ → Vérification incomplète : j'avais cherché `middleware.ts` (convention Next.js ≤ 15) mais pas `proxy.ts` (convention Next.js 16).
 
 ## Risque concret dans le jeu
 
@@ -293,38 +317,15 @@ Trois symptômes possibles :
 
 Aucun bug observable maintenant **parce que** chaque page fait `getUser()` inline. Mais c'est fragile.
 
-## Solution proposée
+## ~~Solution proposée~~ — annulée
 
-Créer `apps/web/middleware.ts` (lecture du code de `lib/supabase/middleware.ts` confirme la signature) :
+~~Créer `apps/web/middleware.ts` ...~~ → **NON, le fichier `apps/web/proxy.ts` existe déjà et fait exactement le job.** Tentative d'application a montré le warning Next.js : *"The 'middleware' file convention is deprecated. Please use 'proxy' instead. Both middleware file './middleware.ts' and proxy file './proxy.ts' are detected. Please use './proxy.ts' only."*
 
-```ts
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+## Niveau de confiance final : **N/A — finding invalide**
 
-export async function middleware(request: NextRequest) {
-  return await updateSession(request);
-}
+Erreur de méthodologie initiale : recherche de fichier basée sur la convention Next.js ≤ 15 (`middleware.ts`) sans vérifier la nouvelle convention (`proxy.ts`). Découvert seulement à l'exécution preview, pas à la lecture statique.
 
-export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/webhook).*)",
-  ],
-};
-```
-
-## Risques de la solution
-
-| Risque | Probabilité | Mitigation |
-|---|---|---|
-| Le middleware ralentit chaque request (overhead Supabase auth refresh) | Faible | C'est l'overhead standard d'auth refresh, ~50-100ms. Acceptable. |
-| Le matcher exclut un chemin important par erreur | Faible | Utiliser le matcher ci-dessus qui exclut explicitement `_next`, images, et webhooks. |
-| Public paths du `lib/supabase/middleware.ts:33-42` redirigent un user authentifié déjà loggé vers `/league/choose` alors qu'il est sur `/login` | Possible | Lire le fichier, valider la liste des public paths. Si elle inclut `/login`, attention aux loops. |
-
-**Risque principal** : pas de risque de cassure majeur. Le middleware se limite à refresh la session — il ne change pas le comportement actuel des pages, il ajoute juste une couche de robustesse.
-
-## Niveau de confiance : **HIGH**
-
-Vérifié manuellement que le fichier n'existe pas. Le code à ajouter est documenté dans `lib/supabase/middleware.ts` (j'ai vu la signature dans l'audit).
+**Leçon retenue** : pour tout finding de "fichier manquant", chercher aussi sous les noms alternatifs liés aux versions récentes de la stack avant de conclure.
 
 ---
 
@@ -870,7 +871,7 @@ Le diagnostic est solide (duplication réelle, bug de data shape réel). La solu
 Avant de te lancer dans les 12, voici l'ordre que je recommande pour minimiser les risques de cassure :
 
 ### Phase 1 — Quick wins isolés (1-2 jours, aucune dépendance)
-1. **#4 middleware.ts** — additif, pas de risque
+1. ~~**#4 middleware.ts**~~ — annulé : `proxy.ts` existe déjà (Next.js 16, faux positif)
 2. **#6 Décision FastAPI** : trancher option A (suppr) ou C (deprecated)
 3. **#11 Tokens DS + migration mécanique** — additif visuel
 4. Tous les quick wins listés dans le rapport principal (sponsor-bonus-card, gradient, zod/v4, etc.)
@@ -903,7 +904,7 @@ Avant de te lancer dans les 12, voici l'ordre que je recommande pour minimiser l
 | 1 | teams_update_own | HIGH | **Élevé** (casse #10 si fait avant) | M |
 | 2 | XP drift | HIGH | Moyen (vérif en DB d'abord) | S |
 | 3 | Cross-round solvency | HIGH | Faible | M |
-| 4 | middleware.ts | HIGH | Faible | S |
+| ~~4~~ | ~~middleware.ts~~ | **N/A** (faux positif, proxy.ts existe) | — | — |
 | 5 | run_payday Python | MEDIUM | Moyen (vérif d'abord) | S |
 | 6 | FastAPI cassé | HIGH | Faible | S |
 | 7 | invite_code | HIGH | Moyen (RPC à faire) | M |

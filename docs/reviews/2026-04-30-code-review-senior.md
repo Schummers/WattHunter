@@ -66,18 +66,15 @@ Entre le SELECT de vérification trésorerie et l'INSERT, deux requêtes concurr
 
 **Fix** : déplacer `place_bid` et `validate_round` en RPC Postgres SECURITY DEFINER avec `SELECT ... FOR UPDATE` ou advisory lock keyed sur `team_id`. Une seule transaction → invariant garanti.
 
-### 1.5 Middleware Supabase racine manquant
-`apps/web/middleware.ts` **n'existe pas** (vérifié). `lib/supabase/middleware.ts:4` exporte `updateSession()` mais ne tourne nulle part. Conséquences :
-- La session n'est jamais rafraîchie sur navigation (cookies stale)
-- La défense d'auth est uniquement page-par-page (`getUser()` inline)
-- Si une nouvelle page oublie le check, route protégée ouverte
+### 1.5 ~~Middleware Supabase racine manquant~~ — **FAUX POSITIF (corrigé 2026-05-01)**
 
-**Fix** : créer `apps/web/middleware.ts` :
-```ts
-import { updateSession } from "@/lib/supabase/middleware";
-export async function middleware(req: NextRequest) { return updateSession(req); }
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };
-```
+~~`apps/web/middleware.ts` **n'existe pas** (vérifié). `lib/supabase/middleware.ts:4` exporte `updateSession()` mais ne tourne nulle part.~~
+
+**Correction** : Next.js 16 a déprécié `middleware.ts` au profit de `proxy.ts`. Le projet **a déjà `apps/web/proxy.ts`** qui importe `updateSession` et l'expose via le pattern `proxy.ts`. Vérifié en runtime : les logs preview montrent `proxy.ts: 80ms` à chaque requête. La session est rafraîchie correctement.
+
+**Aucune action nécessaire.**
+
+L'agent code review (Agent 1 architecture) a cherché la convention Next.js ≤ 15 (`middleware.ts`) sans connaître la nouvelle convention de la 16. C'est une erreur due à un knowledge gap sur les évolutions récentes de la stack.
 
 ### 1.6 GT Squad RLS sans intégrité métier
 `supabase/migrations/20260501000000_grand_tour_mode_v1a.sql:32-34, 66-68`
@@ -362,7 +359,7 @@ Mix `treasury_log_select_own` (snake_case) et `"Anyone can read race_results"` (
 | 1 | Lock down `teams_update_own` (column-level ou trigger BEFORE UPDATE) | M | 🔴 Critique | Sécu |
 | 2 | Migration XP stretched curve (re-UPDATE teams.level) avant Giro 2026-05-08 | S | 🔴 Critique | Data |
 | 3 | Solvabilité bids agrégée cross-rounds + draft_bids | M | 🔴 Critique | Sécu |
-| 4 | Créer `apps/web/middleware.ts` (Supabase session refresh) | S | 🔴 Critique | Sécu |
+| ~~4~~ | ~~Créer `apps/web/middleware.ts`~~ — **annulé : `proxy.ts` existe déjà** | — | — | — |
 | 5 | Trancher `auction.py run_payday` vs TS `confirmPhaseSetup` | S | 🔴 Critique | Data |
 | 6 | Fixer ou supprimer `services/pcs-sync/main.py` + `run_daily_pipeline.py` | S | 🔴 Critique | Infra |
 | 7 | Restreindre `leagues` SELECT (cacher `invite_code`) | M | 🟠 Haut | Sécu |

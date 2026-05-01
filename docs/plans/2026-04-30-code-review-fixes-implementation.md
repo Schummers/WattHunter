@@ -185,69 +185,15 @@ git commit -m "fix(db): apply stretched XP curve to align teams.level with code"
 
 ---
 
-## Task 1.2: Créer apps/web/middleware.ts (#4)
+## Task 1.2: ~~Créer apps/web/middleware.ts (#4)~~ — **ANNULÉ : NO-OP**
 
-**Files:**
-- Create: `apps/web/middleware.ts`
-- Reference: `apps/web/lib/supabase/middleware.ts:4`
-
-- [ ] **Step 1: Lire le contrat de updateSession**
-
-Run: `cat apps/web/lib/supabase/middleware.ts`
-
-Vérifier la signature exportée et la liste des public paths.
-
-- [ ] **Step 2: Créer le middleware racine**
-
-```ts
-// apps/web/middleware.ts
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
-
-export async function middleware(request: NextRequest) {
-  return await updateSession(request);
-}
-
-export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico, robots.txt, sitemap.xml
-     * - public files with extension (e.g. .png, .svg)
-     */
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)",
-  ],
-};
-```
-
-- [ ] **Step 3: Build & typecheck local**
-
-```bash
-cd apps/web && pnpm typecheck
-```
-
-Expected: 0 erreur.
-
-- [ ] **Step 4: Smoke test dev server**
-
-```bash
-cd apps/web && pnpm dev
-# Dans un autre terminal :
-curl -I http://localhost:3000/league/choose
-```
-
-Expected: 200 ou redirect 302 vers /login (selon état d'auth). Pas de 500.
-
-Tuer le dev server (Ctrl+C).
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add apps/web/middleware.ts
-git commit -m "fix(auth): add root middleware to refresh Supabase sessions"
-```
+> Tâche supprimée du périmètre après vérification runtime (preview_start + Next.js logs).
+>
+> **Raison** : Next.js 16 a déprécié `middleware.ts` au profit de `proxy.ts`. Le fichier `apps/web/proxy.ts` existe déjà et appelle `updateSession()` — vérifié dans les logs : `proxy.ts: 80ms` apparaît à chaque requête. La session Supabase est déjà rafraîchie correctement sur navigation.
+>
+> Le finding #4 du code review (`docs/reviews/2026-04-30-12-problems-detailed.md`) a été barré comme faux positif.
+>
+> **Aucune action de code requise pour Task 1.2.** Passer directement à Task 1.3.
 
 ---
 
