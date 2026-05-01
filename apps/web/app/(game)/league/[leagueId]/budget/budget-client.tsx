@@ -130,7 +130,7 @@ export function BudgetClient({
 
       {/* Bankruptcy risk warning */}
       {isBankruptcyRisk && (
-        <div className="mx-4 mt-2 flex items-center gap-1.5 rounded-[var(--radius-md)] border border-red-500/30 bg-red-500/8 px-3 py-2 text-[length:var(--type-caption)] text-red-400">
+        <div className="mx-4 mt-2 flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-[length:var(--type-caption)] text-red-400">
           <span>⚠</span>
           <span>Bankruptcy risk — your salaries exceed your sponsor income</span>
         </div>

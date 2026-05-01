@@ -453,7 +453,7 @@ export function RiderDetailClient({
               type="button"
               disabled={saving}
               onClick={handleRemoveDraft}
-              className="w-full rounded-[var(--radius-md)] border border-red-500/30 text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-red-500/10 transition-colors disabled:opacity-50"
+              className="w-full rounded-[var(--radius-md)] border border-[var(--danger-border)] text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-[var(--danger-bg)] transition-colors disabled:opacity-50"
             >
               {saving ? "Removing..." : "Cancel Draft"}
             </button>
@@ -464,7 +464,7 @@ export function RiderDetailClient({
               type="button"
               disabled={saving}
               onClick={handleRelease}
-              className="w-full rounded-[var(--radius-md)] border border-red-500/30 text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-red-500/10 transition-colors disabled:opacity-50"
+              className="w-full rounded-[var(--radius-md)] border border-[var(--danger-border)] text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-[var(--danger-bg)] transition-colors disabled:opacity-50"
             >
               {saving ? "Releasing..." : "Release Rider"}
             </button>

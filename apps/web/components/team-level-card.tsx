@@ -52,7 +52,7 @@ export function TeamLevelCard({
         {/* Progress row: current badge + (XP text above bar) + next badge */}
         <div className="flex items-center gap-2">
           {/* Current level badge */}
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-overlay)]">
             <span className="text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)]">
               {currentLevel}
             </span>
@@ -75,7 +75,7 @@ export function TeamLevelCard({
 
           {/* Next level badge */}
           {!isMaxLevel && (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-overlay)]">
               <span className="text-[length:var(--type-emphasis)] font-bold text-[var(--text-mid)]">
                 {currentLevel + 1}
               </span>

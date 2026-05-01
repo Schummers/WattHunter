@@ -303,7 +303,7 @@ export function AuctionsClient({
                             handleReleaseClick(rider.contractId);
                           }}
                           aria-label="Release rider"
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-red-500/[0.12] text-red-400 transition-colors hover:bg-red-500/20"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--danger-bg)] text-red-400 transition-colors hover:bg-[var(--danger-bg)]"
                         >
                           <X size={14} />
                         </button>
@@ -385,7 +385,7 @@ export function AuctionsClient({
         {/* Validate error */}
         {validateError && (
           <div className="px-4">
-            <p className="rounded-lg border border-red-500/30 bg-red-500/[0.08] px-3 py-2 text-[length:var(--type-caption)] text-red-400">
+            <p className="rounded-lg border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-[length:var(--type-caption)] text-red-400">
               {validateError}
             </p>
           </div>
@@ -394,7 +394,7 @@ export function AuctionsClient({
         {/* Validate success */}
         {validateSuccess && (
           <div className="px-4">
-            <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/[0.08] px-3 py-2 text-[length:var(--type-caption)] text-emerald-400">
+            <p className="rounded-lg border border-[var(--success-border)] bg-[var(--success-bg)] px-3 py-2 text-[length:var(--type-caption)] text-emerald-400">
               Round validated! Your bids have been submitted.
             </p>
           </div>
@@ -423,7 +423,7 @@ export function AuctionsClient({
 
       {/* Release confirmation dialog */}
       {releaseConfirm && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-4 pb-6">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] px-4 pb-6">
           <div className="w-full max-w-md rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-5 space-y-4">
             <div>
               <p className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
@@ -444,7 +444,7 @@ export function AuctionsClient({
               <button
                 type="button"
                 onClick={() => handleReleaseConfirm(releaseConfirm)}
-                className="flex-1 rounded-[var(--radius-md)] bg-red-500/[0.15] py-2.5 text-[length:var(--type-emphasis)] font-semibold text-red-400 transition-colors hover:bg-red-500/25"
+                className="flex-1 rounded-[var(--radius-md)] bg-[var(--danger-bg)] py-2.5 text-[length:var(--type-emphasis)] font-semibold text-red-400 transition-colors hover:bg-[var(--danger-bg)]"
               >
                 Release
               </button>

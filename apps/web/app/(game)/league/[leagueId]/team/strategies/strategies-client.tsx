@@ -138,7 +138,7 @@ export function StrategiesClient({
     <div className="space-y-4 pb-24">
       {/* Pending / saved banner */}
       {savedBanner === "immediate" ? (
-        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
+        <div className="rounded-lg border border-[var(--success-border)] bg-[var(--success-bg)] px-4 py-3">
           <div className="flex items-center gap-2">
             <Save size={14} className="shrink-0 text-[var(--text-high)]" />
             <p className="text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
@@ -147,7 +147,7 @@ export function StrategiesClient({
           </div>
         </div>
       ) : savedBanner === "pending" || (!savedBanner && hasPendingOnLoad) ? (
-        <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3">
+        <div className="rounded-lg border border-[var(--warning-border)] bg-[var(--warning-bg)] px-4 py-3">
           <div className="flex items-center gap-2">
             <Save size={14} className="shrink-0 text-[var(--text-high)]" />
             <p className="text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">

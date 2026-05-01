@@ -32,7 +32,7 @@ export function BudgetSummary({
   return (
     <div
       className={`rounded-lg border bg-[var(--bg-surface)] px-3 py-[10px] transition-colors ${
-        isDeficit ? "border-red-500/30" : "border-[var(--border-default)]"
+        isDeficit ? "border-[var(--danger-border)]" : "border-[var(--border-default)]"
       }`}
     >
       {/* Treasury */}
