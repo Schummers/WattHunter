@@ -8,15 +8,10 @@ import { MetricBox } from "@/components/metric-box";
 import { MovementTag } from "@/components/movement-tag";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatThousands, countryCodeToFlag } from "@/lib/format";
+import { resolvePhotoUrl } from "@/lib/photo-url";
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-}
-
-function resolvePhoto(url: string | null): string | undefined {
-  if (!url) return undefined;
-  if (url.startsWith("http")) return url;
-  return `https://www.procyclingstats.com/${url}`;
 }
 
 export default async function TeamDetailPage({
@@ -203,7 +198,7 @@ export default async function TeamDetailPage({
         <Avatar className={`size-9 shrink-0 ${options.isFormer ? "border border-dashed border-[var(--border-default)]" : ""}`}>
           {r.photo_url && (
             <AvatarImage
-              src={resolvePhoto(r.photo_url)}
+              src={resolvePhotoUrl(r.photo_url)}
               alt={r.full_name}
               referrerPolicy="no-referrer"
             />

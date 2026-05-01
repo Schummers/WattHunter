@@ -12,6 +12,7 @@ import { releaseRider } from "./actions";
 import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
 import { BID_INCREMENT, computeAvailableBudget } from "@/lib/budget";
+import { resolvePhotoUrl } from "@/lib/photo-url";
 
 type RiderContext = "market" | "auctions" | "team" | "ranking";
 
@@ -96,11 +97,6 @@ function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
-function resolvePhoto(url: string | null): string | undefined {
-  if (!url) return undefined;
-  if (url.startsWith("http")) return url;
-  return `https://www.procyclingstats.com/${url}`;
-}
 
 const BACK_LABELS: Record<RiderContext, string> = {
   market: "Market",
@@ -331,7 +327,7 @@ export function RiderDetailClient({
           <Avatar className="size-20">
             {rider.photo_url && (
               <AvatarImage
-                src={resolvePhoto(rider.photo_url)}
+                src={resolvePhotoUrl(rider.photo_url)}
                 alt={rider.full_name}
                 referrerPolicy="no-referrer"
               />
