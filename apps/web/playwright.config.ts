@@ -30,10 +30,13 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
 
+  // WattHunter is mobile-first: BottomNav, single-column layouts, Sidebar
+  // only at lg:. We prioritise mobile in tests; add desktop as a secondary
+  // project later if a feature needs it specifically.
   projects: [
     {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      name: "mobile-chrome",
+      use: { ...devices["Pixel 7"] },
     },
   ],
 });
