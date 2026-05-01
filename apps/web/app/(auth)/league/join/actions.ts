@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { createClient } from "@/lib/supabase/server";
 import { getLevelByNumber } from "@/lib/levels";
 

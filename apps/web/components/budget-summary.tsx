@@ -51,7 +51,7 @@ export function BudgetSummary({
           <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
             Upcoming Sponsor
           </span>
-          <span className="font-mono text-[length:var(--type-caption)] text-[#4ade80]">
+          <span className="font-mono text-[length:var(--type-caption)] text-[var(--success)]">
             +€{formatThousands(sponsorIncome)}
           </span>
         </div>

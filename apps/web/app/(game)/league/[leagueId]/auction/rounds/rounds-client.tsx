@@ -128,7 +128,7 @@ export function RoundsClient({
           <button
             onClick={handleSave}
             disabled={isPending}
-            className="w-full rounded-[var(--radius-md)] bg-gradient-to-r from-cyan-500 to-cyan-400 px-4 py-2.5 text-[length:var(--type-emphasis)] font-semibold text-black transition-opacity disabled:opacity-50"
+            className="w-full rounded-[var(--radius-md)] cta-gradient px-4 py-2.5 text-[length:var(--type-emphasis)] font-semibold text-black transition-opacity disabled:opacity-50"
           >
             {isPending ? "Saving..." : "Save changes"}
           </button>
@@ -141,7 +141,7 @@ export function RoundsClient({
           <button
             onClick={handleSave}
             disabled={isPending}
-            className="w-full rounded-[var(--radius-md)] bg-gradient-to-r from-cyan-500 to-cyan-400 px-4 py-2.5 text-[length:var(--type-emphasis)] font-semibold text-black transition-opacity disabled:opacity-50"
+            className="w-full rounded-[var(--radius-md)] cta-gradient px-4 py-2.5 text-[length:var(--type-emphasis)] font-semibold text-black transition-opacity disabled:opacity-50"
           >
             {isPending ? "Saving..." : "Save changes"}
           </button>

@@ -37,12 +37,12 @@ function BaseBonusContent({ sponsor }: { sponsor: SponsorRow }) {
           <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
             {thresholdLabel(sponsor.gc_threshold)} GC
           </span>
-          <span className="font-[family-name:var(--font-geist-mono)] text-[11px] text-[var(--text-low)] tabular-nums">
+          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] text-[var(--text-low)] tabular-nums">
             +{formatBudget(sponsor.bonus_gc)}
           </span>
           <span className="ml-auto flex items-baseline gap-1">
-            <span className="text-[10px] text-[var(--text-low)]">if Grand Tour</span>
-            <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+            <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">if Grand Tour</span>
+            <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
               +{formatBudget(sponsor.bonus_gc * 2)}
             </span>
           </span>
@@ -53,12 +53,12 @@ function BaseBonusContent({ sponsor }: { sponsor: SponsorRow }) {
           <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
             {thresholdLabel(sponsor.stage_threshold)} Stage
           </span>
-          <span className="font-[family-name:var(--font-geist-mono)] text-[11px] text-[var(--text-low)] tabular-nums">
+          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] text-[var(--text-low)] tabular-nums">
             +{formatBudget(sponsor.bonus_stage)}
           </span>
           <span className="ml-auto flex items-baseline gap-1">
-            <span className="text-[10px] text-[var(--text-low)]">if Grand Tour</span>
-            <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+            <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">if Grand Tour</span>
+            <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
               +{formatBudget(sponsor.bonus_stage * 2)}
             </span>
           </span>
@@ -74,12 +74,12 @@ function BaseBonusContent({ sponsor }: { sponsor: SponsorRow }) {
           <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
             {thresholdLabel(sponsor.one_day_threshold)} One-Day
           </span>
-          <span className="font-[family-name:var(--font-geist-mono)] text-[11px] text-[var(--text-low)] tabular-nums">
+          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] text-[var(--text-low)] tabular-nums">
             +{formatBudget(sponsor.bonus_one_day)}
           </span>
           <span className="ml-auto flex items-baseline gap-1">
-            <span className="text-[10px] text-[var(--text-low)]">if Monument</span>
-            <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+            <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">if Monument</span>
+            <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
               +{formatBudget(sponsor.bonus_one_day * 2)}
             </span>
           </span>
@@ -107,7 +107,7 @@ function BaseBonusContent({ sponsor }: { sponsor: SponsorRow }) {
         </>
       )}
       {nationalities.length > 0 && (
-        <div className="flex items-center gap-1.5 border-t border-[var(--border-default)] mt-2.5 pt-2.5 text-[11px] text-[var(--text-low)]">
+        <div className="flex items-center gap-1.5 border-t border-[var(--border-default)] mt-2.5 pt-2.5 text-[length:var(--type-caption)] text-[var(--text-low)]">
           {nationalities.map((nat) => (
             <span key={nat}>{countryCodeToFlag(nat)}</span>
           ))}
@@ -144,7 +144,7 @@ function PrestigeBonusContent({ sponsor }: { sponsor: SponsorRow }) {
           <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
             {thresholdLabel(sponsor.grand_tour_threshold!)} Grand Tour GC
           </span>
-          <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
             +{formatBudget(sponsor.bonus_grand_tour!)}
           </span>
         </div>
@@ -154,7 +154,7 @@ function PrestigeBonusContent({ sponsor }: { sponsor: SponsorRow }) {
           <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
             {thresholdLabel(sponsor.gc_threshold)} Stage Race GC
           </span>
-          <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
             +{formatBudget(sponsor.bonus_gc)}
           </span>
         </div>
@@ -164,7 +164,7 @@ function PrestigeBonusContent({ sponsor }: { sponsor: SponsorRow }) {
           <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
             {thresholdLabel(sponsor.stage_threshold)} Stage
           </span>
-          <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
             +{formatBudget(sponsor.bonus_stage)}
           </span>
         </div>
@@ -178,7 +178,7 @@ function PrestigeBonusContent({ sponsor }: { sponsor: SponsorRow }) {
           <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
             {thresholdLabel(sponsor.monument_threshold!)} Monument
           </span>
-          <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
             +{formatBudget(sponsor.bonus_monument!)}
           </span>
         </div>
@@ -188,7 +188,7 @@ function PrestigeBonusContent({ sponsor }: { sponsor: SponsorRow }) {
           <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
             {thresholdLabel(sponsor.one_day_threshold)} One-Day
           </span>
-          <span className="font-[family-name:var(--font-geist-mono)] text-[13px] font-semibold text-[var(--text-high)] tabular-nums">
+          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
             +{formatBudget(sponsor.bonus_one_day)}
           </span>
         </div>

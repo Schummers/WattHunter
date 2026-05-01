@@ -16,7 +16,7 @@ const SetRoundDatesSchema = z.object({
       auctionId: z.string().uuid(),
       date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
     })
-  ),
+  ).max(8, "Cannot configure more than 8 rounds per phase"),
 });
 
 export async function setRoundDates(input: {

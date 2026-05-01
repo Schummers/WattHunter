@@ -352,6 +352,5 @@ export async function validateRound(input: { leagueId: string }) {
   // Draft bids are kept — player can modify amounts and re-validate
 
   revalidatePath(`/league/${leagueId}/auction`);
-  revalidatePath(`/league/${leagueId}/auction`);
   return { success: true };
 }

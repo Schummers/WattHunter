@@ -19,7 +19,7 @@ export function FilterChips({ options, activeIndex, onChange }: FilterChipsProps
         const isAccent = option.variant === "accent";
 
         let className =
-          "shrink-0 cursor-pointer rounded-[6px] border px-[14px] py-[6px] text-[13px] font-medium transition-all duration-150 whitespace-nowrap outline-none ";
+          "shrink-0 cursor-pointer rounded-[6px] border px-[14px] py-[6px] text-[length:var(--type-caption)] font-medium transition-all duration-150 whitespace-nowrap outline-none ";
 
         if (isActive && isAccent) {
           className +=

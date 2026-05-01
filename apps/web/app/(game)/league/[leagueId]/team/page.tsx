@@ -252,7 +252,7 @@ export default async function MyTeamPage({
             >
               <div className="relative flex items-center gap-3 px-4 py-3 after:absolute after:bottom-0 after:left-4 after:right-4 after:h-px after:bg-[var(--border-subtle)] hover:bg-[var(--bg-subtle)] transition-colors">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--border-default)]">
-                  <span className="text-[14px] text-[var(--text-ghost)]">+</span>
+                  <span className="text-[length:var(--type-body)] text-[var(--text-ghost)]">+</span>
                 </div>
                 <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-ghost)]">
                   Open slot
