@@ -2,6 +2,14 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Exclude markdown files from Tailwind v4 auto-content scan.
+   Tailwind v4 detects the workspace root (WattHunter/) via lockfile and
+   scans every file. Doc files (CLAUDE.md, docs/) contain literal class
+   examples like text-[length:var(--type-*)] that produce invalid CSS
+   when ingested as candidates. Limit scanning to source code only. */
+@source not "../../../**/*.md";
+@source not "../../../docs";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
