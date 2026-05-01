@@ -122,6 +122,21 @@
   --danger: #ef4444;
   --warning: #f59e0b;
 
+  /* Semantic backgrounds (10% opacity overlays). Use these on banners,
+     deficit warnings, and Tag/Badge variants instead of bg-emerald-500/10. */
+  --success-bg: rgba(16, 185, 129, 0.10);
+  --danger-bg:  rgba(239, 68, 68, 0.10);
+  --warning-bg: rgba(245, 158, 11, 0.10);
+
+  /* Semantic borders (30% opacity), pair with the *-bg above. */
+  --success-border: rgba(16, 185, 129, 0.30);
+  --danger-border:  rgba(239, 68, 68, 0.30);
+  --warning-border: rgba(245, 158, 11, 0.30);
+
+  /* Modal scrim and surface overlay — use instead of bg-black/X and bg-white/5. */
+  --scrim: rgba(0, 0, 0, 0.50);
+  --surface-overlay: rgba(255, 255, 255, 0.05);
+
   /* Aliases (backward compat) */
   --status-success: var(--success);
   --status-danger: var(--danger);
