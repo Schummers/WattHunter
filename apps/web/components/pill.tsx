@@ -12,9 +12,9 @@ const tagVariants = cva(
         highlighted:
           "bg-[var(--badge-bg)] text-[var(--accent-label)]",
         success:
-          "bg-emerald-500/10 text-[var(--success)]",
+          "bg-[var(--success-bg)] text-[var(--success)]",
         warning:
-          "bg-amber-500/8 text-[var(--warning)]",
+          "bg-[var(--warning-bg)] text-[var(--warning)]",
       },
     },
     defaultVariants: {

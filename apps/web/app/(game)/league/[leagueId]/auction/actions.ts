@@ -4,8 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { calcMinSalary } from "@/lib/format";
-import { getMaxSlots } from "@/lib/levels";
-import { computeAvailableBudget } from "@/lib/budget";
 import { getCurrentPhase } from "@/lib/phases";
 
 // ---------------------------------------------------------------------------
@@ -227,131 +225,18 @@ export async function validateRound(input: { leagueId: string }) {
   const { leagueId } = parsed.data;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const currentPhase = getCurrentPhase();
 
-  // --- 1. Resolve team ---
-  const teamId = await getTeamForUser(supabase, user.id, leagueId);
-  if (!teamId) return { error: "Team not found" };
+  const { data, error } = await supabase.rpc("validate_round", {
+    p_league_id: leagueId,
+    p_current_phase_id: currentPhase.id,
+  });
 
-  const { data: team } = await supabase
-    .from("teams")
-    .select("id, treasury, level, phase_confirmed_id")
-    .eq("id", teamId)
-    .single();
+  if (error) return { error: error.message };
 
-  if (!team) return { error: "Team not found" };
+  const result = data as { ok?: boolean; error?: string; inserted?: number } | null;
+  if (!result?.ok) return { error: result?.error ?? "Validation failed" };
 
-  // --- 2. Find open auction round for this league ---
-  const { data: auction } = await supabase
-    .from("auctions")
-    .select("id, name")
-    .eq("league_id", leagueId)
-    .eq("status", "open")
-    .order("opens_at", { ascending: true })
-    .limit(1)
-    .single();
-
-  if (!auction) return { error: "No open auction round found" };
-
-  const auctionRound = parseInt(auction.name.match(/\d+/)?.[0] ?? "0", 10);
-
-  // --- 3. Get draft bids for this team + league ---
-  const { data: drafts, error: draftsError } = await supabase
-    .from("draft_bids")
-    .select("id, rider_id, amount")
-    .eq("team_id", teamId)
-    .eq("league_id", leagueId);
-
-  if (draftsError) return { error: draftsError.message };
-  const draftList = drafts ?? [];
-
-  // --- 4. Get active contracts ---
-  const { data: contracts, error: contractsError } = await supabase
-    .from("contracts")
-    .select("id, locked_salary")
-    .eq("team_id", teamId)
-    .eq("status", "active");
-
-  if (contractsError) return { error: contractsError.message };
-  const contractList = contracts ?? [];
-
-  // --- 4b. Get sponsor income ---
-  const { data: sponsorData } = await supabase
-    .from("team_sponsors")
-    .select("sponsors(monthly_budget)")
-    .eq("team_id", teamId)
-    .maybeSingle();
-  let sponsorIncome = 0;
-  if (sponsorData?.sponsors) {
-    const sp = Array.isArray(sponsorData.sponsors) ? sponsorData.sponsors[0] : sponsorData.sponsors;
-    sponsorIncome = (sp as { monthly_budget: number }).monthly_budget ?? 0;
-  }
-
-  // --- 5. Calculate financials ---
-  const draftTotal = draftList.reduce((sum, d) => sum + d.amount, 0);
-  const activeSalaries = contractList.reduce((sum, c) => sum + (c.locked_salary ?? 0), 0);
-
-  // --- 6. Budget check ---
-  const phaseConfirmed = (team as { phase_confirmed_id?: number | null }).phase_confirmed_id === getCurrentPhase().id;
-  const remaining = computeAvailableBudget(
-    team.treasury,
-    sponsorIncome,
-    activeSalaries,
-    draftTotal,
-    phaseConfirmed
-  );
-  if (remaining < 0) {
-    return {
-      error: `Budget exceeded: you cannot afford ${draftTotal.toLocaleString("en-GB")} € of drafts with your current purchasing power.`,
-    };
-  }
-
-  // --- 8. Slot check ---
-  const maxSlots = getMaxSlots(team.level);
-  const rosterCount = contractList.length;
-  const draftCount = draftList.length;
-  if (rosterCount + draftCount > maxSlots) {
-    return {
-      error: `Roster limit exceeded: ${rosterCount} active + ${draftCount} new bids = ${
-        rosterCount + draftCount
-      } riders, but your level allows ${maxSlots} slots`,
-    };
-  }
-
-  // --- 9. Convert drafts → auction_bids (cancel old + insert to allow re-validation) ---
-  // Cancel previous auction_bids so re-validation replaces them
-  const { error: clearBidsError } = await supabase
-    .from("auction_bids")
-    .update({ status: "cancelled" })
-    .eq("auction_id", auction.id)
-    .eq("team_id", teamId)
-    .eq("status", "active");
-
-  if (clearBidsError) return { error: clearBidsError.message };
-
-  if (draftList.length > 0) {
-    const auctionBids = draftList.map((draft) => ({
-      auction_id: auction.id,
-      team_id: teamId,
-      rider_id: draft.rider_id,
-      amount: draft.amount,
-      round: auctionRound,
-      status: "active" as const,
-    }));
-
-    const { error: insertError } = await supabase
-      .from("auction_bids")
-      .insert(auctionBids);
-
-    if (insertError) return { error: insertError.message };
-  }
-
-  // Draft bids are kept — player can modify amounts and re-validate
-
-  revalidatePath(`/league/${leagueId}/auction`);
   revalidatePath(`/league/${leagueId}/auction`);
   return { success: true };
 }

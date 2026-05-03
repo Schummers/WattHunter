@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { installSequence as sharedInstallSequence } from "@/test-utils/supabase-mock";
 
 const { mockFrom, mockGetUser } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
@@ -28,39 +29,6 @@ const RIDER_ID = "cccccccc-0000-4000-8000-000000000001";
 const RIDER_ID_2 = "cccccccc-0000-4000-8000-000000000002";
 const LEAGUE_ID = "dddddddd-0000-4000-8000-000000000001";
 
-function makeChain(data: unknown = null, error: unknown = null) {
-  const result = { data, error, count: Array.isArray(data) ? data.length : 0 };
-  const chain: Record<string, unknown> = {
-    then: (resolve: (v: unknown) => unknown) =>
-      Promise.resolve(result).then(resolve),
-    catch: (reject: (v: unknown) => unknown) =>
-      Promise.resolve(result).catch(reject),
-    finally: (cb: () => void) => Promise.resolve(result).finally(cb),
-  };
-  for (const m of [
-    "select",
-    "eq",
-    "neq",
-    "gt",
-    "gte",
-    "lt",
-    "lte",
-    "in",
-    "like",
-    "single",
-    "maybeSingle",
-    "update",
-    "insert",
-    "upsert",
-    "delete",
-    "order",
-    "limit",
-  ]) {
-    chain[m] = () => chain;
-  }
-  return chain;
-}
-
 function teamRow(overrides: Record<string, unknown> = {}) {
   return {
     id: TEAM_ID,
@@ -70,30 +38,9 @@ function teamRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
-// Scenario driver — configure the answers per supabase.from() call.
+// Local wrapper over shared installSequence — bound to this file's mockFrom.
 function installSequence(steps: Array<{ table: string; data?: unknown; error?: unknown }>) {
-  const recordedInserts: Record<string, unknown[]> = {};
-  let callIdx = 0;
-
-  mockFrom.mockImplementation((table: string) => {
-    const step = steps[callIdx++];
-    if (step && step.table !== table) {
-      throw new Error(
-        `mock sequence mismatch at call ${callIdx - 1}: expected ${step.table}, got ${table}`
-      );
-    }
-    const chain = makeChain(step?.data ?? null, step?.error ?? null) as Record<string, unknown>;
-    // Capture insert payloads to inspect later.
-    const originalInsert = chain.insert as () => Record<string, unknown>;
-    chain.insert = (payload: unknown) => {
-      recordedInserts[table] = recordedInserts[table] ?? [];
-      recordedInserts[table].push(payload);
-      return originalInsert();
-    };
-    return chain;
-  });
-
-  return { recordedInserts };
+  return sharedInstallSequence(mockFrom, steps);
 }
 
 // ---------------------------------------------------------------------------

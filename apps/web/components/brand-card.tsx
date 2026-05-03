@@ -63,7 +63,7 @@ export function BrandCard({
             <span className="text-[length:var(--type-caption)] font-semibold text-[var(--text-low)]">
               XP
             </span>
-            <span className="ml-auto flex items-baseline gap-1 rounded-full bg-white/5 px-3 py-0.5">
+            <span className="ml-auto flex items-baseline gap-1 rounded-full bg-[var(--surface-overlay)] px-3 py-0.5">
               <span className="text-[length:var(--type-emphasis)] font-bold font-mono text-[var(--text-high)]">
                 # {rank}
               </span>

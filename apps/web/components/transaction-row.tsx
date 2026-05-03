@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { formatEuro } from "@/lib/format";
+import { resolvePhotoUrl } from "@/lib/photo-url";
 
 interface TransactionRowProps {
   type: string;
@@ -76,7 +77,7 @@ export function TransactionRow(props: TransactionRowProps) {
       {/* Avatar — rider photo or fallback circle */}
       {props.riderPhotoUrl ? (
         <Image
-          src={props.riderPhotoUrl}
+          src={resolvePhotoUrl(props.riderPhotoUrl)!}
           alt={name}
           width={32}
           height={32}

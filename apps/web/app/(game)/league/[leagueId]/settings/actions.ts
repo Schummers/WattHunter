@@ -36,74 +36,15 @@ export async function updateTeamName(teamId: string, name: string) {
 
 export async function leaveLeague(leagueId: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
 
-  // Check if user is commissioner — can't leave own league
-  const { data: league } = await supabase
-    .from("leagues")
-    .select("commissioner_id")
-    .eq("id", leagueId)
-    .single();
-
-  if (league?.commissioner_id === user.id) {
-    return { error: "Race Directors cannot leave their own league" };
-  }
-
-  // Get user's team in this league
-  const { data: team } = await supabase
-    .from("teams")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("league_id", leagueId)
-    .single();
-
-  if (!team) return { error: "Team not found" };
-
-  // Check for active contracts — block if any exist
-  const { count: activeContracts } = await supabase
-    .from("contracts")
-    .select("id", { count: "exact", head: true })
-    .eq("team_id", team.id)
-    .eq("status", "active");
-
-  if (activeContracts && activeContracts > 0) {
-    return { error: "Release all riders before leaving the league" };
-  }
-
-  // Cleanup: cancel active bids, remove team sponsors, team strategies
-  await supabase
-    .from("auction_bids")
-    .update({ status: "cancelled" })
-    .eq("team_id", team.id)
-    .eq("status", "active");
-
-  await supabase
-    .from("team_sponsors")
-    .delete()
-    .eq("team_id", team.id);
-
-  await supabase
-    .from("team_strategies")
-    .delete()
-    .eq("team_id", team.id);
-
-  // Delete team
-  await supabase
-    .from("teams")
-    .delete()
-    .eq("id", team.id);
-
-  // Remove league membership
-  const { error } = await supabase
-    .from("league_members")
-    .delete()
-    .eq("league_id", leagueId)
-    .eq("user_id", user.id);
+  const { data, error } = await supabase.rpc("leave_league", {
+    p_league_id: leagueId,
+  });
 
   if (error) return { error: error.message };
+
+  const result = data as unknown as { ok?: boolean; error?: string } | null;
+  if (!result?.ok) return { error: result?.error ?? "Leave failed" };
 
   revalidatePath("/league");
   return { success: true };

@@ -232,14 +232,14 @@ export function MarketplaceClient({
 
       {/* Confirmation banner */}
       {banner?.type === "immediate" && (
-        <div className="mx-4 mb-4 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
+        <div className="mx-4 mb-4 rounded-lg border border-[var(--success-border)] bg-[var(--success-bg)] px-4 py-3">
           <p className="text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
             ✓ {banner.name} — changes applied
           </p>
         </div>
       )}
       {banner?.type === "pending" && (
-        <div className="mx-4 mb-4 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3">
+        <div className="mx-4 mb-4 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-bg)] px-4 py-3">
           <p className="text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
             ⏳ {banner.name} — active from {nextPhaseName ?? "next phase"}
           </p>

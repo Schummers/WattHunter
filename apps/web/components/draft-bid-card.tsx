@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MovementTag } from "@/components/movement-tag";
 import { countryCodeToFlag, formatThousands } from "@/lib/format";
 import { BID_INCREMENT } from "@/lib/budget";
+import { resolvePhotoUrl } from "@/lib/photo-url";
 
 interface DraftBidCardProps {
   rider: {
@@ -27,12 +28,6 @@ interface DraftBidCardProps {
 }
 
 const INCREMENT = BID_INCREMENT;
-
-function resolvePhotoUrl(url: string | null | undefined): string | undefined {
-  if (!url) return undefined;
-  if (url.startsWith("http")) return url;
-  return `https://www.procyclingstats.com/${url}`;
-}
 
 function getInitials(name: string): string {
   const parts = name.split(" ").filter(Boolean);
@@ -164,7 +159,7 @@ export function DraftBidCard({
           type="button"
           onClick={onRemove}
           aria-label="Remove bid"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-red-500/[0.12] text-red-400 transition-colors hover:bg-red-500/20"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--danger-bg)] text-red-400 transition-colors hover:bg-[var(--danger-bg)]"
         >
           <Trash2 size={16} />
         </button>

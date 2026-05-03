@@ -44,6 +44,13 @@ backups/
 dist/
 build/
 
+# Playwright
+playwright-report/
+test-results/
+.playwright-mcp/
+blob-report/
+playwright/.cache/
+
 # Logs
 *.log
 npm-debug.log*

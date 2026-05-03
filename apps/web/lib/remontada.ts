@@ -43,7 +43,7 @@ export async function getActiveRemontadaBoost(
 
   return {
     team_id: data.team_id,
-    gt_identifier: data.gt_identifier,
+    gt_identifier: data.gt_identifier as RemontadaBoost["gt_identifier"],
     triggered_at_stage: data.triggered_at_stage,
     expires_after_stage: data.expires_after_stage,
     multiplier: Number(data.multiplier),

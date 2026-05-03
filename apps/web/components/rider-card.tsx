@@ -5,6 +5,7 @@ import { ChevronRight, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MovementTag } from "@/components/movement-tag";
 import { RiderLockBadge } from "@/components/rider-lock-badge";
+import { resolvePhotoUrl } from "@/lib/photo-url";
 
 interface RiderCardProps {
   rider: {
@@ -28,12 +29,6 @@ interface RiderCardProps {
   href?: string;
   onNavigate?: () => void;
   rightContent?: React.ReactNode;
-}
-
-function resolvePhotoUrl(url: string | null | undefined): string | undefined {
-  if (!url) return undefined;
-  if (url.startsWith("http")) return url;
-  return `https://www.procyclingstats.com/${url}`;
 }
 
 function getInitials(name: string): string {

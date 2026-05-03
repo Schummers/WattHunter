@@ -179,22 +179,25 @@ export default async function RiderDetailPage({
       if (!activeAuctionId) {
         const { data: auction } = await supabase
           .from("auctions")
-          .select("id, round")
+          .select("id, name")
           .eq("league_id", leagueId)
           .in("status", ["active", "open"])
           .maybeSingle();
         if (auction) {
           activeAuctionId = auction.id;
-          currentRound = auction.round;
+          const m = auction.name.match(/(\d+)/);
+          currentRound = m ? parseInt(m[1], 10) : null;
         }
       } else {
-        // Fetch round for an already-found auction
         const { data: auction } = await supabase
           .from("auctions")
-          .select("round")
+          .select("name")
           .eq("id", activeAuctionId)
           .maybeSingle();
-        if (auction) currentRound = auction.round;
+        if (auction) {
+          const m = auction.name.match(/(\d+)/);
+          currentRound = m ? parseInt(m[1], 10) : null;
+        }
       }
     }
   }

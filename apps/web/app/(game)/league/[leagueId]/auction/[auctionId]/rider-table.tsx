@@ -16,9 +16,9 @@ import {
 interface Rider {
   id: string;
   full_name: string;
-  real_team: string;
-  specialty: string;
-  nationality: string;
+  real_team: string | null;
+  specialty: string | null;
+  nationality: string | null;
   pcs_points_1yr: number;
   pcs_rank: number | null;
   monthly_salary: number;
@@ -48,7 +48,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
   const [specialtyFilter, setSpecialtyFilter] = useState("");
 
   const teams = useMemo(
-    () => [...new Set(riders.map((r) => r.real_team))].sort(),
+    () => [...new Set(riders.map((r) => r.real_team).filter(Boolean))].sort() as string[],
     [riders]
   );
 
@@ -128,7 +128,7 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
               <TableCell className="text-[var(--text-mid)]">{rider.real_team}</TableCell>
               <TableCell>
                 <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-                  {SPECIALTY_LABELS[rider.specialty] ?? rider.specialty}
+                  {rider.specialty ? (SPECIALTY_LABELS[rider.specialty] ?? rider.specialty) : "—"}
                 </span>
               </TableCell>
               <TableCell className="text-[var(--text-mid)]">{rider.nationality ? countryCodeToFlag(rider.nationality) : "—"}</TableCell>

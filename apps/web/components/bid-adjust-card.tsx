@@ -98,7 +98,7 @@ export function BidAdjustCard({
             sizes="48px"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-[11px] font-bold text-[var(--text-mid)]">
+          <div className="flex h-full w-full items-center justify-center text-[length:var(--type-caption)] font-bold text-[var(--text-mid)]">
             {rider.full_name
               .split(" ")
               .map((n) => n[0])
@@ -117,7 +117,7 @@ export function BidAdjustCard({
             {formatName(rider.full_name)}
           </span>
           {flag && (
-            <span className="shrink-0 text-[14px]">{flag}</span>
+            <span className="shrink-0 text-[length:var(--type-body)]">{flag}</span>
           )}
           {rider.pcs_rank != null && (
             <span className="shrink-0 font-mono text-[length:var(--type-caption)] text-[var(--text-low)]">

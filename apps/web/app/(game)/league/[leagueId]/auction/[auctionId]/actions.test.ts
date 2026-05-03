@@ -15,15 +15,17 @@ import { describe, it, expect, vi } from "vitest";
 // ---------------------------------------------------------------------------
 
 // Use vi.hoisted() so these are available when vi.mock() factory runs
-const { mockFrom, mockGetUser } = vi.hoisted(() => {
+const { mockFrom, mockGetUser, mockRpc } = vi.hoisted(() => {
   const mockFrom = vi.fn();
   const mockGetUser = vi.fn();
-  return { mockFrom, mockGetUser };
+  const mockRpc = vi.fn();
+  return { mockFrom, mockGetUser, mockRpc };
 });
 
 const mockSupabase = {
   auth: { getUser: mockGetUser },
   from: mockFrom,
+  rpc: mockRpc,
 };
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -95,8 +97,8 @@ describe("placeBid — Zod validation", () => {
   });
 
   it("accepts amount that is not a multiple of 100 (RC-4)", async () => {
-    // 150 is a valid positive integer — should pass Zod and hit auth
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    // 150 is a valid positive integer — should pass Zod and hit RPC
+    mockRpc.mockResolvedValueOnce({ data: { error: "Not authenticated" }, error: null });
     const result = await placeBid({
       auctionId: UUID_1,
       riderId: UUID_2,
@@ -136,19 +138,19 @@ describe("placeBid — Zod validation", () => {
     expect(result).toEqual({ error: "Invalid data" });
   });
 
-  it("rejects round = 4 (max is 3)", async () => {
+  it("rejects round = 9 (max is 8)", async () => {
     const result = await placeBid({
       auctionId: UUID_1,
       riderId: UUID_2,
       amount: 500,
-      round: 4,
+      round: 9,
     });
     expect(result).toEqual({ error: "Invalid data" });
   });
 
-  it("passes validation and proceeds to auth check", async () => {
-    // Valid schema → Zod passes → hits auth layer → unauthenticated error
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+  it("passes validation and proceeds to RPC", async () => {
+    // Valid schema → Zod passes → hits RPC → unauthenticated error from RPC
+    mockRpc.mockResolvedValueOnce({ data: { error: "Not authenticated" }, error: null });
 
     const result = await placeBid({
       auctionId: UUID_1,
@@ -156,7 +158,6 @@ describe("placeBid — Zod validation", () => {
       amount: 500,
       round: 1,
     });
-    // Not "Invalid data" — Zod passed; auth returned null user
     expect(result).toEqual({ error: "Not authenticated" });
   });
 });
@@ -167,7 +168,7 @@ describe("placeBid — Zod validation", () => {
 
 describe("placeBid — RC-4 edge cases", () => {
   it("accepts odd number like 27033", async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    mockRpc.mockResolvedValueOnce({ data: { error: "Not authenticated" }, error: null });
     const result = await placeBid({
       auctionId: UUID_1,
       riderId: UUID_2,
@@ -188,7 +189,7 @@ describe("placeBid — RC-4 edge cases", () => {
   });
 
   it("accepts amount at 100M cap", async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    mockRpc.mockResolvedValueOnce({ data: { error: "Not authenticated" }, error: null });
     const result = await placeBid({
       auctionId: UUID_1,
       riderId: UUID_2,
@@ -199,7 +200,7 @@ describe("placeBid — RC-4 edge cases", () => {
   });
 
   it("accepts amount = 1 (minimum positive)", async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    mockRpc.mockResolvedValueOnce({ data: { error: "Not authenticated" }, error: null });
     const result = await placeBid({
       auctionId: UUID_1,
       riderId: UUID_2,
@@ -226,20 +227,19 @@ describe("placeBid — RC-4 edge cases", () => {
 
 describe("placeBid — rider salary minimum", () => {
   it("returns error when bid is below rider monthly_salary", async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
-    mockFrom
-      .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))           // auctions
-      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 500_000, level: 8 })) // teams
-      .mockReturnValueOnce(makeChain({ monthly_salary: 10_000 }));          // riders
+    mockRpc.mockResolvedValueOnce({
+      data: { error: "Minimum bid: 10000" },
+      error: null,
+    });
 
     const result = await placeBid({
       auctionId: UUID_1,
       riderId: UUID_2,
-      amount: 5_000, // below 10_000
+      amount: 5_000,
       round: 1,
     });
 
-    expect(result.error).toMatch(/Minimum bid: 10.000 €/);
+    expect(result.error).toMatch(/Minimum bid/);
   });
 });
 
@@ -249,15 +249,10 @@ describe("placeBid — rider salary minimum", () => {
 
 describe("placeBid — budget check", () => {
   it("returns error when total bids would exceed treasury", async () => {
-    // treasury = 1_000, other active bids = 800, new bid = 300 → 1_100 > 1_000
-    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
-    mockFrom
-      .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))                   // auctions
-      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 8 }))          // teams
-      .mockReturnValueOnce(makeChain({ monthly_salary: 100 }))                     // riders
-      .mockReturnValueOnce(makeChain(null))                                         // existingBid (maybeSingle → null)
-      .mockReturnValueOnce(makeChain([]))                                           // existing contracts
-      .mockReturnValueOnce(makeChain([{ id: "other-bid", amount: 800 }]));         // activeBids
+    mockRpc.mockResolvedValueOnce({
+      data: { error: "Insufficient budget" },
+      error: null,
+    });
 
     const result = await placeBid({
       auctionId: UUID_1,
@@ -270,15 +265,10 @@ describe("placeBid — budget check", () => {
   });
 
   it("returns error when current salaries + bids + new bid exceed treasury", async () => {
-    // treasury = 1_000, salaries = 500, active bids = 300, new bid = 300 -> 1_100 > 1_000
-    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
-    mockFrom
-      .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))
-      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 8 }))
-      .mockReturnValueOnce(makeChain({ monthly_salary: 100 }))
-      .mockReturnValueOnce(makeChain(null))
-      .mockReturnValueOnce(makeChain([{ locked_salary: 500 }])) // current salaries
-      .mockReturnValueOnce(makeChain([{ id: "other-bid", amount: 300 }])); // active bids
+    mockRpc.mockResolvedValueOnce({
+      data: { error: "Insufficient budget" },
+      error: null,
+    });
 
     const result = await placeBid({
       auctionId: UUID_1,
@@ -291,18 +281,11 @@ describe("placeBid — budget check", () => {
   });
 
   it("allows bid when total exactly equals treasury", async () => {
-    // treasury = 1_000, no other bids, new bid = 1_000 → 1_000 ≤ 1_000 → OK
-    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
-    mockFrom
-      .mockReturnValueOnce(makeChain({ league_id: "league-1", status: "open", closes_at: null }))                         // auctions
-      .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 1_000, level: 8 }))   // teams
-      .mockReturnValueOnce(makeChain({ monthly_salary: 100, pcs_rank: 5, ever_in_pool: true })) // riders
-      .mockReturnValueOnce(makeChain(null))                               // existingBid
-      .mockReturnValueOnce(makeChain([]))                                 // existing contracts
-      .mockReturnValueOnce(makeChain([]))                                 // activeBids (empty)
-      .mockReturnValueOnce(makeChain([{ level: 8 }, { level: 8 }]))      // co-unlock: fetchLeagueTeamLevels
-      .mockReturnValueOnce(makeChain(null, null, 0))                     // contracts count (slot check)
-      .mockReturnValueOnce(makeChain(null, null));                        // insert success
+    const bidId = "550e8400-e29b-41d4-a716-446655440099";
+    mockRpc.mockResolvedValueOnce({
+      data: { ok: true, bid_id: bidId },
+      error: null,
+    });
 
     const result = await placeBid({
       auctionId: UUID_1,

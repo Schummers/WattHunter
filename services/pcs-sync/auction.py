@@ -11,9 +11,16 @@ Each auction row represents one round. Resolution flow:
 
 Economy rules:
   - The winning bid amount becomes the rider's locked_salary (monthly salary).
-  - Salaries are deducted by the monthly payday job (run_payday), not at auction time.
+  - Salaries are deducted by the in-app `confirmPhaseSetup` server action
+    (apps/web/app/(game)/league/[leagueId]/auction/market/actions.ts).
+    Python no longer runs payday — the TS action is the single source of truth.
   - NEVER authorize a bid if treasury < total active bids (enforced at bid time in API;
     resolution here trusts the bid was valid when placed)
+
+Usage today: this module is invoked manually via `python3 resolve_now.py`
+(top-level CLI). The previous FastAPI / Railway wrapping was removed because
+the service was broken at import time (missing `sync_all_riders`) and never
+deployed in practice.
 """
 from __future__ import annotations
 
@@ -216,8 +223,9 @@ async def resolve_current_round(
                         {"is_active_in_game": True}
                     ).eq("id", rider_id).execute()
 
-                    # Deduct salary immediately for Round 2/3 contracts.
-                    # Round 1 salaries are handled by run_payday() below.
+                    # Deduct salary immediately for Round 2/3 contracts (mid-phase).
+                    # Round 1 salaries are handled by the in-app confirmPhaseSetup
+                    # server action when the user confirms the phase setup.
                     auction_name = auction.get("name", "")
                     is_round_1 = "Round 1" in auction_name or str(auction.get("round", "")) == "1"
                     if not is_round_1:
@@ -262,19 +270,18 @@ async def resolve_current_round(
             # Always close an expired auction after resolution
             _close_auction(supabase, auction_id, league_id)
 
-            # Run payday for all teams — only on Round 1 of each phase
-            auction_name = auction.get("name", "")
-            is_round_1 = "Round 1" in auction_name or str(auction.get("round", "")) == "1"
-            payday_result = None
-            if is_round_1 and league_id:
-                logger.info(f"Auction {auction_id} is Round 1 — triggering payday for league {league_id}")
-                payday_result = run_payday(supabase, league_id)
+            # Payday is now handled by the in-app server action
+            # confirmPhaseSetup (apps/web/app/(game)/league/[leagueId]/
+            # auction/market/actions.ts). Python is responsible only for
+            # auction resolution + contract creation. The previous
+            # auto-payday trigger was removed to eliminate the dual
+            # source-of-truth between Python run_payday() and the TS
+            # action.
 
             results.append({
                 "auction_id": auction_id,
                 "round": current_round,
                 "resolved": resolved_count,
-                **({"payday": payday_result} if payday_result else {}),
             })
 
         except Exception as e:
@@ -287,155 +294,14 @@ async def resolve_current_round(
     return {"status": "completed", "auctions": results}
 
 
-def run_payday(supabase: Client, league_id: str) -> dict:
-    """
-    Run the monthly payday for ALL teams in a league.
-
-    Called after Round 1 auction resolution. Mirrors the confirmPhaseSetup
-    server action (apps/web/app/(game)/league/[leagueId]/team/market/actions.ts).
-
-    For each team:
-      1. Apply pending sponsor change
-      2. Apply pending policy changes
-      3. Credit sponsor income
-      4. Deduct active contract salaries
-      5. Update treasury
-      6. Mark phase as confirmed
-    """
-    now_iso = datetime.utcnow().isoformat()
-    phase_id = _get_current_phase_id()
-
-    logger.info(f"[Payday] Starting payday for league {league_id} — phase {phase_id}")
-
-    # Fetch all teams in the league (include phase_confirmed_id for idempotency)
-    teams_resp = supabase.table("teams").select(
-        "id, treasury, pending_sponsor_id, phase_confirmed_id"
-    ).eq("league_id", league_id).execute()
-
-    if not teams_resp.data:
-        logger.warning(f"[Payday] No teams found for league {league_id}")
-        return {"status": "no_teams"}
-
-    payday_results = []
-
-    for team in teams_resp.data:
-        team_id = team["id"]
-        try:
-            # Idempotency guard: skip if phase already confirmed for this team
-            if team.get("phase_confirmed_id") == phase_id:
-                logger.info(f"[Payday] Team {team_id} — already confirmed for phase {phase_id}, skipping")
-                payday_results.append({"team_id": team_id, "skipped": True})
-                continue
-
-            treasury = int(team["treasury"] or 0)
-            logger.info(f"[Payday] Team {team_id} — treasury before: {treasury}")
-
-            # --- Step 1: Apply pending sponsor change ---
-            if team.get("pending_sponsor_id"):
-                supabase.table("team_sponsors").upsert(
-                    {
-                        "team_id": team_id,
-                        "sponsor_id": team["pending_sponsor_id"],
-                        "activated_at": now_iso,
-                    },
-                    on_conflict="team_id",
-                ).execute()
-                supabase.table("teams").update(
-                    {"pending_sponsor_id": None}
-                ).eq("id", team_id).execute()
-                logger.info(f"[Payday] Team {team_id} — applied pending sponsor {team['pending_sponsor_id']}")
-
-            # --- Step 2: Apply pending strategy changes ---
-            pending_strategies_resp = supabase.table("team_strategies").select(
-                "id, pending_is_active, pending_config"
-            ).eq("team_id", team_id).not_.is_("pending_is_active", "null").execute()
-
-            for strategy in (pending_strategies_resp.data or []):
-                if strategy["pending_is_active"] is False:
-                    supabase.table("team_strategies").delete().eq("id", strategy["id"]).execute()
-                    logger.info(f"[Payday] Team {team_id} — deleted strategy {strategy['id']}")
-                else:
-                    supabase.table("team_strategies").update({
-                        "is_active": strategy["pending_is_active"],
-                        "config": strategy["pending_config"],
-                        "activated_at": now_iso,
-                        "pending_is_active": None,
-                        "pending_config": None,
-                    }).eq("id", strategy["id"]).execute()
-                    logger.info(f"[Payday] Team {team_id} — activated strategy {strategy['id']}")
-
-            # --- Step 3: Credit sponsor income ---
-            sponsor_resp = supabase.table("team_sponsors").select(
-                "sponsor_id, sponsors(id, name, monthly_budget)"
-            ).eq("team_id", team_id).single().execute()
-
-            sponsor_budget = 250_000  # default (Lotto T1)
-            sponsor_name = "Lotto (default)"
-
-            if sponsor_resp.data:
-                raw_sponsor = sponsor_resp.data.get("sponsors")
-                if isinstance(raw_sponsor, list):
-                    raw_sponsor = raw_sponsor[0] if raw_sponsor else None
-                if raw_sponsor:
-                    sponsor_budget = int(raw_sponsor.get("monthly_budget", 250_000))
-                    sponsor_name = raw_sponsor.get("name", "Unknown sponsor")
-
-            treasury += sponsor_budget
-
-            supabase.table("treasury_log").insert({
-                "team_id": team_id,
-                "type": "sponsor_payment",
-                "amount": sponsor_budget,
-                "description": f"Payday — {sponsor_name} (Phase {phase_id})",
-            }).execute()
-            logger.info(f"[Payday] Team {team_id} — credited {sponsor_budget} from {sponsor_name}")
-
-            # --- Step 4: Deduct active contract salaries ---
-            contracts_resp = supabase.table("contracts").select(
-                "id, rider_id, locked_salary"
-            ).eq("team_id", team_id).eq("status", "active").execute()
-
-            contracts = contracts_resp.data or []
-            total_salary = sum(int(c.get("locked_salary") or 0) for c in contracts)
-
-            if total_salary > 0:
-                treasury -= total_salary
-                supabase.table("treasury_log").insert({
-                    "team_id": team_id,
-                    "type": "payday_salary",
-                    "amount": -total_salary,
-                    "description": f"Payday salaries — {len(contracts)} riders (Phase {phase_id})",
-                }).execute()
-                logger.info(f"[Payday] Team {team_id} — deducted {total_salary} salaries ({len(contracts)} riders)")
-
-            # --- Step 5: Update treasury ---
-            supabase.table("teams").update({"treasury": treasury}).eq("id", team_id).execute()
-
-            # --- Step 6: Mark phase as confirmed ---
-            supabase.table("teams").update({
-                "phase_confirmed_id": phase_id,
-                "phase_confirmed_at": now_iso,
-            }).eq("id", team_id).execute()
-
-            logger.info(
-                f"[Payday] Team {team_id} — DONE. treasury_after={treasury}, "
-                f"phase_confirmed={phase_id}"
-            )
-
-            payday_results.append({
-                "team_id": team_id,
-                "treasury_after": treasury,
-                "sponsor_budget": sponsor_budget,
-                "total_salary": total_salary,
-                "phase_id": phase_id,
-            })
-
-        except Exception as e:
-            logger.error(f"[Payday] Team {team_id} — error: {e}", exc_info=True)
-            payday_results.append({"team_id": team_id, "error": str(e)})
-
-    logger.info(f"[Payday] Completed for league {league_id} — {len(payday_results)} teams processed")
-    return {"status": "completed", "teams": payday_results}
+# NOTE: run_payday() was removed. The in-app `confirmPhaseSetup` server
+# action (apps/web/app/(game)/league/[leagueId]/auction/market/actions.ts)
+# is now the single source of truth for the monthly payday flow:
+#   1. Apply pending sponsor / strategy changes
+#   2. Credit sponsor income
+#   3. Deduct active contract salaries
+#   4. Mark phase as confirmed (idempotent via phase_confirmed_id)
+# The Python copy was deleted to eliminate dual source-of-truth drift.
 
 
 def _close_auction(supabase: Client, auction_id: str, league_id: str | None = None) -> None:

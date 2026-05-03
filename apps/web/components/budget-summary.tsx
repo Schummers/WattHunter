@@ -32,7 +32,7 @@ export function BudgetSummary({
   return (
     <div
       className={`rounded-lg border bg-[var(--bg-surface)] px-3 py-[10px] transition-colors ${
-        isDeficit ? "border-red-500/30" : "border-[var(--border-default)]"
+        isDeficit ? "border-[var(--danger-border)]" : "border-[var(--border-default)]"
       }`}
     >
       {/* Treasury */}
@@ -51,7 +51,7 @@ export function BudgetSummary({
           <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
             Upcoming Sponsor
           </span>
-          <span className="font-mono text-[length:var(--type-caption)] text-[#4ade80]">
+          <span className="font-mono text-[length:var(--type-caption)] text-[var(--success)]">
             +€{formatThousands(sponsorIncome)}
           </span>
         </div>

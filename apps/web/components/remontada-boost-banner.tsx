@@ -1,6 +1,6 @@
 // apps/web/components/remontada-boost-banner.tsx
 // Spec §3.7 — banner displayed on Team > GT sub-tab during an active Remontada Boost.
-// Design system: use --accent-default tokens, --radius-lg, text-[length:var(--type-*)] tokens only.
+// Design system: use --accent-default tokens, --radius-lg, type-scale tokens only.
 
 import { Flame } from "lucide-react";
 

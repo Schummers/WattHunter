@@ -8,6 +8,7 @@ import { MovementTag } from "@/components/movement-tag";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatThousands, countryCodeToFlag } from "@/lib/format";
+import { resolvePhotoUrl } from "@/lib/photo-url";
 
 interface TeamRow {
   id: string;
@@ -52,12 +53,6 @@ interface RankingClientProps {
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-}
-
-function resolvePhoto(url: string | null): string | undefined {
-  if (!url) return undefined;
-  if (url.startsWith("http")) return url;
-  return `https://www.procyclingstats.com/${url}`;
 }
 
 export function RankingClient({
@@ -234,7 +229,7 @@ export function RankingClient({
                   <Avatar className={`size-9 shrink-0 ${rider.isMyRider ? "ring-1 ring-[var(--accent-default)]" : ""}`}>
                     {rider.photoUrl && (
                       <AvatarImage
-                        src={resolvePhoto(rider.photoUrl)}
+                        src={resolvePhotoUrl(rider.photoUrl)}
                         alt={rider.fullName}
                         referrerPolicy="no-referrer"
                       />
