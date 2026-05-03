@@ -1339,6 +1339,10 @@ export type Database = {
         }
         Returns: Json
       }
+      validate_round: {
+        Args: { p_current_phase_id: number; p_league_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
