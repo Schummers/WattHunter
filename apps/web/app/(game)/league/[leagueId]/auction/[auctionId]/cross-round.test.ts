@@ -106,7 +106,10 @@ function makeRoundAwareChain(
     chain[m] = () => chain;
   }
 
-  // Override eq to detect the round filter
+  // Override eq to detect the round filter. The Supabase client passes
+  // (column, value) — we keep the second arg in the signature so the
+  // chain stays compatible if a test ever wants to inspect it.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   chain["eq"] = (col: unknown, _val: unknown) => {
     if (col === "round") {
       hasRoundFilter = true;
