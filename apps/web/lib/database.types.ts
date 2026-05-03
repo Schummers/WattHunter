@@ -817,7 +817,7 @@ export type Database = {
           birth_place: string | null
           birthdate: string | null
           created_at: string
-          ever_in_top500: boolean
+          ever_in_pool: boolean
           full_name: string
           height_cm: number | null
           id: string
@@ -841,7 +841,7 @@ export type Database = {
           birth_place?: string | null
           birthdate?: string | null
           created_at?: string
-          ever_in_top500?: boolean
+          ever_in_pool?: boolean
           full_name: string
           height_cm?: number | null
           id?: string
@@ -865,7 +865,7 @@ export type Database = {
           birth_place?: string | null
           birthdate?: string | null
           created_at?: string
-          ever_in_top500?: boolean
+          ever_in_pool?: boolean
           full_name?: string
           height_cm?: number | null
           id?: string

@@ -41,7 +41,7 @@ export default async function AuctionDetailPage({
     supabase
       .from("riders")
       .select("id, full_name, nationality, photo_url, pcs_rank, pcs_points_1yr, specialty, real_team, monthly_salary, age")
-      .eq("ever_in_top500", true)
+      .eq("ever_in_pool", true)
       .gte("pcs_rank", getLevelByNumber(team?.level ?? 1).poolMin)
       .lte("pcs_rank", 600)
       .order("pcs_points_1yr", { ascending: false }),
