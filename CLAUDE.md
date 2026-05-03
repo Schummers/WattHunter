@@ -25,6 +25,16 @@ Before ANY frontend work (new component, new page, styling change), READ `docs/w
 - `supabase db reset --linked` — reset + reseed (DESTRUCTIF)
 - `cd services/pcs-sync && uvicorn main:app --reload` — service Python en local
 
+## Local Supabase (DB dev)
+- **Runtime** : Colima + Docker CLI (`brew install colima docker`)
+- **Démarrer** : `colima start --cpu 4 --memory 6` puis `supabase start --exclude vector,edge-runtime,logflare,imgproxy,studio,mailpit`
+- **Arrêter** : `supabase stop` puis `colima stop`
+- **Reset** : `supabase db reset` (applique toutes les migrations from scratch, pas de seed.sql pour le moment)
+- **Accès DB** : `docker exec -i supabase_db_WattHunter psql -U postgres -d postgres`
+- **Port Postgres** : 54322 (local) — connection string : `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
+- Pas de `psql` natif installé — passer par `docker exec` ou `supabase db query`
+- `vector` et `edge-runtime` exclus car incompatibles avec Colima (socket Docker mount + JSR fetch)
+
 ## Sync PCS (données coureurs)
 3 pipelines scraping procyclingstats.com, tous lancés manuellement via CLI.
 - **Exécution locale uniquement** (IP résidentielle requise — Cloudflare bloque les IPs datacenter)
