@@ -190,11 +190,23 @@ watthunter/
 └── CLAUDE.md
 ```
 
-### Server Actions clés
-- `app/(game)/league/[leagueId]/actions.ts` — confirmPhaseSetup (remplace Pipeline D finance)
-- `app/(game)/league/[leagueId]/team/auctions/actions.ts` — draft bids CRUD
-- `app/(game)/league/[leagueId]/team/auctions/rounds/actions.ts` — round validation
-- `app/(game)/league/[leagueId]/team/market/actions.ts` — recruits + release
+### SECURITY DEFINER RPCs (mutations critiques)
+Les 5 mutations économiques passent par des RPCs atomiques (`SECURITY DEFINER`) dans Postgres.
+Le code TS se limite à : Zod validation → `supabase.rpc(...)` → error forwarding.
+- `place_bid` — enchère avec 11 validations (budget cross-round, level gating, slots)
+- `validate_round` — conversion draft_bids → auction_bids (budget + slots check)
+- `release_rider` — libération coureur avec phase lock
+- `confirm_phase_setup` — confirmation phase (sponsor + strategies activation)
+- `leave_league` — quitter ligue avec cascade cleanup
+- Trigger `teams_protect_sensitive_fields` — bloque UPDATE direct sur level/treasury/xp/user_id/league_id (sauf service_role)
+- Migrations : `supabase/migrations/2026050[3-5]*.sql` + rollbacks dans `_rollback/`
+
+### Server Actions (TS — lectures + drafts)
+- `app/(game)/league/[leagueId]/auction/[auctionId]/actions.ts` — placeBid (→ RPC), cancelBid, draft bids CRUD
+- `app/(game)/league/[leagueId]/auction/actions.ts` — validateRound (→ RPC), addDraft, removeDraft
+- `app/(game)/league/[leagueId]/auction/market/actions.ts` — confirmPhaseSetup (→ RPC)
+- `app/(game)/league/[leagueId]/rider/[riderId]/actions.ts` — releaseRider (→ RPC)
+- `app/(game)/league/[leagueId]/settings/actions.ts` — updateTeamName, leaveLeague (→ RPC), updateLeagueName
 - `app/(game)/league/[leagueId]/team/strategies/actions.ts` — strategy management
 
 ## Gestion du contexte (compression)
