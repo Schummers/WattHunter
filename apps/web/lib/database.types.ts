@@ -1330,6 +1330,15 @@ export type Database = {
       compute_level: { Args: { xp: number }; Returns: number }
       is_league_member: { Args: { p_league_id: string }; Returns: boolean }
       join_league_by_code: { Args: { p_code: string }; Returns: Json }
+      place_bid: {
+        Args: {
+          p_amount: number
+          p_auction_id: string
+          p_rider_id: string
+          p_round: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
