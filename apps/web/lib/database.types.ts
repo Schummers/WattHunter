@@ -1328,8 +1328,17 @@ export type Database = {
     }
     Functions: {
       compute_level: { Args: { xp: number }; Returns: number }
+      confirm_phase_setup: {
+        Args: {
+          p_current_phase_id: number
+          p_current_phase_label: string
+          p_team_id: string
+        }
+        Returns: Json
+      }
       is_league_member: { Args: { p_league_id: string }; Returns: boolean }
       join_league_by_code: { Args: { p_code: string }; Returns: Json }
+      leave_league: { Args: { p_league_id: string }; Returns: Json }
       place_bid: {
         Args: {
           p_amount: number
@@ -1337,6 +1346,10 @@ export type Database = {
           p_rider_id: string
           p_round: number
         }
+        Returns: Json
+      }
+      release_rider: {
+        Args: { p_contract_id: string; p_current_phase_id: number }
         Returns: Json
       }
       validate_round: {
