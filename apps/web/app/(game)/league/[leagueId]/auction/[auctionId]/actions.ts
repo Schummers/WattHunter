@@ -97,7 +97,6 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
     .select("id, amount")
     .eq("team_id", team.id)
     .eq("auction_id", parsed.data.auctionId)
-    .eq("round", parsed.data.round)
     .eq("status", "active");
 
   const otherBidsTotal = (activeBids ?? [])
