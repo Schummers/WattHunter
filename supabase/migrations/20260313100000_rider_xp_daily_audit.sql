@@ -6,8 +6,8 @@ ALTER TABLE public.rider_xp_daily ADD COLUMN IF NOT EXISTS revenue_earned int DE
 
 -- Drop old unique constraint (team_id, rider_id, date)
 -- Replace with (team_id, rider_id, race_slug) to support multiple races per day
-DROP INDEX IF EXISTS rider_xp_daily_team_id_rider_id_date_key;
 ALTER TABLE public.rider_xp_daily DROP CONSTRAINT IF EXISTS rider_xp_daily_team_id_rider_id_date_key;
+DROP INDEX IF EXISTS rider_xp_daily_team_id_rider_id_date_key;
 CREATE UNIQUE INDEX idx_rider_xp_daily_team_rider_race ON public.rider_xp_daily (team_id, rider_id, race_slug);
 
 -- Snapshot table for daily team ranking (movement calculation)
