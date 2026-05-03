@@ -1,4 +1,5 @@
 -- Allow commissioners to update auction round dates
+DROP POLICY IF EXISTS "auctions_update_commissioner" ON public.auctions;
 CREATE POLICY "auctions_update_commissioner" ON public.auctions
   FOR UPDATE USING (
     league_id IN (
