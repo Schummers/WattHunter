@@ -144,7 +144,7 @@ export async function confirmPhaseSetup(teamId: string) {
         await supabase
           .from("team_strategies")
           .update({
-            is_active: p.pending_is_active,
+            is_active: p.pending_is_active ?? true,
             config: p.pending_config,
             activated_at: new Date().toISOString(),
             pending_is_active: null,

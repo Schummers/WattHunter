@@ -149,7 +149,7 @@ describe("placeBid — cross-round solvency", () => {
       // 2. teams — 200k treasury
       .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 200_000, level: 4 }))
       // 3. riders — salary below bid amount, pool-eligible
-      .mockReturnValueOnce(makeChain({ monthly_salary: 5_000, pcs_rank: 50, ever_in_pool: true }))
+      .mockReturnValueOnce(makeChain({ monthly_salary: 5_000, pcs_rank: 50, ever_in_top500: true }))
       // 4. existingBid (maybeSingle) — no prior bid for this rider in round 2
       .mockReturnValueOnce(makeChain(null))
       // 5. existing contracts — none
@@ -191,7 +191,7 @@ describe("placeBid — cross-round solvency", () => {
       // 2. teams
       .mockReturnValueOnce(makeChain({ id: "team-1", treasury: 200_000, level: 4 }))
       // 3. riders
-      .mockReturnValueOnce(makeChain({ monthly_salary: 5_000, pcs_rank: 50, ever_in_pool: true }))
+      .mockReturnValueOnce(makeChain({ monthly_salary: 5_000, pcs_rank: 50, ever_in_top500: true }))
       // 4. existingBid — none
       .mockReturnValueOnce(makeChain(null))
       // 5. existing contracts — none

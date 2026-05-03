@@ -17,9 +17,9 @@ import { computeAvailableBudget } from "@/lib/budget";
 interface Rider {
   id: string;
   full_name: string;
-  real_team: string;
-  specialty: string;
-  nationality: string;
+  real_team: string | null;
+  specialty: string | null;
+  nationality: string | null;
   pcs_points_1yr: number;
   pcs_rank: number | null;
   monthly_salary: number;
@@ -119,7 +119,7 @@ export function RiderDialog({
   const infoRows = [
     {
       label: "Specialty",
-      value: SPECIALTY_NAMES[rider.specialty] ?? rider.specialty,
+      value: rider.specialty ? (SPECIALTY_NAMES[rider.specialty] ?? rider.specialty) : "—",
     },
     {
       label: "PCS Points (1 yr)",

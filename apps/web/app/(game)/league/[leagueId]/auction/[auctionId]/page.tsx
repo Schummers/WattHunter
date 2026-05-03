@@ -41,7 +41,7 @@ export default async function AuctionDetailPage({
     supabase
       .from("riders")
       .select("id, full_name, nationality, photo_url, pcs_rank, pcs_points_1yr, specialty, real_team, monthly_salary, age")
-      .eq("ever_in_pool", true)
+      .eq("ever_in_top500", true)
       .gte("pcs_rank", getLevelByNumber(team?.level ?? 1).poolMin)
       .lte("pcs_rank", 600)
       .order("pcs_points_1yr", { ascending: false }),
@@ -50,8 +50,8 @@ export default async function AuctionDetailPage({
       .select("id, rider_id, team_id, amount, round, status")
       .eq("auction_id", auctionId),
     supabase.from("contracts").select("rider_id").eq("status", "active").eq("league_id", leagueId),
-    supabase.from("contracts").select("locked_salary").eq("status", "active").eq("team_id", team?.id),
-    supabase.from("team_sponsors").select("sponsors(monthly_budget)").eq("team_id", team?.id).maybeSingle(),
+    supabase.from("contracts").select("locked_salary").eq("status", "active").eq("team_id", team?.id ?? ""),
+    supabase.from("team_sponsors").select("sponsors(monthly_budget)").eq("team_id", team?.id ?? "").maybeSingle(),
   ]);
 
   if (!auction || !team) {

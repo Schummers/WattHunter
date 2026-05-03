@@ -9,9 +9,9 @@ import { cancelBid } from "./actions";
 interface Rider {
   id: string;
   full_name: string;
-  real_team: string;
-  specialty: string;
-  nationality: string;
+  real_team: string | null;
+  specialty: string | null;
+  nationality: string | null;
   pcs_points_1yr: number;
   pcs_rank: number | null;
   monthly_salary: number;

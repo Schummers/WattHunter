@@ -54,7 +54,7 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
   // Check rider min salary
   const { data: rider } = await supabase
     .from("riders")
-    .select("monthly_salary, pcs_rank, ever_in_pool")
+    .select("monthly_salary, pcs_rank, ever_in_top500")
     .eq("id", parsed.data.riderId)
     .single();
 
@@ -108,7 +108,7 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
   }
 
   // Level gating: verify rider is accessible at team's level
-  if (!rider.ever_in_pool) {
+  if (!rider.ever_in_top500) {
     return { error: "This rider is not in the playable pool" };
   }
 
