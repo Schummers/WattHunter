@@ -54,11 +54,10 @@ BEGIN
     RETURN jsonb_build_object('error', 'No open auction round found');
   END IF;
 
-  -- Extract round number from auction name (e.g. "Round 1" → 1)
-  v_auction_round := COALESCE(
-    (regexp_match(v_auction.name, '(\d+)'))[1]::int,
-    0
-  );
+  -- Determine round: max round this team has used + 1, or 1 if first time
+  SELECT COALESCE(MAX(round), 0) + 1 INTO v_auction_round
+  FROM public.auction_bids
+  WHERE auction_id = v_auction.id AND team_id = v_team.id;
 
   -- 4. Sum draft bids for this team + league
   SELECT COALESCE(SUM(amount), 0), COUNT(*)
