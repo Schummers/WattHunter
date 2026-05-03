@@ -68,7 +68,7 @@ BEGIN
   IF v_rider IS NULL THEN
     RETURN jsonb_build_object('error', 'Rider not found');
   END IF;
-  IF NOT v_rider.ever_in_top500 THEN
+  IF NOT v_rider.ever_in_pool THEN
     RETURN jsonb_build_object('error', 'Rider not in playable pool');
   END IF;
 
