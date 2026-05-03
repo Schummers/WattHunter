@@ -53,10 +53,11 @@ const CURRENT_PHASE_ID = 3;
 // Reusable fixtures
 // ---------------------------------------------------------------------------
 
-/** A team at level 1 (6 slots) with a healthy treasury. */
+/** A team at level 1 (6 slots) with a healthy treasury. Owned by USER_ID by default. */
 function teamRow(overrides: Record<string, unknown> = {}) {
   return {
     id: TEAM_ID,
+    user_id: USER_ID, // ownership check added in Round 1 (validateRound)
     treasury: 200_000,
     level: 1,
     phase_confirmed_id: null, // not yet confirmed → pre-payday formula

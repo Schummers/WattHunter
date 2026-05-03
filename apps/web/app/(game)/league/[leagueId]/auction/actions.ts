@@ -238,11 +238,12 @@ export async function validateRound(input: { leagueId: string }) {
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id, treasury, level, phase_confirmed_id")
+    .select("id, treasury, level, phase_confirmed_id, user_id")
     .eq("id", teamId)
     .single();
 
   if (!team) return { error: "Team not found" };
+  if (team.user_id !== user.id) return { error: "Not authorized" };
 
   // --- 2. Find open auction round for this league ---
   const { data: auction } = await supabase
