@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import {
   formatBudget,
   thresholdLabel,
-  ORIENTATION_LABELS,
   getOrientationTags,
   type SponsorRow,
 } from "@/lib/sponsors";
@@ -23,89 +22,46 @@ const NATIONALITY_DEMONYMS: Record<string, string> = {
   NO: "Norwegian",
 };
 
-/** Inline bonus content for Tiers 1-4 (two-column base/enhanced layout) */
+/** Inline bonus content for Tiers 1-4 (flat layout, no multipliers) */
 function BaseBonusContent({ sponsor }: { sponsor: SponsorRow }) {
   const nationalities = sponsor.nationality
     ? sponsor.nationality.split("/").map((c) => c.trim())
     : [];
 
-  const isGcFirst = sponsor.orientation !== "one_day";
-
-  const gcStageGroup = (
-    <>
+  return (
+    <div>
+      <div className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)] mt-1 pt-2 border-t border-[var(--border-default)]">
+        Base Bonus (cumulative)
+      </div>
       {sponsor.bonus_gc > 0 && (
-        <div className="flex items-baseline py-1 gap-2">
-          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+        <div className="flex items-baseline justify-between py-1">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
             {thresholdLabel(sponsor.gc_threshold)} GC
           </span>
-          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] text-[var(--text-low)] tabular-nums">
+          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
             +{formatBudget(sponsor.bonus_gc)}
-          </span>
-          <span className="ml-auto flex items-baseline gap-1">
-            <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">if Grand Tour</span>
-            <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
-              +{formatBudget(sponsor.bonus_gc * 2)}
-            </span>
           </span>
         </div>
       )}
       {sponsor.bonus_stage > 0 && (
-        <div className="flex items-baseline py-1 gap-2">
-          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+        <div className="flex items-baseline justify-between py-1">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
             {thresholdLabel(sponsor.stage_threshold)} Stage
           </span>
-          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] text-[var(--text-low)] tabular-nums">
+          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
             +{formatBudget(sponsor.bonus_stage)}
           </span>
-          <span className="ml-auto flex items-baseline gap-1">
-            <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">if Grand Tour</span>
-            <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
-              +{formatBudget(sponsor.bonus_stage * 2)}
-            </span>
-          </span>
         </div>
       )}
-    </>
-  );
-
-  const oneDayGroup = (
-    <>
       {sponsor.bonus_one_day > 0 && (
-        <div className="flex items-baseline py-1 gap-2">
-          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+        <div className="flex items-baseline justify-between py-1">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
             {thresholdLabel(sponsor.one_day_threshold)} One-Day
           </span>
-          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] text-[var(--text-low)] tabular-nums">
+          <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
             +{formatBudget(sponsor.bonus_one_day)}
           </span>
-          <span className="ml-auto flex items-baseline gap-1">
-            <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">if Monument</span>
-            <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
-              +{formatBudget(sponsor.bonus_one_day * 2)}
-            </span>
-          </span>
         </div>
-      )}
-    </>
-  );
-
-  return (
-    <div>
-      <div className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)] mt-1 pt-2 border-t border-[var(--border-default)]">
-        Base Bonus
-      </div>
-      {isGcFirst ? (
-        <>
-          {gcStageGroup}
-          <div className="border-t border-[var(--border-subtle)] my-1.5" />
-          {oneDayGroup}
-        </>
-      ) : (
-        <>
-          {oneDayGroup}
-          <div className="border-t border-[var(--border-subtle)] my-1.5" />
-          {gcStageGroup}
-        </>
       )}
       {nationalities.length > 0 && (
         <div className="flex items-center gap-1.5 border-t border-[var(--border-default)] mt-2.5 pt-2.5 text-[length:var(--type-caption)] text-[var(--text-low)]">
