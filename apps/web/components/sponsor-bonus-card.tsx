@@ -8,6 +8,8 @@ import {
   type SponsorRow,
 } from "@/lib/sponsors";
 import { countryCodeToFlag } from "@/lib/format";
+import { GtGoalsPreview } from "@/components/gt-goals-preview";
+import { getGoalsForSponsor } from "@/lib/gt-goals";
 
 // Maps ISO country codes to demonym adjectives for the nationality note
 const NATIONALITY_DEMONYMS: Record<string, string> = {
@@ -24,10 +26,6 @@ const NATIONALITY_DEMONYMS: Record<string, string> = {
 
 /** Inline bonus content for Tiers 1-4 (flat layout, no multipliers) */
 function BaseBonusContent({ sponsor }: { sponsor: SponsorRow }) {
-  const nationalities = sponsor.nationality
-    ? sponsor.nationality.split("/").map((c) => c.trim())
-    : [];
-
   return (
     <div>
       <div className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)] mt-1 pt-2 border-t border-[var(--border-default)]">
@@ -63,19 +61,27 @@ function BaseBonusContent({ sponsor }: { sponsor: SponsorRow }) {
           </span>
         </div>
       )}
-      {nationalities.length > 0 && (
-        <div className="flex items-center gap-1.5 border-t border-[var(--border-default)] mt-2.5 pt-2.5 text-[length:var(--type-caption)] text-[var(--text-low)]">
-          {nationalities.map((nat) => (
-            <span key={nat}>{countryCodeToFlag(nat)}</span>
-          ))}
-          <span>
-            {nationalities
-              .map((nat) => NATIONALITY_DEMONYMS[nat] ?? nat)
-              .join(" / ")}{" "}
-            rider: all bonuses ×1.25
-          </span>
-        </div>
-      )}
+    </div>
+  );
+}
+
+/** Nationality ×1.25 footer — rendered at the very bottom of the card, after all bonus sections */
+function NationalityFooter({ sponsor }: { sponsor: SponsorRow }) {
+  const nationalities = sponsor.nationality
+    ? sponsor.nationality.split("/").map((c) => c.trim())
+    : [];
+  if (nationalities.length === 0) return null;
+  return (
+    <div className="flex items-center gap-1.5 border-t border-[var(--border-default)] mt-2.5 pt-2.5 text-[length:var(--type-caption)] text-[var(--text-low)]">
+      {nationalities.map((nat) => (
+        <span key={nat}>{countryCodeToFlag(nat)}</span>
+      ))}
+      <span>
+        {nationalities
+          .map((nat) => NATIONALITY_DEMONYMS[nat] ?? nat)
+          .join(" / ")}{" "}
+        rider: all bonuses ×1.25
+      </span>
     </div>
   );
 }
@@ -162,16 +168,15 @@ export function SponsorBonusCard({
   sponsor,
   expanded,
   onToggle,
-  gtGoalsPreview,
 }: {
   sponsor: SponsorRow;
   expanded: boolean;
   onToggle: () => void;
-  gtGoalsPreview?: React.ReactNode;
 }) {
   const nationalities = sponsor.nationality
     ? sponsor.nationality.split("/").map((c) => c.trim())
     : [];
+  const goals = getGoalsForSponsor(sponsor.slug);
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] transition-colors">
@@ -218,7 +223,8 @@ export function SponsorBonusCard({
           ) : (
             <BaseBonusContent sponsor={sponsor} />
           )}
-          {gtGoalsPreview}
+          <GtGoalsPreview goals={goals} />
+          <NationalityFooter sponsor={sponsor} />
         </div>
       )}
     </div>

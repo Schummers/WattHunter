@@ -12,7 +12,6 @@ import {
 import { ensureGtSquad, getSquadWithRoles } from "./actions";
 import { GtTeamClient } from "./gt-team-client";
 import { RemontadaBannerSlot } from "./_remontada-banner-slot";
-import { getGoalsForSponsor } from "@/lib/gt-goals";
 import type { SponsorRow } from "@/lib/sponsors";
 
 export default async function GtTeamPage({
@@ -59,8 +58,6 @@ export default async function GtTeamPage({
   const sponsor = (Array.isArray(teamSponsor?.sponsors)
     ? teamSponsor?.sponsors[0]
     : teamSponsor?.sponsors) as SponsorRow | null | undefined;
-  const goals = sponsor ? getGoalsForSponsor(sponsor.slug) : [];
-
   const currentStage = getCurrentGTStage();
 
   return (
@@ -79,7 +76,6 @@ export default async function GtTeamPage({
         gtFullName={GT_FULL_NAME[phaseId]}
         squad={squad}
         sponsor={sponsor ?? null}
-        goals={goals}
       />
     </>
   );

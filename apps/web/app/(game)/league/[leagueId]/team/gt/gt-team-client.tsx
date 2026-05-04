@@ -4,10 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RiderCard } from "@/components/rider-card";
 import { SponsorBonusCard } from "@/components/sponsor-bonus-card";
-import { GtGoalsPreview } from "@/components/gt-goals-preview";
 import { RoleAssignSheet } from "@/components/role-assign-sheet";
 import type { GtRole } from "./actions";
-import type { GtGoal } from "@/lib/gt-goals";
 import type { SponsorRow } from "@/lib/sponsors";
 import { countryCodeToFlag } from "@/lib/format";
 
@@ -76,7 +74,6 @@ interface Props {
   gtFullName: string;
   squad: SquadEntry[];
   sponsor?: SponsorRow | null;
-  goals: GtGoal[];
 }
 
 export function GtTeamClient({
@@ -85,7 +82,6 @@ export function GtTeamClient({
   year,
   squad,
   sponsor,
-  goals,
 }: Props) {
   const router = useRouter();
   const [sponsorOpen, setSponsorOpen] = useState(false);
@@ -118,7 +114,6 @@ export function GtTeamClient({
             sponsor={sponsor}
             expanded={sponsorOpen}
             onToggle={() => setSponsorOpen((v) => !v)}
-            gtGoalsPreview={<GtGoalsPreview goals={goals} />}
           />
         ) : (
           <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
