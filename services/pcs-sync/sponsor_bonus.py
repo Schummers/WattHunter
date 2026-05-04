@@ -102,7 +102,7 @@ def _calculate_bonus_t1_t4(
     rider_nationality: Optional[str],
     race_slug: str,
 ) -> tuple[int, float, int]:
-    """Bonus logic for T1-T4 sponsors (implicit prestige via multipliers)."""
+    """Bonus logic for T1-T4 sponsors — flat amounts, no x2 prestige multiplier."""
     # Determine base amount and threshold
     if result_type in ("gc", "grand_tour"):
         base = sponsor["bonus_gc"]
@@ -121,14 +121,6 @@ def _calculate_bonus_t1_t4(
 
     # Build multiplier
     multiplier = 1.0
-
-    # ×2 for prestige events
-    if result_type == "grand_tour":
-        multiplier *= 2.0
-    elif result_type == "monument":
-        multiplier *= 2.0
-    elif result_type == "stage" and _is_grand_tour_slug(race_slug):
-        multiplier *= 2.0
 
     # ×1.25 for nationality match (T1-T4 only, but only when sponsor has a nationality)
     sponsor_nat = sponsor.get("nationality")

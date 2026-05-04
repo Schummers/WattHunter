@@ -204,31 +204,31 @@ class TestCalculateBonusT1T4:
         assert base == 3000
         assert final == 3000
 
-    def test_grand_tour_gc_multiplier_x2(self):
-        """Grand tour GC → ×2 multiplier (prestige GC)."""
+    def test_grand_tour_gc_multiplier_x1(self):
+        """Grand tour GC → flat multiplier 1.0 (no x2 prestige for T1-T4)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(LOTTO, "grand_tour", 10, "FR", "race/tour-de-france/2026")
         assert base == 3000
-        assert mult == 2.0
-        assert final == 6000
+        assert mult == 1.0
+        assert final == 3000
 
-    def test_monument_multiplier_x2(self):
-        """Monument → ×2 multiplier (prestige one-day)."""
+    def test_monument_multiplier_x1(self):
+        """Monument → flat multiplier 1.0 (no x2 prestige for T1-T4)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(LOTTO, "monument", 5, "FR", "race/paris-roubaix/2026")
         assert base == 3000
-        assert mult == 2.0
-        assert final == 6000
+        assert mult == 1.0
+        assert final == 3000
 
-    def test_grand_tour_stage_multiplier_x2(self):
-        """Stage in a grand tour slug → ×2 multiplier."""
+    def test_grand_tour_stage_multiplier_x1(self):
+        """Stage in a grand tour slug → flat multiplier 1.0 (no x2 for T1-T4)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(
             LOTTO, "stage", 3, "FR", "race/giro-d-italia/2026/stage-5"
         )
         assert base == 2000
-        assert mult == 2.0
-        assert final == 4000
+        assert mult == 1.0
+        assert final == 2000
 
     def test_stage_non_grand_tour_no_x2(self):
         """Stage in a regular stage race → no ×2 multiplier."""
@@ -262,13 +262,13 @@ class TestCalculateBonusT1T4:
         assert mult == 1.0
 
     def test_stacked_grand_tour_plus_nationality(self):
-        """Grand tour GC + nationality match → ×2 × ×1.25 = ×2.5."""
+        """Grand tour GC + nationality match → ×1.25 only (no x2 prestige for T1-T4)."""
         from sponsor_bonus import calculate_bonus
         # Alpecin BE/NL rider from BE wins Tour de France GC
         base, mult, final = calculate_bonus(ALPECIN, "grand_tour", 3, "BE", "race/tour-de-france/2026")
         assert base == 5000
-        assert mult == 2.5
-        assert final == 12500
+        assert mult == 1.25
+        assert final == 6250
 
     def test_no_nationality_multiplier_for_t1_t2(self):
         """Lotto (T1) has no nationality → ×1.25 never applies even if rider matches."""
@@ -277,13 +277,13 @@ class TestCalculateBonusT1T4:
         base, mult, final = calculate_bonus(LOTTO, "gc", 1, "BE", "race/paris-nice/2026")
         assert mult == 1.0
 
-    def test_vuelta_stage_multiplier_x2(self):
-        """Stage in vuelta slug → ×2 multiplier."""
+    def test_vuelta_stage_multiplier_x1(self):
+        """Stage in vuelta slug → flat ×1.0 multiplier (no x2 for T1-T4)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(
             LOTTO, "stage", 1, "ES", "race/vuelta-a-espana/2026/stage-10"
         )
-        assert mult == 2.0
+        assert mult == 1.0
 
 
 # ===========================================================================
