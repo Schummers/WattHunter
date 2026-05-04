@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import {
   formatBudget,
   groupByTier,
-  ORIENTATION_LABELS,
+  getOrientationTags,
   type SponsorRow,
   type TeamSponsor,
 } from "@/lib/sponsors";
@@ -110,33 +110,37 @@ function SponsorCard({
           )}
         </div>
 
-        {/* Name */}
-        <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-          {sponsor.name}
-        </span>
-
-        {/* Orientation tag */}
-        <Tag variant="highlighted">{ORIENTATION_LABELS[sponsor.orientation]}</Tag>
-
-        {/* Nationality flags — inline */}
-        {nationalities.map((nat) => (
-          <span key={nat} className="text-[length:var(--type-caption)]">
-            {countryCodeToFlag(nat)}
-          </span>
-        ))}
-
-        {/* Amount + chevron — far right */}
-        <span className="ml-auto font-[family-name:var(--font-geist-mono)] text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] tabular-nums">
-          {formatBudget(sponsor.monthly_budget)}
-        </span>
-        <ChevronDown
-          size={16}
-          onClick={handleChevronClick}
-          className={cn(
-            "shrink-0 text-[var(--text-low)] transition-transform duration-200",
-            expanded && "rotate-180",
-          )}
-        />
+        {/* Name + tags + budget */}
+        <div className="flex flex-col gap-1 flex-1 min-w-0">
+          {/* Line 1: Name + Budget */}
+          <div className="flex items-center gap-2.5">
+            <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+              {sponsor.name}
+            </span>
+            <span className="ml-auto font-[family-name:var(--font-geist-mono)] text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] tabular-nums">
+              {formatBudget(sponsor.monthly_budget)}
+            </span>
+            <ChevronDown
+              size={16}
+              onClick={handleChevronClick}
+              className={cn(
+                "shrink-0 text-[var(--text-low)] transition-transform duration-200",
+                expanded && "rotate-180",
+              )}
+            />
+          </div>
+          {/* Line 2: Tags */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {getOrientationTags(sponsor).map((tag) => (
+              <Tag key={tag} variant="highlighted">{tag}</Tag>
+            ))}
+            {nationalities.length > 0 && (
+              <Tag variant="highlighted">
+                {nationalities.map((nat) => countryCodeToFlag(nat)).join(" ")}
+              </Tag>
+            )}
+          </div>
+        </div>
       </button>
 
       {/* Expanded bonus content — indented past radio */}
