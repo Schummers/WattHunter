@@ -94,11 +94,12 @@ Identical for every sponsor within the same tier. No orientation split. Cumulati
 | 2 | Top 5 GC final | GC Leader | **75K** | A |
 | 3 | Win an ITT | TT Specialist | **50K** | — |
 | 4 | Wear maglia rosa | GC Leader | **50K** | — |
-| 5 | Win a stage | All | **40K** | — |
+| 5 | Wear maglia bianca | GC Leader | **40K** | — |
 | 6 | 2 riders in top 10 of an ITT | All | **25K** | — |
 
 - Tier group A: **best of two** (top 3 → 150K, top 4-5 → 75K, top 6+ → 0)
 - Goal #4: triggered when any squad rider holds maglia rosa for >=1 day, but role-gated to GC Leader for UI display
+- Goal #5: triggered when any squad rider holds maglia bianca (best young rider jersey) for >=1 day
 - **Max potential:** 315K (150 + 50 + 50 + 40 + 25)
 
 ---
@@ -112,11 +113,11 @@ Identical for every sponsor within the same tier. No orientation split. Cumulati
 | 3 | Win a stage | Sprinter | **50K** | — |
 | 4 | Wear maglia rosa | GC Leader | **50K** | — |
 | 5 | Wear ciclamino | Sprinter | **40K** | — |
-| 6 | Win a stage | All | **40K** | — |
+| 6 | Wear maglia bianca | GC Leader | **40K** | — |
 
 - Tier group A: **best of two**
-- Goals #3 and #6 **stack**: if Sprinter wins a stage → 50K (Sprinter) + 40K (All) = 90K
 - Goal #5: triggered when Sprinter holds ciclamino (points jersey) for >=1 day
+- Goal #6: triggered when any squad rider holds maglia bianca (best young rider jersey) for >=1 day
 - **Max potential:** 330K (150 + 50 + 50 + 40 + 40)
 
 ---
@@ -189,9 +190,10 @@ The sponsor card is used in two places:
 
 ### Design Tokens
 - Section headers: `--type-label`, uppercase, `--text-low`
-- Bonus labels: `--type-caption`, `--text-mid`
+- Bonus labels: `--type-caption`, `--text-high` (white/primary — validated in wireframe v2)
 - Amounts: `--type-caption`, `--text-high`, `font-semibold`, Geist Mono, tabular-nums
-- Role badges: use `Tag` component variant="highlighted"
+- Role text: `--type-caption`, `--text-mid` — same font size as label, just color difference (NOT a tag/badge)
+- Orientation tags: use `Tag` component variant="highlighted" — one per orientation keyword
 - Achieved state: `line-through` + `opacity-50`
 - Card: `--bg-surface`, `--border-default`, `--radius-lg`
 - No spacing between bonus lines within a section (tight list)
@@ -244,3 +246,31 @@ Minimum to ship before Giro 2026-05-08:
 - Strikethrough achieved state (needs evaluation system)
 - T3 sponsor specific goals
 - `sponsor_goal_completions` table
+- Backend pipeline changes (see section 8)
+
+---
+
+## 8. Backend Pipeline — V1b Deferred (Post-Giro)
+
+### What Already Works
+- **Role multipliers** in `scoring.py`: gc_leader ×1.5, sprinter ×1.5, climber ×1.5, tt_specialist ×2.0 (ITT only), stage_hunter ×1.5 (stage only), domestique ×1.0 — **already in prod**
+- **Daily classifications** tracked in `gt_daily_classifications` table: top 50 GC, top 20 points, top 10 KOM per stage — **already imported by Pipeline B**
+- **Base sponsor bonuses** calculated in `sponsor_bonus.py` — **needs updating for new flat amounts + no ×2**
+
+### What Needs Building (V1b)
+1. **Update `sponsor_bonus.py`**: remove ×2 GT/Monument multiplier for T1-T4 (lines 126-131) — nationality ×1.25 already correct
+2. **Goal evaluation engine** (new `goal_evaluator.py`):
+   - After each GT stage, check all 6 goals for each T4 team's sponsor
+   - Query `gt_daily_classifications` for jersey-wearing goals (rank 1 = jersey)
+   - Query `race_results` for stage win/podium goals
+   - Compute "X days at rank Y" by aggregating across stages
+   - Handle tiered goals (best-of-two: pay higher, mark both as done)
+   - Insert completions into `sponsor_goal_completions` table
+   - Credit treasury + treasury_log entries
+3. **`sponsor_goal_completions` table** (migration): track which goals are done per GT
+4. **Strikethrough API**: expose completion state to frontend for achieved goal display
+
+### For Giro 2026 (Manual Workaround)
+- Goals are display-only in the UI
+- Commissioner manually credits treasury for achieved goals via Supabase dashboard
+- No strikethrough state (all goals shown as active)
