@@ -78,6 +78,7 @@ export default async function AuctionsPage({
       .from("auctions")
       .select("id, name, opens_at, closes_at, status")
       .eq("league_id", leagueId)
+      .in("status", ["open", "scheduled"])
       .order("opens_at", { ascending: true }),
     supabase
       .from("contracts")
@@ -210,14 +211,11 @@ export default async function AuctionsPage({
     return match ? parseInt(match[0], 10) : 0;
   }
 
-  // Current phase rounds = last 3 auctions
-  const allRounds = auctionRounds ?? [];
-  const currentPhaseRounds = allRounds.slice(-3);
-  const allCurrentClosed = currentPhaseRounds.length === 3 && currentPhaseRounds.every((r) => r.status === "closed");
+  // Active rounds only (open/scheduled) — filtered in DB query
+  let displayRounds = auctionRounds ?? [];
 
-  // When all 3 closed → compute next phase default dates
-  let displayRounds = currentPhaseRounds;
-  if (allCurrentClosed) {
+  // No active rounds → show next phase placeholder dates
+  if (displayRounds.length === 0) {
     const next = getNextAuctionDate(new Date());
     if (next?.phase.auctionDates) {
       const year = new Date().getFullYear();

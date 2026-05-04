@@ -3,27 +3,46 @@
 import { useState, useTransition } from "react";
 import { BackHeader } from "@/components/back-header";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
-import { updateRoundDates } from "./actions";
+import { updateRoundDates, createNextPhaseAuctions } from "./actions";
 
 interface RoundRow {
   id: string;
   name: string;
-  date: string; // "YYYY-MM-DD"
-  time: string; // "HH:MM"
+  date: string;
+  time: string;
 }
 
 interface RoundsClientProps {
   leagueId: string;
   leagueName: string;
   initialRounds: RoundRow[];
+  isCreating: boolean;
+  initialClosingTime: string;
+}
+
+function getParisDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  return d.toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" });
 }
 
 export function RoundsClient({
   leagueId,
   leagueName,
   initialRounds,
+  isCreating,
+  initialClosingTime,
 }: RoundsClientProps) {
-  const [rounds, setRounds] = useState<RoundRow[]>(initialRounds);
+  const [rounds, setRounds] = useState<RoundRow[]>(
+    isCreating
+      ? [
+          { id: "", name: "Round 1", date: getParisDate(1), time: "00:00" },
+          { id: "", name: "Round 2", date: getParisDate(2), time: "00:00" },
+          { id: "", name: "Round 3", date: getParisDate(3), time: "00:00" },
+        ]
+      : initialRounds
+  );
+  const [closingTime, setClosingTime] = useState(initialClosingTime);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -50,10 +69,27 @@ export function RoundsClient({
     setError(null);
     setSuccess(false);
     startTransition(async () => {
-      const result = await updateRoundDates({
-        leagueId,
-        rounds: rounds.map((r) => ({ id: r.id, date: r.date, time: r.time })),
-      });
+      let result;
+      if (isCreating) {
+        result = await createNextPhaseAuctions({
+          leagueId,
+          rounds: rounds.map((r, i) => ({
+            date: r.date,
+            time: r.time,
+            ...(i === rounds.length - 1 ? { closingTime } : {}),
+          })),
+        });
+      } else {
+        result = await updateRoundDates({
+          leagueId,
+          rounds: rounds.map((r, i) => ({
+            id: r.id,
+            date: r.date,
+            time: r.time,
+            ...(i === rounds.length - 1 ? { closingTime } : {}),
+          })),
+        });
+      }
       if (result?.error) {
         setError(result.error);
       } else {
@@ -64,49 +100,69 @@ export function RoundsClient({
 
   return (
     <div className="flex flex-col min-h-svh bg-[var(--bg-app)]">
-      <BackHeader label="Edit Round Dates" />
+      <BackHeader label={isCreating ? "Setup Phase Rounds" : "Edit Round Dates"} />
 
       <div className="flex-1 px-4 pt-4 pb-28 space-y-6 max-w-lg mx-auto w-full">
-        {/* Title */}
         <div>
           <h1 className="text-[length:var(--type-page-title)] font-semibold text-[var(--text-high)]">
             {leagueName}
           </h1>
           <p className="mt-1 text-[length:var(--type-body)] text-[var(--text-mid)]">
-            Adjust the date and time for each auction round.
+            {isCreating
+              ? "Configure the 3 auction rounds for this phase."
+              : "Adjust the date and time for each auction round."}
           </p>
         </div>
 
         <div className="border-b border-[var(--border-subtle)]" />
 
-        {/* Round rows */}
         <div className="space-y-4">
-          {rounds.map((round, i) => (
-            <div key={round.id} className="space-y-2">
-              <p className="text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)] uppercase tracking-wide">
-                {round.name}
-              </p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={round.date}
-                  onChange={(e) => handleChange(i, "date", e.target.value)}
-                  autoComplete="off"
-                  className={inputClass}
-                />
-                <input
-                  type="time"
-                  value={round.time}
-                  onChange={(e) => handleChange(i, "time", e.target.value)}
-                  autoComplete="off"
-                  className={inputClass}
-                />
+          {rounds.map((round, i) => {
+            const isLast = i === rounds.length - 1;
+            return (
+              <div key={round.name} className="space-y-2">
+                <p className="text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)] uppercase tracking-wide">
+                  {round.name}
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={round.date}
+                    onChange={(e) => handleChange(i, "date", e.target.value)}
+                    autoComplete="off"
+                    className={inputClass}
+                  />
+                  <input
+                    type="time"
+                    value={round.time}
+                    onChange={(e) => handleChange(i, "time", e.target.value)}
+                    autoComplete="off"
+                    className={inputClass}
+                  />
+                </div>
+                {isLast && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[length:var(--type-caption)] text-[var(--text-mid)] whitespace-nowrap">
+                      Closes at
+                    </span>
+                    <input
+                      type="time"
+                      value={closingTime}
+                      onChange={(e) => {
+                        setClosingTime(e.target.value);
+                        setSuccess(false);
+                        setError(null);
+                      }}
+                      autoComplete="off"
+                      className={inputClass}
+                    />
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Inline feedback */}
         {error && (
           <p className="text-[length:var(--type-body)] text-[var(--status-danger)]">
             {error}
@@ -114,7 +170,7 @@ export function RoundsClient({
         )}
         {success && (
           <p className="text-[length:var(--type-body)] text-[var(--status-success)]">
-            Round dates saved.
+            {isCreating ? "Rounds created." : "Round dates saved."}
           </p>
         )}
       </div>
@@ -130,7 +186,7 @@ export function RoundsClient({
             disabled={isPending}
             className="w-full rounded-[var(--radius-md)] cta-gradient px-4 py-2.5 text-[length:var(--type-emphasis)] font-semibold text-black transition-opacity disabled:opacity-50"
           >
-            {isPending ? "Saving..." : "Save changes"}
+            {isPending ? "Saving..." : isCreating ? "Create rounds" : "Save changes"}
           </button>
         </div>
       </div>
@@ -143,7 +199,7 @@ export function RoundsClient({
             disabled={isPending}
             className="w-full rounded-[var(--radius-md)] cta-gradient px-4 py-2.5 text-[length:var(--type-emphasis)] font-semibold text-black transition-opacity disabled:opacity-50"
           >
-            {isPending ? "Saving..." : "Save changes"}
+            {isPending ? "Saving..." : isCreating ? "Create rounds" : "Save changes"}
           </button>
         </div>
       </div>

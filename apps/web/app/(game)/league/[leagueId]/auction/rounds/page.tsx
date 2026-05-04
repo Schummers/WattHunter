@@ -3,16 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { RoundsClient } from "./rounds-client";
 
-/** Extract "YYYY-MM-DD" and "HH:MM" from an ISO timestamp, converted to Europe/Paris time. */
 function splitDateTime(iso: string | null): { date: string; time: string } {
   if (!iso) return { date: "", time: "" };
   const d = new Date(iso);
-  const date = d.toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" }); // "YYYY-MM-DD"
+  const date = d.toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" });
   const time = d.toLocaleTimeString("en-GB", {
     timeZone: "Europe/Paris",
     hour: "2-digit",
     minute: "2-digit",
-  }); // "HH:MM"
+  });
   return { date, time };
 }
 
@@ -29,7 +28,6 @@ export default async function EditRoundDatesPage({
     redirect(`/login`);
   }
 
-  // Verify commissioner
   const { data: league } = await supabase
     .from("leagues")
     .select("id, name, commissioner_id")
@@ -40,7 +38,6 @@ export default async function EditRoundDatesPage({
     redirect(`/league/${leagueId}/auction`);
   }
 
-  // Fetch open/scheduled auction rounds
   const { data: auctionRounds } = await supabase
     .from("auctions")
     .select("id, name, opens_at, closes_at, status")
@@ -50,19 +47,23 @@ export default async function EditRoundDatesPage({
 
   const initialRounds = (auctionRounds ?? []).map((r) => {
     const { date, time } = splitDateTime(r.opens_at);
-    return {
-      id: r.id,
-      name: r.name,
-      date,
-      time,
-    };
+    return { id: r.id, name: r.name, date, time };
   });
+
+  const isCreating = initialRounds.length === 0;
+
+  const lastRound = auctionRounds?.[auctionRounds.length - 1];
+  const initialClosingTime = isCreating
+    ? "12:00"
+    : (splitDateTime(lastRound?.closes_at ?? null).time || "23:59");
 
   return (
     <RoundsClient
       leagueId={leagueId}
       leagueName={league.name}
       initialRounds={initialRounds}
+      isCreating={isCreating}
+      initialClosingTime={initialClosingTime}
     />
   );
 }
