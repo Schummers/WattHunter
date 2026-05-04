@@ -115,6 +115,30 @@ export const ORIENTATION_LABELS: Record<string, string> = {
   neutral: "neutral",
 };
 
+/**
+ * Display-oriented tags per sponsor slug.
+ * T4+ sponsors can have multiple orientation tags.
+ * Falls back to ORIENTATION_LABELS[orientation] for sponsors not in this map.
+ */
+export const SPONSOR_ORIENTATION_TAGS: Record<string, string[]> = {
+  ineos: ["GC", "TT"],
+  decathlon: ["GC", "Sprint"],
+  soudal: ["Sprint", "Stage Hunter"],
+  "lidl-trek": ["Sprint", "Stage Hunter"],
+};
+
+/**
+ * Get display tags for a sponsor. Returns array of tag strings.
+ * Uses slug-specific override if available, else falls back to orientation label.
+ */
+export function getOrientationTags(sponsor: SponsorRow): string[] {
+  if (SPONSOR_ORIENTATION_TAGS[sponsor.slug]) {
+    return SPONSOR_ORIENTATION_TAGS[sponsor.slug];
+  }
+  const label = ORIENTATION_LABELS[sponsor.orientation];
+  return label && label !== "neutral" ? [label] : [];
+}
+
 export function filterTransactions<T extends { type: string }>(
   transactions: T[],
   filterIndex: number,
