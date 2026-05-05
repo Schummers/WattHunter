@@ -34,7 +34,7 @@ export default async function RankingPage({
   // All teams in league ordered by cumulative_xp DESC
   const { data: teamsRaw } = await supabase
     .from("teams")
-    .select("id, name, cumulative_xp, level")
+    .select("id, name, cumulative_xp, level, treasury")
     .eq("league_id", leagueId)
     .order("cumulative_xp", { ascending: false });
 
@@ -236,6 +236,7 @@ export default async function RankingPage({
     name: t.name,
     xp: t.cumulative_xp,
     level: t.level,
+    treasury: t.treasury,
     rank: i + 1,
     movement: teamMovement[t.id] ?? 0,
     isMe: t.id === myTeamId,

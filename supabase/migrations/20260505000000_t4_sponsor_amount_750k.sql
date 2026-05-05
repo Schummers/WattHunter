@@ -1,2 +1,2 @@
--- Increase T4 sponsor base_amount from 650K to 750K
-UPDATE sponsors SET base_amount = 750000 WHERE tier = 4;
+-- Increase T4 sponsor monthly_budget from 650K to 750K
+UPDATE sponsors SET monthly_budget = 750000 WHERE tier = 4;

@@ -15,6 +15,7 @@ interface TeamRow {
   name: string;
   xp: number;
   level: number;
+  treasury: number;
   rank: number;
   movement: number;
   isMe: boolean;
@@ -53,6 +54,11 @@ interface RankingClientProps {
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
+function formatTreasury(amount: number): string {
+  if (amount >= 1000) return `€${Math.round(amount / 1000)}k`;
+  return `€${amount}`;
 }
 
 export function RankingClient({
@@ -163,27 +169,32 @@ export function RankingClient({
                   {i + 1}
                 </span>
 
-                {/* Name + meta */}
+                {/* Name/XP + Level/Treasury */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] truncate">
-                      {team.name}
-                    </span>
-                    {isAllRaces && <MovementTag movement={team.movement} />}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] truncate">
+                        {team.name}
+                      </span>
+                      {isAllRaces && <MovementTag movement={team.movement} />}
+                    </div>
+                    <div className="flex items-baseline gap-1 shrink-0">
+                      <span className="font-mono text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)]">
+                        {formatThousands(team.xp)}
+                      </span>
+                      <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">XP</span>
+                    </div>
                   </div>
-                  <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-                    Lv.{team.level}
-                  </span>
-                </div>
-
-                {/* XP */}
-                <div className="flex items-baseline gap-1 shrink-0">
-                  <span className="font-mono text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)]">
-                    {formatThousands(team.xp)}
-                  </span>
-                  <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">
-                    XP
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+                      Lv.{team.level}
+                    </span>
+                    {isAllRaces && (
+                      <span className="font-mono text-[length:var(--type-caption)] text-[var(--text-mid)]">
+                        {formatTreasury(team.treasury)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Chevron */}
