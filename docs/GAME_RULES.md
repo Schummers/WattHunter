@@ -170,8 +170,8 @@ Team XP  = sum of XP from all roster riders
 | 1 | Season Start | 0 | 6 | 1 | #300–600 | Speciality | Lotto T1 (250K) |
 | 2 | Classics P1 | 25 | 7 | 1 | #200–600 | — | Astana T2 (350K) |
 | 3 | Classics P2 | 150 | 8 | 2 | #100–600 | Nationality | T3 · 450K (×4) |
-| 4 | Giro | 350 | 9 | 2 | #30–600 | — | T4 · 650K (×4) |
-| 5 | Pre-Tour | 600 | 10 | 2 | #20–600 | Teams | T4 · 650K (×4) |
+| 4 | Giro | 350 | 9 | 2 | #30–600 | — | T4 · 750K (×4) |
+| 5 | Pre-Tour | 600 | 10 | 2 | #20–600 | Teams | T4 · 750K (×4) |
 | 6 | Tour de France | 1,200 | 11 | 2 | #10–600 | — | T5 · 1M (×2) |
 | 7 | Post-Tour | 1,800 | 12 | 3 | #4–600 | Age | T5 · 1M (×2) |
 | 8 | La Vuelta | 2,400 | 12 | 3 | #1–600 | — | T6 UAE · 1.25M |
@@ -210,8 +210,8 @@ Bonuses are **additive**. Example: National Pride (Belgium) + Specialist (Sprint
 | T2 | 2 | 350,000 EUR | Astana | Neutral |
 | T3 | 3 | 450,000 EUR | Groupama-FDJ (FR), Movistar (ES) | GC |
 | T3 | 3 | 450,000 EUR | Alpecin-Deceuninck (BE/NL), Uno-X (DK/NO) | One-Day |
-| T4 | 4 | 650,000 EUR | Ineos Grenadiers (GB), Decathlon AG2R (FR) | GC |
-| T4 | 4 | 650,000 EUR | Soudal Quick-Step (BE), Lidl-Trek (US/IT) | One-Day |
+| T4 | 4 | 750,000 EUR | Ineos Grenadiers (GB), Decathlon AG2R (FR) | GC |
+| T4 | 4 | 750,000 EUR | Soudal Quick-Step (BE), Lidl-Trek (US/IT) | One-Day |
 | T5 | 6 | 1,000,000 EUR | Visma-Lease a Bike (prestige), Red Bull-Bora (regular) | GC |
 | T6 | 8 | 1,250,000 EUR | UAE Team Emirates | Neutral |
 

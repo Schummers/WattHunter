@@ -78,16 +78,16 @@ insert into public.sponsors (
    5000, 10000,  5000, 15, 15,  5, false, null, null, null, null, 33),
 
   -- Tier 4 — Level 5
-  ('Ineos Grenadiers',     'ineos',      4, 5,  650000, 'gc',      'GB',
+  ('Ineos Grenadiers',     'ineos',      4, 5,  750000, 'gc',      'GB',
    40000, 10000, 10000, 10, 10,  3, false, null, null, null, null, 40),
 
-  ('Decathlon AG2R',       'decathlon',  4, 5,  650000, 'gc',      'FR',
+  ('Decathlon AG2R',       'decathlon',  4, 5,  750000, 'gc',      'FR',
    40000, 10000, 10000, 10, 10,  3, false, null, null, null, null, 41),
 
-  ('Soudal Quick-Step',    'soudal',     4, 5,  650000, 'one_day', 'BE',
+  ('Soudal Quick-Step',    'soudal',     4, 5,  750000, 'one_day', 'BE',
    10000, 20000, 10000, 10, 10,  3, false, null, null, null, null, 42),
 
-  ('Lidl-Trek',            'lidl-trek',  4, 5,  650000, 'one_day', 'US/IT',
+  ('Lidl-Trek',            'lidl-trek',  4, 5,  750000, 'one_day', 'US/IT',
    10000, 20000, 10000, 10, 10,  3, false, null, null, null, null, 43),
 
   -- Tier 5 — Level 7 (prestige)

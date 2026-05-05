@@ -386,7 +386,7 @@ const HELP_SECTIONS: HelpSection[] = [
             ["1", "Season Start",   "0",     "6",  "1", "#300–600", "Speciality strategy + Lotto T1 (250K)"],
             ["2", "Classics P1",    "25",    "7",  "1", "#200–600", "Astana T2 (350K)"],
             ["3", "Classics P2",    "150",   "8",  "2", "#100–600", "Nationality strategy + T3 sponsors (450K)"],
-            ["4", "Giro",           "350",   "9",  "2", "#30–600",  "T4 sponsors (650K)"],
+            ["4", "Giro",           "350",   "9",  "2", "#30–600",  "T4 sponsors (750K)"],
             ["5", "Pre-Tour",       "600",   "10", "2", "#20–600",  "Teams strategy"],
             ["6", "Tour",           "1,200", "11", "2", "#10–600",  "T5 sponsors (1M)"],
             ["7", "Post-Tour",      "1,800", "12", "3", "#4–600",   "Age strategy + 3 max strategies"],
@@ -402,7 +402,7 @@ const HELP_SECTIONS: HelpSection[] = [
         </p>
         <p>
           <strong>T4 sponsors (Level 4):</strong> Ineos (GB) and Decathlon (FR) are GC-oriented.
-          Soudal Quick-Step (BE) and Lidl-Trek (US/IT) are One-Day-oriented. All pay 650K/phase.
+          Soudal Quick-Step (BE) and Lidl-Trek (US/IT) are One-Day-oriented. All pay 750K/phase.
         </p>
         <p>
           <strong>T5 sponsors (Level 6):</strong> Visma ("The prestige bet") and Red Bull-Bora
@@ -437,7 +437,7 @@ const HELP_SECTIONS: HelpSection[] = [
             ["T1", "1", "250,000 EUR", "Lotto (auto-assigned at start)"],
             ["T2", "2", "350,000 EUR", "Astana (auto-upgraded at L2)"],
             ["T3", "3", "450,000 EUR", "Groupama (FR), Movistar (ES) — GC · Alpecin (BE/NL), Uno-X (DK/NO) — One-Day"],
-            ["T4", "4", "650,000 EUR", "Ineos (GB), Decathlon (FR) — GC · Soudal Quick-Step (BE), Lidl-Trek (US/IT) — One-Day"],
+            ["T4", "4", "750,000 EUR", "Ineos (GB), Decathlon (FR) — GC · Soudal Quick-Step (BE), Lidl-Trek (US/IT) — One-Day"],
             ["T5", "6", "1,000,000 EUR", "Visma \"The prestige bet\" · Red Bull-Bora \"The regular\""],
             ["T6", "8", "1,250,000 EUR", "UAE Team Emirates (ultimate sponsor)"],
           ]}

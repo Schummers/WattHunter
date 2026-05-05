@@ -396,7 +396,7 @@ $$;
 
 ### Sponsors (6 tiers, 13 sponsors)
 - 1 sponsor par equipe, gating par niveau uniquement
-- T1=250k (Nv.1), T2=350k (Nv.2), T3=450k (Nv.3), T4=650k (Nv.4-5), T5=1M (Nv.6-7), T6=1.25M (Nv.8)
+- T1=250k (Nv.1), T2=350k (Nv.2), T3=450k (Nv.3), T4=750k (Nv.4-5), T5=1M (Nv.6-7), T6=1.25M (Nv.8)
 - Bonus sponsor = credites sur resultats de course
 - Multiplicateurs : x2 Monument/Grand Tour, x1.25 nationalite (T1-T4)
 

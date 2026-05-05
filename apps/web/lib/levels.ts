@@ -2,7 +2,7 @@ export const LEVELS = [
   { level: 1, xp: 0,    slots: 6,  pool: "#300-600", poolMin: 300, strategy: "Speciality",  maxActive: 1, sponsor: "Lotto · 250K" },
   { level: 2, xp: 25,   slots: 7,  pool: "#200-600", poolMin: 200, strategy: null,          maxActive: 1, sponsor: "Astana · 350K" },
   { level: 3, xp: 150,  slots: 8,  pool: "#100-600", poolMin: 100, strategy: "Nationality", maxActive: 2, sponsor: "T3 · 450K (×4)" },
-  { level: 4, xp: 350,  slots: 9,  pool: "#30-600",  poolMin: 30,  strategy: null,          maxActive: 2, sponsor: "T4 · 650K (×4)" },
+  { level: 4, xp: 350,  slots: 9,  pool: "#30-600",  poolMin: 30,  strategy: null,          maxActive: 2, sponsor: "T4 · 750K (×4)" },
   { level: 5, xp: 600,  slots: 10, pool: "#20-600",  poolMin: 20,  strategy: "Teams",       maxActive: 2, sponsor: null },
   { level: 6, xp: 1200, slots: 11, pool: "#10-600",  poolMin: 10,  strategy: null,          maxActive: 2, sponsor: "T5 · 1M (×2)" },
   { level: 7, xp: 1800, slots: 12, pool: "#4-600",   poolMin: 4,   strategy: "Age",         maxActive: 3, sponsor: null },
