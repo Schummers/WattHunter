@@ -3,7 +3,8 @@ import { getUser } from "@/lib/supabase/get-user";
 import { BackHeader } from "@/components/back-header";
 import { STRATEGY_TYPES } from "@/lib/strategies";
 import { StrategiesClient } from "./strategies-client";
-import { getCurrentPhase, getNextPhase, isInAuctionWindow } from "@/lib/phases";
+import { getCurrentPhase, getNextPhase } from "@/lib/phases";
+import { getOpenAuction } from "@/lib/supabase/get-open-auction";
 
 export default async function StrategiesPage({
   params,
@@ -78,6 +79,8 @@ export default async function StrategiesPage({
 
   const nextPhase = getNextPhase(getCurrentPhase());
   const nextPhaseName = nextPhase?.label ?? null;
+  const openAuction = await getOpenAuction(supabase, leagueId);
+  const isImmediate = !!openAuction;
 
   const initialStrategies: Record<string, {
     isActive: boolean;
@@ -140,7 +143,7 @@ export default async function StrategiesPage({
           teams={teams}
           rosterRiders={rosterRiders}
           nextPhaseName={nextPhaseName}
-          isInAuctionWindow={isInAuctionWindow()}
+          isInAuctionWindow={isImmediate}
         />
       </div>
     </div>

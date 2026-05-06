@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { MarketplaceClient } from "./marketplace-client";
-import { getNextPhase, isInAuctionWindow, isLeagueFirstCycle } from "@/lib/phases";
+import { getNextPhase, isLeagueFirstCycle } from "@/lib/phases";
+import { getOpenAuction } from "@/lib/supabase/get-open-auction";
 import type { SponsorRow, TeamSponsor } from "@/lib/sponsors";
 
 interface Props {
@@ -40,7 +41,8 @@ export default async function MarketplacePage({ params, searchParams }: Props) {
 
   // Determine if changes are immediate or pending
   const nextPhase = getNextPhase();
-  const immediate = isInAuctionWindow() || await isLeagueFirstCycle(supabase, leagueId);
+  const openAuction = await getOpenAuction(supabase, leagueId);
+  const immediate = !!openAuction || await isLeagueFirstCycle(supabase, leagueId);
 
   return (
     <MarketplaceClient
