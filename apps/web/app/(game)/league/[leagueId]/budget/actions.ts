@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getOpenAuction } from "@/lib/supabase/get-open-auction";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 
@@ -77,19 +78,11 @@ export async function saveSponsor(input: { teamId: string; sponsorId: string }) 
     return { success: false as const, error: "Already your active sponsor" };
   }
 
-  // Check if we're in Round 1 (first open round of current auction phase)
-  const { data: openAuction } = await supabase
-    .from("auctions")
-    .select("id, name")
-    .eq("league_id", team.league_id)
-    .eq("status", "open")
-    .order("opens_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  // Check if there is an open auction (immediate change) or not (pending until next phase)
+  const openAuction = await getOpenAuction(supabase, team.league_id);
+  const isImmediate = !!openAuction;
 
-  const isRound1 = openAuction?.name === "Round 1";
-
-  if (isRound1) {
+  if (isImmediate) {
     // Round 1: immediate effect — replace active sponsor
     await supabase
       .from("team_sponsors")
