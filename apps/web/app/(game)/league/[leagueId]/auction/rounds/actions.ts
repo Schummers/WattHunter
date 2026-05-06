@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentPhase } from "@/lib/phases";
 
 function getParisOffset(dateStr: string): string {
   const date = new Date(`${dateStr}T12:00:00Z`);
@@ -14,9 +15,18 @@ function getParisOffset(dateStr: string): string {
   return `${sign}${String(Math.abs(diffHours)).padStart(2, "0")}:00`;
 }
 
+/**
+ * Build a Paris-local ISO datetime string from a date string (YYYY-MM-DD) and time (HH:mm).
+ */
+function toParisIso(date: string, time: string): string {
+  const offset = getParisOffset(date);
+  return `${date}T${time}:00${offset}`;
+}
+
 export async function updateRoundDates(input: {
   leagueId: string;
-  rounds: { id: string; date: string; time: string; closingTime?: string }[];
+  // Each round: date+time = closes_at for that round (post-Task 8 form shape).
+  rounds: { id: string; date: string; time: string }[];
 }) {
   const supabase = await createClient();
   const {
@@ -49,22 +59,12 @@ export async function updateRoundDates(input: {
       return { error: `Round ${i + 1}: date and time are required.` };
     }
 
-    const offset = getParisOffset(date);
-    const opensAt = `${date}T${time}:00${offset}`;
-
-    let closesAt: string;
-    const next = input.rounds[i + 1];
-    if (next) {
-      const nextOffset = getParisOffset(next.date);
-      closesAt = `${next.date}T${next.time}:00${nextOffset}`;
-    } else {
-      const ct = round.closingTime ?? "23:59";
-      closesAt = `${date}T${ct}:00${offset}`;
-    }
+    // Only update closes_at — never opens_at (lazy-open relies on the original opens_at).
+    const closesAt = toParisIso(date, time);
 
     const { error: updateError } = await supabase
       .from("auctions")
-      .update({ opens_at: opensAt, closes_at: closesAt })
+      .update({ closes_at: closesAt })
       .eq("id", round.id);
 
     if (updateError) {
@@ -79,7 +79,8 @@ export async function updateRoundDates(input: {
 
 export async function createNextPhaseAuctions(input: {
   leagueId: string;
-  rounds: { date: string; time: string; closingTime?: string }[];
+  // Each round: date+time = closes_at for that round (post-Task 8 form shape).
+  rounds: { date: string; time: string }[];
 }) {
   const supabase = await createClient();
   const {
@@ -125,26 +126,39 @@ export async function createNextPhaseAuctions(input: {
     }
   }
 
-  const rows = input.rounds.map((round, i) => {
-    const offset = getParisOffset(round.date);
-    const opensAt = `${round.date}T${round.time}:00${offset}`;
-    let closesAt: string;
-    const next = input.rounds[i + 1];
-    if (next) {
-      const nextOffset = getParisOffset(next.date);
-      closesAt = `${next.date}T${next.time}:00${nextOffset}`;
-    } else {
-      const ct = round.closingTime ?? "23:59";
-      closesAt = `${round.date}T${ct}:00${offset}`;
-    }
-    return {
-      league_id: input.leagueId,
-      name: `Round ${i + 1}`,
-      status: i === 0 ? "open" : "scheduled",
-      opens_at: opensAt,
-      closes_at: closesAt,
-    };
-  });
+  // Derive Round 1 opens_at from the current auction phase (auctionDates[0]).
+  // This is the canonical phase start date — the lazy-open helper will flip the
+  // round to 'open' once opens_at <= now().
+  const currentPhase = getCurrentPhase();
+  const now = new Date();
+  const year = now.getFullYear();
+  let round1OpensAt: string;
+
+  if (currentPhase.auctionDates && currentPhase.auctionDates.length > 0) {
+    const ad = currentPhase.auctionDates[0];
+    const dateStr = `${year}-${String(ad.month).padStart(2, "0")}-${String(ad.day).padStart(2, "0")}`;
+    round1OpensAt = toParisIso(dateStr, "00:00");
+  } else {
+    // Fallback: open immediately (should not happen with valid AUCTION_PHASES data).
+    round1OpensAt = now.toISOString();
+  }
+
+  // Build closes_at for each round from the form inputs.
+  const closesTimes = input.rounds.map((round) =>
+    toParisIso(round.date, round.time)
+  );
+
+  const rows = input.rounds.map((_, i) => ({
+    league_id: input.leagueId,
+    name: `Round ${i + 1}`,
+    // All rounds start as 'scheduled' — lazy-open handles Round 1,
+    // validate_round handles Round 2 and 3.
+    status: "scheduled",
+    // Round 1: phase start date. Round N+1: closes_at of Round N (placeholder —
+    // validate_round will overwrite with now() when it actually opens).
+    opens_at: i === 0 ? round1OpensAt : closesTimes[i - 1],
+    closes_at: closesTimes[i],
+  }));
 
   const { error: insertError } = await supabase.from("auctions").insert(rows);
   if (insertError) return { error: "Failed to create auction rounds." };
