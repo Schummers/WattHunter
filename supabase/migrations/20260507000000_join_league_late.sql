@@ -58,6 +58,11 @@ BEGIN
     RETURN jsonb_build_object('error', 'League is full');
   END IF;
 
+  -- Completed leagues are closed to new members
+  IF v_league.status = 'completed' THEN
+    RETURN jsonb_build_object('error', 'League has ended');
+  END IF;
+
   -- ── STANDARD JOIN (league not yet active) ────────────────────────────────
   IF v_league.status != 'active' THEN
     v_start_level := COALESCE(v_league.starting_level, 1);
@@ -87,17 +92,8 @@ BEGIN
   FROM public.teams
   WHERE league_id = v_league.id;
 
-  -- Derive level from average XP (mirrors apps/web/lib/levels.ts thresholds)
-  v_start_level := CASE
-    WHEN v_avg_xp >= 2400 THEN 8
-    WHEN v_avg_xp >= 1800 THEN 7
-    WHEN v_avg_xp >= 1200 THEN 6
-    WHEN v_avg_xp >= 600  THEN 5
-    WHEN v_avg_xp >= 350  THEN 4
-    WHEN v_avg_xp >= 150  THEN 3
-    WHEN v_avg_xp >= 25   THEN 2
-    ELSE 1
-  END;
+  -- Derive level from average XP — delegate to the canonical function
+  v_start_level := public.compute_level(v_avg_xp);
 
   -- Insert team with average values — no sponsor, no strategies
   INSERT INTO public.teams (league_id, user_id, name, level, cumulative_xp, treasury)
