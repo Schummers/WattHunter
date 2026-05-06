@@ -172,8 +172,8 @@ export function StrategiesClient({
         <div className="rounded-lg bg-[var(--bg-subtle)] px-4 py-3">
           <p className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
             {isInAuctionWindow
-              ? "Changes apply immediately during auction window."
-              : "Change will take effect after the next auction phase."}
+              ? "Changes apply now. Update anytime while a round is open."
+              : "Auction closed — changes apply from the next phase."}
           </p>
         </div>
       )}

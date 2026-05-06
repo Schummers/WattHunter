@@ -247,15 +247,15 @@ export function AuctionsClient({
             maxStrategies={maxStrategies}
             isEditable={true}
           />
-          {pendingSponsorName && !isRound1 && (
+          {pendingSponsorName && !hasOpenRound && (
             <p className="text-[length:var(--type-caption)] text-[var(--accent-default)] px-4 mt-1.5 leading-snug">
               {pendingSponsorName} will be active from next auction phase.
             </p>
           )}
           <p className="text-[length:var(--type-micro)] text-[var(--text-low)] px-4 mt-1.5 leading-snug">
-            {isRound1
-              ? "Changes during Round 1 take effect immediately."
-              : "Changes during Round 1 take effect immediately. After Round 1, changes apply next phase."}
+            {hasOpenRound
+              ? "You can change sponsor and strategy during any of the 3 auction rounds."
+              : "Auction closed — changes apply from the next phase."}
           </p>
         </section>
 

@@ -247,7 +247,7 @@ export function MarketplaceClient({
           Choose your Sponsor
         </h1>
         <p className="mt-1 text-[length:var(--type-body)] text-[var(--text-mid)]">
-          One sponsor per team.
+          One sponsor per team — switch anytime during the auction window (Round 1 → Round 3).
         </p>
       </div>
 
