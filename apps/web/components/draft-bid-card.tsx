@@ -80,7 +80,12 @@ export function DraftBidCard({
 
   function handleInputBlur() {
     const parsed = parseInt(inputValue, 10);
-    const next = isNaN(parsed) ? minSalary : Math.max(minSalary, parsed);
+    if (isNaN(parsed)) {
+      commitAmount(minSalary);
+      return;
+    }
+    const snapped = Math.round(parsed / 100) * 100;
+    const next = Math.max(minSalary, snapped);
     commitAmount(next);
   }
 

@@ -159,14 +159,16 @@ export function AuctionsClient({
     });
   }
 
-  function handleAmountChange(riderId: string, newAmount: number) {
+  async function handleAmountChange(riderId: string, newAmount: number) {
+    const previousDrafts = drafts;
     setDrafts((prev) =>
       prev.map((d) => (d.riderId === riderId ? { ...d, amount: newAmount } : d))
     );
     setValidateSuccess(false);
-    startTransition(() => {
-      updateDraftAmount({ leagueId, riderId, amount: newAmount });
-    });
+    const result = await updateDraftAmount({ leagueId, riderId, amount: newAmount });
+    if (result?.error) {
+      setDrafts(previousDrafts);
+    }
   }
 
   function handleNavigateToRider(riderId: string) {
