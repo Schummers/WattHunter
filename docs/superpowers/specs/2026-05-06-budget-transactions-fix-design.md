@@ -181,56 +181,64 @@ function extractRaceLabel(description: string | null): string {
 Does NOT update `teams.treasury` — the treasury already reflects historical reality.  
 Only inserts the missing log entries so the budget page can display historical phases.
 
-#### Classics Part 1 (Phase 2, Mar 2 2026) — 200K sponsor each
+#### Classics Part 1 (Phase 2, Mar 2 2026)
+
+**Sponsor:** flat 200K per team — game decision, no per-team lookup needed.  
+**Salaries:** flat 200K per team — game decision at the time, no per-contract calculation needed.
 
 ```sql
--- sponsor_payment: one row per team that had a sponsor active on Mar 2 2026
-INSERT INTO treasury_log (team_id, type, amount, description, created_at)
-SELECT ts.team_id, 'sponsor_payment', 200000,
+-- One sponsor_payment row per team in the league
+INSERT INTO public.treasury_log (team_id, type, amount, description, created_at)
+SELECT t.id, 'sponsor_payment', 200000,
        'Sponsor income — Classics Part 1 [backfill]',
        '2026-03-02T12:00:00Z'
-FROM team_sponsors ts
--- Only teams in leagues that were active before Apr 1
-JOIN teams t ON t.id = ts.team_id
-WHERE ts.activated_at < '2026-04-01'
-ON CONFLICT DO NOTHING;
+FROM public.teams t
+JOIN public.league_members lm ON lm.team_id = t.id;
 
--- payday_salary: one row per contract active during Classics Part 1
-INSERT INTO treasury_log (team_id, type, amount, description, rider_id, created_at)
-SELECT c.team_id, 'payday_salary', -c.locked_salary,
-       format('Salary — %s [backfill]', r.full_name),
-       c.rider_id,
+-- One bulk payday_salary row per team (flat 200K — no per-rider breakdown)
+INSERT INTO public.treasury_log (team_id, type, amount, description, created_at)
+SELECT t.id, 'payday_salary', -200000,
+       'Phase salaries — Classics Part 1 [backfill]',
        '2026-03-02T12:00:00Z'
-FROM contracts c
-JOIN riders r ON r.id = c.rider_id
-WHERE c.purchased_at < '2026-04-01'
-  AND (c.released_at IS NULL OR c.released_at > '2026-03-02');
+FROM public.teams t
+JOIN public.league_members lm ON lm.team_id = t.id;
 ```
 
-#### Classics Part 2 (Phase 3, Apr 2 2026) — 450K sponsor each
+Net effect on display: +200K sponsor / -200K salaries / phase result = 0. Historically accurate.
+
+#### Classics Part 2 (Phase 3, Apr 2 2026)
+
+**Sponsor:** 450K per team, but different sponsors (Alpecin, Uno-X, FDJ, etc.).  
+Use current `team_sponsors` as source of truth — sponsors haven't changed since then.  
+All T3 sponsors have `monthly_budget = 450000`, so amount is always 450K regardless of which sponsor.
 
 ```sql
-INSERT INTO treasury_log (team_id, type, amount, description, created_at)
+-- sponsor_payment: 450K per team, description uses current sponsor name
+INSERT INTO public.treasury_log (team_id, type, amount, description, created_at)
 SELECT ts.team_id, 'sponsor_payment', 450000,
-       'Sponsor income — Classics Part 2 [backfill]',
+       format('Sponsor income — Classics Part 2 [backfill] (%s)', s.name),
        '2026-04-02T12:00:00Z'
-FROM team_sponsors ts
-JOIN teams t ON t.id = ts.team_id
-WHERE ts.activated_at < '2026-05-01'
-ON CONFLICT DO NOTHING;
+FROM public.team_sponsors ts
+JOIN public.sponsors s ON s.id = ts.sponsor_id;
+```
 
-INSERT INTO treasury_log (team_id, type, amount, description, rider_id, created_at)
+**Salaries:** per-rider from actual contracts active during Phase 3 (Apr 2 – May 1 2026).
+
+```sql
+-- One payday_salary row per active contract during Classics Part 2
+INSERT INTO public.treasury_log (team_id, type, amount, description, rider_id, created_at)
 SELECT c.team_id, 'payday_salary', -c.locked_salary,
        format('Salary — %s [backfill]', r.full_name),
        c.rider_id,
        '2026-04-02T12:00:00Z'
-FROM contracts c
-JOIN riders r ON r.id = c.rider_id
+FROM public.contracts c
+JOIN public.riders r ON r.id = c.rider_id
 WHERE c.purchased_at < '2026-05-01'
   AND (c.released_at IS NULL OR c.released_at > '2026-04-02');
 ```
 
-> These scripts must be verified against real data in local before running in prod. The `ON CONFLICT DO NOTHING` is a safety net if re-run accidentally (treasury_log has no unique constraint today — add one if needed).
+> These scripts must be verified against real data in local before running in prod.  
+> `teams.treasury` is NOT touched — it is assumed correct.
 
 ---
 
