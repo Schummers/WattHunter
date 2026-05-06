@@ -159,7 +159,14 @@ export function AuctionsClient({
     });
   }
 
-  async function handleAmountChange(riderId: string, newAmount: number) {
+  function handleAmountPreview(riderId: string, newAmount: number) {
+    setDrafts((prev) =>
+      prev.map((d) => (d.riderId === riderId ? { ...d, amount: newAmount } : d))
+    );
+    setValidateSuccess(false);
+  }
+
+  async function handleAmountSave(riderId: string, newAmount: number) {
     const previousDrafts = drafts;
     setDrafts((prev) =>
       prev.map((d) => (d.riderId === riderId ? { ...d, amount: newAmount } : d))
@@ -359,7 +366,8 @@ export function AuctionsClient({
                   minSalary={draft.minSalary}
                   boostPct={draft.boostPct}
                   onRemove={() => handleRemoveDraft(draft.riderId)}
-                  onAmountChange={(newAmount) => handleAmountChange(draft.riderId, newAmount)}
+                  onAmountChange={(newAmount) => handleAmountPreview(draft.riderId, newAmount)}
+                  onAmountSave={(newAmount) => handleAmountSave(draft.riderId, newAmount)}
                   onNavigate={() => handleNavigateToRider(draft.riderId)}
                 />
               ))

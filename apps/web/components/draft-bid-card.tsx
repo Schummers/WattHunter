@@ -23,7 +23,10 @@ interface DraftBidCardProps {
   minSalary: number;
   boostPct?: number;
   onRemove: () => void;
+  /** Called in real-time while typing — updates parent budget preview (no server action). */
   onAmountChange: (newAmount: number) => void;
+  /** Called on blur and +/− clicks — saves to DB (triggers server action). */
+  onAmountSave: (newAmount: number) => void;
   onNavigate: () => void;
 }
 
@@ -42,6 +45,10 @@ function getRankMovement(rank?: number, rankPrev?: number): number | null {
   return rankPrev - rank;
 }
 
+function snapToIncrement(value: number, min: number): number {
+  return Math.max(min, Math.round(value / 100) * 100);
+}
+
 export function DraftBidCard({
   rider,
   amount,
@@ -49,6 +56,7 @@ export function DraftBidCard({
   boostPct,
   onRemove,
   onAmountChange,
+  onAmountSave,
   onNavigate,
 }: DraftBidCardProps) {
   const [localAmount, setLocalAmount] = useState(amount);
@@ -63,30 +71,37 @@ export function DraftBidCard({
   }
 
   function handleDecrement() {
-    const next = Math.max(minSalary, localAmount - INCREMENT);
+    const next = snapToIncrement(localAmount - INCREMENT, minSalary);
     if (next === localAmount) return;
     commitAmount(next);
+    onAmountSave(next);
   }
 
   function handleIncrement() {
-    commitAmount(localAmount + INCREMENT);
+    const next = snapToIncrement(localAmount + INCREMENT, minSalary);
+    commitAmount(next);
+    onAmountSave(next);
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    // Only allow digits
     const raw = e.target.value.replace(/\D/g, "");
     setInputValue(raw);
+    // Real-time budget preview: update localAmount and propagate to parent without saving
+    const parsed = parseInt(raw, 10);
+    if (!isNaN(parsed)) {
+      const next = snapToIncrement(parsed, minSalary);
+      setLocalAmount(next);
+      onAmountChange(next);
+    }
   }
 
   function handleInputBlur() {
     const parsed = parseInt(inputValue, 10);
-    if (isNaN(parsed)) {
-      commitAmount(minSalary);
-      return;
-    }
-    const snapped = Math.round(parsed / 100) * 100;
-    const next = Math.max(minSalary, snapped);
-    commitAmount(next);
+    const next = snapToIncrement(isNaN(parsed) ? minSalary : parsed, minSalary);
+    setLocalAmount(next);
+    setInputValue(String(next));
+    onAmountChange(next);
+    onAmountSave(next);
   }
 
   const canDecrement = localAmount > minSalary;
