@@ -62,18 +62,15 @@ export async function cancelBid(bidId: string, auctionId: string) {
   if (!bidTeam || bidTeam.user_id !== user.id) return { error: "Not authorized" };
   if (bid.status !== "active") return { error: "Bid is not active" };
 
-  // Check auction is still open (can't cancel after closes_at)
+  // Check auction is still open
   const { data: auction } = await supabase
     .from("auctions")
-    .select("status, closes_at")
+    .select("status")
     .eq("id", bid.auction_id)
     .single();
 
   if (!auction || auction.status !== "open") {
     return { error: "Auction is no longer open" };
-  }
-  if (auction.closes_at && new Date(auction.closes_at) < new Date()) {
-    return { error: "Auction bidding period has ended" };
   }
 
   const { error } = await supabase
