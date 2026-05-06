@@ -54,12 +54,11 @@ export async function setRoundDates(input: {
     return { error: "Cannot edit round dates after the phase has started" };
   }
 
-  // 5. Update each auction — opens_at = start of day CET, closes_at = end of day CET
+  // 5. Update each auction — closes_at = end of day CET only (opens_at is immutable)
   for (const round of rounds) {
     const { error: updateError } = await supabase
       .from("auctions")
       .update({
-        opens_at: `${round.date}T00:00:00+01:00`,
         closes_at: `${round.date}T23:59:59+01:00`,
       })
       .eq("id", round.auctionId)
