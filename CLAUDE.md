@@ -8,6 +8,18 @@ Before ANY frontend work (new component, new page, styling change), READ `docs/w
 - **Spacing**: Use Tailwind spacing utilities (`p-4`, `gap-3`) or `--space-*` tokens.
 - **When in doubt**: ask the user rather than guessing.
 
+## Rule #2 — Migrations Only for DB Changes
+NEVER modify the database directly (no SQL via dashboard, no `supabase db query` to mutate data/schema). ALL schema and data changes must go through a migration file.
+
+Workflow obligatoire :
+1. Créer `supabase/migrations/<timestamp>_<description>.sql`
+2. `supabase db push --linked` pour appliquer sur remote
+3. Committer le fichier
+
+Pourquoi : local et remote doivent toujours être identiques. Un `supabase db reset` doit pouvoir reconstruire la DB à l'identique. Toute modification hors migration casse cette garantie et désynchronise l'historique.
+
+Exception autorisée : `supabase migration repair --status applied <version> --linked` pour resynchroniser une migration déjà appliquée manuellement (rattrapage uniquement, pas une habitude).
+
 ## Stack
 - Next.js 16 App Router, TypeScript strict mode
 - Tailwind CSS v4 + Shadcn UI
