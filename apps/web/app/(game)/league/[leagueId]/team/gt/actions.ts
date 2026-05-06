@@ -260,6 +260,15 @@ export async function getSquadWithRoles({
     xpMap.set(r.rider_id, (xpMap.get(r.rider_id) ?? 0) + Number(r.xp_gained ?? 0));
   }
 
+  const { data: activeContracts } = await supabase
+    .from("contracts")
+    .select("rider_id")
+    .eq("team_id", teamId)
+    .eq("status", "active");
+  const activeRiderIds = new Set(
+    (activeContracts ?? []).map((c) => (c as { rider_id: string }).rider_id)
+  );
+
   type RiderRow = {
     id: string;
     full_name: string;
@@ -272,7 +281,9 @@ export async function getSquadWithRoles({
   return ((squad ?? []) as Array<{
     rider_id: string;
     riders: RiderRow | RiderRow[] | null;
-  }>).map((s) => {
+  }>)
+    .filter((s) => activeRiderIds.has(s.rider_id))
+    .map((s) => {
     const rider = Array.isArray(s.riders) ? s.riders[0] : s.riders;
     return {
       riderId: s.rider_id,
