@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { BackHeader } from "@/components/back-header";
 import { Search } from "lucide-react";
 import { formatEuro } from "@/lib/format";
 
@@ -79,8 +78,6 @@ export default async function AuctionHistoryPage({
 
   return (
     <div className="min-h-screen">
-      <BackHeader label="Market" />
-
       <div className="px-4 space-y-4">
         {/* Search bar */}
         <div className="relative">
