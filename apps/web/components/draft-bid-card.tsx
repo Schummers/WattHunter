@@ -5,7 +5,7 @@ import { ChevronRight, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MovementTag } from "@/components/movement-tag";
 import { countryCodeToFlag, formatThousands } from "@/lib/format";
-import { BID_INCREMENT } from "@/lib/budget";
+import { BID_INCREMENT, snapToIncrement } from "@/lib/budget";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 
 interface DraftBidCardProps {
@@ -43,10 +43,6 @@ function getRankMovement(rank?: number, rankPrev?: number): number | null {
   if (rank == null || rankPrev == null) return null;
   // Positive = moved up (rank number decreased), negative = moved down
   return rankPrev - rank;
-}
-
-function snapToIncrement(value: number, min: number): number {
-  return Math.max(min, Math.round(value / 100) * 100);
 }
 
 export function DraftBidCard({

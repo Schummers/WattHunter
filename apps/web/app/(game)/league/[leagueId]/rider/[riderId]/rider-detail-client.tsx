@@ -11,7 +11,7 @@ import { addDraft, removeDraft } from "@/app/(game)/league/[leagueId]/auction/ac
 import { releaseRider } from "./actions";
 import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
-import { BID_INCREMENT, computeAvailableBudget } from "@/lib/budget";
+import { BID_INCREMENT, snapToIncrement, computeAvailableBudget } from "@/lib/budget";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 
 type RiderContext = "market" | "auctions" | "team" | "ranking";
@@ -125,6 +125,8 @@ export function RiderDetailClient({
   const router = useRouter();
   const [tabIndex, setTabIndex] = useState(0);
   const [bidAmount, setBidAmount] = useState<number | null>(draftAmount ?? null);
+  const [bidInputValue, setBidInputValue] = useState(draftAmount != null ? String(draftAmount) : "");
+  const [bidInputError, setBidInputError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bidInputRef = useRef<HTMLInputElement>(null);
@@ -398,52 +400,105 @@ export function RiderDetailClient({
                   size="icon"
                   className="size-10 shrink-0"
                   onClick={() => {
-                    if (bidAmount !== null) setBidAmount(Math.max(minSalary, bidAmount - BID_INCREMENT));
+                    if (bidAmount !== null) {
+                      const next = snapToIncrement(bidAmount - BID_INCREMENT, minSalary);
+                      setBidAmount(next);
+                      setBidInputValue(String(next));
+                      setBidInputError(null);
+                    }
                   }}
-                  disabled={bidAmount === null}
+                  disabled={bidAmount === null || bidAmount <= minSalary}
                 >
                   <Minus className="size-4" />
                 </Button>
-                <div className={`flex-1 flex items-center justify-center gap-1 h-10 px-3 rounded-md ${
-                  bidAmount !== null
-                    ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
-                    : "border border-[var(--border-default)] bg-transparent"
-                }`}>
-                  <input
-                    ref={bidInputRef}
-                    type="text"
-                    inputMode="numeric"
-                    placeholder={formatThousands(minSalary)}
-                    value={bidAmount !== null ? formatThousands(bidAmount) : ""}
-                    onChange={(e) => {
-                      const raw = e.target.value.replace(/\s/g, "");
-                      const val = parseInt(raw, 10);
-                      if (!isNaN(val) && val >= 0) setBidAmount(val);
-                      else if (raw === "") setBidAmount(null);
-                    }}
-                    className={`w-full bg-transparent text-center text-base md:text-[length:var(--type-stat-small)] font-bold font-mono tabular-nums outline-none ${
-                      bidAmount !== null
-                        ? "text-[var(--accent-default)]"
-                        : "text-[var(--text-low)]"
-                    }`}
-                  />
-                  <span className="text-[length:var(--type-body)] text-[var(--text-ghost)]">€</span>
+                <div className="flex flex-1 flex-col items-center">
+                  <div className={`flex w-full items-center justify-center gap-1 h-10 px-3 rounded-md ${
+                    bidInputError
+                      ? "border border-red-400"
+                      : bidAmount !== null
+                        ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
+                        : "border border-[var(--border-default)] bg-transparent"
+                  }`}>
+                    <input
+                      ref={bidInputRef}
+                      type="text"
+                      inputMode="numeric"
+                      placeholder={formatThousands(minSalary)}
+                      value={bidInputValue === (bidAmount !== null ? String(bidAmount) : "") ? (bidAmount !== null ? formatThousands(bidAmount) : "") : bidInputValue}
+                      onFocus={() => setBidInputValue(bidAmount !== null ? String(bidAmount) : "")}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        setBidInputValue(raw);
+
+                        if (raw === "") {
+                          setBidAmount(null);
+                          setBidInputError(null);
+                          return;
+                        }
+
+                        const parsed = parseInt(raw, 10);
+                        if (isNaN(parsed)) { setBidInputError(null); return; }
+
+                        if (parsed % 100 !== 0) {
+                          setBidInputError("Must be a multiple of €100");
+                        } else if (parsed < minSalary) {
+                          setBidInputError(`Min: €${formatThousands(minSalary)}`);
+                        } else {
+                          setBidInputError(null);
+                        }
+
+                        const next = snapToIncrement(parsed, minSalary);
+                        setBidAmount(next);
+                      }}
+                      onBlur={() => {
+                        const parsed = parseInt(bidInputValue, 10);
+                        if (isNaN(parsed) || parsed === 0) {
+                          if (bidAmount === null) {
+                            setBidInputValue("");
+                          } else {
+                            setBidInputValue(String(bidAmount));
+                          }
+                          setBidInputError(null);
+                          return;
+                        }
+                        const next = snapToIncrement(parsed, minSalary);
+                        setBidAmount(next);
+                        setBidInputValue(String(next));
+                        setBidInputError(null);
+                      }}
+                      className={`w-full bg-transparent text-center text-base md:text-[length:var(--type-stat-small)] font-bold font-mono tabular-nums outline-none ${
+                        bidInputError
+                          ? "text-red-400"
+                          : bidAmount !== null
+                            ? "text-[var(--accent-default)]"
+                            : "text-[var(--text-low)]"
+                      }`}
+                    />
+                    <span className="text-[length:var(--type-body)] text-[var(--text-ghost)]">€</span>
+                  </div>
+                  <span className={`mt-[3px] text-[length:var(--type-micro)] ${bidInputError ? "text-red-400" : "text-[var(--text-ghost)]"}`}>
+                    {bidInputError ?? <>min <span className="font-mono">{formatThousands(minSalary)}</span> €</>}
+                  </span>
                 </div>
                 <Button
                   variant="outline"
                   size="icon"
                   className="size-10 shrink-0"
                   onClick={() => {
-                    if (bidAmount === null) setBidAmount(minSalary);
-                    else setBidAmount(bidAmount + BID_INCREMENT);
+                    if (bidAmount === null) {
+                      setBidAmount(minSalary);
+                      setBidInputValue(String(minSalary));
+                    } else {
+                      const next = snapToIncrement(bidAmount + BID_INCREMENT, minSalary);
+                      setBidAmount(next);
+                      setBidInputValue(String(next));
+                    }
+                    setBidInputError(null);
                   }}
                 >
                   <Plus className="size-4" />
                 </Button>
               </div>
-              <p className="text-center text-[length:var(--type-micro)] text-[var(--text-ghost)]">
-                min {formatThousands(minSalary)} €
-              </p>
             </>
           )}
 

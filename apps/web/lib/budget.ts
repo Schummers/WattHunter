@@ -1,6 +1,11 @@
 /** Bid increment shared across all bid UIs (Rider Detail, DraftBidCard) */
 export const BID_INCREMENT = 100;
 
+/** Snap a value to the nearest multiple of BID_INCREMENT, enforcing a floor. */
+export function snapToIncrement(value: number, min: number): number {
+  return Math.max(min, Math.round(value / BID_INCREMENT) * BID_INCREMENT);
+}
+
 /**
  * Available budget for bidding.
  *
