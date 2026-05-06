@@ -25,9 +25,9 @@ CREATE POLICY "team_xp_adjustments_select" ON public.team_xp_adjustments
 
 -- Retroactive entries --------------------------------------------------------
 
--- 2026-04-02 : Klimax +20 XP (équilibrage)
+-- 2026-04-02 : Klimax +20 XP (level 2 catch-up)
 INSERT INTO public.team_xp_adjustments (team_id, amount, reason, adjusted_at)
-VALUES ('68ccf635-6599-4d53-a112-de66b27fa4cf', 20, 'Admin balance – équilibrage', '2026-04-02');
+VALUES ('68ccf635-6599-4d53-a112-de66b27fa4cf', 20, 'Admin balance – level 2 catch-up', '2026-04-02');
 
 -- 2026-05-06 : Dixon Hormous +120 XP (level 4 catch-up)
 INSERT INTO public.team_xp_adjustments (team_id, amount, reason, adjusted_at)
