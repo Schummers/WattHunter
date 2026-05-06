@@ -5,17 +5,18 @@ export async function getOpenAuction(
   leagueId: string
 ): Promise<{ id: string; name: string } | null> {
   // 1. Check for already-open round
-  const { data: openRound } = await supabase
+  const { data: openRound, error: openError } = await supabase
     .from("auctions")
     .select("id, name")
     .eq("league_id", leagueId)
     .eq("status", "open")
     .maybeSingle();
 
+  if (openError) return null;
   if (openRound) return openRound;
 
   // 2. Check for a scheduled round whose opens_at is in the past (lazy-open)
-  const { data: dueRound } = await supabase
+  const { data: dueRound, error: dueError } = await supabase
     .from("auctions")
     .select("id, name")
     .eq("league_id", leagueId)
@@ -25,13 +26,15 @@ export async function getOpenAuction(
     .limit(1)
     .maybeSingle();
 
-  if (!dueRound) return null;
+  if (dueError || !dueRound) return null;
 
   // 3. Open it
-  await supabase
+  const { error: updateError } = await supabase
     .from("auctions")
     .update({ status: "open" })
     .eq("id", dueRound.id);
+
+  if (updateError) return null;
 
   return dueRound;
 }
