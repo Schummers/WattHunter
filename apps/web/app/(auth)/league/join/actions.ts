@@ -59,6 +59,8 @@ export async function joinLeague(
     ok?: boolean;
     error?: string;
     already_member?: boolean;
+    late_join?: boolean;
+    can_join_current_phase?: boolean;
     league_id?: string;
     team_id?: string;
     starting_level?: number;
@@ -69,8 +71,6 @@ export async function joinLeague(
     switch (rpcResult.error) {
       case "League not found":
         return { error: "Invalid code. Check with your Race Director." };
-      case "League has already started":
-        return { error: "This league has already started. You can't join anymore." };
       case "League is full":
         return { error: "This league is full." };
       case "Already a member of this league":
@@ -90,7 +90,7 @@ export async function joinLeague(
   const startLevel = rpcResult.starting_level ?? 1;
 
   // If already a member, skip sponsor assignment and redirect directly
-  if (!rpcResult.already_member) {
+  if (!rpcResult.already_member && !rpcResult.late_join) {
     // Auto-assign default sponsor based on starting level (mirrors createLeague logic)
     const defaultSlug = startLevel <= 1 ? "lotto" : startLevel === 2 ? "astana" : null;
     if (defaultSlug) {
