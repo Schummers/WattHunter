@@ -70,22 +70,43 @@ export default async function LeagueDashboardPage({
     .limit(1)
     .maybeSingle();
 
-  // If no active/scheduled auction, check if season started for calendar fallback
-  let nextAuctionLabel: string | null = null;
-  if (!activeAuction) {
-    const { count: closedCount } = await supabase
-      .from("auctions")
-      .select("id", { count: "exact", head: true })
-      .eq("league_id", leagueId)
-      .eq("status", "closed");
+  // Always fetch closed count (needed for both nextAuctionLabel and isLateJoinPending)
+  const { count: closedCount } = await supabase
+    .from("auctions")
+    .select("id", { count: "exact", head: true })
+    .eq("league_id", leagueId)
+    .eq("status", "closed");
 
-    if (closedCount && closedCount > 0) {
-      const next = getNextAuctionDate();
-      if (next) {
-        nextAuctionLabel = formatAuctionDate(next.date);
-      }
+  // If no active/scheduled auction, compute next auction label from calendar
+  let nextAuctionLabel: string | null = null;
+  if (!activeAuction && closedCount && closedCount > 0) {
+    const next = getNextAuctionDate();
+    if (next) {
+      nextAuctionLabel = formatAuctionDate(next.date);
     }
   }
+
+  // Fetch the current user's team membership to get team_id
+  const { data: memberRow } = await supabase
+    .from("league_members")
+    .select("team_id")
+    .eq("league_id", leagueId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const teamId = memberRow?.team_id ?? null;
+
+  // Check if the team has an active sponsor
+  const { data: teamSponsorRow } = teamId
+    ? await supabase
+        .from("team_sponsors")
+        .select("id")
+        .eq("team_id", teamId)
+        .maybeSingle()
+    : { data: null };
+
+  // isLateJoinPending: team has no sponsor and at least one auction is already closed
+  const isLateJoinPending = teamSponsorRow === null && (closedCount ?? 0) > 0;
 
   return (
     <>
@@ -94,6 +115,7 @@ export default async function LeagueDashboardPage({
         leagueId={leagueId}
         activeAuction={activeAuction}
         nextAuctionLabel={nextAuctionLabel}
+        isLateJoinPending={isLateJoinPending}
       />
     </>
   );

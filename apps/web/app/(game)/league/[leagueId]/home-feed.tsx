@@ -5,7 +5,7 @@ import { OnboardingCards } from "@/components/onboarding-cards";
 import { getPhaseRaces, formatRaceDate, type UpcomingRace } from "@/lib/calendar";
 import { formatRoundCountdown } from "@/lib/format";
 import { getCurrentPhase, getPhaseRange, getNextPhase } from "@/lib/phases";
-import { Timer, ChevronRight, Calendar } from "lucide-react";
+import { Timer, ChevronRight, Calendar, Info } from "lucide-react";
 
 interface ActiveAuction {
   id: string;
@@ -19,6 +19,7 @@ interface HomeFeedProps {
   leagueId: string;
   activeAuction: ActiveAuction | null;
   nextAuctionLabel: string | null;
+  isLateJoinPending?: boolean;
 }
 
 type FeedItem =
@@ -30,6 +31,7 @@ export function HomeFeed({
   leagueId,
   activeAuction,
   nextAuctionLabel,
+  isLateJoinPending,
 }: HomeFeedProps) {
   // Get all races in the current phase (extend window to match getCurrentPhase boundary)
   const now = new Date();
@@ -69,7 +71,18 @@ export function HomeFeed({
 
   return (
     <div className="min-h-full">
-      <div className="px-4 pt-4 space-y-6">
+      <div className="flex flex-col gap-3 px-4 pt-4">
+        {/* Late join pending banner */}
+        {isLateJoinPending && (
+          <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3">
+            <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-mid)]" />
+            <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+              You joined mid-season. You can select your sponsor and start bidding
+              at the next auction phase.
+            </p>
+          </div>
+        )}
+
         {/* Game Guide (onboarding) */}
         <OnboardingCards leagueId={leagueId} />
 
