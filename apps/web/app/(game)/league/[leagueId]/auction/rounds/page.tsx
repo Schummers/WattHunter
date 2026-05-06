@@ -46,16 +46,11 @@ export default async function EditRoundDatesPage({
     .order("opens_at", { ascending: true });
 
   const initialRounds = (auctionRounds ?? []).map((r) => {
-    const { date, time } = splitDateTime(r.opens_at);
+    const { date, time } = splitDateTime(r.closes_at);
     return { id: r.id, name: r.name, date, time };
   });
 
   const isCreating = initialRounds.length === 0;
-
-  const lastRound = auctionRounds?.[auctionRounds.length - 1];
-  const initialClosingTime = isCreating
-    ? "12:00"
-    : (splitDateTime(lastRound?.closes_at ?? null).time || "23:59");
 
   return (
     <RoundsClient
@@ -63,7 +58,6 @@ export default async function EditRoundDatesPage({
       leagueName={league.name}
       initialRounds={initialRounds}
       isCreating={isCreating}
-      initialClosingTime={initialClosingTime}
     />
   );
 }

@@ -17,7 +17,6 @@ interface RoundsClientProps {
   leagueName: string;
   initialRounds: RoundRow[];
   isCreating: boolean;
-  initialClosingTime: string;
 }
 
 function getParisDate(daysFromNow: number): string {
@@ -31,7 +30,6 @@ export function RoundsClient({
   leagueName,
   initialRounds,
   isCreating,
-  initialClosingTime,
 }: RoundsClientProps) {
   const [rounds, setRounds] = useState<RoundRow[]>(
     isCreating
@@ -42,7 +40,6 @@ export function RoundsClient({
         ]
       : initialRounds
   );
-  const [closingTime, setClosingTime] = useState(initialClosingTime);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -73,20 +70,18 @@ export function RoundsClient({
       if (isCreating) {
         result = await createNextPhaseAuctions({
           leagueId,
-          rounds: rounds.map((r, i) => ({
+          rounds: rounds.map((r) => ({
             date: r.date,
             time: r.time,
-            ...(i === rounds.length - 1 ? { closingTime } : {}),
           })),
         });
       } else {
         result = await updateRoundDates({
           leagueId,
-          rounds: rounds.map((r, i) => ({
+          rounds: rounds.map((r) => ({
             id: r.id,
             date: r.date,
             time: r.time,
-            ...(i === rounds.length - 1 ? { closingTime } : {}),
           })),
         });
       }
@@ -118,11 +113,10 @@ export function RoundsClient({
 
         <div className="space-y-4">
           {rounds.map((round, i) => {
-            const isLast = i === rounds.length - 1;
             return (
               <div key={round.name} className="space-y-2">
                 <p className="text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)] uppercase tracking-wide">
-                  {round.name}
+                  {round.name} — Closes
                 </p>
                 <div className="flex items-center gap-2">
                   <input
@@ -140,24 +134,6 @@ export function RoundsClient({
                     className={inputClass}
                   />
                 </div>
-                {isLast && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[length:var(--type-caption)] text-[var(--text-mid)] whitespace-nowrap">
-                      Closes at
-                    </span>
-                    <input
-                      type="time"
-                      value={closingTime}
-                      onChange={(e) => {
-                        setClosingTime(e.target.value);
-                        setSuccess(false);
-                        setError(null);
-                      }}
-                      autoComplete="off"
-                      className={inputClass}
-                    />
-                  </div>
-                )}
               </div>
             );
           })}
