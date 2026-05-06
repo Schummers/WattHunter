@@ -61,12 +61,14 @@ export function DraftBidCard({
 }: DraftBidCardProps) {
   const [localAmount, setLocalAmount] = useState(amount);
   const [inputValue, setInputValue] = useState(String(amount));
+  const [inputError, setInputError] = useState<string | null>(null);
   const flag = rider.nationality ? countryCodeToFlag(rider.nationality) : null;
   const movement = getRankMovement(rider.pcs_rank, rider.pcs_rank_prev);
 
   function commitAmount(next: number) {
     setLocalAmount(next);
     setInputValue(String(next));
+    setInputError(null);
     onAmountChange(next);
   }
 
@@ -86,13 +88,25 @@ export function DraftBidCard({
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value.replace(/\D/g, "");
     setInputValue(raw);
-    // Real-time budget preview: update localAmount and propagate to parent without saving
+
     const parsed = parseInt(raw, 10);
-    if (!isNaN(parsed)) {
-      const next = snapToIncrement(parsed, minSalary);
-      setLocalAmount(next);
-      onAmountChange(next);
+    if (isNaN(parsed) || parsed === 0) {
+      setInputError(null);
+      return;
     }
+
+    if (parsed % 100 !== 0) {
+      setInputError("Must be a multiple of €100");
+    } else if (parsed < minSalary) {
+      setInputError(`Min: €${formatThousands(minSalary)}`);
+    } else {
+      setInputError(null);
+    }
+
+    // Update budget preview with the snapped value regardless of error
+    const next = snapToIncrement(parsed, minSalary);
+    setLocalAmount(next);
+    onAmountChange(next);
   }
 
   function handleInputBlur() {
@@ -100,6 +114,7 @@ export function DraftBidCard({
     const next = snapToIncrement(isNaN(parsed) ? minSalary : parsed, minSalary);
     setLocalAmount(next);
     setInputValue(String(next));
+    setInputError(null);
     onAmountChange(next);
     onAmountSave(next);
   }
@@ -213,10 +228,14 @@ export function DraftBidCard({
             onFocus={() => setInputValue(String(localAmount))}
             onBlur={handleInputBlur}
             autoComplete="off"
-            className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-[10px] py-[9px] text-center font-mono text-[length:var(--type-emphasis)] text-[var(--text-high)] focus:border-[var(--accent-default)] focus:outline-none"
+            className={`h-10 w-full rounded-[var(--radius-md)] border bg-[var(--bg-surface)] px-[10px] py-[9px] text-center font-mono text-[length:var(--type-emphasis)] focus:outline-none ${
+              inputError
+                ? "border-red-400 text-red-400 focus:border-red-400"
+                : "border-[var(--border-default)] text-[var(--text-high)] focus:border-[var(--accent-default)]"
+            }`}
           />
-          <span className="mt-[3px] text-[length:var(--type-micro)] text-[var(--text-low)]">
-            Min: <span className="font-mono">€{formatThousands(minSalary)}</span>
+          <span className={`mt-[3px] text-[length:var(--type-micro)] ${inputError ? "text-red-400" : "text-[var(--text-low)]"}`}>
+            {inputError ?? <>Min: <span className="font-mono">€{formatThousands(minSalary)}</span></>}
           </span>
         </div>
 
