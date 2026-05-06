@@ -3,6 +3,7 @@
 import { z } from "zod/v4";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getOpenAuction } from "@/lib/supabase/get-open-auction";
 import { STRATEGY_TYPES, getMaxActiveStrategies } from "@/lib/strategies";
 import { getCurrentPhase, getNextPhase } from "@/lib/phases";
 
@@ -52,16 +53,9 @@ export async function saveStrategies(
 
   const level = team.level ?? 1;
 
-  // Immediate effect when the open auction is Round 1 (matches budget/sponsor logic)
-  const { data: openAuction } = await supabase
-    .from("auctions")
-    .select("name")
-    .eq("league_id", leagueId)
-    .eq("status", "open")
-    .order("opens_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  const immediate = openAuction?.name === "Round 1";
+  // Immediate effect when there is an open auction
+  const openAuction = await getOpenAuction(supabase, leagueId);
+  const immediate = !!openAuction;
 
   // Fetch existing state to project total active strategies
   const { data: existingStrategies } = await supabase
