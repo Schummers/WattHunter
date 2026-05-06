@@ -1,9 +1,9 @@
--- Migration: round lifecycle management
--- 1. validate_round: closes current round + opens next scheduled round after conversion
--- 2. place_bid: removes closes_at deadline check (validate_round controls closing)
+-- Rollback: 20260508000000_round_lifecycle
+-- Restores validate_round and place_bid to their pre-patch versions
+-- (before FOR UPDATE on auctions and scalar subquery in step 12)
 
 -- ============================================================
--- RPC validate_round (patched)
+-- RPC validate_round (original — no FOR UPDATE on auctions, no step 11/12)
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.validate_round(
   p_league_id uuid,
@@ -46,13 +46,12 @@ BEGIN
     RETURN jsonb_build_object('error', 'Team not found');
   END IF;
 
-  -- 3. Find open auction for this league + LOCK row
+  -- 3. Find open auction for this league
   SELECT * INTO v_auction
   FROM public.auctions
   WHERE league_id = p_league_id AND status = 'open'
   ORDER BY opens_at ASC
-  LIMIT 1
-  FOR UPDATE;
+  LIMIT 1;
 
   IF v_auction IS NULL THEN
     RETURN jsonb_build_object('error', 'No open auction round found');
@@ -131,21 +130,6 @@ BEGIN
 
   GET DIAGNOSTICS v_inserted = ROW_COUNT;
 
-  -- 11. Close current round
-  UPDATE public.auctions
-  SET status = 'closed', resolved_at = now()
-  WHERE id = v_auction.id;
-
-  -- 12. Open next scheduled round (if any) — set opens_at = now() (actual open time)
-  UPDATE public.auctions
-  SET status = 'open', opens_at = now()
-  WHERE id = (
-    SELECT id FROM public.auctions
-    WHERE league_id = p_league_id AND status = 'scheduled'
-    ORDER BY closes_at ASC
-    LIMIT 1
-  );
-
   RETURN jsonb_build_object('ok', true, 'inserted', v_inserted);
 END;
 $$;
@@ -153,7 +137,7 @@ $$;
 GRANT EXECUTE ON FUNCTION public.validate_round(uuid, int) TO authenticated;
 
 -- ============================================================
--- RPC place_bid (patched)
+-- RPC place_bid (original — with closes_at deadline check)
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.place_bid(
   p_auction_id uuid,
@@ -195,13 +179,16 @@ BEGIN
     RETURN jsonb_build_object('error', 'Invalid round number');
   END IF;
 
-  -- 3. Lookup auction + verify open (no closes_at check — validate_round controls closing)
+  -- 3. Lookup auction + verify open
   SELECT * INTO v_auction FROM public.auctions WHERE id = p_auction_id;
   IF v_auction IS NULL THEN
     RETURN jsonb_build_object('error', 'Auction not found');
   END IF;
   IF v_auction.status <> 'open' THEN
     RETURN jsonb_build_object('error', 'Auction is not open');
+  END IF;
+  IF v_auction.closes_at < now() THEN
+    RETURN jsonb_build_object('error', 'Auction window closed');
   END IF;
 
   -- 4. Lookup team for this user in the auction's league + LOCK row
