@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, X } from "lucide-react";
 import { RiderCard } from "@/components/rider-card";
 import { FilterChips } from "@/components/filter-chips";
 import { StickyBar } from "@/components/sticky-bar";
@@ -419,6 +419,15 @@ export function MarketClient({
             autoCapitalize="off"
             className="flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="shrink-0 rounded-full p-0.5 text-[var(--text-ghost)] hover:text-[var(--text-mid)] transition-colors"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
       </div>
 
