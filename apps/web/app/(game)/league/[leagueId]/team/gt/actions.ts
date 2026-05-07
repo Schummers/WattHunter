@@ -22,12 +22,7 @@ const PhaseIdSchema = z.union([z.literal(4), z.literal(6), z.literal(8)]);
 
 type RpcResult = { ok?: boolean; error?: string } | null;
 
-async function callRpc(
-  fn: "gt_add_to_squad" | "gt_remove_from_squad" | "gt_swap_slot" | "gt_assign_role",
-  params: Record<string, unknown>,
-) {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc(fn, params);
+function checkResult(fn: string, data: unknown, error: { message: string } | null) {
   if (error) throw new Error(error.message);
   const result = data as RpcResult;
   if (!result?.ok) throw new Error(result?.error ?? `${fn} failed`);
@@ -64,13 +59,15 @@ export async function addToSquad({
   RoleSchema.parse(role);
   PhaseIdSchema.parse(phaseId);
 
-  await callRpc("gt_add_to_squad", {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("gt_add_to_squad", {
     p_team_id: teamId,
     p_rider_id: riderId,
     p_role: role,
     p_phase_id: phaseId,
     p_year: year,
   });
+  checkResult("gt_add_to_squad", data, error);
 
   const leagueId = await getTeamLeagueId(teamId);
   if (leagueId) revalidatePath(`/league/${leagueId}/team/gt`);
@@ -95,12 +92,14 @@ export async function removeFromSquad({
   UUID.parse(riderId);
   PhaseIdSchema.parse(phaseId);
 
-  await callRpc("gt_remove_from_squad", {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("gt_remove_from_squad", {
     p_team_id: teamId,
     p_rider_id: riderId,
     p_phase_id: phaseId,
     p_year: year,
   });
+  checkResult("gt_remove_from_squad", data, error);
 
   const leagueId = await getTeamLeagueId(teamId);
   if (leagueId) revalidatePath(`/league/${leagueId}/team/gt`);
@@ -128,13 +127,15 @@ export async function swapSlot({
   UUID.parse(newRiderId);
   PhaseIdSchema.parse(phaseId);
 
-  await callRpc("gt_swap_slot", {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("gt_swap_slot", {
     p_team_id: teamId,
     p_old_rider_id: oldRiderId,
     p_new_rider_id: newRiderId,
     p_phase_id: phaseId,
     p_year: year,
   });
+  checkResult("gt_swap_slot", data, error);
 
   const leagueId = await getTeamLeagueId(teamId);
   if (leagueId) revalidatePath(`/league/${leagueId}/team/gt`);
@@ -163,13 +164,15 @@ export async function assignRole({
   RoleSchema.parse(role);
   PhaseIdSchema.parse(phaseId);
 
-  await callRpc("gt_assign_role", {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("gt_assign_role", {
     p_team_id: teamId,
     p_rider_id: riderId,
     p_role: role,
     p_phase_id: phaseId,
     p_year: year,
   });
+  checkResult("gt_assign_role", data, error);
 
   const leagueId = await getTeamLeagueId(teamId);
   if (leagueId) revalidatePath(`/league/${leagueId}/team/gt`);
