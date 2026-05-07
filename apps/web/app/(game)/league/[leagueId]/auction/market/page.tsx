@@ -53,6 +53,7 @@ export default async function MarketPage({
   const [
     { data: riders },
     { data: leagueTeams },
+    { data: giroStartlist },
   ] = await Promise.all([
     supabase
       .from("riders")
@@ -64,6 +65,10 @@ export default async function MarketPage({
       .order("pcs_rank", { ascending: true })
       .limit(600),
     supabase.from("teams").select("id").eq("league_id", leagueId),
+    supabase
+      .from("race_startlists")
+      .select("rider_id")
+      .eq("race_slug", "race/giro-d-italia/2026"),
   ]);
 
   const leagueTeamIds = (leagueTeams ?? []).map((t) => t.id);
@@ -177,6 +182,8 @@ export default async function MarketPage({
     }
   }
 
+  const giroRiderIds = (giroStartlist ?? []).map((s) => s.rider_id);
+
   return (
     <MarketClient
       leagueId={leagueId}
@@ -191,6 +198,7 @@ export default async function MarketPage({
       activeSalaries={activeSalaries}
       phaseConfirmed={phaseConfirmed}
       draftBids={draftBidMap}
+      giroRiderIds={giroRiderIds}
     />
   );
 }
