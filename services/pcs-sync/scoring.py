@@ -413,6 +413,8 @@ async def calculate_daily_scores(
                         "date": entry.get("race_date", today),
                         "raw_pcs_points": raw_points,
                         "strategy_bonus": bonus,
+                        "role_mult": role_mult,
+                        "classif_bonus": classif_pts,
                         "remontada_mult": remontada_mult,
                         "xp_gained": round(xp, 2),
                         "race_slug": race_slug,
