@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import re
 from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from supabase import Client
 from remontada import (
     get_gt_identifier,
@@ -75,13 +76,18 @@ CLASSIF_ROLE_MATCH = {
 
 
 def _classif_bonus(classif_rows: list[dict], role: str) -> float:
-    """Sum of classification bonuses. For each ranked classification within the
-    configured top-N, the base bonus is `top + 1 - rank` (so rank 1 = top). If the
-    rider's role matches the classification, the bonus is multiplied by ×1.5.
+    """Sum of classification bonuses. Only roles with a matching classification
+    receive bonuses (GC Leader→GC, Sprinter→points, Climber→KOM).
+    Other roles (TT Specialist, Stage Hunter, Domestique) get 0.
     """
+    matched_ctype = CLASSIF_ROLE_MATCH.get(role)
+    if matched_ctype is None:
+        return 0.0
     total = 0.0
     for row in classif_rows or []:
         ctype = row.get("classification_type")
+        if ctype != matched_ctype:
+            continue
         rank = row.get("rank")
         top = CLASSIF_TOP.get(ctype)
         if top is None or rank is None:
@@ -93,8 +99,7 @@ def _classif_bonus(classif_rows: list[dict], role: str) -> float:
         if r < 1 or r > top:
             continue
         base = (top + 1) - r
-        match_mult = 1.5 if CLASSIF_ROLE_MATCH.get(role) == ctype else 1.0
-        total += base * match_mult
+        total += base * 1.5
     return total
 
 
@@ -285,16 +290,36 @@ async def calculate_daily_scores(
 
     # --- Step 3b: Pre-fetch GT squad membership + latest roles when scoring GT slugs.
     # Only fetched when at least one race_slug is a GT slug to avoid extra reads.
+    # Uses 11:00 CET cutoff per stage date for both squad membership and role assignments.
     gt_slugs = [s for s in (race_slugs or []) if _is_gt_slug(s)]
     gt_squad_members: dict[tuple[str, str], bool] = {}  # (team_id, rider_id) → True
     gt_roles: dict[tuple[str, str], str] = {}           # (team_id, rider_id) → latest role
+    _paris_tz = ZoneInfo("Europe/Paris")
     if gt_slugs:
         phase_id, year = _phase_year_from_slug(gt_slugs[0])
+
+        # Build race_slug → race_date mapping for cutoff computation
+        _slug_dates: dict[str, str] = {}
+        for h in (history.data or []):
+            if _is_gt_slug(h.get("race_slug", "")):
+                _slug_dates.setdefault(h["race_slug"], h.get("race_date", today))
+
+        # Compute cutoff from the first GT slug's date (all slugs in one call share a date)
+        _cutoff_date_str = _slug_dates.get(gt_slugs[0], today)
+        _cutoff_dt = date.fromisoformat(str(_cutoff_date_str))
+        gt_cutoff = datetime(
+            _cutoff_dt.year, _cutoff_dt.month, _cutoff_dt.day, 11, 0, 0,
+            tzinfo=_paris_tz,
+        )
+
         squad_resp = supabase.table("gt_squad").select(
-            "team_id, rider_id"
+            "team_id, rider_id, role, created_at, removed_at"
         ).eq("phase_id", phase_id).eq("year", year).execute()
         for r in (squad_resp.data or []):
-            gt_squad_members[(r["team_id"], r["rider_id"])] = True
+            created = datetime.fromisoformat(r["created_at"])
+            removed = datetime.fromisoformat(r["removed_at"]) if r.get("removed_at") else None
+            if created <= gt_cutoff and (removed is None or removed > gt_cutoff):
+                gt_squad_members[(r["team_id"], r["rider_id"])] = True
 
         role_resp = supabase.table("gt_role_assignments").select(
             "team_id, rider_id, role, applied_at"
@@ -302,8 +327,11 @@ async def calculate_daily_scores(
             "applied_at", desc=True
         ).execute()
         for r in (role_resp.data or []):
+            applied = datetime.fromisoformat(r["applied_at"])
+            if applied > gt_cutoff:
+                continue
             key = (r["team_id"], r["rider_id"])
-            if key not in gt_roles:  # first (latest) wins due to order desc
+            if key not in gt_roles:
                 gt_roles[key] = r["role"]
 
     # --- Step 3c: Daily classifications for the current GT stage(s).
