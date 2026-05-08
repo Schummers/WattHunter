@@ -41,7 +41,8 @@ export function StatusClient({ leagueId, unvalidatedTeams }: Props) {
     <>
       <div className="flex justify-end pt-4">
         <Button
-          variant="outline"
+          variant="destructive"
+          className="w-full md:w-auto"
           onClick={() => {
             setError(null);
             setOpen(true);

@@ -140,9 +140,6 @@ export default async function StatusPage({
     };
   });
 
-  const validatedCount = rows.filter((r) => r.status === "validated").length;
-  const totalTeams = rows.length;
-
   return (
     <div className="px-4 py-6 space-y-6">
       <header className="space-y-2">
@@ -157,14 +154,6 @@ export default async function StatusPage({
 
       {auction ? (
         <>
-          <div className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-            <span className="text-[var(--text-mid)]">{auction.name}</span>
-            {" — "}
-            <span>
-              {validatedCount}/{totalTeams} teams validated
-            </span>
-          </div>
-
           <table className="w-full text-[length:var(--type-body)]">
             <thead>
               <tr className="text-left text-[length:var(--type-caption)] text-[var(--text-low)]">
