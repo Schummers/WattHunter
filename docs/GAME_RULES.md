@@ -2,7 +2,7 @@
 
 > **Living document** — Updated with every rule change.
 > Source of truth for implemented and planned game mechanics.
-> Last updated: 2026-04-24
+> Last updated: 2026-05-09
 
 ## Overview
 
@@ -136,6 +136,20 @@ At payday, after `treasury += sponsor_budget − salaries`:
 - During auction: `won` / `outbid` bids visible to all
 - `active` bids (current round): secret
 - After auction closes: all bids visible
+
+### Round validation & resolution
+
+- Each player must **validate their round** (confirm their bids) before the round closes.
+- When **all league members have validated**, the round **auto-resolves** (consensus trigger).
+- Any league member can manually trigger **"Resolve Round"** from the Status tab as fallback.
+- Resolution applies the sealed-bid auction algorithm (above).
+- The `round_validations` table tracks who validated when and the force-resolve audit trail.
+
+### 7-day release cooldown
+
+- After a rider is released, **no one in the league can bid on them for 7 calendar days**.
+- This prevents the exploit: bid → check final salary → release → re-bid at minimum.
+- Released riders appear in the market with an "Available from [date]" indicator until the cooldown ends.
 
 ---
 
@@ -280,6 +294,8 @@ At the start of each phase, the player **confirms** their configuration:
 
 **Each player confirms independently** — no global payday.
 
+**Pending changes activation:** at payday, sponsor and strategy changes that were pending (set in Round 2+) take effect. Then the new sponsor budget and strategy bonuses apply for the rest of the phase.
+
 ---
 
 ## 11. Game Constants (summary)
@@ -303,6 +319,9 @@ At the start of each phase, the player **confirms** their configuration:
 | Sponsor / strategy Round 1 | Immediate effect |
 | Sponsor / strategy Round 2+ | Pending — takes effect at next payday |
 | Release effect | Start of next phase (except bankruptcy: immediate) |
+| Release cooldown | 7 days (no one can bid the rider during this window) |
+| Round resolution | Auto on consensus, or manual force-resolve from Status tab |
+| GT Tactics per Grand Tour | 1 of each type (5 total) |
 | Commissioner round dates | Editable at any time before round closes |
 
 ---
@@ -339,3 +358,45 @@ At the start of each phase, the player **confirms** their configuration:
 - **Sponsor remapping** : T4 avancé de Lv.5 → Lv.4 ; T5 avancé de Lv.7 → Lv.6 ; T6 reste à Lv.8.
 - **Grandfathering** : aucun joueur ne régresse. Le niveau actuel est conservé ; seule la barre de progression vers le prochain niveau s'ajuste.
 - **Effet** : les joueurs restent clustered aux niveaux 4–6 plus longtemps, réduisant l'asymétrie slots/budget/pool entre leader et laggards.
+
+---
+
+## 13. Grand Tour Tactics
+
+> Implemented: 2026-05-08 (PR #25)
+> Spec: `docs/archive/plans-completed/2026-05-08-gt-tactics-design.md`
+
+5 tactical abilities available **only during Grand Tours** (Giro, Tour de France, Vuelta). Each tactic modifies scoring for specific riders on specific stages.
+
+### Available Tactics
+
+| Tactic | Effect | Target | Limit |
+|--------|--------|--------|-------|
+| **Unleash** | ×1.5 XP for domestiques | All non-GC riders on roster | 1 per GT |
+| **Overdrive** | ×2.0 XP for stage hunters | 1 specific rider | 1 per GT |
+| **Nemesis GC** | PvP duel on GC classification | 1 rival team's GC rider | 1 per GT |
+| **Nemesis Sprint** | PvP duel on sprint classification | 1 rival team's sprinter | 1 per GT |
+| **Call the Bus** | Bench riders contribute XP | All bench riders | 1 per GT |
+
+### Placement rules
+
+- Tactics are placed **before a stage starts** (11:00 CET cutoff on the stage day).
+- Each tactic can be used **once per Grand Tour** (5 uses total per player per GT).
+- Nemesis tactics require selecting a rival team and a specific rider as the duel target.
+- Effects apply for the **duration of the selected stage** only.
+
+### Scoring integration
+
+- Tactic modifiers are applied **after** strategy bonuses, **before** Remontada Boost.
+- Traceability: `rider_xp_daily` records `role_mult` and `gt_classif_bonus` per scoring event.
+- Nemesis duels are resolved at stage scoring via the internal `resolve_nemesis_for_stage` RPC.
+
+---
+
+## 14. Admin tools
+
+### grant_xp (commissioner / admin)
+
+- The commissioner can manually grant XP to a team via the `grant_xp` RPC (admin tool).
+- Each adjustment is recorded in `team_xp_adjustments` with type, amount, and reason for full traceability.
+- Used for compensating bugs, pre-season tournament rewards, or manual catch-up after PCS sync issues.
