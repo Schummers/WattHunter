@@ -110,7 +110,7 @@ export default async function RiderDetailPage({
   // Auth + team check
 
   let context: RiderContext = (from as RiderContext) ?? "ranking";
-  let contractData: { locked_salary: number; status: string; contractId?: string; pcsPoints?: number } | null = null;
+  let contractData: { locked_salary: number; status: string; contractId?: string; pcsPoints?: number; phaseRecruitedId?: number } | null = null;
   let currentBidAmount: number | null = null;
   let currentBidId: string | null = null;
   let activeAuctionId: string | null = null;
@@ -133,7 +133,7 @@ export default async function RiderDetailPage({
       const [{ data: contract }, { data: activeBid }] = await Promise.all([
         supabase
           .from("contracts")
-          .select("id, locked_salary, status")
+          .select("id, locked_salary, status, phase_recruited_id")
           .eq("team_id", member.team_id)
           .eq("rider_id", riderId)
           .eq("status", "active")
@@ -154,6 +154,7 @@ export default async function RiderDetailPage({
           status: contract.status,
           contractId: contract.id,
           pcsPoints: rider.pcs_points_1yr ?? undefined,
+          phaseRecruitedId: contract.phase_recruited_id ?? undefined,
         };
       }
 
@@ -322,6 +323,19 @@ export default async function RiderDetailPage({
     }
   }
 
+  // Phase confirmed state for release modal messaging
+  let releaseIsPaidPhase = false;
+  if (contractData && userTeamId) {
+    const { data: teamForPhase } = await supabase
+      .from("teams")
+      .select("phase_confirmed_id")
+      .eq("id", userTeamId)
+      .single();
+    const confirmedId = teamForPhase?.phase_confirmed_id ?? null;
+    const currentPhase = getCurrentPhase();
+    releaseIsPaidPhase = confirmedId === currentPhase.id && contractData.phaseRecruitedId !== currentPhase.id;
+  }
+
   return (
     <RiderDetailClient
       leagueId={leagueId}
@@ -362,6 +376,7 @@ export default async function RiderDetailPage({
       totalBonus={totalBonus}
       draftAmount={draftAmount}
       currentRound={currentRound}
+      releaseIsPaidPhase={releaseIsPaidPhase}
     />
   );
 }
