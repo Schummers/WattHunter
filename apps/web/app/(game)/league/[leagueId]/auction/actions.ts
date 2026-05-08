@@ -239,6 +239,39 @@ export async function validateRound(input: { leagueId: string }) {
   const result = data as { ok?: boolean; error?: string; inserted?: number } | null;
   if (!result?.ok) return { error: result?.error ?? "Validation failed" };
 
+  // --- Consensus check: did all league members validate? ---
+  const { data: openAuction } = await supabase
+    .from("auctions")
+    .select("id")
+    .eq("league_id", leagueId)
+    .eq("status", "open")
+    .limit(1)
+    .maybeSingle();
+
+  if (openAuction) {
+    const [{ count: validatedCount }, { count: memberCount }] = await Promise.all([
+      supabase
+        .from("round_validations")
+        .select("*", { count: "exact", head: true })
+        .eq("auction_id", openAuction.id),
+      supabase
+        .from("league_members")
+        .select("*", { count: "exact", head: true })
+        .eq("league_id", leagueId),
+    ]);
+
+    if (
+      validatedCount !== null &&
+      memberCount !== null &&
+      validatedCount >= memberCount
+    ) {
+      const resolveResult = await forceResolveRound({ leagueId });
+      if ("ok" in resolveResult && resolveResult.ok) {
+        return { success: true, resolved: true };
+      }
+    }
+  }
+
   revalidatePath(`/league/${leagueId}/auction`);
   return { success: true };
 }
