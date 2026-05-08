@@ -323,7 +323,9 @@ export type Database = {
           created_at: string
           id: string
           phase_id: number
+          removed_at: string | null
           rider_id: string
+          role: string
           team_id: string
           year: number
         }
@@ -331,7 +333,9 @@ export type Database = {
           created_at?: string
           id?: string
           phase_id: number
+          removed_at?: string | null
           rider_id: string
+          role?: string
           team_id: string
           year: number
         }
@@ -339,7 +343,9 @@ export type Database = {
           created_at?: string
           id?: string
           phase_id?: number
+          removed_at?: string | null
           rider_id?: string
+          role?: string
           team_id?: string
           year?: number
         }
@@ -749,6 +755,7 @@ export type Database = {
       }
       rider_xp_daily: {
         Row: {
+          classif_bonus: number
           contract_id: string
           created_at: string
           date: string
@@ -757,11 +764,13 @@ export type Database = {
           raw_pcs_points: number
           remontada_mult: number
           rider_id: string
+          role_mult: number
           strategy_bonus: number
           team_id: string
           xp_gained: number
         }
         Insert: {
+          classif_bonus?: number
           contract_id: string
           created_at?: string
           date: string
@@ -770,11 +779,13 @@ export type Database = {
           raw_pcs_points?: number
           remontada_mult?: number
           rider_id: string
+          role_mult?: number
           strategy_bonus?: number
           team_id: string
           xp_gained?: number
         }
         Update: {
+          classif_bonus?: number
           contract_id?: string
           created_at?: string
           date?: string
@@ -783,6 +794,7 @@ export type Database = {
           raw_pcs_points?: number
           remontada_mult?: number
           rider_id?: string
+          role_mult?: number
           strategy_bonus?: number
           team_id?: string
           xp_gained?: number
@@ -1216,6 +1228,41 @@ export type Database = {
           },
         ]
       }
+      team_xp_adjustments: {
+        Row: {
+          adjusted_at: string
+          amount: number
+          created_at: string
+          id: string
+          reason: string
+          team_id: string
+        }
+        Insert: {
+          adjusted_at: string
+          amount: number
+          created_at?: string
+          id?: string
+          reason: string
+          team_id: string
+        }
+        Update: {
+          adjusted_at?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_xp_adjustments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           created_at: string
@@ -1369,6 +1416,45 @@ export type Database = {
           p_current_phase_id: number
           p_current_phase_label: string
           p_team_id: string
+        }
+        Returns: Json
+      }
+      gt_add_to_squad: {
+        Args: {
+          p_phase_id: number
+          p_rider_id: string
+          p_role: string
+          p_team_id: string
+          p_year: number
+        }
+        Returns: Json
+      }
+      gt_assign_role: {
+        Args: {
+          p_phase_id: number
+          p_rider_id: string
+          p_role: string
+          p_team_id: string
+          p_year: number
+        }
+        Returns: Json
+      }
+      gt_remove_from_squad: {
+        Args: {
+          p_phase_id: number
+          p_rider_id: string
+          p_team_id: string
+          p_year: number
+        }
+        Returns: Json
+      }
+      gt_swap_slot: {
+        Args: {
+          p_new_rider_id: string
+          p_old_rider_id: string
+          p_phase_id: number
+          p_team_id: string
+          p_year: number
         }
         Returns: Json
       }
