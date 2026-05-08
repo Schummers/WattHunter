@@ -150,9 +150,6 @@ export function RiderPickerSheet({
                         {r.rider.real_team ?? ""}
                       </span>
                     </div>
-                    <span className="shrink-0 font-[family-name:var(--font-geist-mono)] text-[length:var(--type-label)] text-[var(--text-low)]">
-                      {r.rider.pcs_points_1yr ?? 0}
-                    </span>
                   </button>
                 </li>
               );

@@ -190,17 +190,6 @@ export function GtTeamClient({
           </p>
         </div>
 
-        {squad.length === 0 && (
-          <div className="mx-4 rounded-[var(--radius-lg)] border border-dashed border-[var(--border-default)] p-6 text-center">
-            <p className="text-[length:var(--type-body)] font-medium text-[var(--text-mid)]">
-              Build your squad for the {gtShortName}
-            </p>
-            <p className="mt-1 text-[length:var(--type-caption)] text-[var(--text-low)]">
-              Fill each role slot from your roster to earn multiplied points.
-            </p>
-          </div>
-        )}
-
         {ROLE_ORDER.map((block) => {
           const riders = byRole(block.role);
           const cap = block.max;
