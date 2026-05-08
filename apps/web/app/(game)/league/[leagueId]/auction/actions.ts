@@ -347,116 +347,132 @@ export async function forceResolveRound(input: { leagueId: string }) {
   const isRound1 = /round 1/i.test(auction.name);
   let resolvedCount = 0;
 
-  // 7. For each rider — winner + losers
+  // 7. For each rider — winner + losers.
+  //    Each iteration is wrapped in try/catch: a single rider failure
+  //    must not abort the whole resolve. Mirrors Python's per-rider try/except
+  //    in services/pcs-sync/auction.py:136-264.
+  const riderErrors: Array<{ riderId: string; error: string }> = [];
   for (const [riderId, riderBids] of byRider.entries()) {
-    // Sort: highest amount first, tiebreak earliest placed_at
-    riderBids.sort((a, b) => {
-      if (b.amount !== a.amount) return b.amount - a.amount;
-      return a.placed_at.localeCompare(b.placed_at);
-    });
-    const winner = riderBids[0];
-    const losers = riderBids.slice(1);
+    try {
+      // Sort: highest amount first, tiebreak earliest placed_at
+      riderBids.sort((a, b) => {
+        if (b.amount !== a.amount) return b.amount - a.amount;
+        return a.placed_at.localeCompare(b.placed_at);
+      });
+      const winner = riderBids[0];
+      const losers = riderBids.slice(1);
 
-    // 7a. Fetch rider for level gating
-    const { data: rider } = await admin
-      .from("riders")
-      .select("id, full_name, pcs_rank")
-      .eq("id", riderId)
-      .maybeSingle();
+      // 7a. Fetch rider for level gating
+      const { data: rider } = await admin
+        .from("riders")
+        .select("id, full_name, pcs_rank")
+        .eq("id", riderId)
+        .maybeSingle();
 
-    // 7b. Fetch winner team for level
-    const { data: team } = await admin
-      .from("teams")
-      .select("id, level, treasury")
-      .eq("id", winner.team_id)
-      .maybeSingle();
-
-    const teamLevel = team?.level ?? 1;
-    const riderRank = rider?.pcs_rank ?? null;
-    const poolMin = poolMinForLevel(teamLevel);
-
-    // 7c. Level gating
-    if (riderRank !== null && riderRank < poolMin) {
-      // Cancel all bids for this rider
-      await admin
-        .from("auction_bids")
-        .update({ status: "cancelled" })
-        .eq("auction_id", auction.id)
-        .eq("rider_id", riderId)
-        .eq("status", "active");
-      continue;
-    }
-
-    // 7d. Duplicate-contract guard
-    const { data: existing } = await admin
-      .from("contracts")
-      .select("id")
-      .eq("rider_id", riderId)
-      .eq("league_id", leagueId)
-      .in("status", ["active", "notice"])
-      .maybeSingle();
-
-    if (existing) {
-      await admin
-        .from("auction_bids")
-        .update({ status: "cancelled" })
-        .eq("auction_id", auction.id)
-        .eq("rider_id", riderId)
-        .eq("status", "active");
-      continue;
-    }
-
-    // 7e. Mark winner won
-    await admin
-      .from("auction_bids")
-      .update({ status: "won" })
-      .eq("id", winner.id);
-
-    // 7f. Mark loser bids outbid (always call, even with empty array — no-op on DB)
-    await admin
-      .from("auction_bids")
-      .update({ status: "outbid" })
-      .in(
-        "id",
-        losers.map((l) => l.id)
-      );
-
-    // 7g. Create contract
-    await admin.from("contracts").insert({
-      team_id: winner.team_id,
-      rider_id: riderId,
-      league_id: leagueId,
-      locked_salary: winner.amount,
-      status: "active",
-      purchased_at: new Date().toISOString(),
-      last_salary_paid: today,
-      phase_recruited_id: phase.id,
-    });
-
-    // 7h. Mark rider active in game
-    await admin
-      .from("riders")
-      .update({ is_active_in_game: true })
-      .eq("id", riderId);
-
-    // 7i. Treasury deduction (Round 2+ only — Round 1 deferred to confirmPhaseSetup)
-    if (!isRound1 && team) {
-      const newTreasury = (team.treasury ?? 0) - winner.amount;
-      await admin
+      // 7b. Fetch winner team for level
+      const { data: team } = await admin
         .from("teams")
-        .update({ treasury: newTreasury })
-        .eq("id", winner.team_id);
+        .select("id, level, treasury")
+        .eq("id", winner.team_id)
+        .maybeSingle();
 
-      await admin.from("treasury_log").insert({
+      const teamLevel = team?.level ?? 1;
+      const riderRank = rider?.pcs_rank ?? null;
+      const poolMin = poolMinForLevel(teamLevel);
+
+      // 7c. Level gating
+      if (riderRank !== null && riderRank < poolMin) {
+        // Cancel all bids for this rider
+        await admin
+          .from("auction_bids")
+          .update({ status: "cancelled" })
+          .eq("auction_id", auction.id)
+          .eq("rider_id", riderId)
+          .eq("status", "active");
+        continue;
+      }
+
+      // 7d. Duplicate-contract guard
+      const { data: existing } = await admin
+        .from("contracts")
+        .select("id")
+        .eq("rider_id", riderId)
+        .eq("league_id", leagueId)
+        .in("status", ["active", "notice"])
+        .maybeSingle();
+
+      if (existing) {
+        await admin
+          .from("auction_bids")
+          .update({ status: "cancelled" })
+          .eq("auction_id", auction.id)
+          .eq("rider_id", riderId)
+          .eq("status", "active");
+        continue;
+      }
+
+      // 7e. Mark winner won
+      await admin
+        .from("auction_bids")
+        .update({ status: "won" })
+        .eq("id", winner.id);
+
+      // 7f. Mark loser bids outbid (skip when there are no losers — `.in("id", [])`
+      //     is NOT a safe no-op in PostgREST and may error)
+      if (losers.length > 0) {
+        await admin
+          .from("auction_bids")
+          .update({ status: "outbid" })
+          .in(
+            "id",
+            losers.map((l) => l.id)
+          );
+      }
+
+      // 7g. Create contract
+      await admin.from("contracts").insert({
         team_id: winner.team_id,
         rider_id: riderId,
-        type: "payday_salary",
-        amount: -winner.amount,
-        description: `Salary — ${rider?.full_name ?? riderId} (${auction.name})`,
+        league_id: leagueId,
+        locked_salary: winner.amount,
+        status: "active",
+        purchased_at: new Date().toISOString(),
+        last_salary_paid: today,
+        phase_recruited_id: phase.id,
       });
-    }
 
-    resolvedCount++;
+      // 7h. Mark rider active in game
+      await admin
+        .from("riders")
+        .update({ is_active_in_game: true })
+        .eq("id", riderId);
+
+      // 7i. Treasury deduction (Round 2+ only — Round 1 deferred to confirmPhaseSetup)
+      if (!isRound1 && team) {
+        const newTreasury = (team.treasury ?? 0) - winner.amount;
+        await admin
+          .from("teams")
+          .update({ treasury: newTreasury })
+          .eq("id", winner.team_id);
+
+        await admin.from("treasury_log").insert({
+          team_id: winner.team_id,
+          rider_id: riderId,
+          type: "payday_salary",
+          amount: -winner.amount,
+          description: `Salary — ${rider?.full_name ?? riderId} (${auction.name})`,
+        });
+      }
+
+      resolvedCount++;
+    } catch (err) {
+      // Log + continue with next rider. The auction is already 'closed'
+      // from the optimistic lock (step 4), so we always run cleanup +
+      // open-next regardless of how many riders fail.
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[forceResolveRound] rider ${riderId}: ${message}`);
+      riderErrors.push({ riderId, error: message });
+    }
   }
 
   // 8. Cleanup stale draft_bids for riders that now have active contracts

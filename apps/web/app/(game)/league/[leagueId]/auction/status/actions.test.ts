@@ -255,20 +255,19 @@ describe("forceResolveRound", () => {
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
     // 7. Mark winner won
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // 8. Mark losers outbid (no losers; still chainable)
+    // (No losers in this test → guard skips the losers update mock entirely)
+    // 8. INSERT contract
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // 9. INSERT contract
-    mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // 10. Update rider
+    // 9. Update rider
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
     // ROUND 1: no treasury update, no treasury_log insert
-    // 11. Cleanup: SELECT contracts (returns the new contract for RIDER_X)
+    // 10. Cleanup: SELECT contracts (returns the new contract for RIDER_X)
     mockAdminFrom.mockReturnValueOnce(
       chainable({ data: [{ rider_id: RIDER_X }], error: null })
     );
-    // 12. Cleanup: DELETE draft_bids
+    // 11. Cleanup: DELETE draft_bids
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // 13. Find next scheduled auction (none — last round)
+    // 12. Find next scheduled auction (none — last round)
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
 
     const result = await forceResolveRound({ leagueId: LEAGUE_ID });
