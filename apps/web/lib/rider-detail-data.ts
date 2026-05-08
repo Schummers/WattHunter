@@ -49,6 +49,7 @@ export interface RiderDetailData {
     status: string;
     contractId: string;
     pcsPoints?: number;
+    phaseRecruitedId?: number;
   } | null;
   ownerInfo: {
     display_name: string;
@@ -69,6 +70,7 @@ export interface RiderDetailData {
   totalBonus: number;
   draftAmount: number | null;
   currentRound: number | null;
+  releaseIsPaidPhase: boolean;
 }
 
 export async function fetchRiderDetailData(
@@ -198,7 +200,7 @@ export async function fetchRiderDetailData(
       const [{ data: contract }, { data: activeBid }] = await Promise.all([
         supabase
           .from("contracts")
-          .select("id, locked_salary, status")
+          .select("id, locked_salary, status, phase_recruited_id")
           .eq("team_id", member.team_id)
           .eq("rider_id", riderId)
           .eq("status", "active")
@@ -219,6 +221,7 @@ export async function fetchRiderDetailData(
           status: contract.status,
           contractId: contract.id,
           pcsPoints: rider.pcs_points_1yr ?? undefined,
+          phaseRecruitedId: contract.phase_recruited_id ?? undefined,
         };
       }
 
@@ -407,6 +410,21 @@ export async function fetchRiderDetailData(
     );
   }
 
+  // Determine if release happens after payday (for contextual modal messaging)
+  let releaseIsPaidPhase = false;
+  if (contractData && userTeamId) {
+    const { data: teamForPhase } = await supabase
+      .from("teams")
+      .select("phase_confirmed_id")
+      .eq("id", userTeamId)
+      .single();
+    const confirmedId = teamForPhase?.phase_confirmed_id ?? null;
+    const currentPhase = getCurrentPhase();
+    releaseIsPaidPhase =
+      confirmedId === currentPhase.id &&
+      contractData.phaseRecruitedId !== currentPhase.id;
+  }
+
   return {
     rider: {
       id: rider.id,
@@ -445,5 +463,6 @@ export async function fetchRiderDetailData(
     totalBonus,
     draftAmount,
     currentRound,
+    releaseIsPaidPhase,
   };
 }
