@@ -324,9 +324,19 @@ async def calculate_daily_scores(
                 (row["race_slug"], row["rider_id"]), []
             ).append(row)
 
+    # === Resolve unresolved Nemesis duels for the stages we're about to score ===
+    # Must run BEFORE the tactics prefetch so the per-rider loop sees outcomes.
+    if gt_slugs:
+        for gt_slug in gt_slugs:
+            try:
+                supabase.rpc("resolve_nemesis_for_stage", {"p_stage_slug": gt_slug}).execute()
+            except Exception as e:
+                # Don't fail scoring if resolution errors — log and continue
+                print(f"WARN: resolve_nemesis_for_stage failed for {gt_slug}: {e}")
+
     # === Pre-fetch active tactics for the GT stages we are about to score ===
     # Keyed by stage_slug → list of activations with team_id + tactic_type + nemesis fields.
-    # Consumed by Task 8's per-rider scoring loop (currently unused — populate-only).
+    # This prefetch now sees the resolved outcomes (if any).
     gt_tactics: dict[str, list[dict]] = {}
     if gt_slugs:  # avoid an empty `.in_([])` query
         tactics_resp = supabase.table("gt_tactic_activations").select(
