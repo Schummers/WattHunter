@@ -898,6 +898,42 @@ export type Database = {
         }
         Relationships: []
       }
+      round_validations: {
+        Row: {
+          auction_id: string
+          id: string
+          team_id: string
+          validated_at: string
+        }
+        Insert: {
+          auction_id: string
+          id?: string
+          team_id: string
+          validated_at?: string
+        }
+        Update: {
+          auction_id?: string
+          id?: string
+          team_id?: string
+          validated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_validations_auction_id_fkey"
+            columns: ["auction_id"]
+            isOneToOne: false
+            referencedRelation: "auctions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_validations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sponsor_bonuses: {
         Row: {
           base_bonus: number

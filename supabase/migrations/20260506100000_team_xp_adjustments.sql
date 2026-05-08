@@ -25,14 +25,22 @@ CREATE POLICY "team_xp_adjustments_select" ON public.team_xp_adjustments
 
 -- Retroactive entries --------------------------------------------------------
 
+-- Retroactive entries — guarded with WHERE EXISTS so a fresh local DB
+-- (without these prod team UUIDs seeded) can still apply the migration.
+-- On remote, the rows already exist and ON CONFLICT is unnecessary because
+-- the migration runs once.
+
 -- 2026-04-02 : Klimax +20 XP (level 2 catch-up)
 INSERT INTO public.team_xp_adjustments (team_id, amount, reason, adjusted_at)
-VALUES ('68ccf635-6599-4d53-a112-de66b27fa4cf', 20, 'Admin balance – level 2 catch-up', '2026-04-02');
+SELECT '68ccf635-6599-4d53-a112-de66b27fa4cf'::uuid, 20, 'Admin balance – level 2 catch-up', '2026-04-02'
+WHERE EXISTS (SELECT 1 FROM public.teams WHERE id = '68ccf635-6599-4d53-a112-de66b27fa4cf');
 
 -- 2026-05-06 : Dixon Hormous +120 XP (level 4 catch-up)
 INSERT INTO public.team_xp_adjustments (team_id, amount, reason, adjusted_at)
-VALUES ('75122355-d629-4f10-927c-2eedc17883cd', 120, 'Admin balance – level 4 catch-up', '2026-05-06');
+SELECT '75122355-d629-4f10-927c-2eedc17883cd'::uuid, 120, 'Admin balance – level 4 catch-up', '2026-05-06'
+WHERE EXISTS (SELECT 1 FROM public.teams WHERE id = '75122355-d629-4f10-927c-2eedc17883cd');
 
 -- 2026-05-06 : bigdaddy +120 XP (level 4 catch-up)
 INSERT INTO public.team_xp_adjustments (team_id, amount, reason, adjusted_at)
-VALUES ('9ed75546-bbf8-4687-bb7d-6f39ff4c6171', 120, 'Admin balance – level 4 catch-up', '2026-05-06');
+SELECT '9ed75546-bbf8-4687-bb7d-6f39ff4c6171'::uuid, 120, 'Admin balance – level 4 catch-up', '2026-05-06'
+WHERE EXISTS (SELECT 1 FROM public.teams WHERE id = '9ed75546-bbf8-4687-bb7d-6f39ff4c6171');
