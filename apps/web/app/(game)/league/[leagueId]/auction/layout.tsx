@@ -18,6 +18,7 @@ export default function AuctionLayout({ children }: { children: React.ReactNode 
           tabs={[
             { label: "Auctions", href: `/league/${leagueId}/auction` },
             { label: "Market", href: `/league/${leagueId}/auction/market` },
+            { label: "Status", href: `/league/${leagueId}/auction/status` },
             { label: "History", href: `/league/${leagueId}/auction/history` },
           ]}
         />
