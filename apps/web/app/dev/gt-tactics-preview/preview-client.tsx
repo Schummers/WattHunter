@@ -325,23 +325,27 @@ function BoostActivationModal({
         />
       }
     >
-      <ModalHeader
-        icon={<Icon className="size-5 text-[var(--accent-default)]" />}
-        title={tactic.name}
-        subtitle={`${remaining} / ${tactic.max} uses left`}
-        subtitleMono
-        onClose={onClose}
-      />
+      <div className="flex h-full flex-col gap-4 p-4">
+        {/* Fixed top */}
+        <ModalHeader
+          icon={<Icon className="size-5 text-[var(--accent-default)]" />}
+          title={tactic.name}
+          subtitle={`${remaining} / ${tactic.max} uses left`}
+          subtitleMono
+          onClose={onClose}
+        />
 
-      <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-        {tactic.description}
-      </p>
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+          {tactic.description}
+        </p>
 
-      <div className="flex flex-col gap-2">
-        <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-          Target stage
-        </span>
-        <StageList value={selectedStage} onChange={setSelectedStage} />
+        {/* Stage list takes remaining height, scrolls inside */}
+        <div className="flex flex-1 flex-col gap-2 min-h-0">
+          <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+            Target stage
+          </span>
+          <StageList value={selectedStage} onChange={setSelectedStage} fillParent />
+        </div>
       </div>
     </ModalShell>
   );
@@ -387,93 +391,107 @@ function NemesisModal({
         />
       }
     >
-      <ModalHeader
-        icon={<Icon className="size-5 text-[var(--accent-default)]" />}
-        title={tactic.name}
-        subtitle={`${remaining} / ${tactic.max} uses left`}
-        subtitleMono
-        onClose={onClose}
-      />
+      <div className="flex h-full flex-col gap-4 p-4">
+        {/* === Fixed top section === */}
+        <ModalHeader
+          icon={<Icon className="size-5 text-[var(--accent-default)]" />}
+          title={tactic.name}
+          subtitle={`${remaining} / ${tactic.max} uses left`}
+          subtitleMono
+          onClose={onClose}
+        />
 
-      {/* Single description — covers what the duel does + cutoff timing */}
-      <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-        {tactic.description}
-      </p>
+        {/* Single description — duel + cutoff in one paragraph */}
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+          {tactic.description}
+        </p>
 
-      {/* Risk warning — explained upfront */}
-      <div className="flex items-start gap-2 rounded-[var(--radius-md)] border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2.5">
-        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--warning)]" />
-        <div className="flex flex-col gap-1 text-[length:var(--type-caption)]">
-          <span className="font-semibold text-[var(--text-high)]">
-            This is a duel, not a guarantee
-          </span>
-          <span className="text-[var(--text-mid)]">
-            <strong className="text-[var(--text-high)]">Win</strong> → you score
-            ×2, they lose 50%. <br />
-            <strong className="text-[var(--text-high)]">Lose</strong> → you lose
-            25%, they gain 25%.
-          </span>
-        </div>
-      </div>
-
-      {/* Your leader info */}
-      <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-subtle)] px-3 py-2">
-        <div className="flex flex-col">
-          <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-            Your {roleLabel}
-          </span>
-          <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-            {myLeaderName}
-          </span>
-        </div>
-        <div className="flex flex-col items-end">
-          <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
-            {myXp}
-          </span>
-          <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
-            GT XP
-          </span>
-        </div>
-      </div>
-
-      {/* Rival team selection (scrollable list with radio buttons) */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between">
-          <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-            Rival team
-          </span>
-          <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">
-            ≥ your GT XP
-          </span>
-        </div>
-        {eligibleRivals.length === 0 ? (
-          <p className="rounded-[var(--radius-md)] bg-[var(--bg-subtle)] px-3 py-4 text-center text-[length:var(--type-caption)] text-[var(--text-mid)]">
-            No rival team has matched or exceeded your GT XP yet.
-          </p>
-        ) : (
-          <div className="max-h-[224px] overflow-y-auto rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-app)]">
-            <div className="flex flex-col">
-              {eligibleRivals.map((rt, i) => (
-                <RivalRow
-                  key={rt.id}
-                  rival={rt}
-                  isGc={isGc}
-                  isSelected={selectedRival === rt.id}
-                  isFirst={i === 0}
-                  onSelect={() => setSelectedRival(rt.id)}
-                />
-              ))}
-            </div>
+        {/* Risk warning */}
+        <div className="flex items-start gap-2 rounded-[var(--radius-md)] border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2.5">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--warning)]" />
+          <div className="flex flex-col gap-1 text-[length:var(--type-caption)]">
+            <span className="font-semibold text-[var(--text-high)]">
+              This is a duel, not a guarantee
+            </span>
+            <span className="text-[var(--text-mid)]">
+              <strong className="text-[var(--text-high)]">Win</strong> → you
+              score ×2, they lose 50%. <br />
+              <strong className="text-[var(--text-high)]">Lose</strong> → you
+              lose 25%, they gain 25%.
+            </span>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Target stage */}
-      <div className="flex flex-col gap-2">
-        <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-          Target stage
-        </span>
-        <StageList value={selectedStage} onChange={setSelectedStage} />
+        {/* Your leader info */}
+        <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-subtle)] px-3 py-2">
+          <div className="flex flex-col">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+              Your {roleLabel}
+            </span>
+            <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+              {myLeaderName}
+            </span>
+          </div>
+          <div className="flex flex-col items-end">
+            <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
+              {myXp}
+            </span>
+            <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
+              GT XP
+            </span>
+          </div>
+        </div>
+
+        {/*
+          === Lists area ===
+          Splits remaining vertical space between the two lists.
+          Each list has its own scroll. The modal body itself never scrolls.
+        */}
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
+          {/* Rival team list */}
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+            <div className="flex items-baseline justify-between">
+              <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+                Rival team
+              </span>
+              <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">
+                ≥ your GT XP
+              </span>
+            </div>
+            {eligibleRivals.length === 0 ? (
+              <p className="rounded-[var(--radius-md)] bg-[var(--bg-subtle)] px-3 py-4 text-center text-[length:var(--type-caption)] text-[var(--text-mid)]">
+                No rival team has matched or exceeded your GT XP yet.
+              </p>
+            ) : (
+              <div className="min-h-0 flex-1 overflow-y-auto rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-app)]">
+                <div className="flex flex-col">
+                  {eligibleRivals.map((rt, i) => (
+                    <RivalRow
+                      key={rt.id}
+                      rival={rt}
+                      isGc={isGc}
+                      isSelected={selectedRival === rt.id}
+                      isFirst={i === 0}
+                      onSelect={() => setSelectedRival(rt.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Target stage list */}
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+              Target stage
+            </span>
+            <StageList
+              value={selectedStage}
+              onChange={setSelectedStage}
+              fillParent
+            />
+          </div>
+        </div>
       </div>
     </ModalShell>
   );
@@ -552,14 +570,25 @@ function RivalRow({
 function StageList({
   value,
   onChange,
+  fillParent,
 }: {
   value: string;
   onChange: (v: string) => void;
+  /**
+   * When true, fills the parent flex container and scrolls within it.
+   * When false (default), uses a max-height of 224px.
+   */
+  fillParent?: boolean;
 }) {
   const upcoming = STAGES.filter((s) => s.status !== "past");
 
   return (
-    <div className="max-h-[224px] overflow-y-auto rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-app)]">
+    <div
+      className={cn(
+        "overflow-y-auto rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-app)]",
+        fillParent ? "min-h-0 flex-1" : "max-h-[224px]"
+      )}
+    >
       <div className="flex flex-col">
         {upcoming.map((s, i) => {
           const isSelected = value === String(s.number);
@@ -645,9 +674,11 @@ function ModalShell({
         className="flex max-h-[85vh] w-full flex-col rounded-t-[var(--radius-lg)] bg-[var(--bg-surface)] lg:max-w-md lg:rounded-[var(--radius-lg)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-          {children}
-        </div>
+        {/*
+          Body uses overflow-hidden — content has fixed height, scroll lives
+          INSIDE individual list sections (no parent scroll = no double scroll).
+        */}
+        <div className="flex flex-1 flex-col overflow-hidden">{children}</div>
         {footer && (
           <div className="shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
             {footer}
