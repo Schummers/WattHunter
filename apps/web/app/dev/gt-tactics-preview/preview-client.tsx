@@ -75,8 +75,7 @@ const TACTICS: TacticDef[] = [
     icon: Swords,
     used: 0,
     max: 1,
-    state: "disabled",
-    disabledReason: "No eligible rival",
+    state: "available",
   },
   {
     id: "nemesis_sprint",
