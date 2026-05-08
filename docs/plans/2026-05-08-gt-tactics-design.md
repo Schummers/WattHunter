@@ -44,20 +44,22 @@
 
 ### 2.3 Nemesis GC (T3)
 
-**Effet** : déclarer un duel contre le GC Leader d'une équipe rivale sur un stage précis. Voir §6 pour les mécaniques détaillées.
+**Effet** : déclarer un duel contre une équipe rivale sur un stage précis. Le duel oppose les **GC Leaders des deux équipes au moment du cutoff 11h CET**. Voir §6 pour les mécaniques détaillées.
+
+**Cible = équipe + rôle, pas un rider spécifique.** Si Team B change son GC Leader avant cutoff, le nouveau leader devient la cible. Idem pour l'attaquant.
 
 **Usages** : 1 par GT.
 
-**Résultats possibles** :
+**Résultats possibles** (l'absence de valeur indique le défaut : `gt_role_mult` = 1.5 pour le rôle, `nemesis_modifier` = 1.0) :
 | Issue du duel | Attaquant | Cible |
 |---|---|---|
-| Attaquant gagne | `gt_role_mult` = 2.0 (remplace 1.5) | `nemesis_modifier` = 0.5 |
-| Cible gagne | `nemesis_modifier` = 0.75 | `nemesis_modifier` = 1.25 |
-| Pas de résultat (DNF/DNS) | Aucun effet | Aucun effet |
+| Attaquant gagne | `gt_role_mult` = 2.0 (remplace 1.5), `nemesis_modifier` = 1.0 | `gt_role_mult` = 1.5 (inchangé), `nemesis_modifier` = 0.5 |
+| Cible gagne | `gt_role_mult` = 1.5 (inchangé), `nemesis_modifier` = 0.75 | `gt_role_mult` = 1.5 (inchangé), `nemesis_modifier` = 1.25 |
+| Pas de résultat (DNF/DNS) ou rôle non assigné | Aucun effet, modifier = 1.0 | Aucun effet, modifier = 1.0 |
 
 ### 2.4 Nemesis Sprint (T4)
 
-**Effet** : identique à T3, pour les Sprinters.
+**Effet** : identique à T3, pour les Sprinters. Le duel oppose les **Sprinters des deux équipes au cutoff 11h CET**, basé sur le classement de stage.
 
 **Usages** : 1 par GT.
 
@@ -118,29 +120,40 @@ CREATE TABLE gt_tactic_activations (
       'nemesis_gc', 'nemesis_sprint'
     )),
   stage_slug              TEXT NOT NULL,
-  -- Nemesis-only fields (all 3 NULL or all 3 NOT NULL)
-  attacker_rider_id       UUID REFERENCES riders(id),
+  -- Nemesis-only fields (both NULL or both NOT NULL)
   nemesis_target_team_id  UUID REFERENCES teams(id),
-  nemesis_target_rider_id UUID REFERENCES riders(id),
-  -- Resolution
-  outcome                 TEXT CHECK (outcome IN ('attacker_won', 'target_won')),
+  nemesis_target_role     TEXT CHECK (nemesis_target_role IN ('gc_leader', 'sprinter')),
+  -- Resolution snapshot (filled by scoring pipeline)
+  resolved_attacker_rider_id  UUID REFERENCES riders(id),
+  resolved_target_rider_id    UUID REFERENCES riders(id),
+  outcome                 TEXT CHECK (outcome IN ('attacker_won', 'target_won', 'no_resolution')),
   resolved_at             TIMESTAMPTZ,
   created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   UNIQUE (team_id, phase_id, year, stage_slug)
 );
 
--- Nemesis consistency: all 3 fields set or all 3 NULL
+-- Nemesis consistency: both fields set or both NULL
 ALTER TABLE gt_tactic_activations ADD CONSTRAINT nemesis_fields_consistent
   CHECK (
-    (attacker_rider_id IS NULL AND nemesis_target_team_id IS NULL AND nemesis_target_rider_id IS NULL)
+    (nemesis_target_team_id IS NULL AND nemesis_target_role IS NULL)
     OR
-    (attacker_rider_id IS NOT NULL AND nemesis_target_team_id IS NOT NULL AND nemesis_target_rider_id IS NOT NULL)
+    (nemesis_target_team_id IS NOT NULL AND nemesis_target_role IS NOT NULL)
   );
 
--- Usage limits enforced via CHECK on count per (team_id, phase_id, year, tactic_type)
--- Implemented as a BEFORE INSERT trigger rather than a table constraint
+-- Tactic-type matches role: nemesis_gc → 'gc_leader', nemesis_sprint → 'sprinter'
+ALTER TABLE gt_tactic_activations ADD CONSTRAINT nemesis_role_matches_type
+  CHECK (
+    (tactic_type = 'nemesis_gc' AND nemesis_target_role = 'gc_leader')
+    OR (tactic_type = 'nemesis_sprint' AND nemesis_target_role = 'sprinter')
+    OR (tactic_type NOT IN ('nemesis_gc', 'nemesis_sprint') AND nemesis_target_role IS NULL)
+  );
+
+-- Usage limits enforced via BEFORE INSERT trigger counting existing rows
+-- per (team_id, phase_id, year, tactic_type)
 ```
+
+**Note** : `resolved_attacker_rider_id` et `resolved_target_rider_id` sont remplis par le pipeline au moment de la résolution (snapshot des role-holders au cutoff). Permet l'audit "qui a combattu qui" sans avoir à recalculer depuis `gt_role_assignments`.
 
 **RLS** : readable par les membres de la ligue, writable par le team owner.
 
@@ -195,7 +208,7 @@ Avec Overdrive :       gt_role_mult = 2.0  (stage results only, pas /gc)
 tactic_applied = 'overdrive'
 ```
 
-**Nemesis (attaquant gagne)** — modifie `gt_role_mult` pour l'attaquant, `nemesis_modifier` pour la cible :
+**Nemesis (attaquant gagne)** — modifie `gt_role_mult` pour l'attaquant, `nemesis_modifier` pour la cible. Identification des riders affectés via `resolved_attacker_rider_id` et `resolved_target_rider_id` (snapshot des role-holders au cutoff) :
 ```
 Attaquant : gt_role_mult = 2.0 (remplace 1.5), nemesis_modifier = 1.0
 Cible :     gt_role_mult = 1.5 (inchangé),     nemesis_modifier = 0.5
@@ -207,6 +220,11 @@ tactic_applied = 'nemesis_gc' ou 'nemesis_sprint' (sur les deux riders)
 Attaquant : gt_role_mult = 1.5 (inchangé), nemesis_modifier = 0.75
 Cible :     gt_role_mult = 1.5 (inchangé), nemesis_modifier = 1.25
 tactic_applied = 'nemesis_gc' ou 'nemesis_sprint' (sur les deux riders)
+```
+
+**Nemesis (no_resolution)** — au moins un des deux rôles non assigné au cutoff, ou DNF/DNS :
+```
+Aucun modifier appliqué. Usage consommé pour l'attaquant.
 ```
 
 **Call the Bus** — ajoute des rows `rider_xp_daily` pour les bench riders :
@@ -223,22 +241,26 @@ Pas de gt_classif_bonus (pas dans le squad)
 
 ### 6.1 Éligibilité
 
-Le joueur choisit un leader rival (GC Leader pour T3, Sprinter pour T4) d'une autre équipe **de la même ligue**.
+Le joueur choisit une **équipe rivale** (pas un rider) dans la même ligue.
 
 **Condition sur l'XP GT** :
 ```
 target_gt_xp >= attacker_gt_xp
-AND target_gt_xp <= attacker_gt_xp × 1.20
 ```
 
-- `gt_xp` = XP cumulé par le rider **dans ce GT uniquement** (somme des `xp_gained` pour les stages passés de ce GT)
-- À l'étape 1 : tout le monde à 0 → `0 >= 0 AND 0 <= 0` → tout le monde est ciblable
-- Plus le GT avance, plus les écarts d'XP réduisent le pool de cibles éligibles
-- Si aucune cible éligible : la tactique Nemesis n'est pas disponible pour ce stage
+- `gt_xp` = XP cumulé par le **rider qui tient le rôle** (GC Leader / Sprinter) **dans ce GT uniquement**
+- Calculé au moment de la déclaration sur la base du role-holder actuel de l'équipe cible
+- À l'étape 1 : tout le monde à 0 → `0 >= 0` → tout le monde est ciblable
+- Plus le GT avance, plus le pool de cibles se réduit naturellement (les leaders ont plus d'XP)
+- Si aucune cible éligible (toutes les autres équipes ont moins de GT XP) : la tactique Nemesis n'est pas disponible
 
 ### 6.2 Déclaration
 
-**Action unique** : le joueur sélectionne la cible ET le stage en même temps (1 modale, 1 validation).
+**Action unique** : le joueur sélectionne l'équipe cible ET le stage en même temps (1 modale, 1 validation).
+
+**Cible = (team_id, role)**, pas un rider spécifique. Le rôle est implicite (GC Leader pour `nemesis_gc`, Sprinter pour `nemesis_sprint`).
+
+**Affichage à la déclaration** : la modale montre le **role-holder actuel** de l'équipe cible pour donner du contexte (ex: "Team B's GC Leader: Pogačar — 245 GT XP"). Cette info est indicative — le duel se résout avec quiconque tient le rôle au cutoff.
 
 **Timing** : doit être déclaré **avant 11h00 CET** le jour du stage ciblé. Même cutoff que les rôles.
 
@@ -249,19 +271,27 @@ AND target_gt_xp <= attacker_gt_xp × 1.20
 Après l'import des résultats du stage par le scoring pipeline :
 
 1. Chercher les `gt_tactic_activations` de type `nemesis_gc` / `nemesis_sprint` pour ce `stage_slug`
-2. Récupérer le classement stage des deux riders dans `race_results`
-3. Comparer les positions :
+2. **Snapshot des role-holders au cutoff 11h CET du stage** :
+   - `attacker_rider_id` = rider qui tient le rôle (gc_leader/sprinter) dans `team_id` au cutoff
+   - `target_rider_id` = rider qui tient le rôle dans `nemesis_target_team_id` au cutoff
+   - Stocker les deux dans `resolved_attacker_rider_id` et `resolved_target_rider_id`
+3. Si l'un des deux rôles n'est **pas assigné** au cutoff → `outcome = 'no_resolution'`, aucun modifier appliqué
+4. Récupérer le classement stage des deux riders dans `race_results`
+5. Comparer les positions :
    - `attacker_rank < target_rank` (meilleur classement) → `outcome = 'attacker_won'`
    - `target_rank <= attacker_rank` → `outcome = 'target_won'` (en cas d'égalité, la cible/défenseur gagne — l'attaquant prend le risque)
-4. Si l'un des deux riders n'a **pas de résultat** sur ce stage (DNF, DNS, absent) → `outcome = NULL`, aucun modifier appliqué
-5. Écrire `outcome` + `resolved_at` dans `gt_tactic_activations`
-6. Appliquer les modifiers sur les rows `rider_xp_daily` des deux riders
+6. Si l'un des deux riders n'a **pas de résultat** sur ce stage (DNF, DNS, absent) → `outcome = 'no_resolution'`, aucun modifier appliqué
+7. Écrire `outcome` + `resolved_at` dans `gt_tactic_activations`
+8. Appliquer les modifiers sur les rows `rider_xp_daily` des deux riders
+
+**Race condition au cutoff** : si le rôle est modifié à 10h59:45 et le Nemesis déclaré à 10h59:30, les deux actions sont valides (avant cutoff). Le duel se résout avec le NOUVEAU role-holder. Pas un bug — c'est le comportement attendu du modèle role-based.
 
 ### 6.4 Règles de cap
 
 - **Max -50%** : si 2 équipes ciblent le même rider et les deux attaquants gagnent, le rider cible prend `nemesis_modifier = 0.5` une seule fois (pas 0.25)
 - **Chaque attaquant** est traité indépendamment : les deux peuvent recevoir `gt_role_mult = 2.0`
 - **Floor à 0** : `nemesis_modifier` ne peut jamais produire un `xp_gained` négatif. Plancher appliqué après la formule complète.
+- **Pas de cap entre Nemesis et autres mécaniques** : Nemesis × Remontada se cumulent. Une cible avec Remontada actif (×2.0) qui perd un duel Nemesis (×0.5) finit avec un net effet ×1.0 (annulation) — c'est volontaire, les deux mécaniques s'auto-équilibrent quand elles se croisent. Un attaquant avec Remontada qui gagne un duel a un swing massif (×2.0 role × ×2.0 remontada = ×4.0 sur PCS) — accepté comme rare et impactful.
 
 ---
 
@@ -326,7 +356,7 @@ Pour les tactiques boost (Unleash, Overdrive, Call the Bus) :
 
 Deux étapes dans la même modale :
 
-**Étape 1 — Sélection de la cible** :
+**Étape 1 — Sélection de l'équipe rivale** :
 ```
 ┌────────────────────────────────┐
 │  Nemesis GC                    │
@@ -334,14 +364,19 @@ Deux étapes dans la même modale :
 │  Your GC Leader: [Rider Name]  │
 │  GT XP: 245                    │
 │                                │
-│  Eligible targets:             │
+│  Eligible rival teams:         │
 │  ┌──────────────────────────┐  │
-│  │ ○ [Rival A] — 260 XP    │  │
-│  │ ○ [Rival B] — 290 XP    │  │
+│  │ ○ Team Alpha             │  │
+│  │   GC Leader: Pogačar     │  │
+│  │   Team GT XP: 320        │  │
+│  ├──────────────────────────┤  │
+│  │ ○ Team Bravo             │  │
+│  │   GC Leader: Vingegaard  │  │
+│  │   Team GT XP: 410        │  │
 │  └──────────────────────────┘  │
 │                                │
-│  No eligible targets? The      │
-│  tactic is unavailable.        │
+│  Note: the duel resolves with  │
+│  the leaders at cutoff time.   │
 │                                │
 │         [Next →]               │
 └────────────────────────────────┘
@@ -350,14 +385,14 @@ Deux étapes dans la même modale :
 **Étape 2 — Sélection du stage** :
 ```
 ┌────────────────────────────────┐
-│  Nemesis GC → [Rival A]       │
+│  Nemesis GC → Team Alpha      │
 │                                │
 │  Select stage:                 │
 │  ┌──────────────────────────┐  │
 │  │  Mini-calendrier GT      │  │
 │  └──────────────────────────┘  │
 │                                │
-│  ⚠️ Risk: if [Rival A] beats  │
+│  ⚠️ Risk: if Team Alpha beats │
 │  you, you lose 25% and they   │
 │  gain 25%.                     │
 │                                │
@@ -366,8 +401,9 @@ Deux étapes dans la même modale :
 ```
 
 - Avertissement clair sur le risque (l'attaquant prend un risque)
-- Si le joueur n'a pas de GC Leader / Sprinter assigné, la card est disabled avec un message "Assign a [role] first"
-- Si aucune cible éligible (personne dans la fourchette 0-20% XP), la card affiche "No eligible rival"
+- Si le joueur n'a pas de GC Leader / Sprinter assigné dans son squad, la card est disabled avec un message "Assign a [role] first"
+- Si une équipe rivale n'a pas de role-holder au moment de la déclaration, elle apparaît avec un état "No leader assigned" et est non-sélectionnable
+- Si aucune équipe rivale n'a un GT XP >= au tien, la card affiche "No eligible rival"
 
 ### 7.5 Alertes Nemesis
 
@@ -455,21 +491,42 @@ xp_gained == round(
 
 | Cas | Résolution |
 |---|---|
-| Attaquant ou cible DNF/DNS sur le stage | `outcome = NULL`, aucun modifier, usage consommé |
+| Attaquant ou cible DNF/DNS sur le stage | `outcome = 'no_resolution'`, aucun modifier, usage consommé |
 | Les deux riders scorent 0 PCS points mais ont un classement stage | Duel résolu normalement par le rank. Les modifiers s'appliquent mais 0 × mult = 0 sur le composant PCS (les classification bonuses sont quand même affectées) |
-| 2 équipes déclarent Nemesis sur le même rider | Cap -50% pour la cible (pas de stacking). Chaque attaquant traité indépendamment |
+| 2 équipes déclarent Nemesis sur la même équipe / même rôle | Cap -50% pour la cible (pas de stacking). Chaque attaquant traité indépendamment |
 | Call the Bus au level 1-3 | 0 bench riders → tactic consommée sans effet |
-| Joueur n'a pas de GC Leader / Sprinter assigné | Nemesis GC / Sprint card disabled, message "Assign a [role] first" |
-| Aucune cible éligible pour Nemesis | Card disabled, message "No eligible rival" |
+| Joueur n'a pas de GC Leader / Sprinter dans son squad | Nemesis GC / Sprint card disabled, message "Assign a [role] first" |
+| Aucune équipe rivale éligible pour Nemesis (toutes ont moins de GT XP) | Card disabled, message "No eligible rival" |
+| Au cutoff, l'équipe cible n'a plus de role-holder assigné | `outcome = 'no_resolution'`, usage consommé. Counter-strategy légitime mais coûteuse pour la cible (perd le ×1.5 du rôle sur ce stage) |
+| Au cutoff, l'attaquant n'a plus de role-holder assigné | Idem : `outcome = 'no_resolution'`, usage consommé |
+| Squad swap : le role-holder est swappé hors du squad avant cutoff | Identique au cas "rôle non assigné" — `outcome = 'no_resolution'`. Le coût pour la cible est élevé (perte totale du scoring du rider sur ce stage), donc cette dodge est rarement rationnelle sauf si le rider n'allait pas beaucoup scorer (ex. GC Leader sur sprint plat) |
 | Joueur active une tactique après 11h00 CET | S'applique au stage du lendemain (même règle que les rôles) |
-| Stage non couru (annulé, neutralisé) | Pas de résultats → aucun modifier, usage consommé |
-| Nemesis déclaré mais adversaire swappé hors du squad avant le stage | Le rider est toujours dans `race_results` s'il court → duel résolu normalement. S'il ne court pas → DNF rule |
+| Stage non couru (annulé, neutralisé) | Pas de résultats → aucun modifier, usage consommé. **À revoir post-MVP** : refund possible pour stages officiellement annulés |
+| Race condition au cutoff (rôle changé seconde avant 11h CET) | Le duel utilise le role-holder au cutoff exact (11h00:00 CET). Pas un bug, comportement attendu du modèle role-based |
+| Remontada Boost actif sur la cible qui perd un duel Nemesis | Modifiers cumulés : ×2.0 (remontada) × 0.5 (nemesis) = ×1.0. La cible ne perd ni ne gagne — annulation volontaire des 2 mécaniques quand elles se croisent |
+| Remontada Boost actif sur l'attaquant qui gagne un duel Nemesis | Modifiers cumulés : gt_role_mult ×2.0 + remontada ×2.0. Swing massif accepté (rare conjonction) |
 | Unleash quand il n'y a aucun domestique (tous ont des rôles spécialistes) | Tactic consommée sans effet (aucun rider eligible) |
 | Overdrive quand il n'y a aucun Stage Hunter | Tactic consommée sans effet |
+| Bench rider hors startlist du GT | Pas de race_results → pas de scoring. C'est au joueur de bien gérer son squad |
 
 ---
 
-## 12. Noms des tactiques (à décider)
+## 12. Déploiement & timing
+
+**Contrainte critique** : le Giro 2026 démarre **2026-05-08** (aujourd'hui). Pour que les colonnes de traçabilité (`gt_role_mult`, `gt_classif_bonus`, `nemesis_modifier`, `tactic_applied`) soient correctement remplies dès le stage 1, le déploiement doit se faire **avant le scoring du stage 1**.
+
+**Conséquences si déploiement après stage 1** :
+- Les rows `rider_xp_daily` du stage 1 auraient les defaults (1.0, 0, 1.0, NULL) — incorrects pour la décomposition
+- `xp_gained` reste correct (déjà calculé), mais l'audit de la formule est perdu pour ce stage
+- Solution : backfill par recalcul depuis `gt_role_assignments` + `gt_daily_classifications`
+
+**Recommandation** : viser le déploiement aujourd'hui avant le 1er stage. Si impossible, prévoir un script de backfill dans le plan d'implémentation.
+
+**Deadline réaliste** : sachant que ce spec n'est validé qu'aujourd'hui, l'implémentation tactiques + UI ne sera pas prête pour le Giro. Le scope minimum déployable avant Giro stage 1 est **uniquement les colonnes de traçabilité** (sans la table `gt_tactic_activations` ni l'UI). Cela permet au moins de capturer la décomposition des points pendant le Giro, et les tactiques peuvent ship plus tard pour le Tour ou la Vuelta.
+
+---
+
+## 13. Noms des tactiques (à décider)
 
 | Working name | Propositions | Notes |
 |---|---|---|
