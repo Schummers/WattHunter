@@ -299,6 +299,45 @@ describe("placeBid — budget check", () => {
 });
 
 // ---------------------------------------------------------------------------
+// placeBid — release cooldown
+// ---------------------------------------------------------------------------
+
+describe("placeBid — release cooldown", () => {
+  it("returns error when rider is in cooldown", async () => {
+    mockRpc.mockResolvedValueOnce({
+      data: { error: "Rider in cooldown until 2026-05-19" },
+      error: null,
+    });
+
+    const result = await placeBid({
+      auctionId: UUID_1,
+      riderId: UUID_2,
+      amount: 10_000,
+      round: 1,
+    });
+
+    expect(result.error).toMatch(/cooldown/i);
+  });
+
+  it("allows bid when rider cooldown has expired", async () => {
+    const bidId = "550e8400-e29b-41d4-a716-446655440088";
+    mockRpc.mockResolvedValueOnce({
+      data: { ok: true, bid_id: bidId },
+      error: null,
+    });
+
+    const result = await placeBid({
+      auctionId: UUID_1,
+      riderId: UUID_2,
+      amount: 10_000,
+      round: 1,
+    });
+
+    expect(result).toEqual({ success: true });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // cancelBid
 // ---------------------------------------------------------------------------
 
