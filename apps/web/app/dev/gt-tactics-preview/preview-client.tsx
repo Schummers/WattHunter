@@ -13,13 +13,6 @@ import {
 } from "lucide-react";
 import { Tag } from "@/components/pill";
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -325,7 +318,8 @@ function BoostActivationModal({
       <ModalHeader
         icon={<Icon className="size-5 text-[var(--accent-default)]" />}
         title={tactic.name}
-        subtitle={tactic.short}
+        subtitle={`${remaining} / ${tactic.max} uses left`}
+        subtitleMono
         onClose={onClose}
       />
 
@@ -337,16 +331,7 @@ function BoostActivationModal({
         <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
           Target stage
         </span>
-        <StageSelect value={selectedStage} onChange={setSelectedStage} />
-      </div>
-
-      <div className="flex items-center justify-between rounded-[var(--radius-md)] bg-[var(--bg-subtle)] px-3 py-2">
-        <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-          Remaining uses
-        </span>
-        <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
-          {remaining} / {tactic.max}
-        </span>
+        <StageList value={selectedStage} onChange={setSelectedStage} />
       </div>
 
       <ModalActions
@@ -385,13 +370,15 @@ function NemesisModal({
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [selectedStage, setSelectedStage] = useState<string>("");
   const canDeclare = !!selectedRival && !!selectedStage;
+  const remaining = tactic.max - tactic.used;
 
   return (
     <ModalShell onClose={onClose}>
       <ModalHeader
         icon={<Icon className="size-5 text-[var(--accent-default)]" />}
         title={tactic.name}
-        subtitle={tactic.short}
+        subtitle={`${remaining} / ${tactic.max} uses left`}
+        subtitleMono
         onClose={onClose}
       />
 
@@ -436,7 +423,7 @@ function NemesisModal({
         </div>
       </div>
 
-      {/* Rival team selection (radio button pattern) */}
+      {/* Rival team selection (scrollable list with radio buttons) */}
       <div className="flex flex-col gap-2">
         <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
           Rival team
@@ -446,16 +433,19 @@ function NemesisModal({
             No rival team has more GT XP than you yet.
           </p>
         ) : (
-          <div className="flex flex-col gap-1">
-            {eligibleRivals.map((rt) => (
-              <RivalRow
-                key={rt.id}
-                rival={rt}
-                isGc={isGc}
-                isSelected={selectedRival === rt.id}
-                onSelect={() => setSelectedRival(rt.id)}
-              />
-            ))}
+          <div className="max-h-[224px] overflow-y-auto rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-app)]">
+            <div className="flex flex-col">
+              {eligibleRivals.map((rt, i) => (
+                <RivalRow
+                  key={rt.id}
+                  rival={rt}
+                  isGc={isGc}
+                  isSelected={selectedRival === rt.id}
+                  isFirst={i === 0}
+                  onSelect={() => setSelectedRival(rt.id)}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -465,7 +455,7 @@ function NemesisModal({
         <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
           Target stage
         </span>
-        <StageSelect value={selectedStage} onChange={setSelectedStage} />
+        <StageList value={selectedStage} onChange={setSelectedStage} />
       </div>
 
       {/* Cutoff note */}
@@ -492,11 +482,13 @@ function RivalRow({
   rival,
   isGc,
   isSelected,
+  isFirst,
   onSelect,
 }: {
   rival: RivalTeam;
   isGc: boolean;
   isSelected: boolean;
+  isFirst: boolean;
   onSelect: () => void;
 }) {
   const role = isGc ? rival.gcLeader! : rival.sprinter!;
@@ -506,10 +498,11 @@ function RivalRow({
       type="button"
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border px-3 py-3 text-left transition-colors",
+        "flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors",
+        !isFirst && "border-t border-[var(--border-subtle)]",
         isSelected
-          ? "border-[var(--accent-default)] bg-[var(--badge-bg)]"
-          : "border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-[var(--border-hover)] hover:bg-[var(--bg-surface-hover)]"
+          ? "bg-[var(--badge-bg)]"
+          : "hover:bg-[var(--bg-surface-hover)]"
       )}
     >
       <div
@@ -547,10 +540,11 @@ function RivalRow({
 }
 
 // ---------------------------------------------------------------------------
-// Stage Select — dropdown with stage number + date
+// Stage list — scrollable rows with radio button (mobile-friendly)
+// Matches the Rival Teams pattern in NemesisModal
 // ---------------------------------------------------------------------------
 
-function StageSelect({
+function StageList({
   value,
   onChange,
 }: {
@@ -560,48 +554,67 @@ function StageSelect({
   const upcoming = STAGES.filter((s) => s.status !== "past");
 
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-auto py-2.5">
-        <SelectValue placeholder="Select a stage" />
-      </SelectTrigger>
-      <SelectContent>
-        {upcoming.map((s) => {
-          const isLocked = s.hasTacticActive;
+    <div className="max-h-[224px] overflow-y-auto rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-app)]">
+      <div className="flex flex-col">
+        {upcoming.map((s, i) => {
+          const isSelected = value === String(s.number);
+          const isLocked = !!s.hasTacticActive;
+          const isToday = s.status === "today";
+          const isFirst = i === 0;
           return (
-            <SelectItem
+            <button
               key={s.number}
-              value={String(s.number)}
+              type="button"
+              onClick={() => !isLocked && onChange(String(s.number))}
               disabled={isLocked}
-              className="py-2"
+              className={cn(
+                "flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors",
+                !isFirst && "border-t border-[var(--border-subtle)]",
+                isSelected && !isLocked && "bg-[var(--badge-bg)]",
+                !isSelected && !isLocked && "hover:bg-[var(--bg-surface-hover)]",
+                isLocked && "cursor-not-allowed opacity-50"
+              )}
             >
-              <div className="flex flex-col items-start gap-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[length:var(--type-emphasis)] font-bold tabular-nums text-[var(--text-high)]">
-                    Stage {s.number}
-                  </span>
-                  {s.status === "today" && (
-                    <Tag
-                      variant="highlighted"
-                      className="text-[length:var(--type-micro)]"
-                    >
-                      Today
-                    </Tag>
-                  )}
-                  {isLocked && (
-                    <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
-                      Tactic already set
-                    </span>
-                  )}
-                </div>
-                <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+              <div
+                role="radio"
+                aria-checked={isSelected}
+                className={cn(
+                  "flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                  isSelected
+                    ? "border-[var(--accent-default)] bg-[var(--accent-default)]"
+                    : "border-[var(--border-default)] bg-transparent"
+                )}
+              >
+                {isSelected && (
+                  <div className="size-[7px] rounded-full bg-[var(--bg-app)]" />
+                )}
+              </div>
+              <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                <span className="font-mono text-[length:var(--type-emphasis)] font-bold tabular-nums text-[var(--text-high)]">
+                  Stage {s.number}
+                </span>
+                <span className="font-mono text-[length:var(--type-caption)] tabular-nums text-[var(--text-low)]">
                   {s.date}
                 </span>
               </div>
-            </SelectItem>
+              {isToday && !isLocked && (
+                <Tag
+                  variant="highlighted"
+                  className="text-[length:var(--type-micro)]"
+                >
+                  Today
+                </Tag>
+              )}
+              {isLocked && (
+                <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
+                  Tactic set
+                </span>
+              )}
+            </button>
           );
         })}
-      </SelectContent>
-    </Select>
+      </div>
+    </div>
   );
 }
 
@@ -635,11 +648,13 @@ function ModalHeader({
   icon,
   title,
   subtitle,
+  subtitleMono,
   onClose,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle?: string;
+  subtitleMono?: boolean;
   onClose: () => void;
 }) {
   return (
@@ -651,7 +666,12 @@ function ModalHeader({
             {title}
           </h2>
           {subtitle && (
-            <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+            <span
+              className={cn(
+                "text-[length:var(--type-caption)] text-[var(--text-low)]",
+                subtitleMono && "font-mono tabular-nums"
+              )}
+            >
               {subtitle}
             </span>
           )}
