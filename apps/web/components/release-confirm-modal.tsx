@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ReleaseConfirmModalProps {
   riderName: string;
@@ -21,14 +21,18 @@ export function ReleaseConfirmModal({
 }: ReleaseConfirmModalProps) {
   const [releasing, setReleasing] = useState(false);
 
+  useEffect(() => {
+    if (error) setReleasing(false);
+  }, [error]);
+
   function handleConfirm() {
     setReleasing(true);
     onConfirm(contractId);
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] px-4 pb-6">
-      <div className="w-full max-w-md rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-5 space-y-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] px-4 pb-6" onClick={onCancel}>
+      <div className="w-full max-w-md rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
         <div>
           <p className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
             Release rider?

@@ -192,6 +192,8 @@ export function RiderDetailClient({
       setReleaseError(errorMsg);
       setSaving(false);
     } else {
+      setReleaseConfirm(false);
+      setReleaseError(null);
       router.refresh();
       setSaving(false);
     }

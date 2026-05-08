@@ -121,7 +121,7 @@ BEGIN
     );
 
     UPDATE public.contracts
-    SET last_salary_paid = now()
+    SET last_salary_paid = current_date
     WHERE id = v_contract.id;
   END LOOP;
 
