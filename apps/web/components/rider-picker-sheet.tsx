@@ -53,22 +53,17 @@ export function RiderPickerSheet({
     if (!selectedId) return;
     setErr(null);
     start(async () => {
-      try {
-        if (mode === "fill") {
-          await addToSquad({ teamId, riderId: selectedId, role, phaseId, year });
-        } else if (currentRiderId) {
-          await swapSlot({
-            teamId,
-            oldRiderId: currentRiderId,
-            newRiderId: selectedId,
-            phaseId,
-            year,
-          });
-        }
+      const result = mode === "fill"
+        ? await addToSquad({ teamId, riderId: selectedId, role, phaseId, year })
+        : currentRiderId
+          ? await swapSlot({ teamId, oldRiderId: currentRiderId, newRiderId: selectedId, phaseId, year })
+          : ({ error: "No current rider for swap" } as const);
+
+      if ("error" in result) {
+        setErr(result.error);
+      } else {
         onApplied();
         onClose();
-      } catch (e: unknown) {
-        setErr(e instanceof Error ? e.message : "Failed to update squad");
       }
     });
   };
@@ -77,12 +72,12 @@ export function RiderPickerSheet({
     if (!currentRiderId) return;
     setErr(null);
     start(async () => {
-      try {
-        await removeFromSquad({ teamId, riderId: currentRiderId, phaseId, year });
+      const result = await removeFromSquad({ teamId, riderId: currentRiderId, phaseId, year });
+      if ("error" in result) {
+        setErr(result.error);
+      } else {
         onApplied();
         onClose();
-      } catch (e: unknown) {
-        setErr(e instanceof Error ? e.message : "Failed to remove rider");
       }
     });
   };
