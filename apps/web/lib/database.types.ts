@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -138,6 +143,7 @@ export type Database = {
       }
       contracts: {
         Row: {
+          available_from: string | null
           created_at: string
           id: string
           last_salary_paid: string | null
@@ -153,6 +159,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          available_from?: string | null
           created_at?: string
           id?: string
           last_salary_paid?: string | null
@@ -168,6 +175,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          available_from?: string | null
           created_at?: string
           id?: string
           last_salary_paid?: string | null
@@ -343,7 +351,9 @@ export type Database = {
           created_at: string
           id: string
           phase_id: number
+          removed_at: string | null
           rider_id: string
+          role: string
           team_id: string
           year: number
         }
@@ -351,7 +361,9 @@ export type Database = {
           created_at?: string
           id?: string
           phase_id: number
+          removed_at?: string | null
           rider_id: string
+          role?: string
           team_id: string
           year: number
         }
@@ -359,7 +371,9 @@ export type Database = {
           created_at?: string
           id?: string
           phase_id?: number
+          removed_at?: string | null
           rider_id?: string
+          role?: string
           team_id?: string
           year?: number
         }
@@ -846,6 +860,7 @@ export type Database = {
       }
       rider_xp_daily: {
         Row: {
+          classif_bonus: number
           contract_id: string
           created_at: string
           date: string
@@ -853,16 +868,18 @@ export type Database = {
           gt_role_mult: number
           id: string
           nemesis_modifier: number
-          race_slug: string | null
+          race_slug: string
           raw_pcs_points: number
           remontada_mult: number
           rider_id: string
+          role_mult: number
           strategy_bonus: number
           tactic_applied: string | null
           team_id: string
           xp_gained: number
         }
         Insert: {
+          classif_bonus?: number
           contract_id: string
           created_at?: string
           date: string
@@ -870,16 +887,18 @@ export type Database = {
           gt_role_mult?: number
           id?: string
           nemesis_modifier?: number
-          race_slug?: string | null
+          race_slug: string
           raw_pcs_points?: number
           remontada_mult?: number
           rider_id: string
+          role_mult?: number
           strategy_bonus?: number
           tactic_applied?: string | null
           team_id: string
           xp_gained?: number
         }
         Update: {
+          classif_bonus?: number
           contract_id?: string
           created_at?: string
           date?: string
@@ -887,10 +906,11 @@ export type Database = {
           gt_role_mult?: number
           id?: string
           nemesis_modifier?: number
-          race_slug?: string | null
+          race_slug?: string
           raw_pcs_points?: number
           remontada_mult?: number
           rider_id?: string
+          role_mult?: number
           strategy_bonus?: number
           tactic_applied?: string | null
           team_id?: string
@@ -994,6 +1014,42 @@ export type Database = {
           weight_kg?: number | null
         }
         Relationships: []
+      }
+      round_validations: {
+        Row: {
+          auction_id: string
+          id: string
+          team_id: string
+          validated_at: string
+        }
+        Insert: {
+          auction_id: string
+          id?: string
+          team_id: string
+          validated_at?: string
+        }
+        Update: {
+          auction_id?: string
+          id?: string
+          team_id?: string
+          validated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_validations_auction_id_fkey"
+            columns: ["auction_id"]
+            isOneToOne: false
+            referencedRelation: "auctions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_validations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sponsor_bonuses: {
         Row: {
@@ -1289,6 +1345,41 @@ export type Database = {
           },
         ]
       }
+      team_xp_adjustments: {
+        Row: {
+          adjusted_at: string
+          amount: number
+          created_at: string
+          id: string
+          reason: string
+          team_id: string
+        }
+        Insert: {
+          adjusted_at: string
+          amount: number
+          created_at?: string
+          id?: string
+          reason: string
+          team_id: string
+        }
+        Update: {
+          adjusted_at?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_xp_adjustments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           created_at: string
@@ -1445,6 +1536,54 @@ export type Database = {
         }
         Returns: Json
       }
+      grant_xp: {
+        Args: {
+          p_adjusted_at?: string
+          p_amount: number
+          p_reason: string
+          p_team_id: string
+        }
+        Returns: Json
+      }
+      gt_add_to_squad: {
+        Args: {
+          p_phase_id: number
+          p_rider_id: string
+          p_role: string
+          p_team_id: string
+          p_year: number
+        }
+        Returns: Json
+      }
+      gt_assign_role: {
+        Args: {
+          p_phase_id: number
+          p_rider_id: string
+          p_role: string
+          p_team_id: string
+          p_year: number
+        }
+        Returns: Json
+      }
+      gt_remove_from_squad: {
+        Args: {
+          p_phase_id: number
+          p_rider_id: string
+          p_team_id: string
+          p_year: number
+        }
+        Returns: Json
+      }
+      gt_swap_slot: {
+        Args: {
+          p_new_rider_id: string
+          p_old_rider_id: string
+          p_phase_id: number
+          p_team_id: string
+          p_year: number
+        }
+        Returns: Json
+      }
       is_league_member: { Args: { p_league_id: string }; Returns: boolean }
       join_league_by_code: { Args: { p_code: string }; Returns: Json }
       leave_league: { Args: { p_league_id: string }; Returns: Json }
@@ -1472,6 +1611,10 @@ export type Database = {
       release_rider: {
         Args: { p_contract_id: string; p_current_phase_id: number }
         Returns: Json
+      }
+      resolve_nemesis_for_stage: {
+        Args: { p_stage_slug: string }
+        Returns: number
       }
       validate_round: {
         Args: { p_current_phase_id: number; p_league_id: string }
@@ -1612,4 +1755,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
