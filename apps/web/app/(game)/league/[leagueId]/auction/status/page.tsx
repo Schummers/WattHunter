@@ -7,7 +7,7 @@ import { StatusClient } from "./status-client";
 interface TeamRow {
   team_id: string;
   team_name: string;
-  purchasing_power: number;
+  budget: number;
   status: "validated" | "pending" | "not_yet_bid";
 }
 
@@ -113,15 +113,18 @@ export default async function StatusPage({
   }
 
   // 7. Build the rows
+  //    Budget = treasury + sponsor income (post-payday: sponsor already credited
+  //    into treasury; pre-payday: project the upcoming sponsor income).
+  //    Salaries are NOT subtracted here — purchasing power for new bids is
+  //    visible on each team's Budget page; this column gives a simpler "total
+  //    money this phase" overview useful for league-wide visibility.
   const rows: TeamRow[] = teamList.map((team) => {
-    const salaries = activeSalaries.get(team.id) ?? 0;
     const sponsor = sponsorIncome.get(team.id) ?? 0;
 
-    // Same formula as validate_round
-    const purchasingPower =
+    const budget =
       team.phase_confirmed_id === phase.id
         ? team.treasury
-        : team.treasury + sponsor - salaries;
+        : team.treasury + sponsor;
 
     let status: TeamRow["status"];
     if (validatedTeamIds.has(team.id)) {
@@ -135,13 +138,10 @@ export default async function StatusPage({
     return {
       team_id: team.id,
       team_name: team.name,
-      purchasing_power: purchasingPower,
+      budget,
       status,
     };
   });
-
-  const validatedCount = rows.filter((r) => r.status === "validated").length;
-  const totalTeams = rows.length;
 
   return (
     <div className="px-4 py-6 space-y-6">
@@ -157,19 +157,11 @@ export default async function StatusPage({
 
       {auction ? (
         <>
-          <div className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-            <span className="text-[var(--text-mid)]">{auction.name}</span>
-            {" — "}
-            <span>
-              {validatedCount}/{totalTeams} teams validated
-            </span>
-          </div>
-
           <table className="w-full text-[length:var(--type-body)]">
             <thead>
               <tr className="text-left text-[length:var(--type-caption)] text-[var(--text-low)]">
                 <th className="py-2">Team</th>
-                <th className="py-2 text-right">Purchasing Power</th>
+                <th className="py-2 text-right">Budget</th>
                 <th className="py-2 text-right">Status</th>
               </tr>
             </thead>
@@ -183,7 +175,7 @@ export default async function StatusPage({
                     {row.team_name}
                   </td>
                   <td className="py-3 text-right font-mono text-[var(--text-mid)]">
-                    {formatEuro(row.purchasing_power)}
+                    {formatEuro(row.budget)}
                   </td>
                   <td className="py-3 text-right">
                     {row.status === "validated" && (
