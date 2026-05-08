@@ -83,7 +83,7 @@ export default async function AuctionsPage({
     supabase
       .from("contracts")
       .select(
-        "id, rider_id, locked_salary, status, riders(id, full_name, nationality, real_team, pcs_rank, pcs_rank_prev, photo_url, specialty, pcs_points_1yr, birthdate)"
+        "id, rider_id, locked_salary, status, phase_recruited_id, riders(id, full_name, nationality, real_team, pcs_rank, pcs_rank_prev, photo_url, specialty, pcs_points_1yr, birthdate)"
       )
       .eq("team_id", team?.id)
       .eq("status", "active"),
@@ -283,6 +283,7 @@ export default async function AuctionsPage({
       lockedSalary: tr.locked_salary ?? 0,
       xp: xpByRider[r.id] ?? 0,
       boostPct: riderBoosts[r.id] ?? 0,
+      phaseRecruitedId: (tr as { phase_recruited_id?: number | null }).phase_recruited_id ?? undefined,
     };
   }).filter((r): r is NonNullable<typeof r> => r !== null);
 
@@ -319,6 +320,7 @@ export default async function AuctionsPage({
       activeRound={activeRoundNumber}
       isRound1={isRound1}
       phaseConfirmed={phaseConfirmed}
+      currentPhaseId={currentPhase.id}
       sponsorName={sponsorName}
       pendingSponsorName={pendingSponsorName}
       activeStrategies={activeStrategiesDisplay}

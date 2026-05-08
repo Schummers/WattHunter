@@ -41,6 +41,7 @@ interface RosterRider {
   lockedSalary: number;
   xp: number;
   boostPct: number;
+  phaseRecruitedId?: number;
 }
 
 interface DraftBid {
@@ -69,6 +70,7 @@ interface AuctionsClientProps {
   activeRound: number | null;
   isRound1: boolean;
   phaseConfirmed: boolean;
+  currentPhaseId: number;
   sponsorName: string;
   sponsorIncome: number;
   activeSalaries: number;
@@ -93,6 +95,7 @@ export function AuctionsClient({
   activeRound,
   isRound1,
   phaseConfirmed,
+  currentPhaseId,
   sponsorName,
   sponsorIncome,
   activeSalaries,
@@ -444,11 +447,12 @@ export function AuctionsClient({
       {/* Release confirmation dialog */}
       {releaseConfirm && (() => {
         const riderEntry = rosterRiders.find((r) => r.contractId === releaseConfirm);
+        const riderIsPaid = phaseConfirmed && riderEntry?.phaseRecruitedId !== currentPhaseId;
         return (
           <ReleaseConfirmModal
             riderName={riderEntry?.name ?? "this rider"}
             contractId={releaseConfirm}
-            isPaidPhase={phaseConfirmed}
+            isPaidPhase={riderIsPaid}
             onConfirm={handleReleaseConfirm}
             onCancel={() => { setReleaseConfirm(null); setReleaseError(null); }}
             error={releaseError}
