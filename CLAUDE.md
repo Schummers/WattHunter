@@ -95,6 +95,7 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 - NEVER skip la validation Zod sur les inputs d'API routes.
 - NEVER libérer un coureur hors de la fenêtre d'enchères — le release prend effet au début de la phase suivante (sauf auto-release faillite).
 - NEVER autoriser une validation si treasury < total des salaires + bids actifs.
+- NEVER autoriser une enchère sur un coureur releasé depuis moins de 7 jours (cooldown anti-exploit).
 
 ## Constantes du jeu (calibrer avant le lancement alpha)
 - Trésorerie départ : 200 000 €
@@ -135,7 +136,11 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 ```
 watthunter/
 ├── apps/web/                    # Next.js 16 App Router
-│   ├── app/(auth)/              # Login, signup, onboarding, league create/join
+│   ├── app/(auth)/              # Login, signup, onboarding, password reset, league create/join/choose
+│   │   ├── forgot-password/
+│   │   ├── reset-password/
+│   │   └── league/{create,join,choose}/
+│   ├── app/(legal)/             # Privacy + Terms
 │   ├── app/(game)/league/[leagueId]/  # Main game shell (auth guard + responsive layout)
 │   │   ├── page.tsx             # Home / Lobby
 │   │   ├── team/                # My Team
@@ -143,89 +148,93 @@ watthunter/
 │   │   │   │   └── rounds/      # Round validation
 │   │   │   ├── market/          # Recruits tab
 │   │   │   │   └── history/     # Auction history
-│   │   │   └── strategies/       # Strategies tab
+│   │   │   ├── strategies/      # Strategies tab
+│   │   │   └── gt/              # Grand Tour squad builder
+│   │   │       └── tactics/     # 5 in-race tactics placement
 │   │   ├── budget/              # Budget P&L
 │   │   │   ├── marketplace/     # Sponsor marketplace
 │   │   │   └── transactions/    # Transaction log
 │   │   ├── rider/[riderId]/     # Rider Detail (PCS + Game stats)
-│   │   ├── auctions/            # Auction calendar
-│   │   │   └── [auctionId]/     # Auction detail + results
+│   │   ├── auction/             # Auction calendar
+│   │   │   ├── [auctionId]/     # Auction detail + results
+│   │   │   ├── status/          # Round status table + force-resolve button
+│   │   │   ├── rounds/          # Round dates (commissioner)
+│   │   │   ├── market/          # Recruits redirect
+│   │   │   └── history/         # Auction history
 │   │   ├── ranking/             # League ranking
+│   │   │   └── team/[teamId]/   # Opponent team profile
 │   │   ├── levels/              # Level progression
 │   │   ├── help/                # Game guide
 │   │   └── settings/            # Settings page
-│   ├── components/              # App components
-│   │   ├── rider-card.tsx       # Roster card, bid states, open slot
-│   │   ├── metric-box.tsx       # Geist Mono values, accent highlight
-│   │   ├── pill.tsx             # Tag v3 (4 variants, non-interactive)
-│   │   ├── segmented-control.tsx # Filter Chips v3
-│   │   ├── sub-tabs.tsx         # Underline sub-tabs, hide-on-scroll
-│   │   ├── sticky-bar.tsx       # Save bar (unsaved bids)
-│   │   ├── back-header.tsx      # ArrowLeft + label
-│   │   ├── team-level-card.tsx  # Level card (home + default variants)
-│   │   ├── phase-navigator.tsx  # Phase selector
-│   │   ├── sponsor-bonus-card.tsx
-│   │   ├── sponsor-bonus-details.tsx
-│   │   ├── config-cards.tsx     # Commissioner config cards
-│   │   ├── round-blocks.tsx     # Auction round timeline blocks
-│   │   ├── draft-bid-card.tsx   # Draft bid entry card
-│   │   ├── bid-adjust-card.tsx  # Bid adjustment card
-│   │   ├── budget-summary.tsx   # Budget P&L summary header
-│   │   ├── movement-tag.tsx     # +/- movement indicator tag
-│   │   ├── brand-card.tsx       # Sponsor brand card (marketplace)
-│   │   ├── info-card.tsx        # Generic info/stat card
-│   │   ├── game-guide-accordion.tsx
-│   │   ├── onboarding-cards.tsx
-│   │   ├── form-field.tsx       # Form field wrapper
-│   │   ├── transaction-row.tsx  # Transaction log row
-│   │   ├── filter-chips.tsx     # Filter chip group
-│   │   ├── detail-rail.tsx      # Desktop detail rail container
-│   │   ├── rail-link.tsx        # Rail navigation link
-│   │   ├── rail-router.tsx      # Rail routing logic
-│   │   ├── rail-pages/          # Rail page components
-│   │   │   ├── rider-detail-rail.tsx
-│   │   │   ├── strategies-rail.tsx
-│   │   │   └── levels-rail.tsx
-│   │   ├── bottom-nav.tsx
-│   │   ├── topbar.tsx
-│   │   └── sidebar.tsx
-│   ├── components/ui/           # Shadcn components (button, badge, avatar, etc.)
+│   ├── components/              # App components — see ARCHITECTURE.md for full list
+│   ├── components/ui/           # Shadcn components (button, badge, avatar, tabs, etc.)
 │   ├── hooks/                   # Shared hooks (use-scroll-direction)
-│   └── lib/supabase/            # Clients Supabase (browser + server)
+│   └── lib/
+│       ├── supabase/
+│       │   ├── browser.ts       # Anon browser client
+│       │   ├── server.ts        # Anon server client (cookies)
+│       │   ├── admin.ts         # Service-role client (server-only, RPCs admin)
+│       │   ├── middleware.ts    # Session refresh + route protection
+│       │   ├── get-user.ts
+│       │   └── get-open-auction.ts
+│       ├── tactics.ts           # 5 GT tactics catalog + helpers
+│       ├── co-unlock.ts         # Co-Unlock Rule eligibility
+│       ├── remontada.ts         # Remontada Boost helpers
+│       ├── gt-{goals,phases,stages}.ts  # GT helpers
+│       ├── sponsors.ts          # Sponsor data + bonus calculation
+│       ├── strategies.ts        # 4 strategy types + matching
+│       ├── levels.ts            # 8-level system source of truth
+│       └── (boost, budget, calendar, format, phases, photo-url, rider-detail-data, env, utils)
 ├── services/pcs-sync/           # Python — sync procyclingstats
 ├── supabase/
-│   ├── migrations/              # 15+ tables SQL
+│   ├── migrations/              # 83 migrations SQL (28 tables)
 │   ├── functions/               # Edge Functions
 │   └── seed/                    # Stratégies + sponsors
-├── docs/plans/                  # Design docs + implementation plans
-├── docs/research/               # Design system research
+├── docs/                        # See ARCHITECTURE.md for layout
 └── CLAUDE.md
 ```
 
 ### SECURITY DEFINER RPCs (mutations critiques)
-Les 5 mutations économiques passent par des RPCs atomiques (`SECURITY DEFINER`) dans Postgres.
-Le code TS se limite à : Zod validation → `supabase.rpc(...)` → error forwarding.
-- `place_bid` — enchère avec 11 validations (budget cross-round, level gating, slots)
-- `validate_round` — conversion draft_bids → auction_bids (budget + slots check)
-- `release_rider` — libération coureur avec phase lock
-- `confirm_phase_setup` — confirmation phase (sponsor + strategies activation)
+12 RPCs user-callable + 4 trigger functions + 2 helpers (`compute_level`, `is_league_member`, `set_updated_at`, `handle_new_user`). Le code TS se limite à : Zod validation → `supabase.rpc(...)` → error forwarding.
+
+- `place_bid` — enchère avec 11 validations (budget cross-round, level gating, slots, co-unlock, 7-day cooldown)
+- `validate_round` — conversion draft_bids → auction_bids + auto-resolve si consensus
+- `release_rider` — libération coureur avec phase lock (effet à la phase suivante)
+- `confirm_phase_setup` — payday : sponsor income + salaires + bankruptcy cascade + activation sponsor/strategies pending
 - `leave_league` — quitter ligue avec cascade cleanup
-- Trigger `teams_protect_sensitive_fields` — bloque UPDATE direct sur level/treasury/xp/user_id/league_id (sauf service_role)
-- Migrations : `supabase/migrations/2026050[3-5]*.sql` + rollbacks dans `_rollback/`
+- `join_league_by_code` — rejoindre ligue avec code invite + init XP (late-join supporté)
+- `grant_xp` — ajustement XP admin avec traçabilité (table `team_xp_adjustments`)
+- `gt_add_to_squad` — ajout coureur au squad GT (cap 8)
+- `gt_assign_role` — assignation rôle GT (append-only, cutoff 11:00 CET)
+- `gt_remove_from_squad` — retrait coureur du squad GT (soft-delete)
+- `gt_swap_slot` — swap coureurs dans le squad GT
+- `place_tactic` — placement tactique GT avec validation (usage limit, stage lock)
+
+RPC interne (appelée par `scoring.py`, pas user-callable) :
+- `resolve_nemesis_for_stage` — résolution PvP duel Nemesis lors du scoring d'une étape
+
+Trigger : `teams_protect_sensitive_fields` — bloque UPDATE direct sur level/treasury/xp/user_id/league_id (sauf service_role/supabase_admin).
 
 ### Server Actions (TS — lectures + drafts)
+- `app/(auth)/league/create/actions.ts` — create league
+- `app/(auth)/league/join/actions.ts` — join league via code (→ `join_league_by_code`)
+- `app/(game)/league/[leagueId]/actions.ts` — league-level actions (force-resolve, etc.)
 - `app/(game)/league/[leagueId]/auction/[auctionId]/actions.ts` — placeBid (→ RPC), cancelBid, draft bids CRUD
 - `app/(game)/league/[leagueId]/auction/actions.ts` — validateRound (→ RPC), addDraft, removeDraft
 - `app/(game)/league/[leagueId]/auction/market/actions.ts` — confirmPhaseSetup (→ RPC)
+- `app/(game)/league/[leagueId]/auction/rounds/actions.ts` — round dates management
+- `app/(game)/league/[leagueId]/budget/actions.ts` — budget operations
 - `app/(game)/league/[leagueId]/rider/[riderId]/actions.ts` — releaseRider (→ RPC)
 - `app/(game)/league/[leagueId]/settings/actions.ts` — updateTeamName, leaveLeague (→ RPC), updateLeagueName
+- `app/(game)/league/[leagueId]/team/gt/actions.ts` — GT squad management (→ `gt_*` RPCs)
+- `app/(game)/league/[leagueId]/team/gt/tactics/actions.ts` — placeTactic (→ RPC), get rivals
 - `app/(game)/league/[leagueId]/team/strategies/actions.ts` — strategy management
 
 ## Gestion du contexte (compression)
 - **Fichier de session** : `~/.claude/projects/-Users-jonathanschummers-Documents-WattHunter/memory/sessions/YYYY-MM-DD.md`
 - **Avant compression** : sauvegarder proactivement dans le fichier session du jour : tâche en cours, décisions prises, items traités, prochaine action
 - **Après compression** : relire le fichier session du jour pour reprendre le fil
-- **Backlog centralisé** : `docs/TODO_BACKLOG.md` — source unique pour le bug fixing et les tâches UI
+- **Backlog centralisé** : `docs/archive/TODO_BACKLOG.md` — source unique pour le bug fixing et les tâches UI
 - Prévenir l'utilisateur quand une sauvegarde de contexte est faite
 
 ## Design System (v3.0 — 2026-03-09)
@@ -237,4 +246,4 @@ Le code TS se limite à : Zod validation → `supabase.rpc(...)` → error forwa
 - Responsive : Sidebar 180px + Main (flex:3) + Detail Rail (flex:2, min 380px) at lg:
 - **Radius-as-affordance** : 6px = interactive (buttons, chips), 20px = decorative (tags, badges)
 - **3 component patterns** : Underline Tabs (`ui/tabs.tsx` line variant), Filter Chips (`segmented-control.tsx`), Tags (`pill.tsx` / `ui/badge.tsx`)
-- Backlog : `docs/TODO_BACKLOG.md`
+- Backlog : `docs/archive/TODO_BACKLOG.md`
