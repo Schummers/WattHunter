@@ -110,6 +110,7 @@ export function AuctionsClient({
   const [releaseConfirm, setReleaseConfirm] = useState<string | null>(null);
   const [validateError, setValidateError] = useState<string | null>(null);
   const [validateSuccess, setValidateSuccess] = useState(false);
+  const [roundResolved, setRoundResolved] = useState(false);
   const [, startTransition] = useTransition();
 
   const rosterCount = rosterRiders.length;
@@ -154,6 +155,7 @@ export function AuctionsClient({
   function handleRemoveDraft(riderId: string) {
     setDrafts((prev) => prev.filter((d) => d.riderId !== riderId));
     setValidateSuccess(false);
+    setRoundResolved(false);
     startTransition(() => {
       removeDraft({ leagueId, riderId });
     });
@@ -164,6 +166,7 @@ export function AuctionsClient({
       prev.map((d) => (d.riderId === riderId ? { ...d, amount: newAmount } : d))
     );
     setValidateSuccess(false);
+    setRoundResolved(false);
   }
 
   async function handleAmountSave(riderId: string, newAmount: number) {
@@ -172,6 +175,7 @@ export function AuctionsClient({
       prev.map((d) => (d.riderId === riderId ? { ...d, amount: newAmount } : d))
     );
     setValidateSuccess(false);
+    setRoundResolved(false);
     const result = await updateDraftAmount({ leagueId, riderId, amount: newAmount });
     if (result?.error) {
       setDrafts(previousDrafts);
@@ -196,10 +200,14 @@ export function AuctionsClient({
 
   async function handleValidate() {
     setValidateError(null);
+    setRoundResolved(false);
     const result = await validateRound({ leagueId });
     if (result?.error) {
       setValidateError(result.error);
     } else {
+      if ("resolved" in result && result.resolved) {
+        setRoundResolved(true);
+      }
       setValidateSuccess(true);
       router.refresh();
     }
@@ -405,7 +413,9 @@ export function AuctionsClient({
         {validateSuccess && (
           <div className="px-4">
             <p className="rounded-lg border border-[var(--success-border)] bg-[var(--success-bg)] px-3 py-2 text-[length:var(--type-caption)] text-emerald-400">
-              Round validated! Your bids have been submitted.
+              {roundResolved
+                ? "All teams validated — round resolved! Contracts created."
+                : "Round validated! Your bids have been submitted."}
             </p>
           </div>
         )}
