@@ -37,4 +37,5 @@ BEGIN
   );
 END;
 $$;
+
 GRANT EXECUTE ON FUNCTION public.grant_xp(uuid, numeric, text, date) TO service_role;

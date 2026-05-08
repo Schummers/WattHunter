@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, X } from "lucide-react";
 import { RiderCard } from "@/components/rider-card";
 import { FilterChips } from "@/components/filter-chips";
 import { StickyBar } from "@/components/sticky-bar";
@@ -58,9 +58,10 @@ interface MarketClientProps {
   activeSalaries: number;
   phaseConfirmed?: boolean;
   draftBids?: DraftBid[];
+  giroRiderIds?: string[];
 }
 
-const FILTER_OPTIONS = [
+const BASE_FILTER_OPTIONS = [
   { label: "All" },
   { label: "Teams" },
   { label: "Speciality" },
@@ -134,11 +135,25 @@ export function MarketClient({
   activeSalaries,
   phaseConfirmed = false,
   draftBids: initialDraftBids = [],
+  giroRiderIds = [],
 }: MarketClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [activeFilterIndex, setActiveFilterIndex] = useState(0);
-  const activeFilter = FILTER_OPTIONS[activeFilterIndex].label;
+
+  const giroRiderSet = useMemo(() => new Set(giroRiderIds), [giroRiderIds]);
+  const hasGiro = giroRiderIds.length > 0;
+
+  const filterOptions = useMemo(() => {
+    if (!hasGiro) return BASE_FILTER_OPTIONS;
+    return [
+      { label: "All" },
+      { label: "Giro" },
+      ...BASE_FILTER_OPTIONS.slice(1),
+    ];
+  }, [hasGiro]);
+
+  const activeFilter = filterOptions[activeFilterIndex]?.label ?? "All";
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [displayCount, setDisplayCount] = useState(INITIAL_DISPLAY_COUNT);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -167,7 +182,10 @@ export function MarketClient({
   const filteredRiders = useMemo(() => {
     let result = riders;
 
-    // Search filter — rider name or team only
+    if (activeFilter === "Giro") {
+      result = result.filter((r) => giroRiderSet.has(r.id));
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -177,7 +195,6 @@ export function MarketClient({
       );
     }
 
-    // Category sort
     if (activeFilter === "Speciality") {
       result = [...result].sort((a, b) =>
         (a.specialty ?? "").localeCompare(b.specialty ?? "")
@@ -193,10 +210,10 @@ export function MarketClient({
     }
 
     return result;
-  }, [riders, search, activeFilter]);
+  }, [riders, search, activeFilter, giroRiderSet]);
 
   const groupedRiders = useMemo(() => {
-    if (activeFilter === "All") return null;
+    if (activeFilter === "All" || activeFilter === "Giro") return null;
 
     const groups: Record<string, Rider[]> = {};
     for (const r of filteredRiders) {
@@ -419,13 +436,22 @@ export function MarketClient({
             autoCapitalize="off"
             className="flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="shrink-0 rounded-full p-0.5 text-[var(--text-ghost)] hover:text-[var(--text-mid)] transition-colors"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Filter chips */}
       <div className="px-4 pb-3">
         <FilterChips
-          options={FILTER_OPTIONS}
+          options={filterOptions}
           activeIndex={activeFilterIndex}
           onChange={(i) => setActiveFilterIndex(i)}
         />

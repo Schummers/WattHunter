@@ -10,6 +10,9 @@ CONTRACT_ID = "cccccccc-cccc-cccc-cccc-ccccccccccc1"
 LEAGUE_ID = "dddddddd-dddd-dddd-dddd-ddddddddddd1"
 GIRO_SLUG = "race/giro-d-italia/2026/stage-4"
 
+BEFORE_CUTOFF = "2026-05-10T09:00:00+02:00"
+AFTER_CUTOFF = "2026-05-11T12:00:00+02:00"
+
 
 def _base_mocks(
     *,
@@ -19,6 +22,9 @@ def _base_mocks(
     prev_xp: list | None = None,
     classif_rows: list | None = None,
     starting_cumulative_xp: float = 0.0,
+    squad_created_at: str = BEFORE_CUTOFF,
+    squad_removed_at: str | None = None,
+    role_applied_at: str = "2026-05-10T09:00:00+02:00",
 ):
     """Build a Supabase mock covering the full GT scoring flow (role multipliers only).
 
@@ -27,16 +33,16 @@ def _base_mocks(
       2. rider_xp_daily select (prev — for idempotency delta)
       3. contracts select
       4. team_strategies select
-      5. gt_squad select
+      5. gt_squad select (with created_at, removed_at for cutoff filtering)
       6. gt_role_assignments select
       7. gt_daily_classifications select
       8. gt_tactic_activations select (Task 7 prefetch — populate-only, no scoring effect)
-      9. rider_xp_daily upsert
-     10. teams select (per-team update)
-     11. teams update
-     12. teams select (league ranking snapshot)
+      9. remontada_boosts (None = no active boost)
+     10. rider_xp_daily upsert
+     11. teams select (per-team update)
+     12. teams update
+     13. teams select (league ranking snapshot)
     """
-    # Normalize classif rows — ensure race_slug field is present for the scoring lookup
     normalized_classif = []
     for c in (classif_rows or []):
         normalized_classif.append({
@@ -74,10 +80,15 @@ def _base_mocks(
         }],
         # 4. team_strategies
         [],
-        # 5. gt_squad presence
-        [{"team_id": TEAM_ID, "rider_id": RIDER_ID}],
+        # 5. gt_squad presence (V2: includes created_at/removed_at for cutoff)
+        [{
+            "team_id": TEAM_ID,
+            "rider_id": RIDER_ID,
+            "created_at": squad_created_at,
+            "removed_at": squad_removed_at,
+        }],
         # 6. gt_role_assignments latest
-        [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": role, "applied_at": "2026-05-10T09:00:00Z"}],
+        [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": role, "applied_at": role_applied_at}],
         # 7. gt_daily_classifications
         normalized_classif,
         # 8. gt_tactic_activations (Task 7 — populate-only, no activations yet)
@@ -93,6 +104,11 @@ def _base_mocks(
         # 13. teams (league snapshot)
         [{"id": TEAM_ID, "cumulative_xp": 150}],
     )
+
+
+# ---------------------------------------------------------------------------
+# Role multipliers
+# ---------------------------------------------------------------------------
 
 
 async def test_gc_leader_applies_1_5x():
@@ -185,11 +201,11 @@ async def test_stage_hunter_no_multiplier_on_gc():
             },
         }],
         [],
-        [{"team_id": TEAM_ID, "rider_id": RIDER_ID}],
-        [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": "stage_hunter", "applied_at": "2026-05-10T09:00:00Z"}],
+        [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "created_at": BEFORE_CUTOFF, "removed_at": None}],
+        [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": "stage_hunter", "applied_at": "2026-05-10T09:00:00+02:00"}],
         [],  # gt_daily_classifications
         [],  # gt_tactic_activations (Task 7 — no activations yet)
-        [],  # remontada_boosts
+        None,  # remontada_boosts
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
         [],
         [{"id": TEAM_ID, "cumulative_xp": 100}],
@@ -234,8 +250,6 @@ async def test_non_gt_race_no_multiplier():
             "riders": {"specialty": "TT", "nationality": "BE", "real_team": "x", "birthdate": "1998-01-01"},
         }],
         [],
-        # No gt_squad / gt_role calls should be made for non-GT slugs — mock still provides
-        # empty responses in case future behavior queries them.
         [],
         [],
         [],
@@ -247,6 +261,11 @@ async def test_non_gt_race_no_multiplier():
 
     payload = sb._last_upsert_payload("rider_xp_daily")
     assert payload["xp_gained"] == 100.0
+
+
+# ---------------------------------------------------------------------------
+# Classification bonuses (V2: restricted to matching roles only)
+# ---------------------------------------------------------------------------
 
 
 async def test_gc_leader_gets_gc_classif_bonus_with_match_multiplier():
@@ -304,10 +323,11 @@ async def test_climber_gets_kom_classif_bonus_with_match_multiplier():
     assert payload["xp_gained"] == 154.5
 
 
-async def test_domestique_gets_raw_classif_bonus_when_ranked():
-    """Rank 5 GC → base 6, role domestique → no match multiplier → 6 classif pts.
+async def test_domestique_gets_no_classif_bonus():
+    """V2: domestique gets 0 classification bonus regardless of ranking.
 
-    Total: 100 × 1.0 + 6 = 106.
+    Rank 5 GC → base 6, but role domestique has no matching ctype → 0.
+    Total: 100 × 1.0 + 0 = 100.
     """
     import scoring
 
@@ -318,7 +338,39 @@ async def test_domestique_gets_raw_classif_bonus_when_ranked():
     await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 106.0
+    assert payload["xp_gained"] == 100.0
+
+
+async def test_stage_hunter_gets_no_classif_bonus():
+    """V2: stage_hunter has no matching classification type → 0 bonus.
+
+    Rank 2 in points → base 4, but stage_hunter doesn't match → 0.
+    Total: 100 × 1.5 (stage mult) + 0 = 150.
+    """
+    import scoring
+
+    sb = _base_mocks(
+        role="stage_hunter",
+        classif_rows=[{"classification_type": "points", "rank": 2}],
+    )
+    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    assert payload["xp_gained"] == 150.0
+
+
+async def test_tt_specialist_gets_no_classif_bonus():
+    """V2: tt_specialist has no matching classification type → 0 bonus."""
+    import scoring
+
+    sb = _base_mocks(
+        role="tt_specialist",
+        classif_rows=[{"classification_type": "gc", "rank": 1}],
+    )
+    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    assert payload["xp_gained"] == 100.0
 
 
 async def test_classif_outside_top_n_is_ignored():
@@ -333,6 +385,61 @@ async def test_classif_outside_top_n_is_ignored():
 
     payload = sb._last_upsert_payload("rider_xp_daily")
     assert payload["xp_gained"] == 150.0  # just the role multiplier
+
+
+# ---------------------------------------------------------------------------
+# 11:00 CET cutoff filtering
+# ---------------------------------------------------------------------------
+
+
+async def test_rider_added_after_cutoff_gets_no_multiplier():
+    """Rider created_at after 11:00 CET on race day → not in squad for scoring."""
+    import scoring
+
+    sb = _base_mocks(
+        role="gc_leader",
+        squad_created_at=AFTER_CUTOFF,
+    )
+    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    assert payload["xp_gained"] == 100.0  # no multiplier
+
+
+async def test_rider_removed_before_cutoff_gets_no_multiplier():
+    """Rider removed_at before 11:00 CET on race day → excluded from squad."""
+    import scoring
+
+    sb = _base_mocks(
+        role="gc_leader",
+        squad_created_at=BEFORE_CUTOFF,
+        squad_removed_at="2026-05-11T08:00:00+02:00",  # removed 8am CET, before 11am cutoff
+    )
+    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    assert payload["xp_gained"] == 100.0  # no multiplier
+
+
+async def test_role_changed_after_cutoff_uses_previous_role():
+    """Role assignment after cutoff is ignored — uses last role before cutoff."""
+    import scoring
+
+    sb = _base_mocks(
+        role="gc_leader",
+        role_applied_at=AFTER_CUTOFF,
+    )
+    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    # Role assignment was after cutoff → gt_roles dict has no entry for this rider
+    # → role defaults to None → multiplier defaults to 1.0
+    assert payload["xp_gained"] == 100.0
+
+
+# ---------------------------------------------------------------------------
+# Idempotency + edge cases
+# ---------------------------------------------------------------------------
 
 
 async def test_idempotent_rerun_no_team_xp_delta():

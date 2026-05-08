@@ -1,17 +1,9 @@
--- Release cooldown: riders are unavailable for 7 days after being released.
--- Prevents timing exploit where late bidders see all released riders.
+-- Rollback: remove release cooldown feature
 
--- 1. Add available_from column to contracts
-ALTER TABLE public.contracts ADD COLUMN available_from timestamptz;
+-- 1. Drop column
+ALTER TABLE public.contracts DROP COLUMN IF EXISTS available_from;
 
--- 2. Backfill existing released contracts (already past cooldown)
-UPDATE public.contracts
-SET available_from = released_at + interval '7 days'
-WHERE status = 'released' AND released_at IS NOT NULL AND available_from IS NULL;
-
--- ============================================================
--- 3. Patch release_rider — set available_from on release
--- ============================================================
+-- 2. Restore release_rider without cooldown (from 20260510000000_gt_squad_builder_v2.sql)
 CREATE OR REPLACE FUNCTION public.release_rider(
   p_contract_id uuid,
   p_current_phase_id int
@@ -51,9 +43,7 @@ BEGIN
   END IF;
 
   UPDATE public.contracts
-  SET status = 'released',
-      released_at = now(),
-      available_from = now() + interval '7 days'
+  SET status = 'released', released_at = now()
   WHERE id = p_contract_id;
 
   DELETE FROM public.draft_bids
@@ -72,9 +62,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.release_rider(uuid, int) TO authenticated;
 
--- ============================================================
--- 4. Patch place_bid — block bids on riders in cooldown
--- ============================================================
+-- 3. Restore place_bid without cooldown check (from 20260508000000_round_lifecycle.sql)
 CREATE OR REPLACE FUNCTION public.place_bid(
   p_auction_id uuid,
   p_rider_id uuid,
@@ -98,14 +86,11 @@ DECLARE
   v_qualifying_teams int;
   v_max_slots int;
   v_used_slots int;
-  v_cooldown_until timestamptz;
 BEGIN
-  -- 1. Auth
   IF v_user_id IS NULL THEN
     RETURN jsonb_build_object('error', 'Not authenticated');
   END IF;
 
-  -- 2. Bounds check
   IF p_amount < 5000 OR p_amount > 100000000 THEN
     RETURN jsonb_build_object('error', 'Amount out of bounds');
   END IF;
@@ -116,7 +101,6 @@ BEGIN
     RETURN jsonb_build_object('error', 'Invalid round number');
   END IF;
 
-  -- 3. Lookup auction + verify open
   SELECT * INTO v_auction FROM public.auctions WHERE id = p_auction_id;
   IF v_auction IS NULL THEN
     RETURN jsonb_build_object('error', 'Auction not found');
@@ -125,7 +109,6 @@ BEGIN
     RETURN jsonb_build_object('error', 'Auction is not open');
   END IF;
 
-  -- 4. Lookup team for this user in the auction's league + LOCK row
   SELECT * INTO v_team FROM public.teams
    WHERE user_id = v_user_id AND league_id = v_auction.league_id
    FOR UPDATE;
@@ -133,7 +116,6 @@ BEGIN
     RETURN jsonb_build_object('error', 'No team in this league');
   END IF;
 
-  -- 5. Lookup rider + pool check
   SELECT * INTO v_rider FROM public.riders WHERE id = p_rider_id;
   IF v_rider IS NULL THEN
     RETURN jsonb_build_object('error', 'Rider not found');
@@ -142,43 +124,20 @@ BEGIN
     RETURN jsonb_build_object('error', 'Rider not in playable pool');
   END IF;
 
-  -- 5b. Cooldown check: rider recently released in this league?
-  SELECT MAX(c.available_from) INTO v_cooldown_until
-  FROM public.contracts c
-  WHERE c.rider_id = p_rider_id
-    AND c.league_id = v_auction.league_id
-    AND c.status = 'released'
-    AND c.available_from > now();
-
-  IF v_cooldown_until IS NOT NULL THEN
-    RETURN jsonb_build_object(
-      'error',
-      format('Rider in cooldown until %s', to_char(v_cooldown_until, 'YYYY-MM-DD'))
-    );
-  END IF;
-
-  -- 6. Level gating: rider pcs_rank must be >= poolMin for team level
   IF v_rider.pcs_rank IS NOT NULL AND v_rider.pcs_rank < (
     CASE v_team.level
-      WHEN 8 THEN 1
-      WHEN 7 THEN 4
-      WHEN 6 THEN 10
-      WHEN 5 THEN 20
-      WHEN 4 THEN 30
-      WHEN 3 THEN 100
-      WHEN 2 THEN 200
-      ELSE 300
+      WHEN 8 THEN 1 WHEN 7 THEN 4 WHEN 6 THEN 10
+      WHEN 5 THEN 20 WHEN 4 THEN 30 WHEN 3 THEN 100
+      WHEN 2 THEN 200 ELSE 300
     END
   ) THEN
     RETURN jsonb_build_object('error', 'Insufficient level for this rider');
   END IF;
 
-  -- 7. Min salary check: bid must be >= rider monthly_salary
   IF p_amount < v_rider.monthly_salary THEN
     RETURN jsonb_build_object('error', format('Minimum bid: %s', v_rider.monthly_salary));
   END IF;
 
-  -- 8. Co-unlock check: rider unlocked only if >= 2 teams have the required level
   v_required_level := CASE
     WHEN v_rider.pcs_rank IS NULL THEN 1
     WHEN v_rider.pcs_rank <= 1   THEN 8
@@ -202,7 +161,6 @@ BEGIN
     );
   END IF;
 
-  -- 9. Cross-round solvency: sum salaries + ALL active bids (not just this auction)
   SELECT COALESCE(SUM(locked_salary), 0) INTO v_total_commitments
    FROM public.contracts
    WHERE team_id = v_team.id AND status IN ('active', 'notice');
@@ -212,7 +170,6 @@ BEGIN
      WHERE team_id = v_team.id AND status = 'active'
   );
 
-  -- Check existing bid for this rider/round (update vs insert)
   SELECT id, amount INTO v_existing_bid_id, v_existing_bid_amount
   FROM public.auction_bids
    WHERE auction_id = p_auction_id AND team_id = v_team.id
@@ -226,7 +183,6 @@ BEGIN
     RETURN jsonb_build_object('error', 'Insufficient budget');
   END IF;
 
-  -- 10. Slot check (only on new bids)
   IF v_existing_bid_id IS NULL THEN
     v_max_slots := CASE v_team.level
       WHEN 8 THEN 12 WHEN 7 THEN 12 WHEN 6 THEN 11
@@ -249,7 +205,6 @@ BEGIN
     END IF;
   END IF;
 
-  -- 11. Insert or update
   IF v_existing_bid_id IS NOT NULL THEN
     UPDATE public.auction_bids
        SET amount = p_amount, placed_at = now()

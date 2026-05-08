@@ -9,7 +9,7 @@ import {
   GT_IDENTIFIER,
   type GtPhaseId,
 } from "@/lib/gt-phases";
-import { ensureGtSquad, getSquadWithRoles } from "./actions";
+import { getSquadWithRoles, getAvailableRiders } from "./actions";
 import { GtTeamClient } from "./gt-team-client";
 import { RemontadaBannerSlot } from "./_remontada-banner-slot";
 import type { SponsorRow } from "@/lib/sponsors";
@@ -46,7 +46,6 @@ export default async function GtTeamPage({
 
   const currentGT = getCurrentGTPhase();
 
-  // Inactive: show a preview of the next GT.
   if (!currentGT) {
     const next = getNextGTPhase();
     return <InactiveView next={next} />;
@@ -55,18 +54,19 @@ export default async function GtTeamPage({
   const phaseId = currentGT.id as GtPhaseId;
   const year = new Date().getFullYear();
 
-  await ensureGtSquad({ teamId: team.id, phaseId, year });
-  const squad = await getSquadWithRoles({ teamId: team.id, phaseId, year });
+  const [squad, availableRiders, teamSponsorRes] = await Promise.all([
+    getSquadWithRoles({ teamId: team.id, phaseId, year }),
+    getAvailableRiders({ teamId: team.id, phaseId, year }),
+    supabase
+      .from("team_sponsors")
+      .select("sponsors:sponsor_id(*)")
+      .eq("team_id", team.id)
+      .maybeSingle(),
+  ]);
 
-  const { data: teamSponsor } = await supabase
-    .from("team_sponsors")
-    .select("sponsors:sponsor_id(*)")
-    .eq("team_id", team.id)
-    .maybeSingle();
-
-  const sponsor = (Array.isArray(teamSponsor?.sponsors)
-    ? teamSponsor?.sponsors[0]
-    : teamSponsor?.sponsors) as SponsorRow | null | undefined;
+  const sponsor = (Array.isArray(teamSponsorRes.data?.sponsors)
+    ? teamSponsorRes.data?.sponsors[0]
+    : teamSponsorRes.data?.sponsors) as SponsorRow | null | undefined;
   const currentStage = getCurrentGTStage();
 
   const [activations, stages, gcRivals, sprintRivals, myGc, mySprinter, incomings] =
@@ -100,6 +100,7 @@ export default async function GtTeamPage({
         year={year}
         gtFullName={GT_FULL_NAME[phaseId]}
         squad={squad}
+        availableRiders={availableRiders}
         sponsor={sponsor ?? null}
         activations={activations as ActivationLite[]}
         stages={stages}
@@ -141,7 +142,7 @@ function InactiveView({ next }: { next: ReturnType<typeof getNextGTPhase> }) {
         {days} days
       </p>
       <p className="max-w-sm text-[length:var(--type-caption)] text-[var(--text-ghost)]">
-        The GT squad unlocks automatically when the {short} phase begins.
+        Build your squad when the {short} phase begins.
       </p>
     </div>
   );

@@ -284,3 +284,45 @@ async def test_race_on_purchase_day_is_scored():
     assert result["status"] == "completed"
     assert result["teams_processed"] == 1
     assert result["errors"] == []
+
+
+# ---------------------------------------------------------------------------
+# XP traceability columns (role_mult, classif_bonus)
+# ---------------------------------------------------------------------------
+
+
+async def test_upsert_contains_traceability_columns():
+    """rider_xp_daily upsert includes role_mult and classif_bonus."""
+    import scoring
+    importlib.reload(scoring)
+
+    sb = make_supabase(
+        # 1. race_results
+        [{"rider_id": RIDER_ID, "race_slug": "race/test/2026", "pcs_points": 20, "race_date": "2026-03-15"}],
+        # 2. contracts
+        [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+          "purchased_at": "2026-01-01T00:00:00Z", "release_date": None,
+          "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
+        # 3. team_strategies (none)
+        [],
+        # 4. rider_xp_daily upsert
+        [],
+        # 5. teams select
+        {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": "lg-1"},
+        # 6. teams update
+        [],
+        # 7. league teams for snapshot
+        [{"id": TEAM_ID, "cumulative_xp": 20}],
+        # 8. team_ranking_daily upsert
+        [],
+    )
+
+    result = await scoring.calculate_daily_scores(sb)
+
+    assert result["status"] == "completed"
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    assert payload["role_mult"] == 1.0
+    assert payload["classif_bonus"] == 0.0
+    assert payload["raw_pcs_points"] == 20
+    assert payload["strategy_bonus"] == 0.0
+    assert payload["remontada_mult"] == 1.0

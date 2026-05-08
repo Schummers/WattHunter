@@ -1,42 +1,10 @@
--- Migration: round_validations table + force-resolve foundation
---
--- 1. Adds round_validations table (display marker for "team has validated")
--- 2. Replaces validate_round with the no-lifecycle final state + INSERT round_validations
---    (matches production behavior; aligns local repo with remote rollback applied 2026-05-08)
--- 3. Backfills round_validations from existing active auction_bids so the in-flight
---    Giro 2026 league shows correct statuses immediately after deploy.
+-- Rollback: round_validations table + restore prior validate_round (with no-lifecycle behavior).
+-- This rollback restores the validate_round body that was in production via the manual
+-- rollback applied 2026-05-08 (file: _rollback/20260508000000_round_lifecycle_rollback.sql).
+-- After running this rollback the schema looks like before this migration was applied.
 
--- ============================================================
--- Table: round_validations
--- ============================================================
-CREATE TABLE IF NOT EXISTS public.round_validations (
-  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  auction_id   uuid NOT NULL REFERENCES public.auctions(id) ON DELETE CASCADE,
-  team_id      uuid NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
-  validated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (auction_id, team_id)
-);
+DROP TABLE IF EXISTS public.round_validations CASCADE;
 
-ALTER TABLE public.round_validations ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "round_validations_select" ON public.round_validations;
-CREATE POLICY "round_validations_select" ON public.round_validations
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1
-      FROM public.auctions a
-      JOIN public.league_members lm ON lm.league_id = a.league_id
-      WHERE a.id = round_validations.auction_id
-        AND lm.user_id = auth.uid()
-    )
-  );
-
--- INSERT/UPDATE/DELETE handled exclusively by SECURITY DEFINER RPCs and the
--- service-role client. No client-facing INSERT/UPDATE/DELETE policies.
-
--- ============================================================
--- RPC validate_round (final state — no auction lifecycle, with round_validations UPSERT)
--- ============================================================
 CREATE OR REPLACE FUNCTION public.validate_round(
   p_league_id uuid,
   p_current_phase_id int
@@ -60,12 +28,10 @@ DECLARE
   v_roster_count int;
   v_inserted int := 0;
 BEGIN
-  -- 1. Auth
   IF v_user_id IS NULL THEN
     RETURN jsonb_build_object('error', 'Not authenticated');
   END IF;
 
-  -- 2. Resolve team for this user in the league + LOCK row
   SELECT t.* INTO v_team
   FROM public.teams t
   JOIN public.league_members lm ON lm.team_id = t.id
@@ -78,7 +44,6 @@ BEGIN
     RETURN jsonb_build_object('error', 'Team not found');
   END IF;
 
-  -- 3. Find open auction for this league + LOCK row
   SELECT * INTO v_auction
   FROM public.auctions
   WHERE league_id = p_league_id AND status = 'open'
@@ -90,24 +55,20 @@ BEGIN
     RETURN jsonb_build_object('error', 'No open auction round found');
   END IF;
 
-  -- Determine round (per-team submission version inside this auction)
   SELECT COALESCE(MAX(round), 0) + 1 INTO v_auction_round
   FROM public.auction_bids
   WHERE auction_id = v_auction.id AND team_id = v_team.id;
 
-  -- 4. Sum draft bids for this team + league
   SELECT COALESCE(SUM(amount), 0), COUNT(*)
   INTO v_drafts_total, v_drafts_count
   FROM public.draft_bids
   WHERE team_id = v_team.id AND league_id = p_league_id;
 
-  -- 5. Sum active contract salaries
   SELECT COALESCE(SUM(locked_salary), 0), COUNT(*)
   INTO v_active_salaries, v_roster_count
   FROM public.contracts
   WHERE team_id = v_team.id AND status = 'active';
 
-  -- 6. Get sponsor income
   SELECT COALESCE(s.monthly_budget, 0) INTO v_sponsor_income
   FROM public.team_sponsors ts
   JOIN public.sponsors s ON s.id = ts.sponsor_id
@@ -117,7 +78,6 @@ BEGIN
     v_sponsor_income := 0;
   END IF;
 
-  -- 7. Budget check (pre-payday vs post-payday)
   IF v_team.phase_confirmed_id = p_current_phase_id THEN
     v_purchasing_power := v_team.treasury;
     v_available := v_team.treasury - v_drafts_total;
@@ -138,7 +98,6 @@ BEGIN
     );
   END IF;
 
-  -- 8. Slot check
   v_max_slots := CASE v_team.level
     WHEN 8 THEN 12 WHEN 7 THEN 12 WHEN 6 THEN 11
     WHEN 5 THEN 10 WHEN 4 THEN 9 WHEN 3 THEN 8
@@ -153,14 +112,12 @@ BEGIN
     );
   END IF;
 
-  -- 9. Cancel previous active bids for this team in this auction
   UPDATE public.auction_bids
   SET status = 'cancelled'
   WHERE auction_id = v_auction.id
     AND team_id = v_team.id
     AND status = 'active';
 
-  -- 10. Insert new auction_bids from draft_bids
   INSERT INTO public.auction_bids (auction_id, team_id, rider_id, amount, round, status, placed_at)
   SELECT v_auction.id, v_team.id, db.rider_id, db.amount, v_auction_round, 'active', now()
   FROM public.draft_bids db
@@ -168,28 +125,8 @@ BEGIN
 
   GET DIAGNOSTICS v_inserted = ROW_COUNT;
 
-  -- 11. Record validation marker (idempotent — re-validate just refreshes timestamp)
-  INSERT INTO public.round_validations (auction_id, team_id, validated_at)
-  VALUES (v_auction.id, v_team.id, now())
-  ON CONFLICT (auction_id, team_id) DO UPDATE SET validated_at = now();
-
   RETURN jsonb_build_object('ok', true, 'inserted', v_inserted);
 END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.validate_round(uuid, int) TO authenticated;
-
--- ============================================================
--- Backfill: mark teams with active bids as already validated
--- ============================================================
-INSERT INTO public.round_validations (auction_id, team_id, validated_at)
-SELECT
-  ab.auction_id,
-  ab.team_id,
-  MIN(ab.placed_at)
-FROM public.auction_bids ab
-JOIN public.auctions a ON a.id = ab.auction_id
-WHERE a.status = 'open'
-  AND ab.status = 'active'
-GROUP BY ab.auction_id, ab.team_id
-ON CONFLICT (auction_id, team_id) DO NOTHING;

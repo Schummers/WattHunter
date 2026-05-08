@@ -13,8 +13,9 @@ import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
 import { BID_INCREMENT, snapToIncrement, computeAvailableBudget } from "@/lib/budget";
 import { resolvePhotoUrl } from "@/lib/photo-url";
+import { ReleaseConfirmModal } from "@/components/release-confirm-modal";
 
-type RiderContext = "market" | "auctions" | "team" | "ranking";
+type RiderContext = "market" | "team" | "ranking";
 
 interface Rider {
   id: string;
@@ -63,8 +64,8 @@ interface RiderDetailClientProps {
   currentBidId?: string;
   currentBidAmount: number | null;
   activeAuctionId: string | null;
-  contractData: { locked_salary: number; status: string; contractId?: string; pcsPoints?: number } | null;
-  ownerInfo: { display_name: string; team_name: string } | null;
+  contractData: { locked_salary: number; status: string; contractId?: string; pcsPoints?: number; phaseRecruitedId?: number } | null;
+  ownerInfo: { display_name: string; team_name: string; locked_salary: number | null } | null;
   budgetInfo?: {
     currentSlots: number;
     maxSlots: number;
@@ -81,6 +82,7 @@ interface RiderDetailClientProps {
   totalBonus?: number;
   draftAmount?: number | null;
   currentRound?: number | null;
+  releaseIsPaidPhase?: boolean;
 }
 
 function getAge(birthdate: string | null): number | null {
@@ -100,7 +102,6 @@ function getInitials(name: string): string {
 
 const BACK_LABELS: Record<RiderContext, string> = {
   market: "Market",
-  auctions: "Auctions",
   team: "My Team",
   ranking: "Ranking",
 };
@@ -121,6 +122,7 @@ export function RiderDetailClient({
   gameXp,
   totalBonus,
   draftAmount,
+  releaseIsPaidPhase,
 }: RiderDetailClientProps) {
   const router = useRouter();
   const [tabIndex, setTabIndex] = useState(0);
@@ -129,6 +131,8 @@ export function RiderDetailClient({
   const [bidInputError, setBidInputError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [releaseConfirm, setReleaseConfirm] = useState(false);
+  const [releaseError, setReleaseError] = useState<string | null>(null);
   const bidInputRef = useRef<HTMLInputElement>(null);
   const age = getAge(rider.birthdate);
 
@@ -138,8 +142,6 @@ export function RiderDetailClient({
   function handleBack() {
     if (context === "market") {
       router.push(`/league/${leagueId}/auction/market`);
-    } else if (context === "auctions") {
-      router.push(`/league/${leagueId}/auction`);
     } else {
       router.back();
     }
@@ -170,19 +172,28 @@ export function RiderDetailClient({
     setSaving(false);
   }
 
-  async function handleRelease() {
+  function handleReleaseClick() {
     if (!contractData?.contractId) return;
-    const msg = `Release this rider? The phase salary already paid will not be refunded.`;
-    if (!confirm(msg)) return;
+    setReleaseError(null);
+    setReleaseConfirm(true);
+  }
+
+  async function handleReleaseConfirm(contractId: string) {
     setSaving(true);
-    setError(null);
-    const result = await releaseRider(contractData.contractId);
+    setReleaseError(null);
+    const result = await releaseRider(contractId);
     if (result.error) {
-      setError(result.error);
+      const errorMsg = result.error === "Cannot release a rider recruited during the current phase"
+        ? `${rider.full_name} was recruited this phase and cannot be released yet. You can release them starting next phase.`
+        : result.error;
+      setReleaseError(errorMsg);
+      setSaving(false);
     } else {
+      setReleaseConfirm(false);
+      setReleaseError(null);
       router.refresh();
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   // Metric boxes per context (RD-4) — value on top, label below (DS standard)
@@ -241,7 +252,7 @@ export function RiderDetailClient({
       );
     }
 
-    // ranking: 3 boxes (Game XP, Bonus, Paid Salary)
+    // ranking: 3 boxes (Game XP, Bonus, Paid Salary from owner contract)
     return (
       <div className="flex gap-3 px-4">
         <div className={boxClass}>
@@ -257,7 +268,11 @@ export function RiderDetailClient({
           <span className={labelClass}>Bonus</span>
         </div>
         <div className={boxClass}>
-          <div className={valueClass}>—</div>
+          <div className={valueClass}>
+            {ownerInfo?.locked_salary != null
+              ? formatThousands(ownerInfo.locked_salary)
+              : "—"}
+          </div>
           <span className={labelClass}>Paid Salary</span>
         </div>
       </div>
@@ -518,7 +533,7 @@ export function RiderDetailClient({
             <button
               type="button"
               disabled={saving}
-              onClick={handleRelease}
+              onClick={handleReleaseClick}
               className="w-full rounded-[var(--radius-md)] border border-[var(--danger-border)] text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-[var(--danger-bg)] transition-colors disabled:opacity-50"
             >
               {saving ? "Releasing..." : "Release Rider"}
@@ -579,26 +594,18 @@ export function RiderDetailClient({
         </div>
       )}
 
-      {/* Segmented Control (RD-8) — hide for ranking */}
-      {context !== "ranking" && (
-        <div className="w-full px-4">
-          <SegmentedControl
-            segments={["PCS Stats", "Game Stats"]}
-            activeIndex={tabIndex}
-            onChange={setTabIndex}
-          />
-        </div>
-      )}
+      {/* Segmented Control (RD-8) */}
+      <div className="w-full px-4">
+        <SegmentedControl
+          segments={["PCS Stats", "Game Stats"]}
+          activeIndex={tabIndex}
+          onChange={setTabIndex}
+        />
+      </div>
 
       {/* Tab Content */}
       <div className="px-4 pb-8">
-        {context === "ranking" ? (
-          // Ranking: all sections inline (no tabs)
-          <div className="space-y-6">
-            <PcsStatsSection rankings={rankings} startlists={startlists} />
-            <GameResultsSection raceResults={raceResults} />
-          </div>
-        ) : tabIndex === 0 ? (
+        {tabIndex === 0 ? (
           <PcsStatsSection rankings={rankings} startlists={startlists} />
         ) : (
           <GameResultsSection raceResults={raceResults} />
@@ -637,6 +644,17 @@ export function RiderDetailClient({
           </button>
         </div>
       </StickyBar>
+    )}
+
+    {releaseConfirm && contractData?.contractId && (
+      <ReleaseConfirmModal
+        riderName={rider.full_name}
+        contractId={contractData.contractId}
+        isPaidPhase={releaseIsPaidPhase ?? false}
+        onConfirm={handleReleaseConfirm}
+        onCancel={() => { setReleaseConfirm(false); setReleaseError(null); }}
+        error={releaseError}
+      />
     )}
     </>
   );

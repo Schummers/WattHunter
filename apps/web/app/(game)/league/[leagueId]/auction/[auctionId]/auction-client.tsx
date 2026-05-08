@@ -18,6 +18,7 @@ interface Rider {
   photo_url: string | null;
   age: number | null;
   is_contracted: boolean;
+  cooldown_until: string | null;
 }
 
 interface Bid {

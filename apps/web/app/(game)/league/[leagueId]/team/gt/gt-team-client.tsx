@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RiderCard } from "@/components/rider-card";
 import { SponsorBonusCard } from "@/components/sponsor-bonus-card";
-import { RoleAssignSheet } from "@/components/role-assign-sheet";
+import { RiderPickerSheet } from "@/components/rider-picker-sheet";
 import { TeamTacticsSection, type ActivationLite } from "@/components/team-tactics-section";
 import { NemesisIncomingBanner, type IncomingNemesis } from "@/components/nemesis-incoming-banner";
 import type { EligibleRival } from "@/components/tactic-nemesis-modal";
@@ -27,47 +27,60 @@ interface SquadEntry {
   } | null;
 }
 
+export interface AvailableRiderEntry {
+  riderId: string;
+  rider: {
+    id: string;
+    full_name: string;
+    nationality?: string | null;
+    real_team?: string | null;
+    pcs_rank?: number | null;
+    photo_url?: string | null;
+    pcs_points_1yr?: number | null;
+  } | null;
+}
+
 const ROLE_ORDER: Array<{
   role: GtRole;
   label: string;
-  max: number | null;
+  max: number;
   desc: string;
 }> = [
   {
     role: "gc_leader",
     label: "GC Leader",
     max: 1,
-    desc: "×1.5 on stage + GC points AND + top-10 GC bonus daily",
+    desc: "×1.5 stage points · ×1.5 final GC points · top 10 GC daily bonus",
   },
   {
     role: "sprinter",
     label: "Sprinter",
     max: 1,
-    desc: "×1.5 on stage + GC points AND + top-5 points bonus daily",
+    desc: "×1.5 stage points · ×1.5 final points classif · top 5 points daily bonus",
   },
   {
     role: "climber",
     label: "Climber",
     max: 1,
-    desc: "×1.5 on stage + GC points AND + top-3 KOM bonus daily",
+    desc: "×1.5 stage points · ×1.5 final KOM classif · top 3 KOM daily bonus",
   },
   {
     role: "tt_specialist",
     label: "TT Specialist",
     max: 1,
-    desc: "×2 on ITT stage points only",
+    desc: "×2 on ITT stages only",
   },
   {
     role: "stage_hunter",
     label: "Stage Hunter",
     max: 2,
-    desc: "×1.5 on stage",
+    desc: "×1.5 on stage points only",
   },
   {
     role: "domestique",
     label: "Domestiques",
-    max: null,
-    desc: "No bonus multiplier. Contribute base PCS points only.",
+    max: 2,
+    desc: "No stage bonus or daily bonus. Base PCS points only.",
   },
 ];
 
@@ -77,6 +90,7 @@ interface Props {
   year: number;
   gtFullName: string;
   squad: SquadEntry[];
+  availableRiders: AvailableRiderEntry[];
   sponsor?: SponsorRow | null;
   activations: ActivationLite[];
   stages: GtStage[];
@@ -91,7 +105,9 @@ export function GtTeamClient({
   teamId,
   phaseId,
   year,
+  gtFullName,
   squad,
+  availableRiders,
   sponsor,
   activations,
   stages,
@@ -103,22 +119,29 @@ export function GtTeamClient({
 }: Props) {
   const router = useRouter();
   const [sponsorOpen, setSponsorOpen] = useState(false);
-  const [sheetRole, setSheetRole] = useState<Exclude<GtRole, "domestique"> | null>(null);
+  const [sheetRole, setSheetRole] = useState<GtRole | null>(null);
+  const [sheetMode, setSheetMode] = useState<"fill" | "swap">("fill");
+  const [sheetCurrentRiderId, setSheetCurrentRiderId] = useState<string | null>(null);
 
   const byRole = (r: GtRole) => squad.filter((s) => s.role === r);
 
-  const sheetSquad = squad
-    .filter((s) => s.rider)
-    .map((s) => ({
-      riderId: s.riderId,
-      role: s.role,
-      rider: {
-        id: s.rider!.id,
-        full_name: s.rider!.full_name,
-        photo_url: s.rider!.photo_url ?? null,
-        real_team: s.rider!.real_team ?? null,
-      },
-    }));
+  const openFillSheet = (role: GtRole) => {
+    setSheetRole(role);
+    setSheetMode("fill");
+    setSheetCurrentRiderId(null);
+  };
+
+  const openSwapSheet = (role: GtRole, riderId: string) => {
+    setSheetRole(role);
+    setSheetMode("swap");
+    setSheetCurrentRiderId(riderId);
+  };
+
+  const gtShortName = gtFullName.includes("Giro")
+    ? "Giro"
+    : gtFullName.includes("Tour")
+      ? "Tour"
+      : "Vuelta";
 
   return (
     <div className="flex flex-col gap-6 py-4 pb-24">
@@ -160,37 +183,41 @@ export function GtTeamClient({
       <section className="flex flex-col gap-4">
         <div className="px-4">
           <h2 className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-            Team Composition
+            Team Composition for {gtShortName}
           </h2>
           <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
             Change a role before 11:00 CET to apply today.
           </p>
         </div>
 
+        {squad.length === 0 && (
+          <div className="mx-4 rounded-[var(--radius-lg)] border border-dashed border-[var(--border-default)] p-6 text-center">
+            <p className="text-[length:var(--type-body)] font-medium text-[var(--text-mid)]">
+              Build your squad for the {gtShortName}
+            </p>
+            <p className="mt-1 text-[length:var(--type-caption)] text-[var(--text-low)]">
+              Fill each role slot from your roster to earn multiplied points.
+            </p>
+          </div>
+        )}
+
         {ROLE_ORDER.map((block) => {
           const riders = byRole(block.role);
           const cap = block.max;
-          const showOpenSlot = block.role !== "domestique" && cap != null && riders.length < cap;
-          const headerCount = cap != null ? `${riders.length} / ${cap}` : `${riders.length}`;
-          const isAssignable = block.role !== "domestique";
+          const showOpenSlots = riders.length < cap;
+          const openSlotCount = cap - riders.length;
+          const headerCount = `${riders.length} / ${cap}`;
 
           return (
             <div key={block.role} className="flex flex-col">
-              <button
-                type="button"
-                onClick={() =>
-                  isAssignable && setSheetRole(block.role as Exclude<GtRole, "domestique">)
-                }
-                className="flex items-center justify-between px-4 pt-1 pb-0 text-left"
-                disabled={!isAssignable}
-              >
+              <div className="flex items-center justify-between px-4 pt-1 pb-0">
                 <span className="text-[length:var(--type-label)] font-semibold uppercase tracking-wide text-[var(--text-high)]">
                   {block.label.toUpperCase()}
                 </span>
                 <span className="text-[length:var(--type-label)] text-[var(--text-low)]">
                   {headerCount}
                 </span>
-              </button>
+              </div>
               <p className="mb-1 px-4 text-[length:var(--type-micro)] text-[var(--text-low)]">
                 {block.desc}
               </p>
@@ -210,37 +237,35 @@ export function GtTeamClient({
                       photo_url: r.rider.photo_url ?? null,
                     }}
                     xp={r.xp}
-                    onNavigate={
-                      isAssignable
-                        ? () => setSheetRole(block.role as Exclude<GtRole, "domestique">)
-                        : undefined
-                    }
+                    onNavigate={() => openSwapSheet(block.role, r.riderId)}
                   />
                 ) : null
               )}
 
-              {showOpenSlot && (
-                <RiderCard
-                  rider={{ id: `open-${block.role}`, name: "" }}
-                  isOpenSlot
-                  onNavigate={() =>
-                    setSheetRole(block.role as Exclude<GtRole, "domestique">)
-                  }
-                />
-              )}
+              {showOpenSlots &&
+                Array.from({ length: openSlotCount }).map((_, i) => (
+                  <RiderCard
+                    key={`open-${block.role}-${i}`}
+                    rider={{ id: `open-${block.role}-${i}`, name: "" }}
+                    isOpenSlot
+                    onNavigate={() => openFillSheet(block.role)}
+                  />
+                ))}
             </div>
           );
         })}
       </section>
 
       {sheetRole && (
-        <RoleAssignSheet
+        <RiderPickerSheet
           open={!!sheetRole}
           onClose={() => setSheetRole(null)}
           role={sheetRole}
           roleLabel={ROLE_ORDER.find((r) => r.role === sheetRole)!.label}
-          maxPerRole={(ROLE_ORDER.find((r) => r.role === sheetRole)!.max ?? 1) as 1 | 2}
-          squad={sheetSquad}
+          roleDesc={ROLE_ORDER.find((r) => r.role === sheetRole)!.desc}
+          mode={sheetMode}
+          currentRiderId={sheetCurrentRiderId}
+          availableRiders={availableRiders}
           teamId={teamId}
           phaseId={phaseId}
           year={year}

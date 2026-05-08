@@ -10,9 +10,11 @@
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.gt_squad
   ADD COLUMN removed_at TIMESTAMPTZ DEFAULT NULL;
+
 ALTER TABLE public.gt_squad
   ADD COLUMN role TEXT NOT NULL DEFAULT 'domestique'
     CHECK (role IN ('gc_leader','sprinter','climber','tt_specialist','stage_hunter','domestique'));
+
 -- ---------------------------------------------------------------------------
 -- 2. Backfill role from latest gt_role_assignments (before dropping constraint)
 -- ---------------------------------------------------------------------------
@@ -26,6 +28,7 @@ UPDATE public.gt_squad gs SET role = COALESCE(
    LIMIT 1),
   'domestique'
 );
+
 -- ---------------------------------------------------------------------------
 -- 3. Safety check: backfill must not produce >1 holder for any single-slot role.
 --    V1a never enforced caps in DB, so corrupted data could break index creation.
@@ -51,27 +54,34 @@ BEGIN
       v_violations;
   END IF;
 END $$;
+
 -- ---------------------------------------------------------------------------
 -- 4. Replace unique constraint with partial unique indexes
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.gt_squad
   DROP CONSTRAINT IF EXISTS gt_squad_team_id_phase_id_year_rider_id_key;
+
 CREATE UNIQUE INDEX idx_gt_squad_active_rider
   ON public.gt_squad(team_id, phase_id, year, rider_id)
   WHERE removed_at IS NULL;
+
 -- DB-enforced single-slot roles (max 1 active per team/phase/year)
 CREATE UNIQUE INDEX idx_gt_squad_slot_gc_leader
   ON public.gt_squad(team_id, phase_id, year)
   WHERE role = 'gc_leader' AND removed_at IS NULL;
+
 CREATE UNIQUE INDEX idx_gt_squad_slot_sprinter
   ON public.gt_squad(team_id, phase_id, year)
   WHERE role = 'sprinter' AND removed_at IS NULL;
+
 CREATE UNIQUE INDEX idx_gt_squad_slot_climber
   ON public.gt_squad(team_id, phase_id, year)
   WHERE role = 'climber' AND removed_at IS NULL;
+
 CREATE UNIQUE INDEX idx_gt_squad_slot_tt_specialist
   ON public.gt_squad(team_id, phase_id, year)
   WHERE role = 'tt_specialist' AND removed_at IS NULL;
+
 -- stage_hunter (max 2) and domestique (max 2) caps enforced inside the RPCs
 -- via SELECT ... FOR UPDATE on teams (serializes concurrent mutations per team).
 
@@ -134,6 +144,7 @@ BEGIN
   RETURN jsonb_build_object('ok', true);
 END;
 $$;
+
 -- ---------------------------------------------------------------------------
 -- 6. RPC: gt_add_to_squad — atomic add with cap + contract checks
 -- ---------------------------------------------------------------------------
@@ -230,6 +241,7 @@ BEGIN
   RETURN jsonb_build_object('ok', true);
 END;
 $$;
+
 -- ---------------------------------------------------------------------------
 -- 7. RPC: gt_remove_from_squad — atomic soft-delete
 -- ---------------------------------------------------------------------------
@@ -281,6 +293,7 @@ BEGIN
   RETURN jsonb_build_object('ok', true);
 END;
 $$;
+
 -- ---------------------------------------------------------------------------
 -- 8. RPC: gt_swap_slot — atomic soft-delete + insert (new rider inherits role)
 -- ---------------------------------------------------------------------------
@@ -361,6 +374,7 @@ BEGIN
   RETURN jsonb_build_object('ok', true);
 END;
 $$;
+
 -- ---------------------------------------------------------------------------
 -- 9. RPC: gt_assign_role — atomic role change with deterministic demotion
 --    If the target role is at capacity, demotes the OLDEST holder (by created_at)
