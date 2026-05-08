@@ -13,6 +13,7 @@ import { formatThousands } from "@/lib/format";
 import { X } from "lucide-react";
 import { removeDraft, updateDraftAmount, validateRound } from "./actions";
 import { releaseRider } from "@/app/(game)/league/[leagueId]/rider/[riderId]/actions";
+import { ReleaseConfirmModal } from "@/components/release-confirm-modal";
 import { computeAvailableBudget } from "@/lib/budget";
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,7 @@ interface RosterRider {
   lockedSalary: number;
   xp: number;
   boostPct: number;
+  phaseRecruitedId?: number;
 }
 
 interface DraftBid {
@@ -68,6 +70,7 @@ interface AuctionsClientProps {
   activeRound: number | null;
   isRound1: boolean;
   phaseConfirmed: boolean;
+  currentPhaseId: number;
   sponsorName: string;
   sponsorIncome: number;
   activeSalaries: number;
@@ -92,6 +95,7 @@ export function AuctionsClient({
   activeRound,
   isRound1,
   phaseConfirmed,
+  currentPhaseId,
   sponsorName,
   sponsorIncome,
   activeSalaries,
@@ -108,6 +112,7 @@ export function AuctionsClient({
   const router = useRouter();
   const [drafts, setDrafts] = useState<DraftBid[]>(initialDrafts);
   const [releaseConfirm, setReleaseConfirm] = useState<string | null>(null);
+  const [releaseError, setReleaseError] = useState<string | null>(null);
   const [validateError, setValidateError] = useState<string | null>(null);
   const [validateSuccess, setValidateSuccess] = useState(false);
   const [roundResolved, setRoundResolved] = useState(false);
@@ -190,12 +195,20 @@ export function AuctionsClient({
     setReleaseConfirm(contractId);
   }
 
-  function handleReleaseConfirm(contractId: string) {
-    setReleaseConfirm(null);
-    startTransition(async () => {
-      await releaseRider(contractId);
+  async function handleReleaseConfirm(contractId: string) {
+    const result = await releaseRider(contractId);
+    if (result.error) {
+      const riderEntry = rosterRiders.find((r) => r.contractId === contractId);
+      const riderName = riderEntry?.name ?? "This rider";
+      const errorMsg = result.error === "Cannot release a rider recruited during the current phase"
+        ? `${riderName} was recruited this phase and cannot be released yet. You can release them starting next phase.`
+        : result.error;
+      setReleaseError(errorMsg);
+    } else {
+      setReleaseConfirm(null);
+      setReleaseError(null);
       router.refresh();
-    });
+    }
   }
 
   async function handleValidate() {
@@ -442,36 +455,20 @@ export function AuctionsClient({
       />
 
       {/* Release confirmation dialog */}
-      {releaseConfirm && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--scrim)] px-4 pb-6">
-          <div className="w-full max-w-md rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-5 space-y-4">
-            <div>
-              <p className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-                Release rider?
-              </p>
-              <p className="mt-1 text-[length:var(--type-body)] text-[var(--text-mid)]">
-                Release this rider? The phase salary already paid will not be refunded.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setReleaseConfirm(null)}
-                className="flex-1 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-surface-active)] py-2.5 text-[length:var(--type-emphasis)] font-semibold text-[var(--text-mid)] transition-colors hover:bg-[var(--bg-surface-hover)]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => handleReleaseConfirm(releaseConfirm)}
-                className="flex-1 rounded-[var(--radius-md)] bg-[var(--danger-bg)] py-2.5 text-[length:var(--type-emphasis)] font-semibold text-red-400 transition-colors hover:bg-[var(--danger-bg)]"
-              >
-                Release
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {releaseConfirm && (() => {
+        const riderEntry = rosterRiders.find((r) => r.contractId === releaseConfirm);
+        const riderIsPaid = phaseConfirmed && riderEntry?.phaseRecruitedId !== currentPhaseId;
+        return (
+          <ReleaseConfirmModal
+            riderName={riderEntry?.name ?? "this rider"}
+            contractId={releaseConfirm}
+            isPaidPhase={riderIsPaid}
+            onConfirm={handleReleaseConfirm}
+            onCancel={() => { setReleaseConfirm(null); setReleaseError(null); }}
+            error={releaseError}
+          />
+        );
+      })()}
     </>
   );
 }

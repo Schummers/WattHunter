@@ -13,6 +13,7 @@ import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
 import { BID_INCREMENT, snapToIncrement, computeAvailableBudget } from "@/lib/budget";
 import { resolvePhotoUrl } from "@/lib/photo-url";
+import { ReleaseConfirmModal } from "@/components/release-confirm-modal";
 
 type RiderContext = "market" | "auctions" | "team" | "ranking";
 
@@ -63,7 +64,7 @@ interface RiderDetailClientProps {
   currentBidId?: string;
   currentBidAmount: number | null;
   activeAuctionId: string | null;
-  contractData: { locked_salary: number; status: string; contractId?: string; pcsPoints?: number } | null;
+  contractData: { locked_salary: number; status: string; contractId?: string; pcsPoints?: number; phaseRecruitedId?: number } | null;
   ownerInfo: { display_name: string; team_name: string } | null;
   budgetInfo?: {
     currentSlots: number;
@@ -81,6 +82,7 @@ interface RiderDetailClientProps {
   totalBonus?: number;
   draftAmount?: number | null;
   currentRound?: number | null;
+  releaseIsPaidPhase?: boolean;
 }
 
 function getAge(birthdate: string | null): number | null {
@@ -121,6 +123,7 @@ export function RiderDetailClient({
   gameXp,
   totalBonus,
   draftAmount,
+  releaseIsPaidPhase,
 }: RiderDetailClientProps) {
   const router = useRouter();
   const [tabIndex, setTabIndex] = useState(0);
@@ -129,6 +132,8 @@ export function RiderDetailClient({
   const [bidInputError, setBidInputError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [releaseConfirm, setReleaseConfirm] = useState(false);
+  const [releaseError, setReleaseError] = useState<string | null>(null);
   const bidInputRef = useRef<HTMLInputElement>(null);
   const age = getAge(rider.birthdate);
 
@@ -170,19 +175,28 @@ export function RiderDetailClient({
     setSaving(false);
   }
 
-  async function handleRelease() {
+  function handleReleaseClick() {
     if (!contractData?.contractId) return;
-    const msg = `Release this rider? The phase salary already paid will not be refunded.`;
-    if (!confirm(msg)) return;
+    setReleaseError(null);
+    setReleaseConfirm(true);
+  }
+
+  async function handleReleaseConfirm(contractId: string) {
     setSaving(true);
-    setError(null);
-    const result = await releaseRider(contractData.contractId);
+    setReleaseError(null);
+    const result = await releaseRider(contractId);
     if (result.error) {
-      setError(result.error);
+      const errorMsg = result.error === "Cannot release a rider recruited during the current phase"
+        ? `${rider.full_name} was recruited this phase and cannot be released yet. You can release them starting next phase.`
+        : result.error;
+      setReleaseError(errorMsg);
+      setSaving(false);
     } else {
+      setReleaseConfirm(false);
+      setReleaseError(null);
       router.refresh();
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   // Metric boxes per context (RD-4) — value on top, label below (DS standard)
@@ -518,7 +532,7 @@ export function RiderDetailClient({
             <button
               type="button"
               disabled={saving}
-              onClick={handleRelease}
+              onClick={handleReleaseClick}
               className="w-full rounded-[var(--radius-md)] border border-[var(--danger-border)] text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-[var(--danger-bg)] transition-colors disabled:opacity-50"
             >
               {saving ? "Releasing..." : "Release Rider"}
@@ -637,6 +651,17 @@ export function RiderDetailClient({
           </button>
         </div>
       </StickyBar>
+    )}
+
+    {releaseConfirm && contractData?.contractId && (
+      <ReleaseConfirmModal
+        riderName={rider.full_name}
+        contractId={contractData.contractId}
+        isPaidPhase={releaseIsPaidPhase ?? false}
+        onConfirm={handleReleaseConfirm}
+        onCancel={() => { setReleaseConfirm(false); setReleaseError(null); }}
+        error={releaseError}
+      />
     )}
     </>
   );
