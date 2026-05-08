@@ -67,7 +67,7 @@ const TACTICS: TacticDef[] = [
     name: "Nemesis GC",
     short: "Duel a rival GC Leader",
     description:
-      "Pick a rival team and a stage. The duel resolves on stage classification with the GC Leaders held at 11:00 CET cutoff.",
+      "Pick a rival team and a stage. Whoever holds the GC Leader role at 11:00 CET cutoff fights for each side — a last-minute swap changes the duel.",
     icon: Swords,
     used: 0,
     max: 1,
@@ -78,7 +78,7 @@ const TACTICS: TacticDef[] = [
     name: "Nemesis Sprint",
     short: "Duel a rival Sprinter",
     description:
-      "Pick a rival team and a stage. The duel resolves on stage classification with the Sprinters held at 11:00 CET cutoff.",
+      "Pick a rival team and a stage. Whoever holds the Sprinter role at 11:00 CET cutoff fights for each side — a last-minute swap changes the duel.",
     icon: Crosshair,
     used: 1,
     max: 1,
@@ -314,7 +314,17 @@ function BoostActivationModal({
   const remaining = tactic.max - tactic.used;
 
   return (
-    <ModalShell onClose={onClose}>
+    <ModalShell
+      onClose={onClose}
+      footer={
+        <ModalActions
+          onClose={onClose}
+          onSubmit={onClose}
+          submitLabel="Activate"
+          submitDisabled={!selectedStage}
+        />
+      }
+    >
       <ModalHeader
         icon={<Icon className="size-5 text-[var(--accent-default)]" />}
         title={tactic.name}
@@ -333,13 +343,6 @@ function BoostActivationModal({
         </span>
         <StageList value={selectedStage} onChange={setSelectedStage} />
       </div>
-
-      <ModalActions
-        onClose={onClose}
-        onSubmit={onClose}
-        submitLabel="Activate"
-        submitDisabled={!selectedStage}
-      />
     </ModalShell>
   );
 }
@@ -373,7 +376,17 @@ function NemesisModal({
   const remaining = tactic.max - tactic.used;
 
   return (
-    <ModalShell onClose={onClose}>
+    <ModalShell
+      onClose={onClose}
+      footer={
+        <ModalActions
+          onClose={onClose}
+          onSubmit={onClose}
+          submitLabel="Declare Nemesis"
+          submitDisabled={!canDeclare}
+        />
+      }
+    >
       <ModalHeader
         icon={<Icon className="size-5 text-[var(--accent-default)]" />}
         title={tactic.name}
@@ -382,7 +395,7 @@ function NemesisModal({
         onClose={onClose}
       />
 
-      {/* Description */}
+      {/* Single description — covers what the duel does + cutoff timing */}
       <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
         {tactic.description}
       </p>
@@ -425,12 +438,17 @@ function NemesisModal({
 
       {/* Rival team selection (scrollable list with radio buttons) */}
       <div className="flex flex-col gap-2">
-        <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-          Rival team
-        </span>
+        <div className="flex items-baseline justify-between">
+          <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+            Rival team
+          </span>
+          <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">
+            ≥ your GT XP
+          </span>
+        </div>
         {eligibleRivals.length === 0 ? (
           <p className="rounded-[var(--radius-md)] bg-[var(--bg-subtle)] px-3 py-4 text-center text-[length:var(--type-caption)] text-[var(--text-mid)]">
-            No rival team has more GT XP than you yet.
+            No rival team has matched or exceeded your GT XP yet.
           </p>
         ) : (
           <div className="max-h-[224px] overflow-y-auto rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-app)]">
@@ -457,19 +475,6 @@ function NemesisModal({
         </span>
         <StageList value={selectedStage} onChange={setSelectedStage} />
       </div>
-
-      {/* Cutoff note */}
-      <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-        The duel resolves with the role-holders at 11:00 CET cutoff. If a leader
-        changes between now and the stage, the duel adapts.
-      </p>
-
-      <ModalActions
-        onClose={onClose}
-        onSubmit={onClose}
-        submitLabel="Declare Nemesis"
-        submitDisabled={!canDeclare}
-      />
     </ModalShell>
   );
 }
@@ -624,9 +629,11 @@ function StageList({
 
 function ModalShell({
   children,
+  footer,
   onClose,
 }: {
   children: React.ReactNode;
+  footer?: React.ReactNode;
   onClose: () => void;
 }) {
   return (
@@ -635,10 +642,17 @@ function ModalShell({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[85vh] w-full flex-col gap-4 overflow-y-auto rounded-t-[var(--radius-lg)] bg-[var(--bg-surface)] p-4 lg:max-w-md lg:rounded-[var(--radius-lg)]"
+        className="flex max-h-[85vh] w-full flex-col rounded-t-[var(--radius-lg)] bg-[var(--bg-surface)] lg:max-w-md lg:rounded-[var(--radius-lg)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {children}
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+          {children}
+        </div>
+        {footer && (
+          <div className="shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
