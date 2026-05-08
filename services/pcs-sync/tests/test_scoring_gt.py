@@ -30,10 +30,11 @@ def _base_mocks(
       5. gt_squad select
       6. gt_role_assignments select
       7. gt_daily_classifications select
-      8. rider_xp_daily upsert
-      9. teams select (per-team update)
-     10. teams update
-     11. teams select (league ranking snapshot)
+      8. gt_tactic_activations select (Task 7 prefetch — populate-only, no scoring effect)
+      9. rider_xp_daily upsert
+     10. teams select (per-team update)
+     11. teams update
+     12. teams select (league ranking snapshot)
     """
     # Normalize classif rows — ensure race_slug field is present for the scoring lookup
     normalized_classif = []
@@ -79,15 +80,17 @@ def _base_mocks(
         [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": role, "applied_at": "2026-05-10T09:00:00Z"}],
         # 7. gt_daily_classifications
         normalized_classif,
-        # 8. remontada_boosts (None = no active boost → multiplier defaults to 1.0)
+        # 8. gt_tactic_activations (Task 7 — populate-only, no activations yet)
+        [],
+        # 9. remontada_boosts (None = no active boost → multiplier defaults to 1.0)
         None,
-        # 9. rider_xp_daily upsert
+        # 10. rider_xp_daily upsert
         [],
-        # 10. teams select
+        # 11. teams select
         {"id": TEAM_ID, "cumulative_xp": starting_cumulative_xp, "level": 1, "league_id": LEAGUE_ID},
-        # 11. teams update
+        # 12. teams update
         [],
-        # 12. teams (league snapshot)
+        # 13. teams (league snapshot)
         [{"id": TEAM_ID, "cumulative_xp": 150}],
     )
 
@@ -185,7 +188,8 @@ async def test_stage_hunter_no_multiplier_on_gc():
         [{"team_id": TEAM_ID, "rider_id": RIDER_ID}],
         [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": "stage_hunter", "applied_at": "2026-05-10T09:00:00Z"}],
         [],  # gt_daily_classifications
-        [],
+        [],  # gt_tactic_activations (Task 7 — no activations yet)
+        [],  # remontada_boosts
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
         [],
         [{"id": TEAM_ID, "cumulative_xp": 100}],
@@ -387,6 +391,7 @@ async def test_rider_not_in_squad_no_multiplier():
         [],  # gt_squad empty
         [],  # gt_role_assignments empty
         [],  # gt_daily_classifications empty
+        [],  # gt_tactic_activations (Task 7 — no activations yet)
         None,  # remontada_boosts (no active boost)
         [],  # rider_xp_daily upsert
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},

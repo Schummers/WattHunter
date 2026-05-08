@@ -318,6 +318,21 @@ async def calculate_daily_scores(
                 (row["race_slug"], row["rider_id"]), []
             ).append(row)
 
+    # === Pre-fetch active tactics for the GT stages we are about to score ===
+    # Keyed by stage_slug → list of activations with team_id + tactic_type + nemesis fields.
+    # Consumed by Task 8's per-rider scoring loop (currently unused — populate-only).
+    gt_tactics: dict[str, list[dict]] = {}
+    if gt_slugs:  # avoid an empty `.in_([])` query
+        tactics_resp = supabase.table("gt_tactic_activations").select(
+            "id, team_id, phase_id, year, tactic_type, stage_slug,"
+            " nemesis_target_team_id, nemesis_target_role,"
+            " resolved_attacker_rider_id, resolved_target_rider_id,"
+            " outcome, resolved_at"
+        ).in_("stage_slug", gt_slugs).execute()
+
+        for row in tactics_resp.data or []:
+            gt_tactics.setdefault(row["stage_slug"], []).append(row)
+
     # Track all league_ids for snapshot step
     league_ids_seen: set[str] = set()
 
