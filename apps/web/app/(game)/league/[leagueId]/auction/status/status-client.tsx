@@ -39,7 +39,11 @@ export function StatusClient({ leagueId, unvalidatedTeams }: Props) {
 
   return (
     <>
-      <div className="flex justify-end pt-4">
+      <div className="space-y-2 pt-6">
+        <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+          Rounds are resolved automatically when all teams have validated.
+          Use this button only if you need to force-close the round manually.
+        </p>
         <Button
           variant="outline"
           className="w-full md:w-auto border-[var(--danger)] text-[var(--danger)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger)] hover:border-[var(--danger)]"

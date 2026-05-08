@@ -249,7 +249,7 @@ export default async function TeamDetailPage({
 
   return (
     <div className="space-y-6 pb-24">
-      <BackHeader label={from === "status" ? "Round Status" : "Ranking"} />
+      <BackHeader label={from === "league" ? "League" : from === "status" ? "Round Status" : "Ranking"} />
 
       {/* Team hero */}
       <div className="px-4 space-y-1">

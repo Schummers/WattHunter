@@ -3,12 +3,17 @@ import { ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPhase } from "@/lib/phases";
 import { formatEuro } from "@/lib/format";
+import { getLevelByNumber } from "@/lib/levels";
 import { Tag } from "@/components/pill";
 import { StatusClient } from "./status-client";
 
 interface TeamRow {
   team_id: string;
   team_name: string;
+  level: number;
+  pool_min: number;
+  slots_used: number;
+  slots_max: number;
   budget: number;
   purchasing_power: number;
   status: "validated" | "pending" | "not_yet_bid";
@@ -84,8 +89,9 @@ export default async function StatusPage({
     }
   }
 
-  // 5. Active contract salaries per team (for purchasing power)
+  // 5. Active contracts per team (salaries + slot count)
   const activeSalaries = new Map<string, number>();
+  const activeContractCount = new Map<string, number>();
   if (teamIds.length > 0) {
     const { data: contracts } = await supabase
       .from("contracts")
@@ -96,6 +102,10 @@ export default async function StatusPage({
       activeSalaries.set(
         c.team_id,
         (activeSalaries.get(c.team_id) ?? 0) + (c.locked_salary ?? 0)
+      );
+      activeContractCount.set(
+        c.team_id,
+        (activeContractCount.get(c.team_id) ?? 0) + 1
       );
     }
   }
@@ -116,13 +126,9 @@ export default async function StatusPage({
   }
 
   // 7. Build the rows
-  //    Budget = treasury + sponsor income (post-payday: sponsor already credited
-  //    into treasury; pre-payday: project the upcoming sponsor income).
-  //    Salaries are NOT subtracted here — purchasing power for new bids is
-  //    visible on each team's Budget page; this column gives a simpler "total
-  //    money this phase" overview useful for league-wide visibility.
   const rows: TeamRow[] = teamList.map((team) => {
     const sponsor = sponsorIncome.get(team.id) ?? 0;
+    const levelData = getLevelByNumber(team.level);
 
     const budget =
       team.phase_confirmed_id === phase.id
@@ -144,6 +150,10 @@ export default async function StatusPage({
     return {
       team_id: team.id,
       team_name: team.name,
+      level: team.level,
+      pool_min: levelData.poolMin,
+      slots_used: activeContractCount.get(team.id) ?? 0,
+      slots_max: levelData.slots,
       budget,
       purchasing_power,
       status,
@@ -151,23 +161,13 @@ export default async function StatusPage({
   });
 
   return (
-    <div className="px-4 py-6 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-          Round Status
-        </h1>
-        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-          When everyone has validated their bids, click &ldquo;Resolve
-          Round&rdquo; to attribute riders and open the next round.
-        </p>
-      </header>
-
+    <div className="px-4 py-4">
       {auction ? (
         <>
-          {/* Header */}
-          <div className="flex items-center text-[length:var(--type-caption)] text-[var(--text-low)] py-2">
+          {/* Header row */}
+          <div className="flex items-center text-[length:var(--type-caption)] text-[var(--text-low)] pb-2">
             <span className="flex-1">Team</span>
-            <span className="w-28 text-right">Budget</span>
+            <span className="w-24 text-right">Budget</span>
             <span className="w-24 text-right">Status</span>
             <span className="w-5" />
           </div>
@@ -177,29 +177,44 @@ export default async function StatusPage({
             {rows.map((row) => (
               <Link
                 key={row.team_id}
-                href={`/league/${leagueId}/ranking/team/${row.team_id}?from=status`}
-                className="flex items-center py-3 transition-colors hover:bg-[var(--bg-surface-hover)] text-[length:var(--type-body)]"
+                href={`/league/${leagueId}/ranking/team/${row.team_id}?from=league`}
+                className="flex py-3 transition-colors hover:bg-[var(--bg-surface-hover)]"
               >
-                <span className="flex-1 text-[var(--text-high)]">
-                  {row.team_name}
-                </span>
-                <div className="w-28 text-right font-mono">
+                {/* Left: name + meta */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[length:var(--type-body)] font-semibold text-[var(--text-high)] truncate">
+                      {row.team_name}
+                    </span>
+                    <span className="text-[length:var(--type-caption)] text-[var(--text-low)] shrink-0">
+                      Lv.{row.level}
+                    </span>
+                  </div>
+                  <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+                    Pool Top {row.pool_min} · {row.slots_used}/{row.slots_max} slots
+                  </span>
+                </div>
+
+                {/* Budget / purchasing power */}
+                <div className="w-24 text-right font-mono flex flex-col justify-center">
                   {row.purchasing_power === row.budget ? (
-                    <span className="text-[var(--text-mid)]">
+                    <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
                       {formatEuro(row.budget)}
                     </span>
                   ) : (
-                    <div className="flex flex-col items-end gap-0.5">
+                    <>
                       <span className="text-[length:var(--type-caption)] text-[var(--text-low)] line-through">
                         {formatEuro(row.budget)}
                       </span>
-                      <span className="text-[length:var(--type-caption)] text-[var(--accent-highlight)]">
+                      <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
                         {formatEuro(row.purchasing_power)}
                       </span>
-                    </div>
+                    </>
                   )}
                 </div>
-                <div className="w-24 text-right">
+
+                {/* Status */}
+                <div className="w-24 flex items-center justify-end">
                   {row.status === "validated" && (
                     <Tag variant="success">Validated</Tag>
                   )}
@@ -210,7 +225,8 @@ export default async function StatusPage({
                     <Tag variant="default">Not yet bid</Tag>
                   )}
                 </div>
-                <ChevronRight size={16} className="ml-1 shrink-0 text-[var(--text-ghost)]" />
+
+                <ChevronRight size={16} className="ml-1 shrink-0 self-center text-[var(--text-ghost)]" />
               </Link>
             ))}
           </div>
