@@ -1,6 +1,7 @@
 # Budget & Transactions Fix — Design Doc
 
 **Date:** 2026-05-06  
+**Status:** Partial — ongoing (some sub-topics shipped, others pending)  
 **Scope:** Sujet 2 (transactions/budget), Sujet 3 (treasury adjustment), Sujet 4 (GT roster)  
 **Branch:** `fix/budget-transactions`  
 **Strategy:** develop + test on local Supabase (Colima/Docker), push to prod only after full verification
