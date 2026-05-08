@@ -16,10 +16,13 @@ function getInitials(name: string): string {
 
 export default async function TeamDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ leagueId: string; teamId: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const { leagueId, teamId } = await params;
+  const { from } = await searchParams;
   const supabase = await createClient();
 
   const user = await getUser();
@@ -246,7 +249,7 @@ export default async function TeamDetailPage({
 
   return (
     <div className="space-y-6 pb-24">
-      <BackHeader label="Ranking" />
+      <BackHeader label={from === "status" ? "Round Status" : "Ranking"} />
 
       {/* Team hero */}
       <div className="px-4 space-y-1">

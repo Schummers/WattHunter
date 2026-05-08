@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPhase } from "@/lib/phases";
 import { formatEuro } from "@/lib/format";
@@ -8,6 +10,7 @@ interface TeamRow {
   team_id: string;
   team_name: string;
   budget: number;
+  purchasing_power: number;
   status: "validated" | "pending" | "not_yet_bid";
 }
 
@@ -126,6 +129,9 @@ export default async function StatusPage({
         ? team.treasury
         : team.treasury + sponsor;
 
+    const salaries = activeSalaries.get(team.id) ?? 0;
+    const purchasing_power = budget - salaries;
+
     let status: TeamRow["status"];
     if (validatedTeamIds.has(team.id)) {
       status = "validated";
@@ -139,6 +145,7 @@ export default async function StatusPage({
       team_id: team.id,
       team_name: team.name,
       budget,
+      purchasing_power,
       status,
     };
   });
@@ -157,41 +164,56 @@ export default async function StatusPage({
 
       {auction ? (
         <>
-          <table className="w-full text-[length:var(--type-body)]">
-            <thead>
-              <tr className="text-left text-[length:var(--type-caption)] text-[var(--text-low)]">
-                <th className="py-2">Team</th>
-                <th className="py-2 text-right">Budget</th>
-                <th className="py-2 text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr
-                  key={row.team_id}
-                  className="border-t border-[var(--border-subtle)]"
-                >
-                  <td className="py-3 text-[var(--text-high)]">
-                    {row.team_name}
-                  </td>
-                  <td className="py-3 text-right font-mono text-[var(--text-mid)]">
-                    {formatEuro(row.budget)}
-                  </td>
-                  <td className="py-3 text-right">
-                    {row.status === "validated" && (
-                      <Tag variant="success">Validated</Tag>
-                    )}
-                    {row.status === "pending" && (
-                      <Tag variant="highlighted">Pending</Tag>
-                    )}
-                    {row.status === "not_yet_bid" && (
-                      <Tag variant="default">Not yet bid</Tag>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {/* Header */}
+          <div className="flex items-center text-[length:var(--type-caption)] text-[var(--text-low)] py-2">
+            <span className="flex-1">Team</span>
+            <span className="w-28 text-right">Budget</span>
+            <span className="w-24 text-right">Status</span>
+            <span className="w-5" />
+          </div>
+
+          {/* Rows */}
+          <div className="divide-y divide-[var(--border-subtle)] border-t border-[var(--border-subtle)]">
+            {rows.map((row) => (
+              <Link
+                key={row.team_id}
+                href={`/league/${leagueId}/ranking/team/${row.team_id}?from=status`}
+                className="flex items-center py-3 transition-colors hover:bg-[var(--bg-surface-hover)] text-[length:var(--type-body)]"
+              >
+                <span className="flex-1 text-[var(--text-high)]">
+                  {row.team_name}
+                </span>
+                <div className="w-28 text-right font-mono">
+                  {row.purchasing_power === row.budget ? (
+                    <span className="text-[var(--text-mid)]">
+                      {formatEuro(row.budget)}
+                    </span>
+                  ) : (
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span className="text-[length:var(--type-caption)] text-[var(--text-low)] line-through">
+                        {formatEuro(row.budget)}
+                      </span>
+                      <span className="text-[length:var(--type-caption)] text-[var(--accent-highlight)]">
+                        {formatEuro(row.purchasing_power)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="w-24 text-right">
+                  {row.status === "validated" && (
+                    <Tag variant="success">Validated</Tag>
+                  )}
+                  {row.status === "pending" && (
+                    <Tag variant="highlighted">Pending</Tag>
+                  )}
+                  {row.status === "not_yet_bid" && (
+                    <Tag variant="default">Not yet bid</Tag>
+                  )}
+                </div>
+                <ChevronRight size={16} className="ml-1 shrink-0 text-[var(--text-ghost)]" />
+              </Link>
+            ))}
+          </div>
 
           <StatusClient
             leagueId={leagueId}
