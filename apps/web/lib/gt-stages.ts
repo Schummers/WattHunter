@@ -1,6 +1,7 @@
 // apps/web/lib/gt-stages.ts
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { GT_SCHEDULES } from "./gt-stage-schedule";
 
 export interface GtStage {
   number: number;
@@ -11,39 +12,25 @@ export interface GtStage {
 }
 
 /**
- * Get upcoming stages of a GT phase, optionally annotated with whether
- * the team has already placed a tactic on each.
+ * Get upcoming stages of a GT phase from the static schedule,
+ * annotated with whether the team has already placed a tactic on each.
  */
 export async function getGtStages(
   supabase: SupabaseClient<Database>,
   opts: { phaseId: 4 | 6 | 8; year: number; teamId: string }
 ): Promise<GtStage[]> {
   const gtSlug = phaseToGtSlug(opts.phaseId);
-  const prefix = `race/${gtSlug}/${opts.year}/stage-`;
+  const scheduleKey = `${gtSlug}/${opts.year}`;
+  const schedule = GT_SCHEDULES[scheduleKey];
 
-  const { data: rows } = await supabase
-    .from("race_results")
-    .select("race_slug, race_date")
-    .like("race_slug", `${prefix}%`)
-    .order("race_date");
+  if (!schedule) return [];
 
-  if (!rows) return [];
-
-  // Distinct slugs (race_results has multiple rows per stage — one per rider)
-  const seen = new Set<string>();
-  const stages: GtStage[] = [];
-  for (const r of rows) {
-    if (seen.has(r.race_slug)) continue;
-    seen.add(r.race_slug);
-    const num = parseInt(r.race_slug.replace(prefix, ""), 10);
-    const status = stageStatus(r.race_date);
-    stages.push({
-      number: num,
-      date: r.race_date,
-      slug: r.race_slug,
-      status,
-    });
-  }
+  const stages: GtStage[] = schedule.map((entry) => ({
+    number: entry.number,
+    date: entry.date,
+    slug: `race/${gtSlug}/${opts.year}/stage-${entry.number}`,
+    status: stageStatus(entry.date),
+  }));
 
   // Annotate with hasTacticActive
   const { data: tactics } = await supabase
