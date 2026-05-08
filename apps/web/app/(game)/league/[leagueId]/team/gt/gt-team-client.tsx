@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { RiderCard } from "@/components/rider-card";
 import { SponsorBonusCard } from "@/components/sponsor-bonus-card";
 import { RiderPickerSheet } from "@/components/rider-picker-sheet";
+import { TeamTacticsSection, type ActivationLite } from "@/components/team-tactics-section";
+import { NemesisIncomingBanner, type IncomingNemesis } from "@/components/nemesis-incoming-banner";
+import type { EligibleRival } from "@/components/tactic-nemesis-modal";
+import type { GtStage } from "@/lib/gt-stages";
 import type { GtRole } from "./actions";
 import type { SponsorRow } from "@/lib/sponsors";
 import { countryCodeToFlag } from "@/lib/format";
@@ -88,6 +92,13 @@ interface Props {
   squad: SquadEntry[];
   availableRiders: AvailableRiderEntry[];
   sponsor?: SponsorRow | null;
+  activations: ActivationLite[];
+  stages: GtStage[];
+  eligibleGcRivals: EligibleRival[];
+  eligibleSprintRivals: EligibleRival[];
+  myGcLeader: { name: string; xp: number } | null;
+  mySprinter: { name: string; xp: number } | null;
+  incomingNemesis: IncomingNemesis[];
 }
 
 export function GtTeamClient({
@@ -98,6 +109,13 @@ export function GtTeamClient({
   squad,
   availableRiders,
   sponsor,
+  activations,
+  stages,
+  eligibleGcRivals,
+  eligibleSprintRivals,
+  myGcLeader,
+  mySprinter,
+  incomingNemesis,
 }: Props) {
   const router = useRouter();
   const [sponsorOpen, setSponsorOpen] = useState(false);
@@ -127,6 +145,9 @@ export function GtTeamClient({
 
   return (
     <div className="flex flex-col gap-6 py-4 pb-24">
+      {/* Banner at top — auto-hides when no incomings */}
+      <NemesisIncomingBanner incomings={incomingNemesis} />
+
       {/* Section 1 — Sponsors Goals */}
       <section className="px-4">
         <h2 className="mb-3 text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
@@ -144,6 +165,19 @@ export function GtTeamClient({
           </p>
         )}
       </section>
+
+      {/* NEW: Team Tactics — between Sponsors and Composition */}
+      <TeamTacticsSection
+        teamId={teamId}
+        phaseId={phaseId}
+        year={year}
+        activations={activations}
+        stages={stages}
+        eligibleGcRivals={eligibleGcRivals}
+        eligibleSprintRivals={eligibleSprintRivals}
+        myGcLeader={myGcLeader}
+        mySprinter={mySprinter}
+      />
 
       {/* Section 2 — Team Composition */}
       <section className="flex flex-col gap-4">

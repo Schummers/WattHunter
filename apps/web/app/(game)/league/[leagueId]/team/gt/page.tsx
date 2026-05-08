@@ -13,6 +13,15 @@ import { getSquadWithRoles, getAvailableRiders } from "./actions";
 import { GtTeamClient } from "./gt-team-client";
 import { RemontadaBannerSlot } from "./_remontada-banner-slot";
 import type { SponsorRow } from "@/lib/sponsors";
+import { getGtStages } from "@/lib/gt-stages";
+import {
+  listTacticActivations,
+  getEligibleRivals,
+  getMyLeaderXp,
+  getIncomingNemesis,
+} from "./tactics/actions";
+import type { ActivationLite } from "@/components/team-tactics-section";
+import type { IncomingNemesis } from "@/components/nemesis-incoming-banner";
 
 export default async function GtTeamPage({
   params,
@@ -60,6 +69,22 @@ export default async function GtTeamPage({
     : teamSponsorRes.data?.sponsors) as SponsorRow | null | undefined;
   const currentStage = getCurrentGTStage();
 
+  const [activations, stages, gcRivals, sprintRivals, myGc, mySprinter, incomings] =
+    await Promise.all([
+      listTacticActivations({ teamId: team.id, phaseId, year }),
+      getGtStages(supabase, { phaseId, year, teamId: team.id }),
+      getEligibleRivals({ leagueId, myTeamId: team.id, phaseId, year, role: "gc_leader" }),
+      getEligibleRivals({ leagueId, myTeamId: team.id, phaseId, year, role: "sprinter" }),
+      getMyLeaderXp({ teamId: team.id, phaseId, year, role: "gc_leader" }),
+      getMyLeaderXp({ teamId: team.id, phaseId, year, role: "sprinter" }),
+      getIncomingNemesis({ teamId: team.id, phaseId, year }),
+    ]);
+
+  const myGcXp = myGc.leader ? myGc.xp : 0;
+  const mySprintXp = mySprinter.leader ? mySprinter.xp : 0;
+  const eligibleGcRivals = gcRivals.filter((r) => r.xp >= myGcXp);
+  const eligibleSprintRivals = sprintRivals.filter((r) => r.xp >= mySprintXp);
+
   return (
     <>
       {currentStage !== null && (
@@ -77,6 +102,13 @@ export default async function GtTeamPage({
         squad={squad}
         availableRiders={availableRiders}
         sponsor={sponsor ?? null}
+        activations={activations as ActivationLite[]}
+        stages={stages}
+        eligibleGcRivals={eligibleGcRivals}
+        eligibleSprintRivals={eligibleSprintRivals}
+        myGcLeader={myGc.leader ? { name: myGc.leader.name, xp: myGc.xp } : null}
+        mySprinter={mySprinter.leader ? { name: mySprinter.leader.name, xp: mySprinter.xp } : null}
+        incomingNemesis={incomings as IncomingNemesis[]}
       />
     </>
   );

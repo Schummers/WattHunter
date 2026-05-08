@@ -7,6 +7,7 @@ export default defineConfig({
     globals: true,
     // E2E tests (Playwright) live in e2e/ and use a different runner.
     exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
+    setupFiles: ["./vitest.setup.ts"],
   },
   resolve: {
     alias: {

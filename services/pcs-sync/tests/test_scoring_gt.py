@@ -36,11 +36,12 @@ def _base_mocks(
       5. gt_squad select (with created_at, removed_at for cutoff filtering)
       6. gt_role_assignments select
       7. gt_daily_classifications select
-      8. remontada_boosts (None = no active boost)
-      9. rider_xp_daily upsert
-     10. teams select (per-team update)
-     11. teams update
-     12. teams (league snapshot)
+      8. gt_tactic_activations select (Task 7 prefetch — populate-only, no scoring effect)
+      9. remontada_boosts (None = no active boost)
+     10. rider_xp_daily upsert
+     11. teams select (per-team update)
+     12. teams update
+     13. teams select (league ranking snapshot)
     """
     normalized_classif = []
     for c in (classif_rows or []):
@@ -90,15 +91,17 @@ def _base_mocks(
         [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": role, "applied_at": role_applied_at}],
         # 7. gt_daily_classifications
         normalized_classif,
-        # 8. remontada_boosts (None = no active boost → multiplier defaults to 1.0)
+        # 8. gt_tactic_activations (Task 7 — populate-only, no activations yet)
+        [],
+        # 9. remontada_boosts (None = no active boost → multiplier defaults to 1.0)
         None,
-        # 9. rider_xp_daily upsert
+        # 10. rider_xp_daily upsert
         [],
-        # 10. teams select
+        # 11. teams select
         {"id": TEAM_ID, "cumulative_xp": starting_cumulative_xp, "level": 1, "league_id": LEAGUE_ID},
-        # 11. teams update
+        # 12. teams update
         [],
-        # 12. teams (league snapshot)
+        # 13. teams (league snapshot)
         [{"id": TEAM_ID, "cumulative_xp": 150}],
     )
 
@@ -201,8 +204,8 @@ async def test_stage_hunter_no_multiplier_on_gc():
         [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "created_at": BEFORE_CUTOFF, "removed_at": None}],
         [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": "stage_hunter", "applied_at": "2026-05-10T09:00:00+02:00"}],
         [],  # gt_daily_classifications
-        None,  # remontada
-        [],
+        [],  # gt_tactic_activations (Task 7 — no activations yet)
+        None,  # remontada_boosts
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
         [],
         [{"id": TEAM_ID, "cumulative_xp": 100}],
@@ -495,6 +498,7 @@ async def test_rider_not_in_squad_no_multiplier():
         [],  # gt_squad empty
         [],  # gt_role_assignments empty
         [],  # gt_daily_classifications empty
+        [],  # gt_tactic_activations (Task 7 — no activations yet)
         None,  # remontada_boosts (no active boost)
         [],  # rider_xp_daily upsert
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
@@ -505,3 +509,30 @@ async def test_rider_not_in_squad_no_multiplier():
 
     payload = sb._last_upsert_payload("rider_xp_daily")
     assert payload["xp_gained"] == 100.0
+
+
+async def test_scoring_persists_traceability_columns():
+    """Every scored GT row must populate gt_role_mult, gt_classif_bonus, nemesis_modifier,
+    tactic_applied. When no tactics are active, values must reproduce the pre-tactic result.
+
+    gc_leader + rank 3 GC: 100 × 1.5 + 12 (classif) = 162, nemesis_modifier=1.0, tactic_applied=None.
+    """
+    import scoring
+
+    sb = _base_mocks(
+        role="gc_leader",
+        pcs_points=100,
+        classif_rows=[{"classification_type": "gc", "rank": 3}],
+    )
+    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+
+    # Existing xp invariant: 100 × 1.5 + (10+1-3) × 1.5 = 150 + 12 = 162
+    assert payload["xp_gained"] == 162.0
+
+    # Traceability columns — new in Task 8
+    assert payload["gt_role_mult"] == 1.5          # gc_leader on non-ITT GT stage
+    assert payload["gt_classif_bonus"] == 12.0     # rank 3 GC with role-match ×1.5
+    assert payload["nemesis_modifier"] == 1.0      # no tactics active
+    assert payload["tactic_applied"] is None       # no tactics active
