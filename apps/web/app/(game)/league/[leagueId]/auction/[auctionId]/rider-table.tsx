@@ -25,6 +25,7 @@ interface Rider {
   photo_url: string | null;
   age: number | null;
   is_contracted: boolean;
+  cooldown_until: string | null;
 }
 
 interface RiderTableProps {
@@ -114,34 +115,42 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filtered.map((rider) => (
-            <TableRow
-              key={rider.id}
-              className={
-                rider.is_contracted
-                  ? "opacity-40 cursor-not-allowed"
-                  : "cursor-pointer hover:bg-[var(--bg-subtle)]"
-              }
-              onClick={() => !rider.is_contracted && onRiderClick(rider)}
-            >
-              <TableCell className="font-medium">{rider.full_name}</TableCell>
-              <TableCell className="text-[var(--text-mid)]">{rider.real_team}</TableCell>
-              <TableCell>
-                <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-                  {rider.specialty ? (SPECIALTY_LABELS[rider.specialty] ?? rider.specialty) : "—"}
-                </span>
-              </TableCell>
-              <TableCell className="text-[var(--text-mid)]">{rider.nationality ? countryCodeToFlag(rider.nationality) : "—"}</TableCell>
-              <TableCell className="text-right font-mono">{rider.pcs_points_1yr.toLocaleString("en-US")}</TableCell>
-              <TableCell className="text-right font-mono">
-                {rider.monthly_salary.toLocaleString("en-US")} EUR
-              </TableCell>
-              <TableCell>
-                {rider.is_contracted && <Badge variant="default">Signed</Badge>}
-                {myBidRiderIds.has(rider.id) && <Badge variant="highlighted">Bid</Badge>}
-              </TableCell>
-            </TableRow>
-          ))}
+          {filtered.map((rider) => {
+            const disabled = rider.is_contracted || !!rider.cooldown_until;
+            return (
+              <TableRow
+                key={rider.id}
+                className={
+                  disabled
+                    ? "opacity-40 cursor-not-allowed"
+                    : "cursor-pointer hover:bg-[var(--bg-subtle)]"
+                }
+                onClick={() => !disabled && onRiderClick(rider)}
+              >
+                <TableCell className="font-medium">{rider.full_name}</TableCell>
+                <TableCell className="text-[var(--text-mid)]">{rider.real_team}</TableCell>
+                <TableCell>
+                  <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+                    {rider.specialty ? (SPECIALTY_LABELS[rider.specialty] ?? rider.specialty) : "—"}
+                  </span>
+                </TableCell>
+                <TableCell className="text-[var(--text-mid)]">{rider.nationality ? countryCodeToFlag(rider.nationality) : "—"}</TableCell>
+                <TableCell className="text-right font-mono">{rider.pcs_points_1yr.toLocaleString("en-US")}</TableCell>
+                <TableCell className="text-right font-mono">
+                  {rider.monthly_salary.toLocaleString("en-US")} EUR
+                </TableCell>
+                <TableCell>
+                  {rider.is_contracted && <Badge variant="default">Signed</Badge>}
+                  {rider.cooldown_until && (
+                    <Badge variant="warning">
+                      Available {new Date(rider.cooldown_until).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </Badge>
+                  )}
+                  {myBidRiderIds.has(rider.id) && <Badge variant="highlighted">Bid</Badge>}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

@@ -30,6 +30,7 @@ export default async function AuctionDetailPage({
     { data: riders },
     { data: myBids },
     { data: contracts },
+    { data: cooldownContracts },
     { data: teamContracts },
     { data: teamSponsors },
   ] = await Promise.all([
@@ -50,6 +51,12 @@ export default async function AuctionDetailPage({
       .select("id, rider_id, team_id, amount, round, status")
       .eq("auction_id", auctionId),
     supabase.from("contracts").select("rider_id").eq("status", "active").eq("league_id", leagueId),
+    supabase
+      .from("contracts")
+      .select("rider_id, available_from")
+      .eq("status", "released")
+      .eq("league_id", leagueId)
+      .gt("available_from", new Date().toISOString()) as unknown as Promise<{ data: { rider_id: string; available_from: string }[] | null; error: unknown }>,
     supabase.from("contracts").select("locked_salary").eq("status", "active").eq("team_id", team?.id ?? ""),
     supabase.from("team_sponsors").select("sponsors(monthly_budget)").eq("team_id", team?.id ?? "").maybeSingle(),
   ]);
@@ -82,9 +89,13 @@ export default async function AuctionDetailPage({
   const activeBidsTotal = myCurrentBids.reduce((sum, b) => sum + b.amount, 0);
 
   const contractedIds = new Set((contracts ?? []).map((c) => c.rider_id));
+  const cooldownMap = new Map(
+    (cooldownContracts ?? []).map((c) => [c.rider_id, c.available_from as string])
+  );
   const enrichedRiders = (riders ?? []).map((r) => ({
     ...r,
     is_contracted: contractedIds.has(r.id),
+    cooldown_until: cooldownMap.get(r.id) ?? null,
   }));
 
   return (
