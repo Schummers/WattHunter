@@ -77,43 +77,39 @@ describe("addToSquad", () => {
       error: null,
     });
 
-    await expect(
-      addToSquad({ teamId: TEAM_ID, riderId: RIDER_ID, role: "gc_leader", phaseId: 4, year: 2026 })
-    ).rejects.toThrow(/capacity/i);
+    const result = await addToSquad({ teamId: TEAM_ID, riderId: RIDER_ID, role: "gc_leader", phaseId: 4, year: 2026 });
+    expect(result).toEqual({ error: expect.stringMatching(/capacity/i) });
     expect(mockRpc).toHaveBeenCalledOnce();
   });
 
   it("forwards low-level Supabase errors", async () => {
     mockRpc.mockResolvedValueOnce({ data: null, error: { message: "network down" } });
 
-    await expect(
-      addToSquad({ teamId: TEAM_ID, riderId: RIDER_ID, role: "gc_leader", phaseId: 4, year: 2026 })
-    ).rejects.toThrow(/network down/);
+    const result = await addToSquad({ teamId: TEAM_ID, riderId: RIDER_ID, role: "gc_leader", phaseId: 4, year: 2026 });
+    expect(result).toEqual({ error: expect.stringMatching(/network down/) });
   });
 
-  it("rejects an invalid role at the Zod layer (no RPC call)", async () => {
-    await expect(
-      addToSquad({
-        teamId: TEAM_ID,
-        riderId: RIDER_ID,
-        role: "not-a-role" as never,
-        phaseId: 4,
-        year: 2026,
-      })
-    ).rejects.toThrow();
+  it("returns error for invalid role at the Zod layer (no RPC call)", async () => {
+    const result = await addToSquad({
+      teamId: TEAM_ID,
+      riderId: RIDER_ID,
+      role: "not-a-role" as never,
+      phaseId: 4,
+      year: 2026,
+    });
+    expect(result).toEqual({ error: "Invalid data" });
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it("rejects an invalid UUID at the Zod layer (no RPC call)", async () => {
-    await expect(
-      addToSquad({
-        teamId: "not-a-uuid",
-        riderId: RIDER_ID,
-        role: "gc_leader",
-        phaseId: 4,
-        year: 2026,
-      })
-    ).rejects.toThrow();
+  it("returns error for invalid UUID at the Zod layer (no RPC call)", async () => {
+    const result = await addToSquad({
+      teamId: "not-a-uuid",
+      riderId: RIDER_ID,
+      role: "gc_leader",
+      phaseId: 4,
+      year: 2026,
+    });
+    expect(result).toEqual({ error: "Invalid data" });
     expect(mockRpc).not.toHaveBeenCalled();
   });
 });
@@ -149,9 +145,8 @@ describe("removeFromSquad", () => {
       error: null,
     });
 
-    await expect(
-      removeFromSquad({ teamId: TEAM_ID, riderId: RIDER_ID, phaseId: 4, year: 2026 })
-    ).rejects.toThrow(/not in squad/i);
+    const result = await removeFromSquad({ teamId: TEAM_ID, riderId: RIDER_ID, phaseId: 4, year: 2026 });
+    expect(result).toEqual({ error: expect.stringMatching(/not in squad/i) });
   });
 });
 
@@ -188,15 +183,14 @@ describe("swapSlot", () => {
       error: null,
     });
 
-    await expect(
-      swapSlot({
-        teamId: TEAM_ID,
-        oldRiderId: RIDER_ID,
-        newRiderId: RIDER_ID_2,
-        phaseId: 4,
-        year: 2026,
-      })
-    ).rejects.toThrow(/old rider/i);
+    const result = await swapSlot({
+      teamId: TEAM_ID,
+      oldRiderId: RIDER_ID,
+      newRiderId: RIDER_ID_2,
+      phaseId: 4,
+      year: 2026,
+    });
+    expect(result).toEqual({ error: expect.stringMatching(/old rider/i) });
   });
 
   it("forwards RPC errors (new rider already in squad)", async () => {
@@ -205,15 +199,14 @@ describe("swapSlot", () => {
       error: null,
     });
 
-    await expect(
-      swapSlot({
-        teamId: TEAM_ID,
-        oldRiderId: RIDER_ID,
-        newRiderId: RIDER_ID_2,
-        phaseId: 4,
-        year: 2026,
-      })
-    ).rejects.toThrow(/already/i);
+    const result = await swapSlot({
+      teamId: TEAM_ID,
+      oldRiderId: RIDER_ID,
+      newRiderId: RIDER_ID_2,
+      phaseId: 4,
+      year: 2026,
+    });
+    expect(result).toEqual({ error: expect.stringMatching(/already/i) });
   });
 });
 
@@ -250,21 +243,19 @@ describe("assignRole", () => {
       error: null,
     });
 
-    await expect(
-      assignRole({ teamId: TEAM_ID, riderId: RIDER_ID, role: "gc_leader", phaseId: 4, year: 2026 })
-    ).rejects.toThrow(/squad/i);
+    const result = await assignRole({ teamId: TEAM_ID, riderId: RIDER_ID, role: "gc_leader", phaseId: 4, year: 2026 });
+    expect(result).toEqual({ error: expect.stringMatching(/squad/i) });
   });
 
-  it("rejects unknown role at Zod layer", async () => {
-    await expect(
-      assignRole({
-        teamId: TEAM_ID,
-        riderId: RIDER_ID,
-        role: "not-a-role" as never,
-        phaseId: 4,
-        year: 2026,
-      })
-    ).rejects.toThrow();
+  it("returns error for unknown role at Zod layer", async () => {
+    const result = await assignRole({
+      teamId: TEAM_ID,
+      riderId: RIDER_ID,
+      role: "not-a-role" as never,
+      phaseId: 4,
+      year: 2026,
+    });
+    expect(result).toEqual({ error: "Invalid data" });
     expect(mockRpc).not.toHaveBeenCalled();
   });
 });

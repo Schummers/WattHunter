@@ -21,11 +21,13 @@ const UUID = z.string().uuid();
 const PhaseIdSchema = z.union([z.literal(4), z.literal(6), z.literal(8)]);
 
 type RpcResult = { ok?: boolean; error?: string } | null;
+export type ActionResponse = { ok: true } | { error: string };
 
-function checkResult(fn: string, data: unknown, error: { message: string } | null) {
-  if (error) throw new Error(error.message);
+function extractError(fn: string, data: unknown, error: { message: string } | null): string | null {
+  if (error) return error.message;
   const result = data as RpcResult;
-  if (!result?.ok) throw new Error(result?.error ?? `${fn} failed`);
+  if (!result?.ok) return result?.error ?? `${fn} failed`;
+  return null;
 }
 
 async function getTeamLeagueId(teamId: string): Promise<string | null> {
@@ -53,11 +55,11 @@ export async function addToSquad({
   role: GtRole;
   phaseId: GtPhaseId;
   year: number;
-}) {
-  UUID.parse(teamId);
-  UUID.parse(riderId);
-  RoleSchema.parse(role);
-  PhaseIdSchema.parse(phaseId);
+}): Promise<ActionResponse> {
+  if (!UUID.safeParse(teamId).success || !UUID.safeParse(riderId).success ||
+      !RoleSchema.safeParse(role).success || !PhaseIdSchema.safeParse(phaseId).success) {
+    return { error: "Invalid data" };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("gt_add_to_squad", {
@@ -67,7 +69,9 @@ export async function addToSquad({
     p_phase_id: phaseId,
     p_year: year,
   });
-  checkResult("gt_add_to_squad", data, error);
+
+  const err = extractError("gt_add_to_squad", data, error);
+  if (err) return { error: err };
 
   const leagueId = await getTeamLeagueId(teamId);
   if (leagueId) revalidatePath(`/league/${leagueId}/team/gt`);
@@ -87,10 +91,11 @@ export async function removeFromSquad({
   riderId: string;
   phaseId: GtPhaseId;
   year: number;
-}) {
-  UUID.parse(teamId);
-  UUID.parse(riderId);
-  PhaseIdSchema.parse(phaseId);
+}): Promise<ActionResponse> {
+  if (!UUID.safeParse(teamId).success || !UUID.safeParse(riderId).success ||
+      !PhaseIdSchema.safeParse(phaseId).success) {
+    return { error: "Invalid data" };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("gt_remove_from_squad", {
@@ -99,7 +104,9 @@ export async function removeFromSquad({
     p_phase_id: phaseId,
     p_year: year,
   });
-  checkResult("gt_remove_from_squad", data, error);
+
+  const err = extractError("gt_remove_from_squad", data, error);
+  if (err) return { error: err };
 
   const leagueId = await getTeamLeagueId(teamId);
   if (leagueId) revalidatePath(`/league/${leagueId}/team/gt`);
@@ -121,11 +128,11 @@ export async function swapSlot({
   newRiderId: string;
   phaseId: GtPhaseId;
   year: number;
-}) {
-  UUID.parse(teamId);
-  UUID.parse(oldRiderId);
-  UUID.parse(newRiderId);
-  PhaseIdSchema.parse(phaseId);
+}): Promise<ActionResponse> {
+  if (!UUID.safeParse(teamId).success || !UUID.safeParse(oldRiderId).success ||
+      !UUID.safeParse(newRiderId).success || !PhaseIdSchema.safeParse(phaseId).success) {
+    return { error: "Invalid data" };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("gt_swap_slot", {
@@ -135,7 +142,9 @@ export async function swapSlot({
     p_phase_id: phaseId,
     p_year: year,
   });
-  checkResult("gt_swap_slot", data, error);
+
+  const err = extractError("gt_swap_slot", data, error);
+  if (err) return { error: err };
 
   const leagueId = await getTeamLeagueId(teamId);
   if (leagueId) revalidatePath(`/league/${leagueId}/team/gt`);
@@ -158,11 +167,11 @@ export async function assignRole({
   role: GtRole;
   phaseId: GtPhaseId;
   year: number;
-}) {
-  UUID.parse(teamId);
-  UUID.parse(riderId);
-  RoleSchema.parse(role);
-  PhaseIdSchema.parse(phaseId);
+}): Promise<ActionResponse> {
+  if (!UUID.safeParse(teamId).success || !UUID.safeParse(riderId).success ||
+      !RoleSchema.safeParse(role).success || !PhaseIdSchema.safeParse(phaseId).success) {
+    return { error: "Invalid data" };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("gt_assign_role", {
@@ -172,7 +181,9 @@ export async function assignRole({
     p_phase_id: phaseId,
     p_year: year,
   });
-  checkResult("gt_assign_role", data, error);
+
+  const err = extractError("gt_assign_role", data, error);
+  if (err) return { error: err };
 
   const leagueId = await getTeamLeagueId(teamId);
   if (leagueId) revalidatePath(`/league/${leagueId}/team/gt`);
