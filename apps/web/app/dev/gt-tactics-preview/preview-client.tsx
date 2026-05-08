@@ -10,6 +10,7 @@ import {
   X,
   AlertTriangle,
   Bell,
+  ArrowLeft,
 } from "lucide-react";
 import { Tag } from "@/components/pill";
 import { cn } from "@/lib/utils";
@@ -374,81 +375,77 @@ function NemesisModal({
     return role.xp >= myXp;
   });
 
+  const [step, setStep] = useState<1 | 2>(1);
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [selectedStage, setSelectedStage] = useState<string>("");
-  const canDeclare = !!selectedRival && !!selectedStage;
   const remaining = tactic.max - tactic.used;
+  const rival = RIVAL_TEAMS.find((rt) => rt.id === selectedRival);
+  const rivalRole = rival ? (isGc ? rival.gcLeader : rival.sprinter) : null;
 
-  return (
-    <ModalShell
-      onClose={onClose}
-      footer={
-        <ModalActions
-          onClose={onClose}
-          onSubmit={onClose}
-          submitLabel="Declare Nemesis"
-          submitDisabled={!canDeclare}
-        />
-      }
-    >
-      <div className="flex h-full flex-col gap-4 p-4">
-        {/* === Fixed top section === */}
-        <ModalHeader
-          icon={<Icon className="size-5 text-[var(--accent-default)]" />}
-          title={tactic.name}
-          subtitle={`${remaining} / ${tactic.max} uses left`}
-          subtitleMono
-          onClose={onClose}
-        />
+  // ---- Step 1: pick rival ----
+  if (step === 1) {
+    return (
+      <ModalShell
+        onClose={onClose}
+        footer={
+          <ModalActions
+            onClose={onClose}
+            onSubmit={() => setStep(2)}
+            submitLabel="Next"
+            submitDisabled={!selectedRival}
+          />
+        }
+      >
+        <div className="flex h-full flex-col gap-4 p-4">
+          <ModalHeader
+            icon={<Icon className="size-5 text-[var(--accent-default)]" />}
+            title={tactic.name}
+            subtitle={`${remaining} / ${tactic.max} uses left · Step 1 of 2`}
+            subtitleMono
+            onClose={onClose}
+          />
 
-        {/* Single description — duel + cutoff in one paragraph */}
-        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-          {tactic.description}
-        </p>
+          <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+            {tactic.description}
+          </p>
 
-        {/* Risk warning */}
-        <div className="flex items-start gap-2 rounded-[var(--radius-md)] border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2.5">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--warning)]" />
-          <div className="flex flex-col gap-1 text-[length:var(--type-caption)]">
-            <span className="font-semibold text-[var(--text-high)]">
-              This is a duel, not a guarantee
-            </span>
-            <span className="text-[var(--text-mid)]">
-              <strong className="text-[var(--text-high)]">Win</strong> → you
-              score ×2, they lose 50%. <br />
-              <strong className="text-[var(--text-high)]">Lose</strong> → you
-              lose 25%, they gain 25%.
-            </span>
+          {/* Risk warning */}
+          <div className="flex items-start gap-2 rounded-[var(--radius-md)] border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2.5">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--warning)]" />
+            <div className="flex flex-col gap-1 text-[length:var(--type-caption)]">
+              <span className="font-semibold text-[var(--text-high)]">
+                This is a duel, not a guarantee
+              </span>
+              <span className="text-[var(--text-mid)]">
+                <strong className="text-[var(--text-high)]">Win</strong> → you
+                score ×2, they lose 50%. <br />
+                <strong className="text-[var(--text-high)]">Lose</strong> → you
+                lose 25%, they gain 25%.
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Your leader info */}
-        <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-subtle)] px-3 py-2">
-          <div className="flex flex-col">
-            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-              Your {roleLabel}
-            </span>
-            <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-              {myLeaderName}
-            </span>
+          {/* Your leader */}
+          <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-subtle)] px-3 py-2">
+            <div className="flex flex-col">
+              <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+                Your {roleLabel}
+              </span>
+              <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+                {myLeaderName}
+              </span>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
+                {myXp}
+              </span>
+              <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
+                GT XP
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
-              {myXp}
-            </span>
-            <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
-              GT XP
-            </span>
-          </div>
-        </div>
 
-        {/*
-          === Lists area ===
-          Splits remaining vertical space between the two lists.
-          Each list has its own scroll. The modal body itself never scrolls.
-        */}
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
-          {/* Rival team list */}
+          {/* Rival list — fills remaining */}
           <div className="flex min-h-0 flex-1 flex-col gap-1.5">
             <div className="flex items-baseline justify-between">
               <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
@@ -479,18 +476,77 @@ function NemesisModal({
               </div>
             )}
           </div>
+        </div>
+      </ModalShell>
+    );
+  }
 
-          {/* Target stage list */}
-          <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+  // ---- Step 2: pick stage ----
+  return (
+    <ModalShell
+      onClose={onClose}
+      footer={
+        <div className="flex flex-col-reverse gap-2 lg:flex-row lg:justify-between">
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 text-[length:var(--type-body)] font-medium text-[var(--text-mid)] hover:text-[var(--text-high)]"
+          >
+            <ArrowLeft className="size-4" />
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={!selectedStage}
+            className="rounded-[var(--radius-md)] bg-[var(--accent-default)] px-4 py-2.5 text-[length:var(--type-body)] font-semibold text-[var(--bg-app)] disabled:opacity-50"
+          >
+            Declare Nemesis
+          </button>
+        </div>
+      }
+    >
+      <div className="flex h-full flex-col gap-4 p-4">
+        <ModalHeader
+          icon={<Icon className="size-5 text-[var(--accent-default)]" />}
+          title={tactic.name}
+          subtitle={`${remaining} / ${tactic.max} uses left · Step 2 of 2`}
+          subtitleMono
+          onClose={onClose}
+        />
+
+        {/* Compact recap of step 1 */}
+        <div className="flex items-center gap-2.5 rounded-[var(--radius-md)] border border-[var(--accent-default)] bg-[var(--badge-bg)] px-3 py-2.5">
+          <Swords className="size-4 shrink-0 text-[var(--accent-default)]" />
+          <div className="flex min-w-0 flex-1 flex-col">
             <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-              Target stage
+              Target
             </span>
-            <StageList
-              value={selectedStage}
-              onChange={setSelectedStage}
-              fillParent
-            />
+            <span className="truncate text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+              {rival?.name}
+              {rivalRole && (
+                <span className="font-normal text-[var(--text-mid)]">
+                  {" "}
+                  · {rivalRole.name}
+                </span>
+              )}
+            </span>
           </div>
+          <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
+            {rivalRole?.xp}
+          </span>
+        </div>
+
+        {/* Stage list — fills remaining */}
+        <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+          <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+            Target stage
+          </span>
+          <StageList
+            value={selectedStage}
+            onChange={setSelectedStage}
+            fillParent
+          />
         </div>
       </div>
     </ModalShell>
