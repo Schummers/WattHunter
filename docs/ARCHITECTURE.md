@@ -1,7 +1,7 @@
 # WattHunter — Architecture
 
 > **Document vivant** — Mis a jour a chaque decision d'architecture.
-> Derniere mise a jour : 2026-04-24
+> Derniere mise a jour : 2026-05-09
 
 ---
 
@@ -14,7 +14,7 @@
 | Icones | Lucide React (base) + @phosphor-icons/react (gamification) | |
 | Police | Geist Sans (UI) + Geist Mono (tous les nombres) | package `geist` |
 | Auth | Supabase Auth | Google OAuth + email/password |
-| Database | Supabase Postgres | 40+ migrations, RLS enforced |
+| Database | Supabase Postgres | 83 migrations, 28 tables, RLS enforced |
 | Realtime | Supabase Realtime | Prevu pour encheres live |
 | Edge Functions | Supabase Edge Functions | Calculs XP, finances |
 | Data pipeline | Python (local uniquement) | Sync procyclingstats via Playwright |
@@ -31,10 +31,16 @@ watthunter/
 │   │   ├── (auth)/              # Routes sans sidebar
 │   │   │   ├── login/           # Connexion (Google + email)
 │   │   │   ├── signup/          # Creation de compte (email)
+│   │   │   ├── forgot-password/ # Demande de reset password
+│   │   │   ├── reset-password/  # Formulaire de reset password
 │   │   │   ├── onboarding/      # Ecran unique — Rejoindre (primary) / Creer (secondary)
 │   │   │   └── league/
 │   │   │       ├── create/      # Creer une ligue
-│   │   │       └── join/        # Rejoindre avec code ou URL ?code=XXXXXX
+│   │   │       ├── join/        # Rejoindre avec code ou URL ?code=XXXXXX
+│   │   │       └── choose/      # League picker si l'utilisateur en a plusieurs
+│   │   ├── (legal)/             # Pages légales
+│   │   │   ├── privacy/         # Politique de confidentialité
+│   │   │   └── terms/           # Conditions d'utilisation
 │   │   ├── (game)/              # Routes avec sidebar + topbar (desktop) ou bottom-nav (mobile)
 │   │   │   └── league/[leagueId]/
 │   │   │       ├── page.tsx            # Home / Lobby
@@ -45,7 +51,7 @@ watthunter/
 │   │   │       ├── levels/             # Page niveaux (timeline 8 niveaux WT)
 │   │   │       ├── ranking/            # Classement ligue
 │   │   │       │   └── team/[teamId]/  # Profil equipe adverse
-│   │   │       ├── rider/[riderId]/    # Detail coureur (PCS + game stats, 3 etats)
+│   │   │       ├── rider/[riderId]/    # Detail coureur (PCS + game stats, unifie)
 │   │   │       ├── help/               # Regles du jeu + FAQ
 │   │   │       ├── settings/           # Parametres equipe + ligue
 │   │   │       ├── team/               # Sous-section equipe (layout avec sub-tabs)
@@ -53,14 +59,20 @@ watthunter/
 │   │   │       │   ├── market/         # Recruts (marche des coureurs)
 │   │   │       │   │   └── history/    # Historique encheres de l'equipe
 │   │   │       │   ├── strategies/     # Strategies actives de l'equipe
-│   │   │       │   └── auctions/       # Draft bids + validation des rounds
-│   │   │       │       └── rounds/     # Calendrier des rounds (commissioner)
+│   │   │       │   ├── auctions/       # Draft bids + validation des rounds
+│   │   │       │   │   └── rounds/     # Calendrier des rounds (commissioner)
+│   │   │       │   └── gt/             # Grand Tour squad builder V2 (cap 8)
+│   │   │       │       └── tactics/    # 5 tactiques in-race (Unleash, Overdrive, Nemesis x2, Call the Bus)
 │   │   │       ├── budget/             # Finances (P&L, tresorerie)
 │   │   │       │   ├── marketplace/    # Sponsor marketplace
 │   │   │       │   └── transactions/   # Historique transactions
-│   │   │       └── auctions/           # Calendrier encheres global
-│   │   │           └── [auctionId]/    # Detail enchere
-│   │   │               └── results/    # Resultats round 1/2/3
+│   │   │       └── auction/            # Calendrier encheres global
+│   │   │           ├── [auctionId]/    # Detail enchere
+│   │   │           │   └── results/    # Resultats round 1/2/3
+│   │   │           ├── status/         # Round status table + force-resolve button
+│   │   │           ├── rounds/         # Round dates (commissioner)
+│   │   │           ├── market/         # Recruts (redirect)
+│   │   │           └── history/        # Historique encheres
 │   │   ├── auth/callback/       # OAuth + email confirmation callback
 │   │   └── page.tsx             # Smart redirect
 │   ├── components/
@@ -69,8 +81,9 @@ watthunter/
 │   │   ├── metric-box.tsx       # Valeur Geist Mono + label, highlight accent
 │   │   ├── pill.tsx             # Tag v3 (4 variants: default/highlighted/success/warning)
 │   │   ├── segmented-control.tsx # Filter Chips v3 (container border, caption type)
-│   │   ├── sponsor-bonus-card.tsx  # Card bonus sponsor (race result bonuses)
-│   │   ├── sponsor-bonus-details.tsx # Details bonus sponsor
+│   │   ├── sponsor-bonus-card.tsx     # Card bonus sponsor (race result bonuses)
+│   │   ├── sponsor-bonus-details.tsx  # Details bonus sponsor
+│   │   ├── gt-goals-preview.tsx       # Sponsor GT goals display
 │   │   ├── back-header.tsx      # ArrowLeft + label, router.back()
 │   │   ├── phase-navigator.tsx  # Navigation entre phases WT
 │   │   ├── filter-chips.tsx     # Composant chips de filtrage
@@ -89,6 +102,18 @@ watthunter/
 │   │   ├── game-guide-accordion.tsx  # Accordeon regles du jeu
 │   │   ├── onboarding-cards.tsx # Cards onboarding (rejoindre/creer)
 │   │   ├── form-field.tsx       # Champ de formulaire standardise
+│   │   ├── release-confirm-modal.tsx  # Modal contextuel release (auction + rider detail)
+│   │   ├── rider-lock-badge.tsx       # Indicateur Co-Unlock Rule (cadenas)
+│   │   ├── rider-picker-sheet.tsx     # Picker coureur (GT squad, nemesis target)
+│   │   ├── home-gt-banner.tsx         # Banner GT phase sur home
+│   │   ├── nemesis-incoming-banner.tsx # Banner duel PvP entrant
+│   │   ├── remontada-boost-banner.tsx # Banner Anti-Runaway boost actif
+│   │   ├── tactic-card.tsx            # Card tactique GT (5 types)
+│   │   ├── tactic-modal-shell.tsx     # Modal shell partage placement tactique
+│   │   ├── tactic-boost-modal.tsx     # Modal Unleash/Overdrive/Call the Bus
+│   │   ├── tactic-nemesis-modal.tsx   # Modal Nemesis 2-step (rival → stage)
+│   │   ├── tactic-stage-list.tsx      # Stage picker placement tactique
+│   │   ├── team-tactics-section.tsx   # Orchestrator tactiques sur GT Team page
 │   │   ├── rail-link.tsx        # Lien de navigation vers detail rail
 │   │   ├── rail-router.tsx      # Routeur du panneau detail rail
 │   │   ├── detail-rail.tsx      # Panneau detail (desktop flex:2, min 380px)
@@ -103,12 +128,30 @@ watthunter/
 │   │   └── use-scroll-direction.ts  # Hook partagé hide-on-scroll
 │   └── lib/
 │       ├── supabase/
-│       │   ├── browser.ts       # Client cote navigateur (anon key)
-│       │   ├── server.ts        # Client cote serveur (cookies)
-│       │   └── middleware.ts    # Refresh session + protection routes
+│       │   ├── browser.ts            # Client cote navigateur (anon key)
+│       │   ├── server.ts             # Client cote serveur (cookies)
+│       │   ├── admin.ts              # Service-role client (server-only, RPCs admin)
+│       │   ├── middleware.ts         # Refresh session + protection routes
+│       │   ├── get-user.ts           # Lookup user cache
+│       │   ├── get-open-auction.ts   # Lookup auction state cache
+│       │   └── database.types.ts     # Types Supabase generes
 │       ├── levels.ts            # Source unique donnees niveaux + helpers
 │       ├── format.ts            # countryCodeToFlag, formatEuro, formatThousands, smartCountdown
-│       └── boost.ts             # calculateBoost (5 types de strategies vs roster riders)
+│       ├── boost.ts             # calculateBoost (4 types de strategies vs roster riders)
+│       ├── budget.ts            # Calcul P&L budget
+│       ├── calendar.ts          # Helpers calendrier WT
+│       ├── co-unlock.ts         # Co-Unlock Rule eligibility checks
+│       ├── gt-goals.ts          # Helpers sponsor GT goals
+│       ├── gt-phases.ts         # Detection phase GT (Giro/Tour/Vuelta)
+│       ├── gt-stages.ts         # Liste stages par GT
+│       ├── phases.ts            # Helpers phases WT
+│       ├── photo-url.ts         # Resolution URL photo coureur
+│       ├── remontada.ts         # Helpers Remontada Boost
+│       ├── rider-detail-data.ts # Fetcher unifie rider detail
+│       ├── sponsors.ts          # Sponsor data + bonus calculation
+│       ├── strategies.ts        # 4 strategy types + matching logic
+│       ├── tactics.ts           # 5 GT tactics catalog + helpers
+│       └── env.ts               # Validation env vars (Zod)
 ├── services/pcs-sync/           # Python — sync procyclingstats (local only)
 │   ├── run_pipeline.py          # CLI entry point (5 pipelines: A/B/C/E + bonus)
 │   ├── sync.py                  # Playwright + procyclingstats parser (top 600)
@@ -124,14 +167,21 @@ watthunter/
 │   ├── run_daily_pipeline.py    # Pipeline quotidien
 │   └── retry_failed.py          # Retry erreurs pipeline
 ├── supabase/
-│   ├── migrations/              # 40+ fichiers SQL appliques
+│   ├── migrations/              # 83 fichiers SQL appliques (28 tables)
 │   ├── functions/               # Edge Functions (a venir)
-│   └── seed/                    # Politiques + sponsors
+│   └── seed/                    # Strategies + sponsors
 ├── docs/
-│   ├── plans/                   # Design docs + plans d'implementation
+│   ├── archive/                 # Specs/plans/reviews shippes (history)
+│   │   ├── specs-completed/
+│   │   ├── plans-completed/
+│   │   ├── reviews-completed/
+│   │   └── TODO_BACKLOG.md      # Ancien backlog centralise
+│   ├── plans/                   # Plans actifs ou backlogs vivants
+│   ├── superpowers/             # Specs/plans en cours (workflow superpowers)
 │   ├── research/                # Notes de recherche technique
 │   ├── watthunter-design-system-v3.md  # Source de verite UI/UX (v3.0)
-│   ├── TODO_BACKLOG.md          # Backlog centralise (bugs + UI tasks)
+│   ├── known-issues-pcs.md      # Bugs PCS sync sans fix automatise
+│   ├── GAME_RULES.md            # Regles du jeu (living doc)
 │   └── ARCHITECTURE.md          # Ce fichier
 ├── CLAUDE.md                    # Conventions pour Claude Code (Rule #1: lire design system)
 └── PRD_*.md                     # PRDs d'origine (3 fichiers)
@@ -262,7 +312,7 @@ Sinon → /onboarding
 
 ## Base de donnees
 
-### Schema principal
+### Schema principal (28 tables)
 
 ```
 users ←──── league_members ────→ leagues
@@ -270,30 +320,42 @@ users ←──── league_members ────→ leagues
   └── teams ───────┘                  │
        │                              │
        ├── contracts → riders         │
-       ├── team_strategies → strategies │
-       ├── team_sponsors → sponsors   │
-       ├── treasury_log               │
-       └── rider_xp_daily             │
-                                      │
-       auctions ──────────────────────┘
-         └── auction_bids
+       ├── team_strategies → strategies
+       ├── team_sponsors → sponsors
+       ├── treasury_log
+       ├── rider_xp_daily              (avec role_mult, gt_classif_bonus, remontada_mult)
+       ├── team_xp_adjustments         (audit trail grant_xp admin)
+       └── team_ranking_daily          (snapshots quotidiens overtake detection)
 
-       riders ──→ race_results
-              ──→ rider_season_rankings
-              ──→ rider_teams
-              ──→ rider_pcs_history
+       auctions → auction_bids
+              → draft_bids
+              → round_validations      (marker validation + audit force-resolve)
 
-       remontada_boost_triggers  # 1 trigger par paire ordonnée A→B par GT (PK composée)
-       remontada_boosts          # boost actif : bénéficiaire, GT, stages restantes, mult 2x
-       -- rider_xp_daily.remontada_mult : colonne ajoutée (multiplicateur appliqué lors du scoring)
+       riders → race_results
+              → rider_season_rankings
+              → rider_teams
+              → rider_pcs_history
+              → race_startlists
+
+       sponsor_bonuses                 (paiements bonus par resultat)
+
+       Anti-Runaway:
+       remontada_boost_triggers        (1 trigger max par paire ordonnée A→B par GT)
+       remontada_boosts                (boost actif : stages restantes, ×2 mult)
+
+       Grand Tour Mode:
+       gt_squad                        (cap 8 coureurs par phase)
+       gt_role_assignments             (append-only role history, cutoff 11:00 CET)
+       gt_daily_classifications        (cache GC/sprint/KOM par stage)
+       gt_tactic_activations           (5 tactiques, 1 usage chacune par GT)
 ```
 
-### Migrations appliquees (40+)
+### Migrations appliquees (83)
 
 | Fichier | Description |
 |---------|-------------|
 | `20260221000000_initial_schema.sql` | Schema initial + RLS + contraintes |
-| `20260221150828_seed_policies_sponsors.sql` | 5 strategies + 10 sponsors |
+| `20260221150828_seed_policies_sponsors.sql` | 4 strategy types + 13 sponsors (6 tiers) |
 | `20260222*` | Fixes RLS (recursion, leagues select, max_players) |
 | `20260227000000_auction_rounds_and_scoring.sql` | auction_bids (round + status), rider_pcs_history |
 | `20260228*` | Trigger new_user, policy teams_select_own, auctions commissioner |
@@ -311,6 +373,14 @@ users ←──── league_members ────→ leagues
 | `20260403000000_auction_update_commissioner.sql` | Policy update encheres commissaire |
 | `20260403100000_draft_bids_and_economy.sql` | Draft bids + mecanismes economiques |
 | `20260424000000_anti_runaway_system.sql` | Remontada Boost tables + Level Curve Stretch seuils + Co-Unlock Rule |
+| `20260503-20260505*` | Code review fixes : SECURITY DEFINER RPCs (release_rider, confirm_phase_setup, leave_league), trigger teams_protect_sensitive_fields, round constraint 1-8 |
+| `20260506*` | Sponsor base bonuses rework (flat) + sponsor/strategy lock window |
+| `20260507000000_join_league_late.sql` | Late join : init XP + treasury rounded |
+| `20260508000000_round_lifecycle.sql` | Round lifecycle + force-resolve |
+| `20260508010*-20260512000000` | GT Tactics (table gt_tactic_activations, RPC place_tactic, traceability columns), GT Squad Builder V2, grant_xp RPC, 7-day release cooldown |
+| `20260508020000_round_validations_and_force_resolve.sql` | Table round_validations + auto-resolve consensus |
+| `20260509100000_xp_traceability_columns.sql` | role_mult + gt_classif_bonus dans rider_xp_daily |
+| `20260510000000_gt_squad_builder_v2.sql` | Flexible GT squad (cap 8, swaps libres pendant phase) |
 
 ### RLS — Architecture
 
@@ -409,8 +479,9 @@ $$;
 
 | Suite | Chemin | Nb tests | Couverture |
 |-------|--------|----------|------------|
-| pytest | `services/pcs-sync/tests/` | 22+ | scoring, auction, enrich |
-| vitest | `apps/web/.../actions.test.ts` | 17+ | server actions, auction bids |
+| pytest | `services/pcs-sync/tests/` | 22+ | scoring, auction, enrich, tactics |
+| vitest | `apps/web/**/*.test.ts` | 157 (17 fichiers) | server actions, auction bids, GT tactics, round lifecycle, co-unlock, levels sync |
+| Playwright e2e | `apps/web/e2e/` | smoke + GT tactics happy path (test.fixme) | golden path |
 
 ---
 
@@ -472,6 +543,26 @@ $$;
 - **Decision :** Migration de Zinc/Blue 220° vers Sky Blue Night (200°) + Lucide + Geist
 - **Raison :** Cohesion visuelle avec le gradient brand, meilleurs contrastes (AAA sur texte-mid)
 
+### ADR-015 : SECURITY DEFINER RPCs pour mutations critiques
+- **Decision :** 12 mutations (place_bid, validate_round, release_rider, confirm_phase_setup, leave_league, join_league_by_code, grant_xp, gt_*, place_tactic) passent par RPCs Postgres atomiques
+- **Raison :** Atomicite + RLS bypass controle + audit trail. Le code TS se limite a Zod validation + supabase.rpc(...)
+
+### ADR-016 : Anti-Runaway System (Remontada + Co-Unlock + Level Curve)
+- **Decision :** 3 mecanismes toujours actifs (pas d'opt-in commissioner) pour limiter les ecarts structurels
+- **Raison :** Eviter les snowball effects ou un leader devient injoignable, fenetres de come-back en GT
+
+### ADR-017 : Auto-resolve consensus + force-resolve
+- **Decision :** Round auto-resolve quand tous les joueurs ont valide ; n'importe quel joueur peut force-resolve via Status tab
+- **Raison :** Supprime le besoin d'intervention commissioner, accelere le flow, fallback manuel disponible
+
+### ADR-018 : 7-day release cooldown
+- **Decision :** Coureur releasé ne peut pas etre re-encheri par personne pendant 7 jours
+- **Raison :** Previent l'exploit buy → check_salary → release → rebid au minimum
+
+### ADR-019 : GT Tactics — 5 tactiques in-race
+- **Decision :** 5 tactiques (Unleash, Overdrive, Nemesis GC, Nemesis Sprint, Call the Bus), 1 usage chacune par GT
+- **Raison :** Profondeur strategique pendant les Grands Tours, differenciation des decisions joueurs au-dela du roster
+
 ---
 
 ## Etat d'avancement
@@ -502,8 +593,22 @@ $$;
 - [x] Sponsor bonus (calcul sur resultats de course, multiplicateurs)
 - [x] Resolution 3-round sealed-bid (auction.py)
 - [x] XP quotidien (scoring.py)
-- [x] Tests automatises (pytest 22+, vitest 17+)
+- [x] Tests automatises (pytest 22+, vitest 157 / 17 fichiers)
 - [x] Anti-Runaway System (Remontada Boost + Co-Unlock Rule + Level Curve Stretch)
+- [x] Code review fixes (12 findings) : 12 RPCs SECURITY DEFINER + trigger teams_protect
+- [x] Force-resolve round (status table + any-player resolve button)
+- [x] Auto-resolve on consensus (tous valident → round auto-resolved)
+- [x] Payday in confirm_phase_setup (sponsor income + salaires + bankruptcy cascade)
+- [x] 7-day release cooldown (previent timing exploit)
+- [x] GT Tactics (5 tactiques : Unleash, Overdrive, Nemesis GC/Sprint, Call the Bus)
+- [x] GT Squad Builder V2 (cap 8, swaps libres pendant phase)
+- [x] grant_xp RPC (admin XP adjustments avec traceability)
+- [x] Late join (rejoindre une ligue active)
+- [x] Sponsor base bonuses rework (flat) + GT-specific goals
+- [x] Rider detail unifie (1 page pour tous les entry points)
+- [x] Password reset flow (forgot + reset)
+- [x] Pages legales (privacy + terms)
+- [x] Status page (purchasing power + clickable team rows)
 
 ### A implementer (pre-alpha)
 
