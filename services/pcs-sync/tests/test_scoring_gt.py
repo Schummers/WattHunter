@@ -402,3 +402,30 @@ async def test_rider_not_in_squad_no_multiplier():
 
     payload = sb._last_upsert_payload("rider_xp_daily")
     assert payload["xp_gained"] == 100.0
+
+
+async def test_scoring_persists_traceability_columns():
+    """Every scored GT row must populate gt_role_mult, gt_classif_bonus, nemesis_modifier,
+    tactic_applied. When no tactics are active, values must reproduce the pre-tactic result.
+
+    gc_leader + rank 3 GC: 100 × 1.5 + 12 (classif) = 162, nemesis_modifier=1.0, tactic_applied=None.
+    """
+    import scoring
+
+    sb = _base_mocks(
+        role="gc_leader",
+        pcs_points=100,
+        classif_rows=[{"classification_type": "gc", "rank": 3}],
+    )
+    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+
+    # Existing xp invariant: 100 × 1.5 + (10+1-3) × 1.5 = 150 + 12 = 162
+    assert payload["xp_gained"] == 162.0
+
+    # Traceability columns — new in Task 8
+    assert payload["gt_role_mult"] == 1.5          # gc_leader on non-ITT GT stage
+    assert payload["gt_classif_bonus"] == 12.0     # rank 3 GC with role-match ×1.5
+    assert payload["nemesis_modifier"] == 1.0      # no tactics active
+    assert payload["tactic_applied"] is None       # no tactics active

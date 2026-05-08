@@ -21,6 +21,12 @@ from remontada import (
     detect_overtakes,
     record_overtake,
 )
+from tactics import (
+    compute_unleash_modifier,
+    compute_overdrive_modifier,
+    compute_call_bus_modifier,
+    compute_nemesis_modifier,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -394,18 +400,73 @@ async def calculate_daily_scores(
                 raw_points = entry["pcs_points"]
                 race_slug = entry["race_slug"]
 
-                # GT role multiplier + daily classif bonus — only for GT squad members.
-                role_mult = 1.0
-                classif_pts = 0.0
+                # === Compute base role multiplier + classif bonus — only for GT squad members.
+                in_squad = (team_id, rider_id) in gt_squad_members
+                gt_role_mult = 1.0
+                gt_classif_bonus = 0.0
+                role = "domestique"  # default; overridden below for squad members
                 gt_id = get_gt_identifier(race_slug)
                 stage_no = get_stage_number(race_slug)
-                if _is_gt_slug(race_slug) and (team_id, rider_id) in gt_squad_members:
+                if _is_gt_slug(race_slug) and in_squad:
                     role = gt_roles.get((team_id, rider_id), "domestique")
-                    role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
-                    classif_pts = _classif_bonus(
+                    gt_role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
+                    gt_classif_bonus = _classif_bonus(
                         classif_by_key.get((race_slug, rider_id), []),
                         role,
                     )
+
+                # === Apply tactic modifiers (no-op when gt_tactics is empty) ===
+                nemesis_modifier = 1.0
+                tactic_applied: str | None = None
+
+                for tactic in gt_tactics.get(race_slug, []):
+                    t_type = tactic["tactic_type"]
+
+                    if tactic["team_id"] == team_id:
+                        # Tactic owned by this team
+                        if t_type == "unleash":
+                            override, applied = compute_unleash_modifier(role, race_slug)
+                            if override is not None:
+                                gt_role_mult = override
+                                tactic_applied = applied
+                        elif t_type == "overdrive":
+                            override, applied = compute_overdrive_modifier(role, race_slug)
+                            if override is not None:
+                                gt_role_mult = override
+                                tactic_applied = applied
+                        elif t_type == "call_the_bus":
+                            include, applied = compute_call_bus_modifier(in_squad, race_slug)
+                            if include:
+                                tactic_applied = applied
+                                # gt_role_mult remains 1.0 (domestique default for bench riders)
+                        elif t_type in ("nemesis_gc", "nemesis_sprint"):
+                            attacker_rider = tactic.get("resolved_attacker_rider_id")
+                            if attacker_rider == rider_id:
+                                role_override, nem_mod, applied = compute_nemesis_modifier(
+                                    outcome=tactic.get("outcome") or "no_resolution",
+                                    rider_role="attacker",
+                                    tactic_type=t_type,
+                                )
+                                if role_override is not None:
+                                    gt_role_mult = role_override
+                                nemesis_modifier = nem_mod
+                                tactic_applied = applied
+                    else:
+                        # Tactic owned by another team — only Nemesis affects this rider
+                        if t_type in ("nemesis_gc", "nemesis_sprint"):
+                            target_team = tactic.get("nemesis_target_team_id")
+                            target_rider = tactic.get("resolved_target_rider_id")
+                            if target_team == team_id and target_rider == rider_id:
+                                role_override, nem_mod, applied = compute_nemesis_modifier(
+                                    outcome=tactic.get("outcome") or "no_resolution",
+                                    rider_role="target",
+                                    tactic_type=t_type,
+                                )
+                                if role_override is not None:
+                                    gt_role_mult = role_override
+                                # Cap at 0.5 if multiple attackers all won (spec §6.4)
+                                nemesis_modifier = min(nemesis_modifier, nem_mod)
+                                tactic_applied = applied
 
                 # Remontada Boost (Mech 1): 2x when active for this team at this GT stage.
                 remontada_mult = 1.0
@@ -417,7 +478,14 @@ async def calculate_daily_scores(
                         stage_number=stage_no,
                     )
 
-                xp = (raw_points * role_mult * (1 + bonus) + classif_pts) * remontada_mult
+                xp = max(
+                    0,
+                    round(
+                        (raw_points * gt_role_mult * (1 + bonus) + gt_classif_bonus)
+                        * remontada_mult * nemesis_modifier,
+                        2,
+                    ),
+                )
 
                 # Upsert rider_xp_daily (conflict key: team_id + rider_id + race_slug)
                 try:
@@ -429,7 +497,11 @@ async def calculate_daily_scores(
                         "raw_pcs_points": raw_points,
                         "strategy_bonus": bonus,
                         "remontada_mult": remontada_mult,
-                        "xp_gained": round(xp, 2),
+                        "gt_role_mult": gt_role_mult,
+                        "gt_classif_bonus": gt_classif_bonus,
+                        "nemesis_modifier": nemesis_modifier,
+                        "tactic_applied": tactic_applied,
+                        "xp_gained": xp,
                         "race_slug": race_slug,
                     }, on_conflict="team_id,rider_id,race_slug").execute()
                 except Exception as e:
