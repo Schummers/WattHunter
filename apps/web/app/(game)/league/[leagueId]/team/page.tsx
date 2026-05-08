@@ -292,7 +292,7 @@ export default async function MyTeamPage({
                 }}
                 xp={xpByRider[r.id] ?? 0}
                 boostPct={riderBoosts[r.id] ?? 0}
-                href={`/league/${leagueId}/rider/${r.id}`}
+                href={`/league/${leagueId}/rider/${r.id}?from=team`}
               />
             );
           })}

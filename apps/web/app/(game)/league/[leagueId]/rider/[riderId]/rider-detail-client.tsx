@@ -14,7 +14,7 @@ import { Plus, Minus } from "lucide-react";
 import { BID_INCREMENT, snapToIncrement, computeAvailableBudget } from "@/lib/budget";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 
-type RiderContext = "market" | "auctions" | "team" | "ranking";
+type RiderContext = "market" | "team" | "ranking";
 
 interface Rider {
   id: string;
@@ -64,7 +64,7 @@ interface RiderDetailClientProps {
   currentBidAmount: number | null;
   activeAuctionId: string | null;
   contractData: { locked_salary: number; status: string; contractId?: string; pcsPoints?: number } | null;
-  ownerInfo: { display_name: string; team_name: string } | null;
+  ownerInfo: { display_name: string; team_name: string; locked_salary: number | null } | null;
   budgetInfo?: {
     currentSlots: number;
     maxSlots: number;
@@ -100,7 +100,6 @@ function getInitials(name: string): string {
 
 const BACK_LABELS: Record<RiderContext, string> = {
   market: "Market",
-  auctions: "Auctions",
   team: "My Team",
   ranking: "Ranking",
 };
@@ -138,8 +137,6 @@ export function RiderDetailClient({
   function handleBack() {
     if (context === "market") {
       router.push(`/league/${leagueId}/auction/market`);
-    } else if (context === "auctions") {
-      router.push(`/league/${leagueId}/auction`);
     } else {
       router.back();
     }
@@ -241,7 +238,7 @@ export function RiderDetailClient({
       );
     }
 
-    // ranking: 3 boxes (Game XP, Bonus, Paid Salary)
+    // ranking: 3 boxes (Game XP, Bonus, Paid Salary from owner contract)
     return (
       <div className="flex gap-3 px-4">
         <div className={boxClass}>
@@ -257,7 +254,11 @@ export function RiderDetailClient({
           <span className={labelClass}>Bonus</span>
         </div>
         <div className={boxClass}>
-          <div className={valueClass}>—</div>
+          <div className={valueClass}>
+            {ownerInfo?.locked_salary != null
+              ? formatThousands(ownerInfo.locked_salary)
+              : "—"}
+          </div>
           <span className={labelClass}>Paid Salary</span>
         </div>
       </div>
@@ -579,26 +580,18 @@ export function RiderDetailClient({
         </div>
       )}
 
-      {/* Segmented Control (RD-8) — hide for ranking */}
-      {context !== "ranking" && (
-        <div className="w-full px-4">
-          <SegmentedControl
-            segments={["PCS Stats", "Game Stats"]}
-            activeIndex={tabIndex}
-            onChange={setTabIndex}
-          />
-        </div>
-      )}
+      {/* Segmented Control (RD-8) */}
+      <div className="w-full px-4">
+        <SegmentedControl
+          segments={["PCS Stats", "Game Stats"]}
+          activeIndex={tabIndex}
+          onChange={setTabIndex}
+        />
+      </div>
 
       {/* Tab Content */}
       <div className="px-4 pb-8">
-        {context === "ranking" ? (
-          // Ranking: all sections inline (no tabs)
-          <div className="space-y-6">
-            <PcsStatsSection rankings={rankings} startlists={startlists} />
-            <GameResultsSection raceResults={raceResults} />
-          </div>
-        ) : tabIndex === 0 ? (
+        {tabIndex === 0 ? (
           <PcsStatsSection rankings={rankings} startlists={startlists} />
         ) : (
           <GameResultsSection raceResults={raceResults} />
