@@ -18,10 +18,11 @@ L'objectif de cette spec : remplacer ce trou par un déclencheur clair, automati
 
 ## Outcome attendu
 
-- À la clôture définitive du Round 3 d'une phase, `confirm_phase_setup` tourne automatiquement pour les 8 équipes en cascade
-- Une équipe qui ne peut plus enchérir (budget < min_salary, ou pool vide, ou roster plein) est marquée auto-validée pour ne pas bloquer le consensus
+- À la clôture définitive du Round 3 d'une phase, `confirm_phase_setup` tourne automatiquement pour les 8 équipes en cascade (sauf late joiners)
+- Une équipe qui ne peut plus enchérir (PP < min_salary OU roster plein) est marquée auto-validée pour ne pas bloquer le consensus
 - Un commissaire peut forcer la fermeture du round (existant pour R1/R2, à étendre pour R3)
-- La transaction list affiche clairement les mouvements du payday pour chaque user
+- La transaction list affiche clairement les mouvements du payday pour chaque user (per-rider, pas en bulk)
+- L'historique des phases passées (Phase 2, Phase 3) est rempli avec les bonnes entrées per-rider
 - Aucun bug de double-comptage : la déduction R2/R3 supprimée dans le fix précédent reste supprimée — le payday est l'unique source de mutation treasury liée aux salaires
 
 ## Architecture cible
@@ -46,10 +47,9 @@ L'objectif de cette spec : remplacer ce trou par un déclencheur clair, automati
    • DETECTION : nextAuction === null
    ↓
 6. 🆕 PHASE PAYDAY (cascade)                 ← nouveau déclenchement
-   • Pour chaque team de la league:
+   • Pour chaque team de la league (skip late joiners):
      – confirm_phase_setup(team_id, phase_id, label)
    • Logging dans treasury_log (transparence)
-   • Gestion des bankruptcies (cf. section dédiée)
    ↓
 7. Racing phase                              ← plus d'auctions jusqu'à phase N+1
    • Sponsor bonuses créditent au fil des résultats PCS
@@ -65,11 +65,10 @@ C'est le **seul** déclencheur. Pas de bouton dédié, pas de cron, pas de Pytho
 
 ### Auto-validation des équipes "non actionables"
 
-Une équipe est **non actionable** dans un round donné si **toutes** les conditions suivantes sont fausses (= elle ne peut rien faire) :
+Une équipe est **non actionable** dans un round donné si elle ne peut placer aucun bid utile :
 
-- Son PP courant (formule `validate_round` : `treasury + sponsor − active_salaries`, et la draft_bids_total <= PP) lui permet au moins un bid au `min_salary` (5 000 €)
-- ET il lui reste au moins un slot libre (active contracts + active bids < max_slots du level)
-- ET il existe au moins un coureur dans son pool gating (rank ≤ poolMin du level) qui n'a pas de contrat actif dans la league et hors cooldown
+- Son PP courant (formule `validate_round` : `treasury + sponsor − active_salaries − draft_bids_total`) est inférieur à `min_salary` (5 000 €) — impossible de placer même le bid minimum
+- OU il ne lui reste plus de slot libre (active contracts + active bids ≥ max_slots du level)
 
 Si une équipe est non actionable → on insère une row `round_validations` pour elle. Pour distinguer dans l'UI, on ajoute une colonne `auto_validated boolean DEFAULT false` à `round_validations` (migration mineure). Le tableau Status affiche "Auto-validated — no actions possible" pour les rows avec `auto_validated=true`.
 
@@ -85,36 +84,71 @@ Le bouton "Resolve" sur la page Status existe déjà pour R1/R2 et appelle `forc
 
 Pas de bouton "Confirm Phase Setup" séparé — c'est entièrement automatique en sortie de R3.
 
-### Gestion de la faillite (bankruptcy)
+### Pas de bankruptcy cascade — `validate_round` est le garde-fou
 
-Au payday, si `treasury + sponsor_income − total_active_salaries < 0` pour une équipe, le CHECK constraint `treasury >= 0` ferait échouer la transaction. La RPC `confirm_phase_setup` est donc étendue avec une cascade de bankruptcy :
+Aucune logique de faillite n'est nécessaire au payday. La RPC `validate_round` empêche déjà toute équipe de se mettre en déficit :
 
-1. Calculer le déficit projeté **avant** d'appliquer l'UPDATE treasury final
-2. Si déficit > 0 : auto-release du coureur **le plus cher** (ordre desc par `locked_salary`)
-   - `UPDATE contracts SET status='released', released_at=now(), available_from=now()+7d`
-   - `INSERT treasury_log type='bankruptcy_release' amount=0 description='Auto-release [rider name] (Phase N bankruptcy)'`
-3. Recalculer `total_active_salaries` (sans le coureur releasé) et redéterminer le déficit
-4. Boucler tant que `déficit > 0 AND active_contracts > 0`
-5. Si le roster devient vide et le déficit persiste → setter `treasury = 0` (avec entry `treasury_log` `bankruptcy_release` amount=0 description "Treasury floored at 0 due to insufficient sponsor — roster fully released")
+```sql
+v_purchasing_power := v_team.treasury + v_sponsor_income - v_active_salaries;
+v_available := v_purchasing_power - v_drafts_total;
+IF v_available < 0 THEN
+  RETURN jsonb_build_object('error', 'Budget exceeded...');
+END IF;
+```
 
-Le résultat final : `treasury` est non-négatif, le roster a été allégé jusqu'à la solvabilité, chaque release est tracé. La logique existait dans l'ancien Python `run_payday()` avant sa suppression — on la réintègre côté RPC.
+Conséquences :
+- Une équipe ne peut jamais valider un round qui la mettrait sous 0
+- Les salaires sont verrouillés à la création du contrat (`locked_salary`) — ils ne grossissent pas
+- Le release réduit `active_salaries` → ne peut que faire monter le PP
 
-### Cas particulier : team avec `phase_confirmed_id = NULL` (late join)
+Au payday, le calcul `treasury + sponsor − total_salaries` est donc **toujours ≥ 0** par construction. Le CHECK constraint `treasury >= 0` ne sera jamais déclenché par une cascade normale. Si jamais ça arrive (drift de data, modif manuelle), la RPC retourne une erreur sur cette équipe spécifique sans bloquer les autres — la cascade traite chaque team de façon isolée.
 
-GoudalEnergies a `phase_confirmed_id = NULL` (jamais payday). Quand le payday cascade tournera pour Phase 4, il marchera comme prévu pour eux (la guard d'idempotence ne se déclenche que si `phase_confirmed_id = current_phase_id`). Aucun traitement spécial requis.
+### Cas particulier : late joiners (équipes qui ont rejoint mid-phase)
+
+GoudalEnergies a `phase_confirmed_id = NULL` parce qu'il a rejoint la ligue **après** le payday Phase 3. Il a reçu une treasury moyenne au join, recruté son roster, mais n'a jamais reçu de revenu sponsor (Phase 3 et 4 manqués).
+
+**Règle** : le payday ne doit pas créditer rétroactivement les équipes qui n'étaient pas là au début de la phase. Sinon Goudal toucherait le sponsor Phase 4 alors qu'il n'a participé qu'à une partie de la phase.
+
+**Implémentation** : la cascade payday vérifie pour chaque équipe `team.created_at < phase_start_date`. Si l'équipe a été créée après le début de la phase courante, on **skip** (ni sponsor crédité, ni salaires déduits, mais on marque `phase_confirmed_id = current_phase_id` pour que les paydays suivants la traitent normalement).
+
+Ainsi Goudal sera ignoré au payday Phase 4 (à la clôture du R3) puis recevra son premier vrai payday à Phase 5 (Pre-Tour, juin).
 
 ## Composants modifiés
 
 | Fichier | Modification |
 |---|---|
-| `apps/web/app/(game)/league/[leagueId]/auction/actions.ts` | `forceResolveRound` : à la fin, si `nextAuction === null`, appeler `confirm_phase_setup` pour chaque team de la league (boucle) + agréger les résultats dans le retour |
+| `apps/web/app/(game)/league/[leagueId]/auction/actions.ts` | `forceResolveRound` : à la fin, si `nextAuction === null`, appeler `confirm_phase_setup` pour chaque team de la league (boucle) en skippant les late joiners. Agréger les résultats dans le retour. |
 | `supabase/migrations/<ts>_round_validations_auto_validated.sql` | Ajouter colonne `auto_validated boolean DEFAULT false` à `round_validations` |
-| `supabase/migrations/<ts>_payday_bankruptcy_cascade.sql` | Étendre `confirm_phase_setup` (CREATE OR REPLACE) avec la logique de bankruptcy auto-release |
-| `supabase/migrations/<ts>_auto_validate_helper.sql` | Fonction SQL `auto_validate_unactionable_teams(p_auction_id, p_league_id)` appelée depuis `validate_round` et `forceResolveRound` |
+| `supabase/migrations/<ts>_confirm_phase_setup_skip_late_joiners.sql` | Étendre `confirm_phase_setup` (CREATE OR REPLACE) avec le skip des late joiners (`team.created_at > phase_start`) |
+| `supabase/migrations/<ts>_auto_validate_helper.sql` | Fonction SQL `auto_validate_unactionable_teams(p_auction_id, p_league_id)` appelée depuis `validate_round` et au round-open |
 | `supabase/migrations/<ts>_validate_round_with_auto_validation.sql` | Mettre à jour `validate_round` pour invoquer le helper avant le check de consensus |
+| `supabase/migrations/<ts>_backfill_phases_2_3.sql` | INSERT per-rider salaries Phase 2 (+ sponsor flat 200K), DELETE bulk Phase 3 + INSERT per-rider salaries Phase 3 |
 | `apps/web/app/(game)/league/[leagueId]/auction/status/page.tsx` | Afficher l'état "Auto-validated (no actions possible)" pour les rows avec `auto_validated=true` |
-| Tests TS | Couvrir la cascade payday après R3 + auto-validation logic + bankruptcy |
-| Tests pytest | Sanity check sur la nouvelle logique RPC bankruptcy |
+| Tests TS | Couvrir la cascade payday après R3 + auto-validation logic + skip late joiners |
+| Tests pytest | (optionnel) sanity check sur les nouveaux comportements RPC |
+
+### Data repair : backfill des phases passées
+
+Hérité de la research `2026-05-06-budget-transactions-fix-design.md` (Task 5 jamais shippée). L'objectif : que la page Budget affiche un historique cohérent et per-rider quelle que soit la phase consultée.
+
+**État actuel par phase :**
+
+| Phase | Période | sponsor_payment dans log | payday_salary dans log |
+|---|---|---|---|
+| 1 — Season Start | jan-mars 2026 | Aucun (pas de sponsor à l'époque) | Aucun |
+| 2 — Classics Part 1 | mars 2026 | **Aucun** | **Aucun** |
+| 3 — Classics Part 2 | avril 2026 | OK (8 entrées, une par team) | Bulk uniquement (1 entrée par team avec description "Payday salaries — N riders", sans `rider_id`) |
+| 4 — Giro | mai 2026 | (à venir au prochain payday) | (à venir) |
+
+**Plan de backfill :**
+
+- **Phase 1** : aucun backfill (pas de sponsor à l'époque, comportement attendu)
+- **Phase 2** : INSERT `sponsor_payment` (200K flat par team) + INSERT `payday_salary` per-rider depuis les contrats actifs au 2 mars 2026. `teams.treasury` non touché (déjà correct historiquement).
+- **Phase 3** : DELETE les bulk `payday_salary` du 5 avril (descriptions "Payday salaries — N riders") + INSERT `payday_salary` per-rider depuis les contrats actifs au 2 avril 2026. `sponsor_payment` Phase 3 existants conservés. `teams.treasury` non touché.
+
+**Critère "contrat actif pendant la phase X"** : `purchased_at < phase_start_date AND (released_at IS NULL OR released_at > phase_start_date)`. C'est le snapshot qu'avait le payday Python à l'époque.
+
+**Idempotence** : la migration check qu'aucun `payday_salary` per-rider n'existe déjà pour la phase avant d'insérer (par exemple via filtre sur `rider_id IS NOT NULL` + range de date).
 
 ### Verrouillage cross-round (déjà en place)
 
@@ -131,35 +165,42 @@ Donc une fois qu'un coureur est gagné dans une phase (n'importe quel round), so
 
 ## Hors scope (volontairement)
 
-- **Bouton manuel "Confirm Phase Setup" séparé** : pas besoin, le déclenchement est automatique
-- **Notifications in-app du payday** : la simple présence des entries `treasury_log` suffit pour la transparence — design futur si besoin
-- **Réparation des phases passées non confirmées** : Phase 4 sera la première phase avec ce nouveau système. Les phases 1-3 restent dans leur état actuel (Phase 3 confirmée, autres phases incluses dans la "racing phase" précédente)
+- **Bouton manuel "Confirm Phase Setup" séparé** : pas besoin, le déclenchement est automatique en sortie de R3
+- **Notifications in-app du payday** : la simple présence des entries `treasury_log` per-rider suffit — design futur si besoin
 - **Refund partiel sur release** : reste à 0% (design game)
+- **Bankruptcy cascade** : pas nécessaire, `validate_round` est le garde-fou
+- **Rattrapage payday Phase 4 pour Goudal** : volontairement skippé (late joiner mid-Phase 4)
+- **Phase 1 backfill** : aucune entrée à créer (pas de sponsor à l'époque)
 
 ## Verification
 
 1. **Tests automatisés**
-   - Vitest : forceResolveRound doit déclencher la cascade payday quand `nextAuction === null`
-   - Vitest : auto-validation marque correctement les teams non actionables
-   - Pytest : confirm_phase_setup avec roster surfacturé déclenche le bankruptcy cascade
+   - Vitest : `forceResolveRound` déclenche la cascade payday quand `nextAuction === null`
+   - Vitest : auto-validation marque correctement les teams non actionables (PP < 5000 ou slots pleins)
+   - Vitest : la cascade skip les late joiners (`team.created_at > phase_start`)
 
 2. **Smoke test manuel sur dev league**
    - Setup : 2 teams, R1+R2 résolus, R3 ouvert
    - Toutes les teams validate R3 → résolution → payday cascade observable :
      - `teams.treasury` mise à jour pour les 2 teams
      - `teams.phase_confirmed_id` = phase courante
-     - `treasury_log` contient les sponsor_payment + payday_salary
-   - Vérifier qu'une team avec PP négatif post-payday subit l'auto-release du coureur le plus cher
+     - `treasury_log` contient les sponsor_payment + payday_salary per-rider
+   - Vérifier qu'une team avec PP < 5000 est auto-validated dès l'ouverture du round
 
-3. **Production smoke test**
-   - Quand cette feature shippe, observer le prochain payday Phase 5 (ou rattrapage Phase 4 si commissaire force-resolve)
-   - Vérifier les treasury et logs de toutes les 8 équipes
+3. **Backfill Phase 2 + Phase 3**
+   - Après migration : naviguer sur la page Budget pour Phase 2 → toutes les équipes voient sponsor 200K + salaires per-rider
+   - Phase 3 : sponsor existant intact + salaires per-rider (plus de bulk "7 riders")
+   - Vérifier qu'aucune équipe n'a une treasury qui a bougé après le backfill
+
+4. **Production smoke test**
+   - Quand cette feature shippe et que le R3 Phase 4 sera clôturé : observer le payday cascade en live
+   - Vérifier les treasury et logs des 7 équipes non-Goudal (Goudal skipped car late joiner)
 
 ## Critical files to modify
 
 - [apps/web/app/(game)/league/[leagueId]/auction/actions.ts:558](apps/web/app/(game)/league/[leagueId]/auction/actions.ts:558) — fin de `forceResolveRound`, ajouter cascade payday
-- [supabase/migrations/20260508100000_confirm_phase_setup_payday.sql:35-130](supabase/migrations/20260508100000_confirm_phase_setup_payday.sql:35-130) — étendre avec bankruptcy
-- Nouvelle migration : auto-validation logic (table function ou trigger)
+- [supabase/migrations/20260508100000_confirm_phase_setup_payday.sql](supabase/migrations/20260508100000_confirm_phase_setup_payday.sql) — base de référence pour l'extension skip late joiners
+- [supabase/migrations/20260508020000_round_validations_and_force_resolve.sql](supabase/migrations/20260508020000_round_validations_and_force_resolve.sql) — base de référence pour la mise à jour de `validate_round` avec auto-validation
 
 ## Open questions for review
 
