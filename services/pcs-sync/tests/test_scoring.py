@@ -326,3 +326,60 @@ async def test_upsert_contains_traceability_columns():
     assert payload["raw_pcs_points"] == 20
     assert payload["strategy_bonus"] == 0.0
     assert payload["remontada_mult"] == 1.0
+
+
+# ---------------------------------------------------------------------------
+# _classif_bonus — universal base rate
+# ---------------------------------------------------------------------------
+
+
+def test_classif_bonus_matching_role_unchanged():
+    """Role-matched rider earns base × 1.5 — identical to pre-change behaviour."""
+    from scoring import _classif_bonus
+
+    rows = [{"classification_type": "gc", "rank": 3}]
+    # gc_leader + GC rank 3: (10+1-3) × 1.5 = 12.0
+    assert _classif_bonus(rows, "gc_leader") == 12.0
+
+    rows_pts = [{"classification_type": "points", "rank": 1}]
+    # sprinter + Points rank 1: (5+1-1) × 1.5 = 7.5
+    assert _classif_bonus(rows_pts, "sprinter") == 7.5
+
+    rows_kom = [{"classification_type": "kom", "rank": 2}]
+    # climber + KOM rank 2: (3+1-2) × 1.5 = 3.0
+    assert _classif_bonus(rows_kom, "climber") == 3.0
+
+
+def test_classif_bonus_non_matching_role_earns_base():
+    """Non-matching squad rider (domestique/stage_hunter/tt_specialist) earns base × 1.0."""
+    from scoring import _classif_bonus
+
+    rows = [{"classification_type": "gc", "rank": 3}]
+    # (10+1-3) × 1.0 = 8.0 for all non-matching roles
+    assert _classif_bonus(rows, "domestique") == 8.0
+    assert _classif_bonus(rows, "stage_hunter") == 8.0
+    assert _classif_bonus(rows, "tt_specialist") == 8.0
+
+    # Rank at boundary (top = 10): (10+1-10) × 1.0 = 1.0
+    rows_last = [{"classification_type": "gc", "rank": 10}]
+    assert _classif_bonus(rows_last, "domestique") == 1.0
+
+    # Rank outside top → 0
+    rows_out = [{"classification_type": "gc", "rank": 11}]
+    assert _classif_bonus(rows_out, "domestique") == 0.0
+
+
+def test_classif_bonus_multiple_classifs_summed():
+    """Rider in multiple classifications earns sum; role gives 1.5× only on its own classif."""
+    from scoring import _classif_bonus
+
+    rows = [
+        {"classification_type": "gc", "rank": 5},     # base = (10+1-5) = 6
+        {"classification_type": "points", "rank": 2},  # base = (5+1-2)  = 4
+    ]
+    # domestique: 6×1.0 + 4×1.0 = 10.0
+    assert _classif_bonus(rows, "domestique") == 10.0
+    # sprinter: gc=6×1.0 (non-match) + points=4×1.5 (match) = 12.0
+    assert _classif_bonus(rows, "sprinter") == 12.0
+    # gc_leader: gc=6×1.5 (match) + points=4×1.0 (non-match) = 13.0
+    assert _classif_bonus(rows, "gc_leader") == 13.0

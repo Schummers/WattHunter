@@ -82,21 +82,21 @@ CLASSIF_ROLE_MATCH = {
 
 
 def _classif_bonus(classif_rows: list[dict], role: str) -> float:
-    """Sum of classification bonuses. Only roles with a matching classification
-    receive bonuses (GC Leader→GC, Sprinter→points, Climber→KOM).
-    Other roles (TT Specialist, Stage Hunter, Domestique) get 0.
+    """Sum of classification bonuses for all GT squad riders.
+
+    Role-matched riders earn base × 1.5 (gc_leader→GC, sprinter→Points, climber→KOM).
+    All other squad roles earn base × 1.0 for any classification they place in.
+    Riders outside the squad never reach this function (guarded upstream).
     """
-    matched_ctype = CLASSIF_ROLE_MATCH.get(role)
-    if matched_ctype is None:
-        return 0.0
+    matched_ctype = CLASSIF_ROLE_MATCH.get(role)  # None for domestique/stage_hunter/tt_specialist
     total = 0.0
     for row in classif_rows or []:
         ctype = row.get("classification_type")
-        if ctype != matched_ctype:
+        top = CLASSIF_TOP.get(ctype)
+        if top is None:
             continue
         rank = row.get("rank")
-        top = CLASSIF_TOP.get(ctype)
-        if top is None or rank is None:
+        if rank is None:
             continue
         try:
             r = int(rank)
@@ -105,7 +105,8 @@ def _classif_bonus(classif_rows: list[dict], role: str) -> float:
         if r < 1 or r > top:
             continue
         base = (top + 1) - r
-        total += base * 1.5
+        rate = 1.5 if ctype == matched_ctype else 1.0
+        total += base * rate
     return total
 
 
@@ -534,8 +535,8 @@ async def calculate_daily_scores(
                         "date": entry.get("race_date", today),
                         "raw_pcs_points": raw_points,
                         "strategy_bonus": bonus,
-                        "role_mult": role_mult,
-                        "classif_bonus": classif_pts,
+                        "role_mult": gt_role_mult,
+                        "classif_bonus": gt_classif_bonus,
                         "remontada_mult": remontada_mult,
                         "gt_role_mult": gt_role_mult,
                         "gt_classif_bonus": gt_classif_bonus,
