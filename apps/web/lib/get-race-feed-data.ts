@@ -1,0 +1,304 @@
+import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getCurrentPhase, getPhaseRange, AUCTION_PHASES } from "./phases";
+import { GT_RACE_SLUG_PREFIX, GT_IDENTIFIER, isGTPhaseId } from "./gt-phases";
+import {
+  detectRaceType,
+  getParentRaceSlug,
+  getParentRaceLabel,
+  formatRaceTitle,
+  shortenRiderName,
+  teamInitials,
+} from "./race-feed-helpers";
+import type {
+  NemesisData,
+  RaceCardStatus,
+  RaceData,
+  RaceDataWithBreakdown,
+  RaceFeedCard,
+  RaceFeedDateGroup,
+  RaceFeedPayload,
+  RemontadaData,
+  RiderRaceResult,
+  TeamRaceResult,
+} from "./race-feed-types";
+
+type GetRaceFeedOpts = {
+  leagueId: string;
+  myTeamId: string;
+  referenceDate?: Date;
+};
+
+export async function getRaceFeedData(
+  supabase: SupabaseClient,
+  opts: GetRaceFeedOpts
+): Promise<RaceFeedPayload> {
+  const referenceDate = opts.referenceDate ?? new Date();
+  const todayIso = referenceDate.toISOString().slice(0, 10);
+
+  const phase = getCurrentPhase(referenceDate);
+  const isGtPhase = isGTPhaseId(phase.id);
+  const range = getPhaseRange(phase, referenceDate.getFullYear());
+  const phaseStartIso = range.start.toISOString().slice(0, 10);
+  const phaseEndIso = range.end.toISOString().slice(0, 10);
+
+  // 1) Fetch past+today races via race_results, future races via race_startlists
+  const { data: pastRows = [] } = await supabase
+    .from("race_results")
+    .select("race_slug, race_name, race_date")
+    .gte("race_date", phaseStartIso)
+    .lte("race_date", phaseEndIso);
+
+  const { data: futureRows = [] } = await supabase
+    .from("race_startlists")
+    .select("race_slug, race_name, race_date")
+    .gte("race_date", todayIso)
+    .lte("race_date", phaseEndIso);
+
+  // Deduplicate races by slug (race_results can have multiple rows per race from different riders)
+  const racesBySlug = new Map<string, { slug: string; name: string; date: string }>();
+  for (const r of pastRows ?? []) {
+    if (!racesBySlug.has(r.race_slug)) {
+      racesBySlug.set(r.race_slug, { slug: r.race_slug, name: r.race_name, date: r.race_date });
+    }
+  }
+  for (const r of futureRows ?? []) {
+    if (!racesBySlug.has(r.race_slug)) {
+      racesBySlug.set(r.race_slug, { slug: r.race_slug, name: r.race_name, date: r.race_date });
+    }
+  }
+
+  if (racesBySlug.size === 0) {
+    return { groups: [], nextPhaseRound1Date: null, nextPhaseLabel: null };
+  }
+
+  // 2) Fetch team and rider lookup tables
+  const { data: teamRows = [] } = await supabase
+    .from("teams")
+    .select("id, name")
+    .eq("league_id", opts.leagueId);
+  const teamById = new Map<string, string>();
+  for (const t of teamRows ?? []) teamById.set(t.id, t.name);
+
+  const { data: riderRows = [] } = await supabase
+    .from("riders")
+    .select("id, full_name");
+  const riderById = new Map<string, string>();
+  for (const r of riderRows ?? []) riderById.set(r.id, r.full_name);
+
+  // 3) Fetch XP and bonus data for past+today races only
+  const slugsForXp = Array.from(racesBySlug.values())
+    .filter((r) => r.date <= todayIso)
+    .map((r) => r.slug);
+
+  const { data: xpRows = [] } =
+    slugsForXp.length === 0
+      ? { data: [] as any[] }
+      : await supabase
+          .from("rider_xp_daily")
+          .select("race_slug, team_id, rider_id, xp_gained")
+          .in("race_slug", slugsForXp);
+
+  const { data: bonusRows = [] } =
+    slugsForXp.length === 0
+      ? { data: [] as any[] }
+      : await supabase
+          .from("sponsor_bonuses")
+          .select("race_slug, team_id, rider_id, amount")
+          .in("race_slug", slugsForXp);
+
+  // Aggregate XP + bonus by (race_slug, team_id, rider_id)
+  type Agg = { xp: number; bonus: number };
+  const aggKey = (race: string, team: string, rider: string) => `${race}\x00${team}\x00${rider}`;
+  const agg = new Map<string, Agg>();
+  for (const row of xpRows ?? []) {
+    const k = aggKey(row.race_slug, row.team_id, row.rider_id);
+    const cur = agg.get(k) ?? { xp: 0, bonus: 0 };
+    cur.xp += Number(row.xp_gained ?? 0);
+    agg.set(k, cur);
+  }
+  for (const row of bonusRows ?? []) {
+    const k = aggKey(row.race_slug, row.team_id, row.rider_id);
+    const cur = agg.get(k) ?? { xp: 0, bonus: 0 };
+    cur.bonus += Number(row.amount ?? 0);
+    agg.set(k, cur);
+  }
+
+  // 4) Build per-race breakdown helper
+  const buildBreakdown = (raceSlug: string): {
+    teams: TeamRaceResult[];
+    winnerTeamId: string | null;
+    winnerTeamInitials: string | null;
+  } => {
+    const byTeam = new Map<string, RiderRaceResult[]>();
+    for (const [k, v] of agg.entries()) {
+      const parts = k.split("\x00");
+      const [slug, teamId, riderId] = parts;
+      if (slug !== raceSlug) continue;
+      if (v.xp < 1) continue;
+      const list = byTeam.get(teamId!) ?? [];
+      list.push({
+        riderId: riderId!,
+        riderShortName: shortenRiderName(riderById.get(riderId!) ?? riderId!),
+        role: null,
+        xpGained: v.xp,
+        bonusEur: v.bonus,
+      });
+      byTeam.set(teamId!, list);
+    }
+    const teams: TeamRaceResult[] = [];
+    for (const [teamId, riders] of byTeam.entries()) {
+      const totalXp = riders.reduce((s, r) => s + r.xpGained, 0);
+      const totalBonus = riders.reduce((s, r) => s + r.bonusEur, 0);
+      teams.push({
+        teamId,
+        teamName: teamById.get(teamId) ?? "?",
+        isMyTeam: teamId === opts.myTeamId,
+        totalXp,
+        totalBonusEur: totalBonus,
+        riders: riders.sort((a, b) => b.xpGained - a.xpGained),
+      });
+    }
+    teams.sort((a, b) => b.totalXp - a.totalXp);
+    const winner = teams[0] ?? null;
+    return {
+      teams,
+      winnerTeamId: winner?.teamId ?? null,
+      winnerTeamInitials: winner ? teamInitials(winner.teamName) : null,
+    };
+  };
+
+  // 5) Build base race data helper
+  const buildBaseRace = (slug: string, name: string, date: string): RaceData => {
+    const raceType = detectRaceType(slug);
+    const parentSlug = getParentRaceSlug(slug);
+    const parentLabel = parentSlug ? getParentRaceLabel(parentSlug) : null;
+    const status: RaceCardStatus =
+      date < todayIso ? "past" : date === todayIso ? "today" : "future";
+    return {
+      raceSlug: slug,
+      raceName: name,
+      raceTitle: formatRaceTitle({ raceType, raceName: name, raceSlug: slug, parentRaceLabel: parentLabel }),
+      parentRaceSlug: parentSlug,
+      parentRaceLabel: parentLabel,
+      raceDate: date,
+      raceType,
+      status,
+      isGtPhase,
+    };
+  };
+
+  // 6) Group all cards by date
+  const byDate = new Map<string, RaceFeedCard[]>();
+  const pushCard = (date: string, card: RaceFeedCard) => {
+    const list = byDate.get(date) ?? [];
+    list.push(card);
+    byDate.set(date, list);
+  };
+
+  for (const r of racesBySlug.values()) {
+    const base = buildBaseRace(r.slug, r.name, r.date);
+    if (base.status === "future") {
+      pushCard(r.date, { type: "future", race: base });
+    } else {
+      const breakdown = buildBreakdown(r.slug);
+      const enriched: RaceDataWithBreakdown = { ...base, ...breakdown };
+      pushCard(r.date, { type: base.status, race: enriched });
+    }
+  }
+
+  // 7) Fetch and slot Nemesis cards (GT phases only)
+  if (isGtPhase) {
+    const { data: nemRows = [] } = await supabase
+      .from("gt_tactic_activations")
+      .select(
+        "id, team_id, stage_slug, tactic_type, nemesis_target_team_id, nemesis_target_role, outcome, resolved_attacker_rider_id, resolved_target_rider_id"
+      )
+      .eq("phase_id", phase.id)
+      .in("tactic_type", ["nemesis_gc", "nemesis_sprint"]);
+
+    for (const row of nemRows ?? []) {
+      const race = racesBySlug.get(row.stage_slug);
+      if (!race) continue;
+      const isMyTeamAttacker = row.team_id === opts.myTeamId;
+      const data: NemesisData = {
+        activationId: row.id,
+        raceSlug: row.stage_slug,
+        attackerTeamName: teamById.get(row.team_id) ?? "?",
+        attackerRiderShortName: row.resolved_attacker_rider_id
+          ? shortenRiderName(riderById.get(row.resolved_attacker_rider_id) ?? "?")
+          : "?",
+        targetTeamName: teamById.get(row.nemesis_target_team_id ?? "") ?? "?",
+        targetRiderShortName: row.resolved_target_rider_id
+          ? shortenRiderName(riderById.get(row.resolved_target_rider_id) ?? "?")
+          : "?",
+        outcome: (row.outcome as NemesisData["outcome"]) ?? "pending",
+        isMyTeamAttacker,
+      };
+      pushCard(race.date, { type: "nemesis", data, raceSlug: row.stage_slug });
+    }
+  }
+
+  // 8) Fetch and slot Remontada cards (GT phases only)
+  if (isGtPhase) {
+    const phaseId = phase.id as 4 | 6 | 8;
+    const gtIdent = GT_IDENTIFIER[phaseId];
+    if (gtIdent) {
+      const { data: remRows = [] } = await supabase
+        .from("remontada_boosts")
+        .select(
+          "id, team_id, gt_identifier, triggered_at_stage, expires_after_stage, multiplier, created_at"
+        )
+        .eq("league_id", opts.leagueId)
+        .eq("gt_identifier", gtIdent);
+
+      for (const row of remRows ?? []) {
+        const triggeredDateIso = (row.created_at as string).slice(0, 10);
+        const totalDuration = Math.max(0, (row.expires_after_stage ?? 0) - (row.triggered_at_stage ?? 0));
+        const data: RemontadaData = {
+          boostId: row.id,
+          teamId: row.team_id,
+          teamName: teamById.get(row.team_id) ?? "?",
+          isMyTeam: row.team_id === opts.myTeamId,
+          multiplier: Number(row.multiplier),
+          daysRemaining: totalDuration,
+          triggeredAt: triggeredDateIso,
+        };
+        pushCard(triggeredDateIso, { type: "remontada", data });
+      }
+    }
+  }
+
+  // 9) Build sorted groups
+  const groups: RaceFeedDateGroup[] = Array.from(byDate.keys())
+    .sort()
+    .map((date) => ({ date, cards: byDate.get(date)! }));
+
+  // 10) Compute next phase Round 1 date
+  let nextPhaseRound1Date: string | null = null;
+  let nextPhaseLabel: string | null = null;
+  const nextPhase = AUCTION_PHASES.find((p) => p.id === phase.id + 1) ?? null;
+  if (nextPhase) {
+    nextPhaseLabel = nextPhase.label;
+    const nextStartIso = new Date(
+      referenceDate.getFullYear(),
+      nextPhase.startMonth - 1,
+      nextPhase.startDay
+    )
+      .toISOString()
+      .slice(0, 10);
+    const { data: auctionRows = [] } = await supabase
+      .from("auctions")
+      .select("opens_at")
+      .eq("league_id", opts.leagueId)
+      .gte("opens_at", nextStartIso)
+      .order("opens_at", { ascending: true })
+      .limit(1);
+    nextPhaseRound1Date =
+      auctionRows && auctionRows.length > 0
+        ? (auctionRows[0].opens_at as string).slice(0, 10)
+        : nextStartIso;
+  }
+
+  return { groups, nextPhaseRound1Date, nextPhaseLabel };
+}
