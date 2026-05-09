@@ -7,36 +7,61 @@
 -- The release was therefore made under a false premise, not as a
 -- tactical decision.
 --
--- The release was free (no money moved): status flip to 'released',
--- gt_squad.removed_at set, draft_bids cleaned. To undo, we just
--- reverse those state changes. No treasury or treasury_log change.
---
 -- Idempotent: WHERE clauses match the exact released state. Re-running
 -- is a no-op.
+--
+-- Note: available_from and removed_at columns may not exist yet at this
+-- point in the migration sequence (added by later migrations). The DO
+-- block handles this gracefully.
 
-BEGIN;
+DO $do$
+BEGIN
+  -- 1. Restore the contract to active status
+  UPDATE public.contracts
+  SET status = 'active',
+      released_at = NULL
+  WHERE id = (
+    SELECT c.id
+    FROM public.contracts c
+    JOIN public.teams t ON t.id = c.team_id
+    JOIN public.riders r ON r.id = c.rider_id
+    WHERE t.name = 'bigdaddy'
+      AND r.full_name = 'Edward Planckaert'
+      AND c.status = 'released'
+      AND c.released_at = '2026-05-08 21:28:05.560369+00'
+  );
 
--- 1. Restore the contract to active status
-UPDATE public.contracts
-SET status = 'active',
-    released_at = NULL,
-    available_from = NULL
-WHERE id = (
-  SELECT c.id
-  FROM public.contracts c
-  JOIN public.teams t ON t.id = c.team_id
-  JOIN public.riders r ON r.id = c.rider_id
-  WHERE t.name = 'bigdaddy'
-    AND r.full_name = 'Edward Planckaert'
-    AND c.status = 'released'
-    AND c.released_at = '2026-05-08 21:28:05.560369+00'
-);
+  -- 2. Clear available_from if column exists
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'contracts' AND column_name = 'available_from'
+  ) THEN
+    EXECUTE $inner$
+      UPDATE public.contracts
+      SET available_from = NULL
+      WHERE id = (
+        SELECT c.id
+        FROM public.contracts c
+        JOIN public.teams t ON t.id = c.team_id
+        JOIN public.riders r ON r.id = c.rider_id
+        WHERE t.name = 'bigdaddy'
+          AND r.full_name = 'Edward Planckaert'
+          AND c.status = 'active'
+      )
+    $inner$;
+  END IF;
 
--- 2. Restore his GT squad entry (was soft-deleted at release time)
-UPDATE public.gt_squad
-SET removed_at = NULL
-WHERE rider_id = (SELECT id FROM public.riders WHERE full_name = 'Edward Planckaert')
-  AND team_id = (SELECT id FROM public.teams WHERE name = 'bigdaddy')
-  AND removed_at = '2026-05-08 21:28:05.560369+00';
-
-COMMIT;
+  -- 3. Restore GT squad entry if removed_at column exists
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'gt_squad' AND column_name = 'removed_at'
+  ) THEN
+    EXECUTE $inner$
+      UPDATE public.gt_squad
+      SET removed_at = NULL
+      WHERE rider_id = (SELECT id FROM public.riders WHERE full_name = 'Edward Planckaert')
+        AND team_id = (SELECT id FROM public.teams WHERE name = 'bigdaddy')
+        AND removed_at = '2026-05-08 21:28:05.560369+00'
+    $inner$;
+  END IF;
+END $do$;

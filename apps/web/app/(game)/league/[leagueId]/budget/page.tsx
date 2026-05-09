@@ -43,9 +43,7 @@ export default async function BudgetPage({
     { data: teamSponsor },
     { data: transactions },
     { data: phaseTotals },
-    { data: activeContracts },
   ] = await Promise.all([
-    // Simple single-sponsor query — new schema has no slot/status/pending fields
     supabase
       .from("team_sponsors")
       .select("id, sponsor_id, activated_at, sponsors(*)")
@@ -57,38 +55,28 @@ export default async function BudgetPage({
       .eq("team_id", team.id)
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString())
-      .order("created_at", { ascending: false })
-      .limit(5),
+      .order("created_at", { ascending: false }),
     supabase
       .from("treasury_log")
       .select("amount, type")
       .eq("team_id", team.id)
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString()),
-    // Phase salary total: sum of locked salaries on active contracts
-    supabase
-      .from("contracts")
-      .select("locked_salary")
-      .eq("team_id", team.id)
-      .eq("status", "active"),
   ]);
 
   const totals = phaseTotals ?? [];
 
-  // Phase income from treasury_log (actual sponsor payments logged by finance job)
-  const income = totals
-    .filter((t) => t.amount > 0)
+  const sponsorIncome = totals
+    .filter((t) => t.type === "sponsor_payment")
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const outgoing = totals
-    .filter((t) => t.amount < 0)
-    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const bonusIncome = totals
+    .filter((t) => t.type === "sponsor_bonus")
+    .reduce((sum, t) => sum + t.amount, 0);
 
-  // Phase salary summary: sum of all active contract locked_salary values
-  const phaseSalaries = (activeContracts ?? []).reduce(
-    (sum, c) => sum + (c.locked_salary ?? 0),
-    0,
-  );
+  const phaseSalaries = totals
+    .filter((t) => t.type === "payday_salary")
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
   // Sponsor info for display — pass full SponsorRow for expanded card
   const sponsorRow = teamSponsor?.sponsors
@@ -114,12 +102,12 @@ export default async function BudgetPage({
       leagueId={leagueId}
       treasury={team.treasury}
       level={team.level}
-      income={income}
-      outgoing={outgoing}
+      sponsorIncome={sponsorIncome}
+      bonusIncome={bonusIncome}
+      phaseSalaries={phaseSalaries}
       transactions={mappedTransactions}
       phaseIndex={phaseIndex}
       currentSponsor={sponsorRow as SponsorRow | null}
-      phaseSalaries={phaseSalaries}
     />
   );
 }

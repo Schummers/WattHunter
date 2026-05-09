@@ -78,11 +78,13 @@ export async function setRoundDates(input: {
 export async function confirmPhaseSetup(teamId: string) {
   const supabase = await createClient();
   const currentPhase = getCurrentPhase();
+  const { start: phaseStart } = getPhaseRange(currentPhase, new Date().getFullYear());
 
   const { data, error } = await supabase.rpc("confirm_phase_setup", {
     p_team_id: teamId,
     p_current_phase_id: currentPhase.id,
     p_current_phase_label: currentPhase.label,
+    p_phase_start: phaseStart.toISOString(),
   });
 
   if (error) return { error: error.message };

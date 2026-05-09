@@ -16,7 +16,7 @@ interface TeamRow {
   slots_max: number;
   budget: number;
   purchasing_power: number;
-  status: "validated" | "pending" | "not_yet_bid";
+  status: "validated" | "auto_validated" | "pending" | "not_yet_bid";
 }
 
 export default async function StatusPage({
@@ -65,14 +65,18 @@ export default async function StatusPage({
 
   // 3. round_validations for this auction (if any)
   const validatedTeamIds = new Set<string>();
+  const autoValidatedTeamIds = new Set<string>();
   if (auction && teamIds.length > 0) {
     const { data: validations } = await supabase
       .from("round_validations")
-      .select("team_id")
+      .select("team_id, auto_validated")
       .eq("auction_id", auction.id)
       .in("team_id", teamIds);
     for (const v of validations ?? []) {
       validatedTeamIds.add(v.team_id);
+      if (v.auto_validated) {
+        autoValidatedTeamIds.add(v.team_id);
+      }
     }
   }
 
@@ -139,7 +143,9 @@ export default async function StatusPage({
     const purchasing_power = budget - salaries;
 
     let status: TeamRow["status"];
-    if (validatedTeamIds.has(team.id)) {
+    if (autoValidatedTeamIds.has(team.id)) {
+      status = "auto_validated";
+    } else if (validatedTeamIds.has(team.id)) {
       status = "validated";
     } else if ((draftCount.get(team.id) ?? 0) > 0) {
       status = "pending";
@@ -218,6 +224,9 @@ export default async function StatusPage({
                   {row.status === "validated" && (
                     <Tag variant="success">Validated</Tag>
                   )}
+                  {row.status === "auto_validated" && (
+                    <Tag variant="default">Auto-validated</Tag>
+                  )}
                   {row.status === "pending" && (
                     <Tag variant="highlighted">Pending</Tag>
                   )}
@@ -234,7 +243,7 @@ export default async function StatusPage({
           <StatusClient
             leagueId={leagueId}
             unvalidatedTeams={rows
-              .filter((r) => r.status !== "validated")
+              .filter((r) => r.status !== "validated" && r.status !== "auto_validated")
               .map((r) => r.team_name)}
           />
         </>

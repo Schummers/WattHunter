@@ -29,12 +29,12 @@ interface BudgetClientProps {
   leagueId: string;
   treasury: number;
   level: number;
-  income: number;
-  outgoing: number;
+  sponsorIncome: number;
+  bonusIncome: number;
+  phaseSalaries: number;
   transactions: Transaction[];
   phaseIndex: number;
   currentSponsor: SponsorRow | null;
-  phaseSalaries: number;
 }
 
 function formatCompact(amount: number): string {
@@ -46,12 +46,12 @@ function formatCompact(amount: number): string {
 export function BudgetClient({
   leagueId,
   treasury,
-  income,
-
+  sponsorIncome,
+  bonusIncome,
+  phaseSalaries,
   transactions,
   currentSponsor,
   phaseIndex,
-  phaseSalaries,
 }: BudgetClientProps) {
   const router = useRouter();
   const [filterIndex, setFilterIndex] = useState(0);
@@ -62,7 +62,6 @@ export function BudgetClient({
     [transactions, filterIndex],
   );
 
-  // Determine the real current phase index to prevent future navigation
   const realCurrentPhaseIndex = useMemo(() => {
     const current = getCurrentPhase();
     return AUCTION_PHASES.findIndex((p) => p.id === current.id);
@@ -72,10 +71,8 @@ export function BudgetClient({
     router.replace(`?phase=${newIndex}`, { scroll: false });
   }
 
-  const sponsorBase = currentSponsor?.monthly_budget ?? 0;
-  const bonuses = income - sponsorBase;
-  const phaseResult = sponsorBase + bonuses - phaseSalaries;
-  const isBankruptcyRisk = phaseSalaries > sponsorBase;
+  const phaseResult = sponsorIncome + bonusIncome - phaseSalaries;
+  const isBankruptcyRisk = phaseSalaries > sponsorIncome;
 
   return (
     <div className="pb-24">
@@ -101,13 +98,13 @@ export function BudgetClient({
             <div className="flex items-center justify-between text-[length:var(--type-caption)]">
               <span className="text-[var(--text-low)]">Sponsor</span>
               <span className="font-[family-name:var(--font-geist-mono)] font-semibold text-[var(--text-high)] tabular-nums">
-                +{formatCompact(sponsorBase)}
+                +{formatCompact(sponsorIncome)}
               </span>
             </div>
             <div className="flex items-center justify-between text-[length:var(--type-caption)]">
               <span className="text-[var(--text-low)]">Bonuses</span>
               <span className="font-[family-name:var(--font-geist-mono)] font-semibold text-[var(--text-high)] tabular-nums">
-                +{formatCompact(Math.max(0, bonuses))}
+                +{formatCompact(bonusIncome)}
               </span>
             </div>
             <div className="flex items-center justify-between text-[length:var(--type-caption)]">
