@@ -8,14 +8,14 @@
 
 ## 1. Objectif
 
-Remplacer le `HomeFeed` actuel (calendrier + auctions) par un `RaceFeed` qui montre les résultats des courses de la phase WT en cours, organisés chronologiquement avec un point de focus visuel sur la course du jour.
+Remplacer le `HomeFeed` actuel (calendrier + auctions) par un `RaceFeed` qui montre les résultats des courses de la phase WT en cours, organisés chronologiquement. La date est sortie de la carte (en label de groupe), permettant d'afficher plusieurs cards sous la même date (course parallèle, Nemesis, Remontada).
 
 L'utilisateur doit pouvoir, en arrivant sur la homepage :
-1. Voir immédiatement la course/étape du jour et son classement par équipe
-2. Comprendre où il se situe vs les autres équipes sur cette course
-3. Voir le détail XP + bonus de chacun de ses coureurs sur cette course
-4. Scroller pour voir les courses passées de la phase
-5. Scroller pour voir les courses à venir
+1. Voir immédiatement la course/étape du jour avec le détail XP+bonus de **toutes les équipes** ayant marqué
+2. Identifier le winner de chaque étape passée d'un coup d'œil (avatar du winner sur la card collapsed)
+3. Placer une tactique sur les étapes futures (`+` cliquable)
+4. Voir les Nemesis activés et les boost Remontada inline
+5. Voir la date du Round 1 de la prochaine phase en fin de feed
 
 Le V1 ne touche **pas** la navigation, le header, ni les autres pages.
 
@@ -31,19 +31,75 @@ Le V1 ne touche **pas** la navigation, le header, ni les autres pages.
 - Lobby view (ligue pending) **inchangée**
 
 ### Ce qui n'est pas dans le V1
-- Pas de Nemesis card (pattern documenté pour V2)
-- Pas de Phase start banner ni Phase winner banner
+- Pas de Phase winner banner (vainqueur de phase précédente)
+- Pas de Mouvement cards (notifications d'overtake auto)
 - Pas de StatusBadge / header refonte
-- Pas de toggle GC cumulé (les Today cards d'un GT affichent par défaut le résultat de l'étape — pas de cumul)
+- Pas de toggle GC cumulé dans la Today card (un bouton "Voir le classement GC →" à la place)
 - Pas de Peloton view
-- Pas de modale tactique depuis le feed (le bouton "+ Tactique" sur les future cards lie vers la page existante `team/gt/tactics`)
+- Pas de modale tactique inline (le `+` sur les future cards lie vers la page existante `team/gt/tactics`)
 - Pas de modifications du schéma DB
+- Pas de collapse/expand par équipe dans la Today card (tout reste expanded)
 
 ---
 
-## 3. Composants à créer
+## 3. Layout général
 
-### 3.1 `<RaceFeed />` — composant racine
+### 3.1 Structure verticale du feed
+
+```
+[Header WattHunter inchangé]
+
+  [Date X]                  ← date hors carte, top-left
+    [card étape passée]
+    [card Nemesis si applicable]
+
+  [Date Y]
+    [TODAY card expanded]   ← scroll par défaut arrive ici
+    [card Nemesis si applicable]
+
+  [Date Z]
+    [card étape future]
+    [card Remontada si applicable]
+
+  [Date W]
+    [card étape future Giro]
+    [card étape future course parallèle]    ← courses en parallèle même date
+
+  ...
+
+  [Phase end banner]        ← fin de feed
+```
+
+### 3.2 Date label
+
+Position : hors de la card, alignée top-left, groupe les cards d'une même date.
+
+- Format : `5 mai` (jour + mois abrégé en français)
+- Style : `text-[length:var(--type-data-label)]` (11-12px), font-medium (500), `text-mid`, padding-left 4px, margin-top 16px (entre groupes), margin-bottom 6px
+
+### 3.3 Card commune — anatomy
+
+Chaque card "course" partage la même structure :
+
+```
+┌──────────────────────────────────────────┐
+│ Giro · Étape 2                  [TA○]   │  ← title + avatar (right)
+│ [...contenu spécifique au type...]      │
+└──────────────────────────────────────────┘
+```
+
+- **Titre :** une seule ligne. Format `[Course] · Étape N` pour les courses par étape, juste `Paris-Roubaix` pour les classiques d'un jour. Pas de villes / trajectoire.
+- **Avatar / bouton (right) :** rond 28px aligné à droite du titre.
+  - Past/Today : avatar du winner (équipe ayant fait le plus de XP sur la course)
+  - Future : bouton `+` cyan, ouvre la page tactique GT
+- **Padding :** 12-14px
+- **Radius :** 10px
+
+---
+
+## 4. Composants à créer
+
+### 4.1 `<RaceFeed />` — composant racine
 
 **Path :** `apps/web/components/race-feed.tsx`
 
@@ -52,179 +108,275 @@ Le V1 ne touche **pas** la navigation, le header, ni les autres pages.
 type RaceFeedProps = {
   leagueId: string
   myTeamId: string
-  currentPhase: AuctionPhase  // phase WT en cours (ex: "giro-italia")
-  races: RaceFeedItem[]       // toutes les courses de la phase, triées par date
+  currentPhase: AuctionPhase
+  groups: RaceFeedDateGroup[]   // groupes triés par date
+  nextPhaseRound1Date?: string  // ISO, pour le banner de fin
+  nextPhaseLabel?: string
 }
 
-type RaceFeedItem = {
-  raceSlug: string
-  raceName: string
-  raceDate: string  // ISO
-  raceType: 'stage' | 'classic'  // déduit par regex sur raceSlug (cf. §5)
-  parentRaceSlug?: string  // pour les stages : slug du GT parent
-  parentRaceName?: string
-  status: 'past' | 'today' | 'future'
-  teamRankings?: TeamRaceRanking[]  // populated pour past + today
-  myRiders?: RiderRaceResult[]      // populated pour past + today
+type RaceFeedDateGroup = {
+  date: string  // ISO
+  cards: RaceFeedCard[]  // peut contenir plusieurs cards (étapes parallèles, Nemesis, Remontada)
 }
+
+type RaceFeedCard =
+  | { type: 'past',     race: RaceData }
+  | { type: 'today',    race: RaceDataWithBreakdown }
+  | { type: 'future',   race: RaceData }
+  | { type: 'nemesis',  data: NemesisData }
+  | { type: 'remontada',data: RemontadaData }
 ```
 
 **Comportement :**
-- Render une liste verticale de cards en respectant l'ordre `pastA → pastB → today → futureA → futureB`
-- Au montage : `scrollIntoView({block: 'start'})` sur la Today card si elle existe
-- Si pas de Today card (jour de repos) : scroll auto sur la première Future card
-- Si pas de Future card non plus : scroll en haut
+- Render une liste verticale de groupes (un par date) avec leurs cards à l'intérieur
+- Au montage : `scrollIntoView({block: 'start'})` sur la Today card si elle existe ; sinon sur la première card future ; sinon top
+- Default collapsed pour past cards, expanded pour today, dashed pour future
 
-### 3.2 `<RaceCardPast />` — card collapsed
+### 4.2 `<RaceCardPast />` — card collapsed
 
 **Path :** `apps/web/components/race-card-past.tsx`
 
 **Layout :**
 ```
-┌─────────────────────────────────────────┐
-│ Étape 1 · Durazzo → Tirana    4 mai     │
-│ ● Top équipe : Team Astrid              │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│ Giro · Étape 1                  [TA○]   │
+└──────────────────────────────────────────┘
 ```
 
 **Specs :**
-- Container : `bg-surface` (#151b1e), border `border-default` (#273339), radius 10px, padding 12px
-- Race name : `text-[length:var(--type-content)]` (12-14px), font-bold (700), `text-high`
-- Date : `text-[length:var(--type-caption)]` (10-11px), `text-low`, alignée à droite
-- Winner row : dot vert (Emerald-500, 5px), label "Top équipe :" en `text-mid`, nom équipe en `text-high` 11-12px font-semibold
-- État au tap : expand vers le format `<RaceCardToday />` (sans le badge "AUJOURD'HUI")
-- État expanded persisté en local state (pas en URL)
+- Container : `bg-surface` (#151b1e), border 1px `border-default` (#273339), radius 10px, padding 12px 14px
+- Titre : 13-14px, font-bold (700), `text-high`
+- Avatar winner : 28px diameter, gradient ou photo équipe gagnante de l'étape (initiales 2 lettres si pas de skin)
+- État au tap : expand vers le format `<RaceCardToday />` (sans le scroll auto, l'avatar reste visible)
+- État expanded : persisté en local state (pas en URL)
 
-### 3.3 `<RaceCardToday />` — card expanded par défaut
+**Si aucune équipe n'a marqué (cas rare) :** avatar grisé, no winner.
+
+### 4.3 `<RaceCardToday />` — card expanded par défaut
 
 **Path :** `apps/web/components/race-card-today.tsx`
 
 **Layout :**
 ```
-┌─────────────────────────────────────────┐
-│ [AUJOURD'HUI · ÉTAPE 2]                 │
-│ Tirana → Shkodra              5 mai     │
-│ ─────────────────────────────────────── │
-│ CLASSEMENT ÉQUIPES                      │
-│ 1  Team Astrid          +340            │
-│ 2  Mon équipe ★         +280            │
-│ 3  Jordan's Pick        +190            │
-│ ─────────────────────────────────────── │
-│ DÉTAIL — Mon équipe                     │
-│ T. Pogacar  GC    +180 XP  +12 000€     │
-│ M. van Aert SPR    +60 XP               │
-│ J. Almeida  DOM    +40 XP               │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ Giro · Étape 2                       [TA○] │
+│ ─────────────────────────────────────────── │
+│ TEAM ASTRID            12 000€      +340    │
+│   T. Pogacar  GC       +12 000€    +180     │
+│   J. Vingegaard              —      +90     │
+│   E. Mas      DOM            —      +70     │
+│ MON ÉQUIPE ★            8 000€      +280    │
+│   M. van Aert SPR       +8 000€    +120     │
+│   J. Almeida  DOM            —      +90     │
+│   N. Pedersen                —      +70     │
+│ JORDAN'S PICK                —      +190    │
+│   J. Cairoli  GC             —      +120    │
+│   ...                                        │
+│ ─────────────────────────────────────────── │
+│ [ Voir le classement GC du Giro →  ]        │
+└──────────────────────────────────────────────┘
 ```
 
 **Specs :**
-- Container : `bg-surface`, border `border-default` mais **plus marqué** que past (border-color step 7 #334249), radius 10px, padding 14px
-- Badge "AUJOURD'HUI · ÉTAPE N" : 9px, font-bold (700), uppercase, letter-spacing 0.1em, color `cyan-500`, bg `rgba(6,182,212,0.1)`, padding 2px 7px, radius 4px, margin-bottom 6px
-- Race name : 12-14px, font-bold, `text-high`
-- Date : 10-11px, `text-low`, alignée à droite
-- Section labels : 10px, font-bold, uppercase, letter-spacing 0.12em, `text-low` ("CLASSEMENT ÉQUIPES", "DÉTAIL — Mon équipe")
-- Team ranking row :
-  - Position : 10-11px, font-mono, font-bold, `text-low`, width fixe 14px
-  - Nom équipe : 12-14px, font-semibold, `text-high` (sauf Mon équipe : `accent-default` + étoile ★)
-  - XP gagné : 12-14px, font-mono, font-bold, `accent-highlight` (cyan-400), aligné droite, format `+340`
-  - Border-bottom : `bg-subtle` (#111618) 1px entre rows, sauf dernier
-- Détail Mon équipe row :
-  - Nom coureur : 12px, font-semibold, `text-high`, abrégé "T. Pogacar"
-  - Badge rôle GT (si GT actif) : 9px, uppercase, font-bold, `text-mid`, bg `bg-surface-active` (#1f292e), padding 1px 5px, radius 4px
-  - XP : 12px, font-mono, font-bold, `accent-highlight` (cyan-400), format `+180 XP`
-  - Bonus sponsor (si > 0) : 11px, font-mono, font-semibold, `Emerald-500`, format `+12 000€`
+- Container : `bg-surface`, border 1px `#334249` (plus marqué que past), radius 10px, padding 14px
+- Titre : 13-14px, font-bold (700), `text-high`
+- Avatar winner : 28px (logique identique à past)
+- Divider après le titre : 1px `border-subtle` (#1a2226)
+- **Team header row** :
+  - Nom équipe : 12-13px, font-bold (700), UPPERCASE, letter-spacing 0.05em, `text-high` (sauf Mon équipe : `accent-default` (cyan-500) + étoile ★)
+  - Bonus € total : 11px, font-mono, font-semibold (600), `text-mid`, format `12 000€`. Si 0 : `—` en `text-ghost`
+  - XP total : 12-13px, font-mono, font-bold, `accent-highlight` (cyan-400), format `+340`
+- **Rider row** (visible uniquement si le coureur a marqué ≥ 1 XP) :
+  - Indentation : 12px à gauche
+  - Nom : 11-12px, font-semibold (600), `text-high`, format abrégé "T. Pogacar"
+  - Badge rôle GT (si phase GT et coureur a un rôle assigné) : 9px, UPPERCASE, font-bold, `text-mid`, bg `bg-surface-active` (#1f292e), padding 1px 4px, radius 4px
+  - Bonus € : 10-11px, font-mono, font-semibold, `Emerald-500` (vert) si > 0 sinon `—` en `text-ghost`
+  - XP : 11-12px, font-mono, font-bold, `accent-highlight` (cyan-400), format `+180`
+- **Espacement entre équipes** : 6px (séparation visuelle sans divider)
+- **Bouton "Voir le classement GC du Giro →"** :
+  - Visible uniquement pour les courses par étapes (GT + courses d'une semaine), pas pour les classiques d'un jour
+  - Format texte : "Voir le classement GC du [Course parent] →" (ex: "Giro", "Paris-Nice")
+  - Style : 11-12px, font-medium, `accent-default`, bg `rgba(6,182,212,0.06)`, padding 8px 12px, radius 6px, full-width, text-align center, margin-top 10px
+  - Action : `Link` vers `/league/[leagueId]/ranking?race=${parentRaceSlug}` (la Ranking page filtre déjà par race_slug)
 
-**Pour les classiques (one-day race) :**
-- Badge "AUJOURD'HUI" sans suffixe étape
-- Sinon layout identique
+**Filtrage des équipes affichées :**
+- Toutes les équipes de la ligue ayant marqué ≥ 1 XP sur cette course sont affichées
+- Mon équipe : affichée seulement si elle a marqué ≥ 1 XP (sinon section masquée)
+- Tri : par XP total descendant
+- Pas de numérotation des rangs (l'ordre + l'XP à droite suffisent)
 
-**Pour les rest days du GT :**
-- Pas de Today card (la prochaine Future card devient le scroll target)
+**Pour les classiques d'un jour :** layout identique sans le bouton GC + sans badge rôle (pas de GT actif).
 
-### 3.4 `<RaceCardFuture />` — card dashed collapsed
+**Pour les rest days du GT :** pas de Today card pour cette date — le label de date n'apparaît même pas.
+
+### 4.4 `<RaceCardFuture />` — card dashed collapsed
 
 **Path :** `apps/web/components/race-card-future.tsx`
 
 **Layout :**
 ```
-┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
-  Étape 3 · Shkodra → Prizren   6 mai
-  [+ Placer une tactique]
-└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
+  Giro · Étape 3                  [+]
+└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 ```
 
 **Specs :**
-- Container : `bg-app` (légèrement plus sombre que surface), border 1px **dashed** `border-default` à 70% opacity (`#1f292e`), radius 10px, padding 12px
-- Race name : 12-14px, font-bold, `text-high` mais avec opacity 0.85 (effet "non encore disputé")
-- Date : 10-11px, `text-low`
-- Bouton "+ Placer une tactique" :
-  - Visible uniquement si `currentPhase` est un Grand Tour (Giro, Tour, Vuelta) ou course d'une semaine (Paris-Nice, Tirreno, Romandie, Catalogne, Pays-Basque, Dauphiné, Suisse, etc.)
-  - Pas affiché pour les classiques d'un jour
-  - Style : 10-11px, font-semibold, `accent-default`, bg `rgba(6,182,212,0.08)`, padding 4px 8px, radius 4px
-  - Action : `Link` vers `/league/[leagueId]/team/gt/tactics?race=${raceSlug}` (page existante)
+- Container : `bg-app` (légèrement plus sombre que surface), border 1px **dashed** `#1f292e`, radius 10px, padding 12px
+- Titre : 13-14px, font-bold, `text-high` à 0.85 opacity (effet "non disputé")
+- Bouton `+` :
+  - Cercle 28px, bg `rgba(6,182,212,0.1)`, border 1px `accent-default` à 30% opacity
+  - Icône `Plus` Lucide, 14px, `accent-default`
+  - Visible **et cliquable** uniquement si la phase courante est :
+    - Un Grand Tour : `giro-italia`, `tour-france`, `vuelta-espana`
+    - Une course d'une semaine : Paris-Nice, Tirreno, Romandie, Catalogne, Pays-Basque, Dauphiné, Suisse (à confirmer dans la liste des phases existantes)
+  - Pour les classiques d'un jour : pas de bouton `+` (ou avatar vide grisé en placeholder)
+  - Action : `Link` vers `/league/[leagueId]/team/gt/tactics?race=${raceSlug}`
 
-### 3.5 `<RaceFeedSection />` — wrapper de section
+### 4.5 `<NemesisCard />` — card intercalée
 
-**Path :** `apps/web/components/race-feed-section.tsx`
+**Path :** `apps/web/components/race-feed-nemesis-card.tsx`
 
-Affiche un label de section uppercase (ex: "GIRO D'ITALIA · PHASE EN COURS") au-dessus du groupe de cards. 10px, font-bold, uppercase, letter-spacing 0.12em, `text-low`, padding-top 16px, padding-bottom 8px.
-
-### 3.6 Empty state
-
-Si la phase courante n'a aucune course (entre phases, période morte) :
+**Layout :**
 ```
-┌─────────────────────────────────────────┐
-│   Aucune course en cours.               │
-│   Prochaine phase : Classiques Part 1   │
-│   Démarre le 21 mars                    │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│ ⚔ Nemesis · Pogacar VS Vingegaard       │
+│   +50 XP → Mon équipe                    │
+└──────────────────────────────────────────┘
 ```
-- Background `bg-surface`, padding 24px, text-align center
-- Texte principal 13px `text-mid`
-- Date 12px `text-low`
+
+**Specs :**
+- Container : bg `rgba(239,68,68,0.06)`, border 1px `rgba(239,68,68,0.2)`, radius 10px, padding 10px 12px
+- Icône ⚔ Phosphor Sword (12px) à gauche du titre
+- Titre : 12px, font-semibold (600), `text-high`. Format : `Nemesis · {Coureur A} VS {Coureur B}`
+- Sous-ligne (résultat) : 11px, font-medium, `Emerald-500` si Mon équipe gagne, `Red-500` si Mon équipe perd, `text-mid` si neutre
+- Affichée **directement sous** la card étape concernée, dans le même groupe de date
+
+**Données :** lecture depuis `gt_tactic_activations` table où `tactic_type IN ('nemesis_gc', 'nemesis_sprint')` et résolution dans `gt_tactic_activations.nemesis_*` champs.
+
+### 4.6 `<RemontadaCard />` — card intercalée
+
+**Path :** `apps/web/components/race-feed-remontada-card.tsx`
+
+**Layout :**
+```
+┌──────────────────────────────────────────┐
+│ 🔥 Remontada · Pelu's Crew              │
+│    Boost +30% pendant 3 jours            │
+└──────────────────────────────────────────┘
+```
+
+**Specs :**
+- Container : bg `rgba(245,158,11,0.06)`, border 1px `rgba(245,158,11,0.2)`, radius 10px, padding 10px 12px
+- Icône 🔥 Phosphor Flame (12px) ou Lucide Flame
+- Titre : 12px, font-semibold, `text-high`. Format : `Remontada · {Team Name}`
+- Sous-ligne : 11px, font-medium, `text-mid`. Format : `Boost +{X}% pendant {N} jours`
+- Affichée **à la date de déclenchement** du boost, dans le groupe de date correspondant. Pas répétée chaque jour du boost (une seule card au déclenchement).
+
+**Données :** lecture depuis `remontada_boosts` table — détecter les nouveaux boosts dans la fenêtre temporelle de la phase courante.
+
+### 4.7 `<PhaseEndBanner />` — banner de fin de feed
+
+**Path :** `apps/web/components/race-feed-phase-end-banner.tsx`
+
+**Layout :**
+```
+┌──────────────────────────────────────────┐
+│ 🏁 Prochaine phase                       │
+│    Round 1 ouvre le 28 mai               │
+│    [Voir l'enchère →]                    │
+└──────────────────────────────────────────┘
+```
+
+**Specs :**
+- Container : `bg-surface`, border 1px `accent-default` à 30% opacity, radius 10px, padding 14px
+- Icône 🏁 Phosphor FlagCheckered (14px) à gauche du titre
+- Titre : 13px, font-bold, `text-high`. Texte fixe : `Prochaine phase`
+- Sous-ligne 1 : 12px, font-medium, `text-mid`. Format : `Round 1 ouvre le {date}` (ex: `Round 1 ouvre le 28 mai`)
+- Sous-ligne 2 (sous forme de bouton link) : 11-12px, font-semibold, `accent-default`. Texte : `Voir l'enchère →`
+  - Action : `Link` vers `/league/[leagueId]/auction`
+- Affichée **une fois en fin de feed** uniquement, après la dernière card course/Remontada
+
+**Si pas de prochaine phase connue (fin de saison) :** banner remplacé par `Saison terminée`.
+
+### 4.8 `<RaceFeedDateGroup />` — wrapper de groupe
+
+**Path :** `apps/web/components/race-feed-date-group.tsx`
+
+**Props :** `date: string`, `children: ReactNode`
+
+**Layout :**
+```
+[Date label hors carte]
+  [card 1]
+  [card 2]
+  [card N]
+```
+
+- Date label : voir §3.2
+- Children : stack vertical avec gap 7-8px entre cards
+
+### 4.9 Empty state
+
+Si aucune course dans la phase courante (entre phases) :
+- Le feed n'affiche que le `<PhaseEndBanner />` (qui contient déjà l'info utile : prochaine phase)
+- Pas de message "Aucune course" séparé — le banner suffit
 
 ---
 
-## 4. Sources de données
+## 5. Sources de données
 
-### 4.1 Server-side fetching
+### 5.1 Server-side fetching
 
 **Path :** `apps/web/app/(game)/league/[leagueId]/page.tsx`
 
 Au lieu de `getPhaseRaces()` (existant), créer un nouveau loader :
 
 ```ts
-async function getRaceFeedData(leagueId: string, myTeamId: string): Promise<RaceFeedItem[]>
+async function getRaceFeedData(
+  leagueId: string,
+  myTeamId: string,
+  currentPhase: AuctionPhase
+): Promise<{
+  groups: RaceFeedDateGroup[]
+  nextPhaseRound1Date?: string
+  nextPhaseLabel?: string
+}>
 ```
 
 **Logique :**
-1. Récupérer `currentPhase` (déjà fait dans la homepage)
-2. Récupérer les `race_startlists` de la phase (toutes les courses, future + past)
-3. Pour chaque course :
-   - Détecter `raceType` via regex sur `race_slug` (cf. §5)
-   - Si la date est passée ou aujourd'hui : récupérer les XP par équipe via `rider_xp_daily` agrégé par `team_id` filtré sur `race_slug`
-   - Si la date est aujourd'hui ou passée : récupérer les coureurs de l'équipe `myTeamId` qui ont marqué sur cette course
-   - Récupérer les bonus sponsor via `sponsor_bonuses` filtrés par `race_slug` et `team_id`
-4. Trier par `race_date` ascendant
-5. Marquer le statut `past` / `today` / `future` selon la date du jour
+1. Récupérer les courses de la phase courante via `race_startlists` + `race_results`
+2. Pour chaque course :
+   - Détecter `raceType` (regex sur slug, cf. §6)
+   - Si la date est passée ou aujourd'hui : agréger `rider_xp_daily` par `team_id` filtré sur `race_slug`
+   - Joindre `sponsor_bonuses` filtrés par `race_slug` et `team_id` pour les bonus €
+   - Identifier le winner team (max XP gagné)
+3. Récupérer les Nemesis activations pour la phase via `gt_tactic_activations`
+4. Récupérer les Remontada boosts récents via `remontada_boosts`
+5. Récupérer la date de Round 1 de la phase suivante via `auction_rounds` (round 1 de la phase WT suivante)
+6. Grouper toutes les cards (course, Nemesis, Remontada) par date
+7. Trier les groupes de date ascendant
+8. Marquer le statut `past` / `today` / `future` selon la date du jour
 
-### 4.2 Tables utilisées (existantes, aucune mutation)
+### 5.2 Tables utilisées (existantes, aucune mutation)
 
 | Table | Usage |
 |-------|-------|
-| `race_startlists` | Liste des courses de la phase |
+| `race_startlists` | Liste des courses futures de la phase |
+| `race_results` | Métadonnées (race_name, race_date) + résultats passés |
 | `rider_xp_daily` | XP gagnés par coureur par course (agrégé par team_id) |
-| `race_results` | Métadonnées (race_name lisible, race_date) |
-| `sponsor_bonuses` | Bonus sponsor par coureur par course |
-| `contracts` | Pour identifier mes coureurs au moment de la course |
+| `sponsor_bonuses` | Bonus sponsor € par coureur par course |
+| `contracts` | Identifier les coureurs de chaque équipe au moment de la course |
+| `gt_tactic_activations` | Nemesis activés et résolus |
+| `remontada_boosts` | Boosts Remontada actifs/historique |
+| `auction_rounds` | Date de Round 1 de la phase suivante |
 
-### 4.3 Pas de modification du schéma
+### 5.3 Pas de modification du schéma
 
 Aucune migration SQL. Tout est calculé côté serveur à partir des tables existantes.
 
 ---
 
-## 5. Détection du type de course (sans normalisation DB)
+## 6. Détection du type de course (sans normalisation DB)
 
 Le V1 vit avec les `race_slug` PCS bruts. Heuristique :
 
@@ -239,23 +391,33 @@ function getParentRaceSlug(raceSlug: string): string | null {
   return match ? match[1] : null
 }
 
+function getParentRaceLabel(parentSlug: string): string {
+  // ex: "race/giro-italia/2026" → "Giro"
+  // logique simple basée sur les slugs connus, fallback sur le slug brut
+}
+
+function getRaceTitle(race: RaceData): string {
+  // Stage : "{Course} · Étape {N}"
+  // Classic : "{Course}"
+}
+
 function isGrandTourPhase(phaseId: string): boolean {
   return ['giro-italia', 'tour-france', 'vuelta-espana'].includes(phaseId)
 }
 
 function isWeekRacePhase(phaseId: string): boolean {
-  // les phases qui contiennent des courses d'une semaine type Paris-Nice, Tirreno...
   return ['week-races-1', 'week-races-2', 'week-races-3'].includes(phaseId)
+  // À ajuster selon la nomenclature des phases existantes
 }
 ```
 
-Si une course `slug` est en `/gc` ou `/results` (incohérences PCS), traitement à la même que `classic` pour le V1. La normalisation propre vient en V2 (cf. dette technique dans le spec vision).
+Si un slug est en `/gc` ou `/results` (incohérences PCS), traiter comme `classic` pour le V1. La normalisation propre vient en V2.
 
 ---
 
-## 6. Layout & scroll behavior
+## 7. Layout & scroll behavior
 
-### 6.1 Structure de la page
+### 7.1 Structure de la page
 
 ```tsx
 // app/(game)/league/[leagueId]/page.tsx
@@ -264,14 +426,16 @@ Si une course `slug` est en `/gc` ou `/results` (incohérences PCS), traitement 
     leagueId={leagueId}
     myTeamId={myTeamId}
     currentPhase={currentPhase}
-    races={races}
+    groups={groups}
+    nextPhaseRound1Date={nextPhaseRound1Date}
+    nextPhaseLabel={nextPhaseLabel}
   />
 </MainLayout>
 ```
 
 Le composant remplace l'actuel `HomeFeed` quand la ligue est en mode actif. Le `LobbyView` (ligue pending) reste inchangé.
 
-### 6.2 Scroll par défaut
+### 7.2 Scroll par défaut
 
 Au mount, dans `<RaceFeed />` :
 1. Si une `today` card existe → `ref.scrollIntoView({block: 'start', behavior: 'instant'})`
@@ -280,68 +444,133 @@ Au mount, dans `<RaceFeed />` :
 
 Implémentation : `useLayoutEffect` (pas `useEffect`) pour éviter le flash visuel.
 
-### 6.3 Pas de virtualisation
+### 7.3 Pas de virtualisation
 
 Une phase WT contient au max ~25 courses (Giro = 21 stages + repos). Pas de besoin de virtualisation. Render simple.
 
+### 7.4 Comportement past card expand
+
+Tap sur une past card → expand au format Today (mêmes contenus, sans scroll auto). Re-tap → collapse. State local, pas en URL.
+
 ---
 
-## 7. Tests
+## 8. Tests
 
-### 7.1 Vitest (unit + intégration)
+### 8.1 Vitest (unit + intégration)
 
-**Path :** `apps/web/components/__tests__/race-feed.test.tsx`
+**Path :** `apps/web/components/__tests__/race-feed.test.tsx` (et fichiers par composant)
 
-- `<RaceCardPast />` : render, expand au tap
-- `<RaceCardToday />` : render avec myTeam highlight, render sans myTeam (0 XP cette course → ligne quand même affichée avec `+0`)
-- `<RaceCardFuture />` : bouton tactique visible si GT, masqué si classique
-- `getRaceFeedData()` : mock Supabase, vérifie le tri par date, le marquage past/today/future, le grouping par parent race
+Cas à couvrir :
+- `<RaceCardPast />` : render, expand au tap, avatar du winner correctement affiché
+- `<RaceCardToday />` :
+  - render avec breakdown de plusieurs équipes
+  - Mon équipe surlignée + étoile
+  - filtrage : seuls les coureurs ayant marqué ≥ 1 XP sont affichés
+  - Mon équipe masquée si 0 XP
+  - bouton "Voir le classement GC" affiché pour les stages, pas pour les classiques
+  - badge rôle GT affiché si phase GT, masqué sinon
+- `<RaceCardFuture />` : bouton `+` visible si GT/week-race, masqué sinon
+- `<NemesisCard />` : render, résultat Mon équipe (+/−) styling
+- `<RemontadaCard />` : render, format "+X% pendant N jours"
+- `<PhaseEndBanner />` : render avec date Round 1, lien vers Auction
+- `getRaceFeedData()` : mock Supabase, vérifie le grouping par date, le marquage past/today/future, l'inclusion des Nemesis/Remontada cards aux bonnes dates
 
-### 7.2 Playwright e2e
+### 8.2 Playwright e2e
 
 **Path :** `apps/web/e2e/race-feed.spec.ts` (`test.fixme()` jusqu'à seed dispo)
 
-Happy path : login → homepage → vérifie qu'une Today card est en haut du viewport, qu'une Past card est au-dessus, qu'une Future card est en dessous.
+Happy path : login → homepage → vérifie qu'une Today card est en haut du viewport, qu'une Past card est au-dessus, qu'une Future card est en dessous, qu'une Phase end banner est en bas.
 
 ---
 
-## 8. Critères d'acceptation
+## 9. Critères d'acceptation
 
-- [ ] La homepage affiche un feed vertical de cards au lieu du HomeFeed actuel
+- [ ] La homepage affiche un feed vertical de cards groupées par date
 - [ ] Au chargement, la card "Aujourd'hui" est en haut du viewport visible
-- [ ] La Past card affiche le nom, la date, et l'équipe ayant marqué le plus de XP
-- [ ] La Today card affiche le classement des équipes et le détail XP+bonus de Mon équipe
-- [ ] La Future card affiche le nom, la date, et un bouton "Placer une tactique" uniquement si la phase est un GT ou une course d'une semaine
-- [ ] Le bouton tactique mène vers `team/gt/tactics?race=...`
+- [ ] La date est affichée hors de la carte, en haut à gauche du groupe
+- [ ] Une même date peut contenir plusieurs cards (étape + Nemesis + Remontada, ou courses parallèles)
+- [ ] La Past card collapsed affiche : titre `[Course] · Étape N` + avatar du winner
+- [ ] Tap sur une Past card → expand au format Today
+- [ ] La Today card affiche le détail de toutes les équipes ayant marqué (team header avec bonus € + XP, riders rows uniquement si XP ≥ 1)
+- [ ] Mon équipe est surlignée avec étoile ★ et color `accent-default`
+- [ ] La Today card d'un GT/week-race affiche un bouton "Voir le classement GC du [Course] →" qui mène vers Ranking pré-filtré
+- [ ] La Future card affiche un bouton `+` cyan qui mène vers la page tactique pour les phases GT/week-race
+- [ ] Les classiques d'un jour n'ont ni bouton GC ni bouton `+` (juste la card vide)
+- [ ] La Nemesis card est intercalée sous la card étape concernée, même date
+- [ ] La Remontada card apparaît à la date de déclenchement du boost
+- [ ] La Phase end banner est affichée une fois en fin de feed avec la date du Round 1 prochaine phase
 - [ ] Si pas de course aujourd'hui (rest day), le scroll auto est sur la prochaine Future card
-- [ ] Le détail XP de Mon équipe inclut le bonus sponsor s'il y en a un sur cette course
-- [ ] La hiérarchie typographique respecte les 4 niveaux (page title hors-scope V1, mais section labels en uppercase + content labels en title case)
 - [ ] Lobby view (ligue pending) inchangée
 - [ ] Sidebar desktop inchangée
 - [ ] Toutes les pages Auction/Team/Budget/Ranking inchangées
 - [ ] `pnpm lint` + `pnpm typecheck` pass
-- [ ] Tests vitest pass (4-6 tests sur le RaceFeed)
+- [ ] Tests vitest pass (10-15 tests sur les composants RaceFeed)
 - [ ] Pas de migration SQL
 
 ---
 
-## 9. Périmètre temps
+## 10. Périmètre temps
 
-Estimé : **3-5h** sur une session focalisée.
-- 1h : data layer (`getRaceFeedData`)
-- 1h30 : composants (RaceCardPast, RaceCardToday, RaceCardFuture, RaceFeedSection)
+Estimé : **5-7h** sur une session focalisée.
+- 1h30 : data layer (`getRaceFeedData` avec Nemesis + Remontada + next phase)
+- 2h30 : composants (8 composants au total : RaceFeed, RaceFeedDateGroup, RaceCardPast, RaceCardToday, RaceCardFuture, NemesisCard, RemontadaCard, PhaseEndBanner)
 - 30min : intégration page + scroll behavior
-- 30min-1h : tests + ajustements
+- 1h : tests + ajustements
 - 30min : review styling vs design system
 
 ---
 
-## 10. Questions ouvertes spécifiques au V1
+## 11. Récap visuel — homepage le 5 mai (étape 2 Giro)
 
-(Les autres questions sont dans le spec vision.)
-
-1. **Today card sans participants Mon équipe** : si aucun de mes coureurs n'est sur la startlist de cette course, on affiche quand même le classement équipes mais pas la section "DÉTAIL — Mon équipe" ?  *Proposition par défaut : oui, on masque la section détail si vide.*
-
-2. **Number of teams in classement** : on affiche toutes les équipes de la ligue ou top 3 + bouton "voir tout" ? *Proposition par défaut : toutes (les ligues ont 4-8 équipes).*
-
-3. **Cards passées avec 0 XP (course où aucun de mes coureurs n'a couru)** : on les affiche quand même ou on les masque ? *Proposition par défaut : on les affiche (cohérence chronologique du calendrier).*
+```
+┌─ HOMEPAGE ──────────────────────────────────────┐
+│ WattHunter        Ma Ligue              [≡]    │
+├──────────────────────────────────────────────────┤
+│                                                  │
+│  4 mai                                           │
+│  ┌──────────────────────────────────────────┐   │
+│  │ Giro · Étape 1                   [TA○]  │   │
+│  └──────────────────────────────────────────┘   │
+│                                                  │
+│  5 mai                                           │
+│  ┌──────────────────────────────────────────┐   │
+│  │ Giro · Étape 2                   [TA○]  │   │
+│  │ ────────────────────────────────────────│   │
+│  │ TEAM ASTRID         12 000€      +340   │   │
+│  │   T. Pogacar GC     +12 000€    +180    │   │
+│  │   J. Vingegaard          —       +90    │   │
+│  │   E. Mas    DOM          —       +70    │   │
+│  │ MON ÉQUIPE ★         8 000€      +280   │   │
+│  │   M. van Aert SPR   +8 000€     +120    │   │
+│  │   J. Almeida DOM         —       +90    │   │
+│  │ JORDAN'S PICK            —       +190   │   │
+│  │   ...                                    │   │
+│  │ ────────────────────────────────────────│   │
+│  │ [ Voir le classement GC du Giro → ]    │   │
+│  └──────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────┐   │
+│  │ ⚔ Nemesis · Pogacar VS Vingegaard       │   │
+│  │   +50 XP → Mon équipe                    │   │
+│  └──────────────────────────────────────────┘   │
+│                                                  │
+│  6 mai                                           │
+│  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐    │
+│    Giro · Étape 3                      [+]      │
+│  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘    │
+│  ┌──────────────────────────────────────────┐   │
+│  │ 🔥 Remontada · Pelu's Crew              │   │
+│  │    Boost +30% pendant 3 jours            │   │
+│  └──────────────────────────────────────────┘   │
+│                                                  │
+│  ...                                             │
+│                                                  │
+│  ┌──────────────────────────────────────────┐   │
+│  │ 🏁 Prochaine phase                       │   │
+│  │    Round 1 ouvre le 28 mai               │   │
+│  │    [Voir l'enchère →]                    │   │
+│  └──────────────────────────────────────────┘   │
+│                                                  │
+├──────────────────────────────────────────────────┤
+│ [Home] [Auct] [Team] [Bgt] [Rank]               │
+└──────────────────────────────────────────────────┘
+```
