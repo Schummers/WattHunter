@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentPhase, getPhaseRange, AUCTION_PHASES } from "./phases";
-import { GT_RACE_SLUG_PREFIX, GT_IDENTIFIER, isGTPhaseId } from "./gt-phases";
+import { GT_IDENTIFIER, isGTPhaseId } from "./gt-phases";
 import {
   detectRaceType,
   getParentRaceSlug,
