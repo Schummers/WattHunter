@@ -57,8 +57,7 @@ export default async function BudgetPage({
       .eq("team_id", team.id)
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString())
-      .order("created_at", { ascending: false })
-      .limit(5),
+      .order("created_at", { ascending: false }),
     supabase
       .from("treasury_log")
       .select("amount, type")
