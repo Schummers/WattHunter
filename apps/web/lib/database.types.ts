@@ -1,3 +1,4 @@
+Connecting to db 5432
 export type Json =
   | string
   | number
@@ -7,11 +8,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -868,7 +864,7 @@ export type Database = {
           gt_role_mult: number
           id: string
           nemesis_modifier: number
-          race_slug: string
+          race_slug: string | null
           raw_pcs_points: number
           remontada_mult: number
           rider_id: string
@@ -887,7 +883,7 @@ export type Database = {
           gt_role_mult?: number
           id?: string
           nemesis_modifier?: number
-          race_slug: string
+          race_slug?: string | null
           raw_pcs_points?: number
           remontada_mult?: number
           rider_id: string
@@ -906,7 +902,7 @@ export type Database = {
           gt_role_mult?: number
           id?: string
           nemesis_modifier?: number
-          race_slug?: string
+          race_slug?: string | null
           raw_pcs_points?: number
           remontada_mult?: number
           rider_id?: string
@@ -1018,18 +1014,21 @@ export type Database = {
       round_validations: {
         Row: {
           auction_id: string
+          auto_validated: boolean
           id: string
           team_id: string
           validated_at: string
         }
         Insert: {
           auction_id: string
+          auto_validated?: boolean
           id?: string
           team_id: string
           validated_at?: string
         }
         Update: {
           auction_id?: string
+          auto_validated?: boolean
           id?: string
           team_id?: string
           validated_at?: string
@@ -1755,3 +1754,6 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+A new version of Supabase CLI is available: v2.98.2 (currently installed v2.90.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
