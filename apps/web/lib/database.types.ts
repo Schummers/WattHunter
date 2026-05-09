@@ -1018,18 +1018,21 @@ export type Database = {
       round_validations: {
         Row: {
           auction_id: string
+          auto_validated: boolean
           id: string
           team_id: string
           validated_at: string
         }
         Insert: {
           auction_id: string
+          auto_validated?: boolean
           id?: string
           team_id: string
           validated_at?: string
         }
         Update: {
           auction_id?: string
+          auto_validated?: boolean
           id?: string
           team_id?: string
           validated_at?: string
@@ -1527,11 +1530,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_validate_unactionable_teams: {
+        Args: {
+          p_auction_id: string
+          p_current_phase_id: number
+          p_league_id: string
+        }
+        Returns: number
+      }
       compute_level: { Args: { xp: number }; Returns: number }
       confirm_phase_setup: {
         Args: {
           p_current_phase_id: number
           p_current_phase_label: string
+          p_phase_start: string
           p_team_id: string
         }
         Returns: Json

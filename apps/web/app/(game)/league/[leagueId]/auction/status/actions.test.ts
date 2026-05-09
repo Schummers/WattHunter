@@ -8,11 +8,13 @@ const {
   mockGetUser,
   mockAnonFrom,
   mockAdminFrom,
+  mockAdminRpc,
   mockGetCurrentPhase,
 } = vi.hoisted(() => ({
   mockGetUser: vi.fn(),
   mockAnonFrom: vi.fn(),
   mockAdminFrom: vi.fn(),
+  mockAdminRpc: vi.fn().mockResolvedValue({ data: 0, error: null }),
   mockGetCurrentPhase: vi.fn(),
 }));
 
@@ -26,6 +28,7 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: vi.fn(() => ({
     from: mockAdminFrom,
+    rpc: mockAdminRpc,
   })),
 }));
 
@@ -35,6 +38,7 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/phases", () => ({
   getCurrentPhase: mockGetCurrentPhase,
+  getPhaseRange: () => ({ start: new Date("2026-05-02"), end: new Date("2026-06-01") }),
 }));
 
 import { forceResolveRound } from "../actions";
@@ -273,16 +277,20 @@ describe("forceResolveRound", () => {
     );
     // 11. Cleanup: DELETE draft_bids
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // 12. Find next scheduled auction (none — last round)
+    // 12. Find next scheduled auction (next round exists)
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({ data: { id: NEXT_AUCTION_ID }, error: null })
+    );
+    // 13. UPDATE next auction → open
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
 
     const result = await forceResolveRound({ leagueId: LEAGUE_ID });
 
-    expect(result).toMatchObject({ ok: true, resolved: 1 });
+    expect(result).toMatchObject({ ok: true, resolved: 1, next_auction_id: NEXT_AUCTION_ID });
 
-    // Sanity: total mockAdminFrom calls should be 11. If the bug returns
-    // (treasury UPDATE + treasury_log INSERT), this would jump to 13.
-    expect(mockAdminFrom).toHaveBeenCalledTimes(11);
+    // Sanity: total mockAdminFrom calls should be 12. If the bug returns
+    // (treasury UPDATE + treasury_log INSERT), this would jump to 14.
+    expect(mockAdminFrom).toHaveBeenCalledTimes(12);
   });
 
   it("level-gated rider has all bids cancelled, no contract", async () => {
@@ -323,12 +331,16 @@ describe("forceResolveRound", () => {
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
     // Cleanup: SELECT contracts (no contracts → no DELETE)
     mockAdminFrom.mockReturnValueOnce(chainable({ data: [], error: null }));
-    // Find next scheduled auction
+    // Find next scheduled auction (next round exists)
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({ data: { id: NEXT_AUCTION_ID }, error: null })
+    );
+    // UPDATE next auction → open
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
 
     const result = await forceResolveRound({ leagueId: LEAGUE_ID });
 
-    expect(result).toMatchObject({ ok: true, resolved: 0 });
+    expect(result).toMatchObject({ ok: true, resolved: 0, next_auction_id: NEXT_AUCTION_ID });
   });
 
   it("rider with existing contract has all bids cancelled", async () => {
@@ -376,11 +388,81 @@ describe("forceResolveRound", () => {
     );
     // Cleanup: DELETE draft_bids
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // Find next scheduled auction
+    // Find next scheduled auction (next round exists)
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({ data: { id: NEXT_AUCTION_ID }, error: null })
+    );
+    // UPDATE next auction → open
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
 
     const result = await forceResolveRound({ leagueId: LEAGUE_ID });
 
-    expect(result).toMatchObject({ ok: true, resolved: 0 });
+    expect(result).toMatchObject({ ok: true, resolved: 0, next_auction_id: NEXT_AUCTION_ID });
+  });
+
+  it("triggers payday cascade when last round of phase closes", async () => {
+    mockGetCurrentPhase.mockReturnValue({ id: PHASE_ID, label: "Giro d'Italia", startMonth: 5, startDay: 2 });
+
+    // 1. Membership check
+    mockAnonFrom.mockReturnValueOnce(
+      chainable({ data: { team_id: TEAM_A }, error: null })
+    );
+    // 2. Optimistic lock returns Round 3 auction
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({
+        data: [{ id: AUCTION_ID, name: "Round 3", league_id: LEAGUE_ID }],
+        error: null,
+      })
+    );
+    // 3. Active bids: empty (no winners)
+    mockAdminFrom.mockReturnValueOnce(chainable({ data: [], error: null }));
+    // 4. Cleanup: SELECT contracts (empty)
+    mockAdminFrom.mockReturnValueOnce(chainable({ data: [], error: null }));
+    // 5. Find next scheduled auction → null (last round)
+    mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
+    // 6. SELECT league_members for cascade
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({
+        data: [
+          { team_id: TEAM_A },
+          { team_id: TEAM_B },
+        ],
+        error: null,
+      })
+    );
+    // 7. SELECT teams for cascade
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({
+        data: [
+          { id: TEAM_A, name: "Alpha" },
+          { id: TEAM_B, name: "Beta" },
+        ],
+        error: null,
+      })
+    );
+
+    // RPC: confirm_phase_setup × 2 (one per team)
+    mockAdminRpc.mockResolvedValueOnce({
+      data: { ok: true, skippedLateJoiner: false, sponsorIncome: 750000, totalSalary: 600000 },
+      error: null,
+    });
+    mockAdminRpc.mockResolvedValueOnce({
+      data: { ok: true, skippedLateJoiner: true },
+      error: null,
+    });
+
+    const result = await forceResolveRound({ leagueId: LEAGUE_ID });
+
+    expect(result).toMatchObject({
+      ok: true,
+      resolved: 0,
+      next_auction_id: null,
+      payday: { paid: 1, skippedLateJoiners: 1, errors: [] },
+    });
+    expect(mockAdminRpc).toHaveBeenCalledTimes(2);
+    expect(mockAdminRpc).toHaveBeenCalledWith("confirm_phase_setup", expect.objectContaining({
+      p_team_id: TEAM_A,
+      p_current_phase_id: PHASE_ID,
+    }));
   });
 });

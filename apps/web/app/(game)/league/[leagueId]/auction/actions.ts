@@ -4,9 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { calcMinSalary } from "@/lib/format";
-import { getCurrentPhase } from "@/lib/phases";
+import { getCurrentPhase, getPhaseRange } from "@/lib/phases";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LEVELS } from "@/lib/levels";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -277,6 +278,62 @@ export async function validateRound(input: { leagueId: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// triggerPhasePayday — cascade payday for all teams when last round closes
+// ---------------------------------------------------------------------------
+
+async function triggerPhasePayday(
+  admin: SupabaseClient,
+  leagueId: string,
+): Promise<{ paid: number; skippedLateJoiners: number; errors: string[] }> {
+  const phase = getCurrentPhase();
+  const { start: phaseStart } = getPhaseRange(phase, new Date().getFullYear());
+
+  const { data: memberData } = await admin
+    .from("league_members")
+    .select("team_id")
+    .eq("league_id", leagueId);
+
+  const teamIds = (memberData ?? []).map((m: { team_id: string }) => m.team_id);
+
+  const { data: teams } = await admin
+    .from("teams")
+    .select("id, name")
+    .in("id", teamIds);
+
+  let paid = 0;
+  let skippedLateJoiners = 0;
+  const errors: string[] = [];
+
+  for (const team of (teams ?? []) as { id: string; name: string }[]) {
+    const { data, error } = await admin.rpc("confirm_phase_setup", {
+      p_team_id: team.id,
+      p_current_phase_id: phase.id,
+      p_current_phase_label: phase.label,
+      p_phase_start: phaseStart.toISOString(),
+    });
+
+    if (error) {
+      errors.push(`${team.name}: ${error.message}`);
+      continue;
+    }
+    const result = data as {
+      ok?: boolean;
+      skippedLateJoiner?: boolean;
+      error?: string;
+    } | null;
+    if (!result?.ok) {
+      if (result?.error?.includes("Already confirmed")) continue;
+      errors.push(`${team.name}: ${result?.error ?? "unknown error"}`);
+      continue;
+    }
+    if (result.skippedLateJoiner) skippedLateJoiners++;
+    else paid++;
+  }
+
+  return { paid, skippedLateJoiners, errors };
+}
+
+// ---------------------------------------------------------------------------
 // forceResolveRound — port of services/pcs-sync/auction.py::resolve_current_round
 // ---------------------------------------------------------------------------
 
@@ -527,12 +584,27 @@ export async function forceResolveRound(input: { leagueId: string }) {
     .maybeSingle();
 
   let nextAuctionId: string | null = null;
+  let paydayResult: { paid: number; skippedLateJoiners: number; errors: string[] } | null = null;
   if (nextAuction) {
     nextAuctionId = nextAuction.id;
     await admin
       .from("auctions")
       .update({ status: "open", opens_at: new Date().toISOString() })
       .eq("id", nextAuction.id);
+  } else {
+    paydayResult = await triggerPhasePayday(admin, leagueId);
+    console.log(
+      `[forceResolveRound] phase payday cascade: ${paydayResult.paid} paid, ${paydayResult.skippedLateJoiners} late joiners skipped, ${paydayResult.errors.length} errors`,
+    );
+  }
+
+  // 9b. Auto-validate teams that can't place any bid on the newly opened round.
+  if (nextAuctionId) {
+    await admin.rpc("auto_validate_unactionable_teams", {
+      p_auction_id: nextAuctionId,
+      p_league_id: leagueId,
+      p_current_phase_id: phase.id,
+    });
   }
 
   // 10. Revalidate
@@ -541,5 +613,10 @@ export async function forceResolveRound(input: { leagueId: string }) {
   revalidatePath(`/league/${leagueId}/auction/status`);
   revalidatePath(`/league/${leagueId}/auction/history`);
 
-  return { ok: true, resolved: resolvedCount, next_auction_id: nextAuctionId };
+  return {
+    ok: true,
+    resolved: resolvedCount,
+    next_auction_id: nextAuctionId,
+    payday: paydayResult,
+  };
 }

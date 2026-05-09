@@ -394,6 +394,83 @@ export type Database = {
           },
         ]
       }
+      gt_tactic_activations: {
+        Row: {
+          created_at: string
+          id: string
+          nemesis_target_role: string | null
+          nemesis_target_team_id: string | null
+          outcome: string | null
+          phase_id: number
+          resolved_at: string | null
+          resolved_attacker_rider_id: string | null
+          resolved_target_rider_id: string | null
+          stage_slug: string
+          tactic_type: string
+          team_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nemesis_target_role?: string | null
+          nemesis_target_team_id?: string | null
+          outcome?: string | null
+          phase_id: number
+          resolved_at?: string | null
+          resolved_attacker_rider_id?: string | null
+          resolved_target_rider_id?: string | null
+          stage_slug: string
+          tactic_type: string
+          team_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nemesis_target_role?: string | null
+          nemesis_target_team_id?: string | null
+          outcome?: string | null
+          phase_id?: number
+          resolved_at?: string | null
+          resolved_attacker_rider_id?: string | null
+          resolved_target_rider_id?: string | null
+          stage_slug?: string
+          tactic_type?: string
+          team_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gt_tactic_activations_nemesis_target_team_id_fkey"
+            columns: ["nemesis_target_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gt_tactic_activations_resolved_attacker_rider_id_fkey"
+            columns: ["resolved_attacker_rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gt_tactic_activations_resolved_target_rider_id_fkey"
+            columns: ["resolved_target_rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gt_tactic_activations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       league_members: {
         Row: {
           id: string
@@ -787,13 +864,17 @@ export type Database = {
           contract_id: string
           created_at: string
           date: string
+          gt_classif_bonus: number
+          gt_role_mult: number
           id: string
+          nemesis_modifier: number
           race_slug: string
           raw_pcs_points: number
           remontada_mult: number
           rider_id: string
           role_mult: number
           strategy_bonus: number
+          tactic_applied: string | null
           team_id: string
           xp_gained: number
         }
@@ -802,13 +883,17 @@ export type Database = {
           contract_id: string
           created_at?: string
           date: string
+          gt_classif_bonus?: number
+          gt_role_mult?: number
           id?: string
+          nemesis_modifier?: number
           race_slug: string
           raw_pcs_points?: number
           remontada_mult?: number
           rider_id: string
           role_mult?: number
           strategy_bonus?: number
+          tactic_applied?: string | null
           team_id: string
           xp_gained?: number
         }
@@ -817,13 +902,17 @@ export type Database = {
           contract_id?: string
           created_at?: string
           date?: string
+          gt_classif_bonus?: number
+          gt_role_mult?: number
           id?: string
+          nemesis_modifier?: number
           race_slug?: string
           raw_pcs_points?: number
           remontada_mult?: number
           rider_id?: string
           role_mult?: number
           strategy_bonus?: number
+          tactic_applied?: string | null
           team_id?: string
           xp_gained?: number
         }
@@ -929,18 +1018,21 @@ export type Database = {
       round_validations: {
         Row: {
           auction_id: string
+          auto_validated: boolean
           id: string
           team_id: string
           validated_at: string
         }
         Insert: {
           auction_id: string
+          auto_validated?: boolean
           id?: string
           team_id: string
           validated_at?: string
         }
         Update: {
           auction_id?: string
+          auto_validated?: boolean
           id?: string
           team_id?: string
           validated_at?: string
@@ -1438,11 +1530,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_validate_unactionable_teams: {
+        Args: {
+          p_auction_id: string
+          p_current_phase_id: number
+          p_league_id: string
+        }
+        Returns: number
+      }
       compute_level: { Args: { xp: number }; Returns: number }
       confirm_phase_setup: {
         Args: {
           p_current_phase_id: number
           p_current_phase_label: string
+          p_phase_start: string
           p_team_id: string
         }
         Returns: Json
@@ -1507,9 +1608,25 @@ export type Database = {
         }
         Returns: Json
       }
+      place_tactic: {
+        Args: {
+          p_nemesis_target_role?: string
+          p_nemesis_target_team_id?: string
+          p_phase_id: number
+          p_stage_slug: string
+          p_tactic_type: string
+          p_team_id: string
+          p_year: number
+        }
+        Returns: string
+      }
       release_rider: {
         Args: { p_contract_id: string; p_current_phase_id: number }
         Returns: Json
+      }
+      resolve_nemesis_for_stage: {
+        Args: { p_stage_slug: string }
+        Returns: number
       }
       validate_round: {
         Args: { p_current_phase_id: number; p_league_id: string }
