@@ -4,12 +4,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Hoisted mocks — must be declared before any imports that consume them.
 // ---------------------------------------------------------------------------
 
-const { mockFrom, mockGetUser, mockGetCurrentPhase, mockRpc, mockAdminFrom } = vi.hoisted(() => ({
+const { mockFrom, mockGetUser, mockGetCurrentPhase, mockRpc, mockAdminFrom, mockAdminRpc } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
   mockGetUser: vi.fn(),
   mockGetCurrentPhase: vi.fn(),
   mockRpc: vi.fn(),
   mockAdminFrom: vi.fn(),
+  mockAdminRpc: vi.fn().mockResolvedValue({ data: 0, error: null }),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -23,6 +24,7 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: vi.fn(() => ({
     from: mockAdminFrom,
+    rpc: mockAdminRpc,
   })),
 }));
 
@@ -32,6 +34,7 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/phases", () => ({
   getCurrentPhase: mockGetCurrentPhase,
+  getPhaseRange: () => ({ start: new Date("2026-05-02"), end: new Date("2026-06-01") }),
 }));
 
 // NOTE: lib/budget.ts and lib/levels.ts are pure functions — intentionally NOT mocked.
@@ -153,7 +156,10 @@ function setupAdminForResolve(opts: { lockSucceeds: boolean }) {
             eq: () => ({
               order: () => ({
                 limit: () => ({
-                  maybeSingle: async () => ({ data: null, error: null }),
+                  maybeSingle: async () => ({
+                    data: { id: "next-auction-4000-8000-000000000099" },
+                    error: null,
+                  }),
                 }),
               }),
             }),
