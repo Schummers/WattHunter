@@ -11,6 +11,10 @@ export default tseslint.config(
       ...nextPlugin.configs["core-web-vitals"].rules,
       "@typescript-eslint/no-explicit-any": "warn",
       "react-hooks/exhaustive-deps": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
+      ],
     },
   },
   {

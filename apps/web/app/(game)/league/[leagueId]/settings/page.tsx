@@ -177,6 +177,21 @@ export default async function SettingsPage({
               </div>
             </div>
 
+            {/* Commissioner tools */}
+            {isCommissioner && (
+              <div className="space-y-1">
+                <label className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
+                  Commissioner
+                </label>
+                <Link
+                  href={`/league/${leagueId}/auction/rounds`}
+                  className="flex h-9 items-center rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-[length:var(--type-body)] text-[var(--accent-default)]"
+                >
+                  Edit round dates →
+                </Link>
+              </div>
+            )}
+
             {/* Team name — editable */}
             <EditableField
               label="Team name"

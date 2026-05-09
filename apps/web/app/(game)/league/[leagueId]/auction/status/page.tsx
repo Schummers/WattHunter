@@ -5,6 +5,7 @@ import { getCurrentPhase } from "@/lib/phases";
 import { formatEuro } from "@/lib/format";
 import { getLevelByNumber } from "@/lib/levels";
 import { Tag } from "@/components/pill";
+import { RoundStepper } from "@/components/round-stepper";
 import { StatusClient } from "./status-client";
 
 interface TeamRow {
@@ -52,6 +53,19 @@ export default async function StatusPage({
     .order("opens_at", { ascending: true })
     .limit(1)
     .maybeSingle();
+
+  // All-rounds (3 most recent, includes closed — for stepper)
+  const { data: allRoundsRaw } = await supabase
+    .from("auctions")
+    .select("id, name, status, opens_at")
+    .eq("league_id", leagueId)
+    .order("opens_at", { ascending: false })
+    .limit(3);
+  const stepperRounds = (allRoundsRaw ?? []).reverse().map((r) => ({
+    number: parseInt(r.name.replace("Round ", ""), 10),
+    status: r.status as "open" | "scheduled" | "closed" | "resolving",
+    opens_at: r.opens_at,
+  }));
 
   // 2. All teams in the league
   const { data: teams } = await supabase
@@ -167,9 +181,15 @@ export default async function StatusPage({
   });
 
   return (
-    <div className="px-4 py-4">
+    <div className="py-4">
+      {/* Round stepper — always visible */}
+      <div className="pb-3">
+        <RoundStepper rounds={stepperRounds} />
+      </div>
+      <div className="border-t border-[var(--border-subtle)]" />
+
       {auction ? (
-        <>
+        <div className="px-4 pt-4">
           {/* Header row */}
           <div className="flex items-center text-[length:var(--type-caption)] text-[var(--text-low)] pb-2">
             <span className="flex-1">Team</span>
@@ -246,12 +266,14 @@ export default async function StatusPage({
               .filter((r) => r.status !== "validated" && r.status !== "auto_validated")
               .map((r) => r.team_name)}
           />
-        </>
+        </div>
       ) : (
-        <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] p-6 text-center">
-          <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-            No open round. Wait for the next round to begin.
-          </p>
+        <div className="px-4 pt-4">
+          <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] p-6 text-center">
+            <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+              No open round. Wait for the next round to begin.
+            </p>
+          </div>
         </div>
       )}
     </div>

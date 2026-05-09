@@ -7,7 +7,7 @@ import { RiderCard } from "@/components/rider-card";
 import { FilterChips } from "@/components/filter-chips";
 import { StickyBar } from "@/components/sticky-bar";
 import { addDraft } from "@/app/(game)/league/[leagueId]/auction/actions";
-import { formatRoundCountdown, formatThousands, countryCodeToFlag, calcMinSalary, formatEuro } from "@/lib/format";
+import { formatThousands, countryCodeToFlag, calcMinSalary, formatEuro } from "@/lib/format";
 import { computeAvailableBudget } from "@/lib/budget";
 
 interface Rider {
@@ -125,9 +125,9 @@ function formatName(fullName: string): string {
 export function MarketClient({
   leagueId,
   riders,
-  activeRound,
-  nextRound,
-  nextAuctionLabel,
+  activeRound: _activeRound,
+  nextRound: _nextRound,
+  nextAuctionLabel: _nextAuctionLabel,
   currentSlots,
   maxSlots,
   treasury,
@@ -393,34 +393,6 @@ export function MarketClient({
 
   return (
     <div className="pb-20">
-      {/* Round header */}
-      {activeRound ? (
-        <div className="flex items-center justify-between px-4 pt-4 pb-0">
-          <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-            {(() => {
-              const { text, urgent } = formatRoundCountdown(activeRound.closes_at, "open");
-              return (
-                <>
-                  {activeRound.name}{" "}
-                  <span className={urgent ? "text-[var(--warning)]" : ""}>
-                    &middot; {text}
-                  </span>
-                </>
-              );
-            })()}
-          </span>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between px-4 pt-4 pb-0">
-          <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-            {nextRound
-              ? `Next round · ${new Date(nextRound.opens_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
-              : nextAuctionLabel
-                ? nextAuctionLabel
-                : "Waiting for first auction"}
-          </span>
-        </div>
-      )}
 
       {/* Search */}
       <div className="px-4 pt-2 pb-3">

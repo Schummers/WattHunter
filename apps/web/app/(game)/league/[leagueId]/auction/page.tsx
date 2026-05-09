@@ -66,6 +66,15 @@ export default async function AuctionsPage({
     .single();
   const isCommissioner = league?.commissioner_id === user.id;
 
+  // All-rounds query (includes closed — for stepper display)
+  const { data: allRoundsRaw } = await supabase
+    .from("auctions")
+    .select("id, name, status, opens_at")
+    .eq("league_id", leagueId)
+    .order("opens_at", { ascending: false })
+    .limit(3);
+  const allRounds = (allRoundsRaw ?? []).reverse();
+
   // Parallel queries
   const [
     { data: auctionRounds },
@@ -233,6 +242,13 @@ export default async function AuctionsPage({
   const openRound = displayRounds.find((r) => r.status === "open");
   const activeRoundNumber = openRound ? parseRoundNumber(openRound.name) : null;
   const isRound1 = activeRoundNumber === 1;
+
+  // Stepper rounds (3 most recent, always includes closed)
+  const stepperRounds = allRounds.map((r) => ({
+    number: parseRoundNumber(r.name),
+    status: r.status as "open" | "scheduled" | "closed" | "resolving",
+    opens_at: r.opens_at,
+  }));
   const currentPhase = getCurrentPhase();
   const phaseConfirmedId = (team as { phase_confirmed_id?: number | null })?.phase_confirmed_id ?? null;
   const phaseConfirmed = phaseConfirmedId === currentPhase.id;
@@ -333,6 +349,7 @@ export default async function AuctionsPage({
       maxSlots={maxSlots}
       isCommissioner={isCommissioner}
       existingAuctionBids={existingAuctionBids}
+      stepperRounds={stepperRounds}
     />
   );
 }

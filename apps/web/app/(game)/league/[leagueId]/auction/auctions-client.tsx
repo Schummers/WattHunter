@@ -2,9 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { StickyBar } from "@/components/sticky-bar";
-import { RoundBlocks } from "@/components/round-blocks";
+import { RoundStepper, type StepperRound } from "@/components/round-stepper";
 import { ConfigCards } from "@/components/config-cards";
 import { BudgetSummary } from "@/components/budget-summary";
 import { DraftBidCard } from "@/components/draft-bid-card";
@@ -83,6 +82,7 @@ interface AuctionsClientProps {
   maxSlots: number;
   isCommissioner: boolean;
   existingAuctionBids: { rider_id: string; amount: number }[];
+  stepperRounds: StepperRound[];
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ interface AuctionsClientProps {
 
 export function AuctionsClient({
   leagueId,
-  rounds,
+  rounds: _rounds,
   activeRound,
   isRound1,
   phaseConfirmed,
@@ -106,8 +106,9 @@ export function AuctionsClient({
   rosterRiders,
   drafts: initialDrafts,
   maxSlots,
-  isCommissioner,
+  isCommissioner: _isCommissioner,
   existingAuctionBids,
+  stepperRounds,
 }: AuctionsClientProps) {
   const router = useRouter();
   const [drafts, setDrafts] = useState<DraftBid[]>(initialDrafts);
@@ -236,26 +237,12 @@ export function AuctionsClient({
 
         {/* Section: Rounds */}
         <section>
-          <div className="flex justify-between items-center px-4 mb-2">
+          <div className="px-4 mb-2">
             <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
               Rounds
             </span>
           </div>
-          {rounds.length > 0 ? (
-            <RoundBlocks rounds={rounds} activeRound={activeRound} />
-          ) : (
-            <p className="px-4 text-[length:var(--type-body)] text-[var(--text-low)]">
-              No auction rounds scheduled yet.
-            </p>
-          )}
-          {isCommissioner && (
-            <Link
-              href={`/league/${leagueId}/auction/rounds`}
-              className="block px-4 mt-1.5 text-[length:var(--type-caption)] text-[var(--accent-default)]"
-            >
-              Edit round dates &rarr;
-            </Link>
-          )}
+          <RoundStepper rounds={stepperRounds} />
         </section>
 
         {/* Section: Sponsor & Strategies */}
