@@ -1,7 +1,7 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
-import type { RaceFeedPayload } from "@/lib/race-feed-types";
+import { useLayoutEffect, useRef, useState } from "react";
+import type { RaceFeedPayload, TacticContextForFeed } from "@/lib/race-feed-types";
 import { RaceFeedDateGroup } from "./race-feed-date-group";
 import { RaceCardPast } from "./race-card-past";
 import { RaceCardToday } from "./race-card-today";
@@ -9,15 +9,18 @@ import { RaceCardFuture } from "./race-card-future";
 import { RaceFeedNemesisCard } from "./race-feed-nemesis-card";
 import { RaceFeedRemontadaCard } from "./race-feed-remontada-card";
 import { RaceFeedPhaseEndBanner } from "./race-feed-phase-end-banner";
+import { RaceFeedTacticModal } from "./race-feed-tactic-modal";
 
 type Props = {
   leagueId: string;
   payload: RaceFeedPayload;
+  tacticContext?: TacticContextForFeed | null;
 };
 
-export function RaceFeed({ leagueId, payload }: Props) {
+export function RaceFeed({ leagueId, payload, tacticContext }: Props) {
   const todayRef = useRef<HTMLDivElement | null>(null);
   const firstFutureRef = useRef<HTMLDivElement | null>(null);
+  const [openTacticStage, setOpenTacticStage] = useState<{ slug: string; name: string } | null>(null);
 
   useLayoutEffect(() => {
     const target = todayRef.current ?? firstFutureRef.current;
@@ -52,7 +55,15 @@ export function RaceFeed({ leagueId, payload }: Props) {
               }
               return (
                 <div key={key} ref={refProp as React.RefObject<HTMLDivElement>}>
-                  <RaceCardFuture race={card.race} leagueId={leagueId} />
+                  <RaceCardFuture
+                    race={card.race}
+                    leagueId={leagueId}
+                    onTacticClick={
+                      tacticContext
+                        ? () => setOpenTacticStage({ slug: card.race.raceSlug, name: card.race.raceTitle })
+                        : undefined
+                    }
+                  />
                 </div>
               );
             }
@@ -71,6 +82,14 @@ export function RaceFeed({ leagueId, payload }: Props) {
         nextPhaseRound1Date={payload.nextPhaseRound1Date}
         nextPhaseLabel={payload.nextPhaseLabel}
       />
+      {openTacticStage && tacticContext && (
+        <RaceFeedTacticModal
+          stageSlug={openTacticStage.slug}
+          stageName={openTacticStage.name}
+          tacticContext={tacticContext}
+          onClose={() => setOpenTacticStage(null)}
+        />
+      )}
     </div>
   );
 }

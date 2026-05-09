@@ -10,7 +10,7 @@ export function RaceCardPast({ race }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-surface)] overflow-hidden">
+    <div className="rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-app)] overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}

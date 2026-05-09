@@ -12,8 +12,8 @@ describe("RaceFeedPhaseEndBanner", () => {
         nextPhaseLabel="Pre-Tour"
       />
     );
-    expect(screen.getByText(/Round 1 ouvre le 28 mai/)).toBeInTheDocument();
-    const link = screen.getByRole("link", { name: /Voir l'enchère/ });
+    expect(screen.getByText(/Round 1 opens/)).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /View auction/ });
     expect(link).toHaveAttribute("href", "/league/league-1/auction");
   });
 
@@ -25,6 +25,6 @@ describe("RaceFeedPhaseEndBanner", () => {
         nextPhaseLabel={null}
       />
     );
-    expect(screen.getByText(/Saison terminée/)).toBeInTheDocument();
+    expect(screen.getByText(/Season over/)).toBeInTheDocument();
   });
 });

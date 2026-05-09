@@ -74,4 +74,21 @@ export type RaceFeedPayload = {
   groups: RaceFeedDateGroup[];
   nextPhaseRound1Date: string | null;
   nextPhaseLabel: string | null;
+  isGtPhase: boolean;
+  phaseId: number;
+};
+
+export type TacticRival = {
+  teamId: string;
+  teamName: string;
+  leaderName: string | null;
+};
+
+export type TacticContextForFeed = {
+  teamId: string;
+  phaseId: 4 | 6 | 8;
+  year: number;
+  activations: Array<{ tactic_type: string; stage_slug: string; outcome: string | null }>;
+  gcRivals: TacticRival[];
+  sprintRivals: TacticRival[];
 };

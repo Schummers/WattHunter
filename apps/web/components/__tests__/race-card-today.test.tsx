@@ -38,9 +38,9 @@ describe("RaceCardToday", () => {
     expect(screen.getByText("T. Pogacar")).toBeInTheDocument();
   });
 
-  it("renders 'Voir le classement GC du Giro' link for stage races (GT)", () => {
+  it("renders GC standings link for stage races (GT)", () => {
     render(<RaceCardToday race={baseRace} leagueId="league-1" />);
-    const link = screen.getByRole("link", { name: /Voir le classement GC du Giro/ });
+    const link = screen.getByRole("link", { name: /View GC standings for Giro/ });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute(
       "href",
@@ -60,6 +60,6 @@ describe("RaceCardToday", () => {
       isGtPhase: false,
     };
     render(<RaceCardToday race={classic} leagueId="league-1" />);
-    expect(screen.queryByRole("link", { name: /classement GC/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /GC standings/ })).not.toBeInTheDocument();
   });
 });

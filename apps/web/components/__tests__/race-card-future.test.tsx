@@ -34,17 +34,14 @@ describe("RaceCardFuture", () => {
     expect(screen.getByText("Giro · Étape 3")).toBeInTheDocument();
   });
 
-  it("renders + button linking to tactics for GT phases", () => {
-    render(<RaceCardFuture race={gtStage} leagueId="league-1" />);
-    const link = screen.getByRole("link", { name: /Placer une tactique/ });
-    expect(link).toHaveAttribute(
-      "href",
-      "/league/league-1/team/gt/tactics?race=race%2Fgiro-d-italia%2F2026%2Fstage-3"
-    );
+  it("renders + button for GT stages (calls onTacticClick)", () => {
+    render(<RaceCardFuture race={gtStage} leagueId="league-1" onTacticClick={() => {}} />);
+    const btn = screen.getByRole("button", { name: /Place a tactic/ });
+    expect(btn).toBeInTheDocument();
   });
 
-  it("does not render + button for classics", () => {
+  it("does not render tactic button for classics", () => {
     render(<RaceCardFuture race={classic} leagueId="league-1" />);
-    expect(screen.queryByRole("link", { name: /Placer une tactique/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Place a tactic/ })).not.toBeInTheDocument();
   });
 });

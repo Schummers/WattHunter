@@ -47,6 +47,8 @@ const payload: RaceFeedPayload = {
   ],
   nextPhaseRound1Date: "2026-05-28",
   nextPhaseLabel: "Pre-Tour",
+  isGtPhase: true,
+  phaseId: 4,
 };
 
 describe("RaceFeed", () => {
@@ -66,16 +68,17 @@ describe("RaceFeed", () => {
 
   it("renders the phase end banner at the bottom", () => {
     render(<RaceFeed leagueId="L1" payload={payload} />);
-    expect(screen.getByText(/Round 1 ouvre le 28 mai/)).toBeInTheDocument();
+    expect(screen.getByText(/Next phase/)).toBeInTheDocument();
+    expect(screen.getByText(/Round 1 opens/)).toBeInTheDocument();
   });
 
   it("renders only the phase end banner when no groups", () => {
     render(
       <RaceFeed
         leagueId="L1"
-        payload={{ groups: [], nextPhaseRound1Date: "2026-06-02", nextPhaseLabel: "Pre-Tour" }}
+        payload={{ groups: [], nextPhaseRound1Date: "2026-06-02", nextPhaseLabel: "Pre-Tour", isGtPhase: false, phaseId: 5 }}
       />
     );
-    expect(screen.getByText(/Prochaine phase/)).toBeInTheDocument();
+    expect(screen.getByText(/Next phase/)).toBeInTheDocument();
   });
 });

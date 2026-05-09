@@ -11,7 +11,7 @@ export function RaceCardToday({ race, leagueId }: Props) {
   const showGcLink = race.raceType === "stage" && race.parentRaceSlug && race.parentRaceLabel;
 
   return (
-    <div className="rounded-[10px] border border-[var(--border-hover)] bg-[var(--bg-surface)] px-3.5 py-3.5">
+    <div className="rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-app)] px-3.5 py-3.5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)]">
@@ -31,7 +31,7 @@ export function RaceCardToday({ race, leagueId }: Props) {
             href={`/league/${leagueId}/ranking?race=${encodeURIComponent(race.parentRaceSlug!)}`}
             className="block w-full text-center rounded-md px-3 py-2 text-[length:var(--type-caption)] font-medium text-[var(--accent-default)] bg-[rgba(6,182,212,0.06)] hover:bg-[rgba(6,182,212,0.10)] transition-colors"
           >
-            Voir le classement GC du {race.parentRaceLabel} →
+            View GC standings for {race.parentRaceLabel} →
           </Link>
         </>
       )}

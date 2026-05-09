@@ -1,9 +1,9 @@
 import { Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { LobbyView } from "./lobby-view";
-import { HomeGtBanner } from "@/components/home-gt-banner";
 import { RaceFeed } from "@/components/race-feed";
 import { getRaceFeedData } from "@/lib/get-race-feed-data";
+import type { TacticContextForFeed } from "@/lib/race-feed-types";
 
 export default async function LeagueDashboardPage({
   params,
@@ -87,11 +87,69 @@ export default async function LeagueDashboardPage({
 
   const raceFeedPayload = teamId
     ? await getRaceFeedData(supabase, { leagueId, myTeamId: teamId })
-    : { groups: [], nextPhaseRound1Date: null, nextPhaseLabel: null };
+    : { groups: [], nextPhaseRound1Date: null, nextPhaseLabel: null, isGtPhase: false, phaseId: 0 };
+
+  // Fetch tactic context for GT phases (powers the inline tactic modal on future stage cards)
+  let tacticContext: TacticContextForFeed | null = null;
+  if (raceFeedPayload.isGtPhase && teamId) {
+    const phaseId = raceFeedPayload.phaseId as 4 | 6 | 8;
+    const year = new Date().getFullYear();
+
+    const [teamRows, activationRows, gcRoleRows, sprintRoleRows] = await Promise.all([
+      supabase.from("teams").select("id, name").eq("league_id", leagueId),
+      supabase
+        .from("gt_tactic_activations")
+        .select("tactic_type, stage_slug, outcome")
+        .eq("team_id", teamId)
+        .eq("phase_id", phaseId)
+        .eq("year", year),
+      supabase
+        .from("gt_role_assignments")
+        .select("team_id, riders(full_name)")
+        .eq("phase_id", phaseId)
+        .eq("year", year)
+        .eq("role", "gc_leader")
+        .order("applied_at", { ascending: false }),
+      supabase
+        .from("gt_role_assignments")
+        .select("team_id, riders(full_name)")
+        .eq("phase_id", phaseId)
+        .eq("year", year)
+        .eq("role", "sprinter")
+        .order("applied_at", { ascending: false }),
+    ]);
+
+    // Latest role assignment per team (rows ordered desc by applied_at)
+    const gcByTeam = new Map<string, string | null>();
+    for (const row of gcRoleRows.data ?? []) {
+      if (!gcByTeam.has(row.team_id)) {
+        gcByTeam.set(row.team_id, row.riders ? (row.riders as { full_name: string }).full_name : null);
+      }
+    }
+    const sprintByTeam = new Map<string, string | null>();
+    for (const row of sprintRoleRows.data ?? []) {
+      if (!sprintByTeam.has(row.team_id)) {
+        sprintByTeam.set(row.team_id, row.riders ? (row.riders as { full_name: string }).full_name : null);
+      }
+    }
+
+    const rivals = (teamRows.data ?? []).filter((t) => t.id !== teamId);
+    tacticContext = {
+      teamId,
+      phaseId,
+      year,
+      activations: (activationRows.data ?? []).map((a) => ({
+        tactic_type: a.tactic_type,
+        stage_slug: a.stage_slug,
+        outcome: (a.outcome as string | null) ?? null,
+      })),
+      gcRivals: rivals.map((t) => ({ teamId: t.id, teamName: t.name, leaderName: gcByTeam.get(t.id) ?? null })),
+      sprintRivals: rivals.map((t) => ({ teamId: t.id, teamName: t.name, leaderName: sprintByTeam.get(t.id) ?? null })),
+    };
+  }
 
   return (
     <>
-      <HomeGtBanner leagueId={leagueId} />
       {isLateJoinPending && (
         <div className="mx-4 mt-4 flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3">
           <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-mid)]" />
@@ -100,7 +158,7 @@ export default async function LeagueDashboardPage({
           </p>
         </div>
       )}
-      <RaceFeed leagueId={leagueId} payload={raceFeedPayload} />
+      <RaceFeed leagueId={leagueId} payload={raceFeedPayload} tacticContext={tacticContext} />
     </>
   );
 }

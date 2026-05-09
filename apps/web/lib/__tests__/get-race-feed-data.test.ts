@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getRaceFeedData } from "../get-race-feed-data";
 
+
 // Prevent server-only from throwing in test environment
 vi.mock("server-only", () => ({}));
 vi.mock("@supabase/supabase-js", () => ({}));
@@ -36,15 +37,45 @@ describe("getRaceFeedData", () => {
     vi.clearAllMocks();
   });
 
-  it("returns empty groups + null next phase when no races, no auctions", async () => {
+  it("returns empty groups + null next phase when no races, no auctions (non-GT phase)", async () => {
+    // Feb 1 is not a GT phase (phases 4/6/8 are GT) — GT schedule injection is skipped
     const supabase = buildSupabase({});
+    const result = await getRaceFeedData(supabase, {
+      leagueId: "L1",
+      myTeamId: "T1",
+      referenceDate: new Date("2026-02-01T08:00:00Z"),
+    });
+    expect(result.groups).toEqual([]);
+    expect(result.nextPhaseRound1Date).toBeNull();
+    expect(result.isGtPhase).toBe(false);
+  });
+
+  it("injects GT future stages from static schedule in GT phases", async () => {
+    // May 5 is phase 4 (Giro) — a GT phase — with no DB race data
+    const supabase = buildSupabase({
+      race_results: [],
+      race_startlists: [],
+      rider_xp_daily: [],
+      sponsor_bonuses: [],
+      teams: [],
+      riders: [],
+      gt_tactic_activations: [],
+      remontada_boosts: [],
+      auctions: [],
+    });
     const result = await getRaceFeedData(supabase, {
       leagueId: "L1",
       myTeamId: "T1",
       referenceDate: new Date("2026-05-05T08:00:00Z"),
     });
-    expect(result.groups).toEqual([]);
-    expect(result.nextPhaseRound1Date).toBeNull();
+    expect(result.isGtPhase).toBe(true);
+    expect(result.phaseId).toBe(4);
+    // All Giro stages from May 5 onwards should appear as future cards
+    expect(result.groups.length).toBeGreaterThan(0);
+    const allCards = result.groups.flatMap((g) => g.cards);
+    expect(allCards.every((c) => c.type === "future")).toBe(true);
+    const slugs = allCards.map((c) => (c.type === "future" ? c.race.raceSlug : ""));
+    expect(slugs.some((s) => s.includes("giro-d-italia") && s.includes("stage-"))).toBe(true);
   });
 
   it("groups today's stage card and yesterday's past card", async () => {
@@ -88,11 +119,16 @@ describe("getRaceFeedData", () => {
       referenceDate: new Date("2026-05-05T08:00:00Z"),
     });
 
-    expect(result.groups.length).toBe(2);
-    expect(result.groups[0].date).toBe("2026-05-04");
-    expect(result.groups[1].date).toBe("2026-05-05");
+    // GT injection adds future stages (May 8+) — so there are more than 2 groups
+    const dates = result.groups.map((g) => g.date);
+    expect(dates).toContain("2026-05-04");
+    expect(dates).toContain("2026-05-05");
 
-    const todayCard = result.groups[1].cards[0];
+    const pastGroup = result.groups.find((g) => g.date === "2026-05-04")!;
+    expect(pastGroup.cards[0].type).toBe("past");
+
+    const todayGroup = result.groups.find((g) => g.date === "2026-05-05")!;
+    const todayCard = todayGroup.cards[0];
     expect(todayCard.type).toBe("today");
     if (todayCard.type !== "today" && todayCard.type !== "past") return;
     const myTeam = todayCard.race.teams.find((t) => t.isMyTeam);
@@ -140,8 +176,10 @@ describe("getRaceFeedData", () => {
       referenceDate: new Date("2026-05-05T08:00:00Z"),
     });
 
-    const cards = result.groups[0].cards;
-    const nemesis = cards.find((c) => c.type === "nemesis");
+    // May 5 group has stage-2 + nemesis card
+    const todayGroup = result.groups.find((g) => g.date === "2026-05-05")!;
+    expect(todayGroup).toBeDefined();
+    const nemesis = todayGroup.cards.find((c) => c.type === "nemesis");
     expect(nemesis).toBeDefined();
     if (nemesis?.type !== "nemesis") return;
     expect(nemesis.data.outcome).toBe("attacker_won");

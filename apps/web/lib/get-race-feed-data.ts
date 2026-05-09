@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentPhase, getPhaseRange, AUCTION_PHASES } from "./phases";
 import { GT_IDENTIFIER, isGTPhaseId } from "./gt-phases";
+import { GT_SCHEDULES } from "./gt-stage-schedule";
 import {
   detectRaceType,
   getParentRaceSlug,
@@ -68,8 +69,28 @@ export async function getRaceFeedData(
     }
   }
 
+  // Inject GT stage schedule for future stages (no race_startlists per-stage entries exist)
+  if (isGtPhase) {
+    const GT_SLUG_MAP = { 4: "giro-d-italia", 6: "tour-de-france", 8: "vuelta-a-espana" } as const;
+    const GT_NAME_MAP = {
+      "giro-d-italia": "Giro d'Italia",
+      "tour-de-france": "Tour de France",
+      "vuelta-a-espana": "Vuelta a España",
+    } as const;
+    const gtSlug = GT_SLUG_MAP[phase.id as 4 | 6 | 8];
+    const year = referenceDate.getFullYear();
+    const schedule = GT_SCHEDULES[`${gtSlug}/${year}`] ?? [];
+    const gtName = GT_NAME_MAP[gtSlug];
+    for (const entry of schedule) {
+      if (entry.date < todayIso || entry.date > phaseEndIso) continue;
+      const slug = `race/${gtSlug}/${year}/stage-${entry.number}`;
+      if (racesBySlug.has(slug)) continue;
+      racesBySlug.set(slug, { slug, name: `${gtName} - Stage ${entry.number}`, date: entry.date });
+    }
+  }
+
   if (racesBySlug.size === 0) {
-    return { groups: [], nextPhaseRound1Date: null, nextPhaseLabel: null };
+    return { groups: [], nextPhaseRound1Date: null, nextPhaseLabel: null, isGtPhase, phaseId: phase.id };
   }
 
   // 2) Fetch team and rider lookup tables
@@ -300,5 +321,5 @@ export async function getRaceFeedData(
         : nextStartIso;
   }
 
-  return { groups, nextPhaseRound1Date, nextPhaseLabel };
+  return { groups, nextPhaseRound1Date, nextPhaseLabel, isGtPhase, phaseId: phase.id };
 }
