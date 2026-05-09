@@ -187,21 +187,18 @@ describe("forceResolveRound", () => {
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
     // 10. UPDATE rider is_active_in_game
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // 11. UPDATE team treasury (Round 2+)
-    mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // 12. INSERT treasury_log
-    mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // 13. Cleanup: SELECT contracts (returns the new contract for RIDER_X)
+    // (Treasury is NOT mutated at resolution — handled by payday RPC)
+    // 11. Cleanup: SELECT contracts (returns the new contract for RIDER_X)
     mockAdminFrom.mockReturnValueOnce(
       chainable({ data: [{ rider_id: RIDER_X }], error: null })
     );
-    // 14. Cleanup: DELETE draft_bids
+    // 12. Cleanup: DELETE draft_bids
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // 15. Find next scheduled auction
+    // 13. Find next scheduled auction
     mockAdminFrom.mockReturnValueOnce(
       chainable({ data: { id: NEXT_AUCTION_ID }, error: null })
     );
-    // 16. UPDATE next auction → open
+    // 14. UPDATE next auction → open
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
 
     const result = await forceResolveRound({ leagueId: LEAGUE_ID });
@@ -213,15 +210,24 @@ describe("forceResolveRound", () => {
     });
   });
 
-  it("Round 1 skips treasury deduction", async () => {
+  it("resolution does not deduct treasury (deferred to payday)", async () => {
+    // Regression test for the R2/R3 double-counting bug. Treasury must NOT be
+    // mutated at auction resolution for any round — payday (confirm_phase_setup)
+    // is the single source of truth for salary deduction. Deducting here would
+    // double-count against the purchasing power formula
+    // (treasury + sponsor − active_salaries).
+    //
+    // We exercise Round 2 here (the round that was historically buggy);
+    // Round 1 has always skipped treasury and remains unchanged.
+
     // 1. Membership check
     mockAnonFrom.mockReturnValueOnce(
       chainable({ data: { team_id: TEAM_A }, error: null })
     );
-    // 2. Optimistic lock returns Round 1 auction
+    // 2. Optimistic lock returns Round 2 auction
     mockAdminFrom.mockReturnValueOnce(
       chainable({
-        data: [{ id: AUCTION_ID, name: "Round 1", league_id: LEAGUE_ID }],
+        data: [{ id: AUCTION_ID, name: "Round 2", league_id: LEAGUE_ID }],
         error: null,
       })
     );
@@ -260,7 +266,7 @@ describe("forceResolveRound", () => {
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
     // 9. Update rider
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // ROUND 1: no treasury update, no treasury_log insert
+    // (No treasury UPDATE, no treasury_log INSERT — even for Round 2)
     // 10. Cleanup: SELECT contracts (returns the new contract for RIDER_X)
     mockAdminFrom.mockReturnValueOnce(
       chainable({ data: [{ rider_id: RIDER_X }], error: null })
@@ -273,6 +279,10 @@ describe("forceResolveRound", () => {
     const result = await forceResolveRound({ leagueId: LEAGUE_ID });
 
     expect(result).toMatchObject({ ok: true, resolved: 1 });
+
+    // Sanity: total mockAdminFrom calls should be 11. If the bug returns
+    // (treasury UPDATE + treasury_log INSERT), this would jump to 13.
+    expect(mockAdminFrom).toHaveBeenCalledTimes(11);
   });
 
   it("level-gated rider has all bids cancelled, no contract", async () => {

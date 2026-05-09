@@ -223,33 +223,11 @@ async def resolve_current_round(
                         {"is_active_in_game": True}
                     ).eq("id", rider_id).execute()
 
-                    # Deduct salary immediately for Round 2/3 contracts (mid-phase).
-                    # Round 1 salaries are handled by the in-app confirmPhaseSetup
-                    # server action when the user confirms the phase setup.
-                    auction_name = auction.get("name", "")
-                    is_round_1 = "Round 1" in auction_name or str(auction.get("round", "")) == "1"
-                    if not is_round_1:
-                        team_resp = supabase.table("teams").select(
-                            "treasury"
-                        ).eq("id", winner["team_id"]).single().execute()
-                        current_treasury = int(team_resp.data.get("treasury", 0)) if team_resp.data else 0
-                        new_treasury = current_treasury - locked_salary
-
-                        supabase.table("teams").update(
-                            {"treasury": new_treasury}
-                        ).eq("id", winner["team_id"]).execute()
-
-                        supabase.table("treasury_log").insert({
-                            "team_id": winner["team_id"],
-                            "rider_id": rider_id,
-                            "type": "payday_salary",
-                            "amount": -locked_salary,
-                            "description": f"Salary — {rider_name} ({auction_name})",
-                        }).execute()
-
-                        logger.info(
-                            f"  {rider_name}: salary -{locked_salary} deducted (treasury: {new_treasury})"
-                        )
+                    # No treasury mutation here. Salaries are deducted
+                    # exclusively at payday (confirm_phase_setup RPC) which
+                    # iterates over all active contracts. Deducting here would
+                    # double-count against the purchasing power formula
+                    # (treasury + sponsor − active_salaries).
 
                     logger.info(
                         f"  {rider_name}: won by team {winner['team_id']} "

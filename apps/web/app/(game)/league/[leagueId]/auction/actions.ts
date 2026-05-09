@@ -377,7 +377,6 @@ export async function forceResolveRound(input: { leagueId: string }) {
     byRider.set(bid.rider_id, list);
   }
 
-  const isRound1 = /round 1/i.test(auction.name);
   let resolvedCount = 0;
 
   // 7. For each rider — winner + losers.
@@ -480,22 +479,10 @@ export async function forceResolveRound(input: { leagueId: string }) {
         .update({ is_active_in_game: true })
         .eq("id", riderId);
 
-      // 7i. Treasury deduction (Round 2+ only — Round 1 deferred to confirmPhaseSetup)
-      if (!isRound1 && team) {
-        const newTreasury = (team.treasury ?? 0) - winner.amount;
-        await admin
-          .from("teams")
-          .update({ treasury: newTreasury })
-          .eq("id", winner.team_id);
-
-        await admin.from("treasury_log").insert({
-          team_id: winner.team_id,
-          rider_id: riderId,
-          type: "payday_salary",
-          amount: -winner.amount,
-          description: `Salary — ${rider?.full_name ?? riderId} (${auction.name})`,
-        });
-      }
+      // 7i. No treasury mutation here. Salaries are deducted exclusively at
+      // payday (confirm_phase_setup RPC) which iterates over all active
+      // contracts. Deducting here would double-count against the purchasing
+      // power formula (treasury + sponsor − active_salaries).
 
       resolvedCount++;
     } catch (err) {
