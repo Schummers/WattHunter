@@ -1,9 +1,9 @@
+import { Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { LobbyView } from "./lobby-view";
-import { HomeFeed } from "./home-feed";
 import { HomeGtBanner } from "@/components/home-gt-banner";
-import { getNextAuctionDate, formatAuctionDate } from "@/lib/phases";
-
+import { RaceFeed } from "@/components/race-feed";
+import { getRaceFeedData } from "@/lib/get-race-feed-data";
 
 export default async function LeagueDashboardPage({
   params,
@@ -58,35 +58,14 @@ export default async function LeagueDashboardPage({
     );
   }
 
-  // --- Active league: fetch home feed data ---
+  // --- Active league: load race feed ---
 
-  // Active / upcoming auction
-  const { data: activeAuction } = await supabase
-    .from("auctions")
-    .select("id, name, status, opens_at, closes_at")
-    .eq("league_id", leagueId)
-    .in("status", ["open", "scheduled"])
-    .order("opens_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  // Always fetch closed count (needed for both nextAuctionLabel and isLateJoinPending)
   const { count: closedCount } = await supabase
     .from("auctions")
     .select("id", { count: "exact", head: true })
     .eq("league_id", leagueId)
     .eq("status", "closed");
 
-  // If no active/scheduled auction, compute next auction label from calendar
-  let nextAuctionLabel: string | null = null;
-  if (!activeAuction && closedCount && closedCount > 0) {
-    const next = getNextAuctionDate();
-    if (next) {
-      nextAuctionLabel = formatAuctionDate(next.date);
-    }
-  }
-
-  // Fetch the current user's team membership to get team_id
   const { data: memberRow } = await supabase
     .from("league_members")
     .select("team_id")
@@ -96,7 +75,6 @@ export default async function LeagueDashboardPage({
 
   const teamId = memberRow?.team_id ?? null;
 
-  // Check if the team has an active sponsor
   const { data: teamSponsorRow } = teamId
     ? await supabase
         .from("team_sponsors")
@@ -105,18 +83,24 @@ export default async function LeagueDashboardPage({
         .maybeSingle()
     : { data: null };
 
-  // isLateJoinPending: team has no sponsor and at least one auction is already closed
   const isLateJoinPending = teamSponsorRow === null && (closedCount ?? 0) > 0;
+
+  const raceFeedPayload = teamId
+    ? await getRaceFeedData(supabase, { leagueId, myTeamId: teamId })
+    : { groups: [], nextPhaseRound1Date: null, nextPhaseLabel: null };
 
   return (
     <>
       <HomeGtBanner leagueId={leagueId} />
-      <HomeFeed
-        leagueId={leagueId}
-        activeAuction={activeAuction}
-        nextAuctionLabel={nextAuctionLabel}
-        isLateJoinPending={isLateJoinPending}
-      />
+      {isLateJoinPending && (
+        <div className="mx-4 mt-4 flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3">
+          <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-mid)]" />
+          <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+            You joined mid-season. You can select your sponsor and start bidding at the next auction phase.
+          </p>
+        </div>
+      )}
+      <RaceFeed leagueId={leagueId} payload={raceFeedPayload} />
     </>
   );
 }
