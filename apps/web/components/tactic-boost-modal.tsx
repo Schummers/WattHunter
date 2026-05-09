@@ -66,7 +66,7 @@ export function TacticBoostModal({
         />
       }
     >
-      <div className="flex h-full flex-col gap-4 p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 p-4">
         <ModalHeader
           icon={<Icon className="size-5 text-[var(--accent-default)]" />}
           title={tactic.name}

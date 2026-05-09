@@ -31,7 +31,7 @@ export function StageList({
             <button
               key={s.slug}
               type="button"
-              onClick={() => !isLocked && onChange(s.slug)}
+              onClick={() => !isLocked && onChange(isSelected ? "" : s.slug)}
               disabled={isLocked}
               className={cn(
                 "flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors",
