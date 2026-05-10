@@ -237,11 +237,6 @@ export function AuctionsClient({
 
         {/* Section: Rounds */}
         <section>
-          <div className="px-4 mb-2">
-            <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-              Rounds
-            </span>
-          </div>
           <RoundStepper rounds={stepperRounds} />
         </section>
 
