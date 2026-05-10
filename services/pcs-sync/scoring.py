@@ -467,11 +467,11 @@ async def calculate_daily_scores(
                 gt_id = get_gt_identifier(race_slug)
                 stage_no = get_stage_number(race_slug)
                 if _is_gt_slug(race_slug):
-                    if in_squad:
-                        role = gt_roles.get((team_id, rider_id), "domestique")
-                        gt_role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
-                    # All contracted riders in GT races earn classif bonus.
-                    # Role-matched squad riders earn ×1.5; everyone else ×1.0.
+                    if not in_squad:
+                        continue  # non-squad contracted riders earn 0 XP on GT stages
+                    role = gt_roles.get((team_id, rider_id), "domestique")
+                    gt_role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
+                    # All squad riders earn classif bonus; role-matched riders earn ×1.5.
                     gt_classif_bonus = _classif_bonus(
                         classif_by_key.get((race_slug, rider_id), []),
                         role,
