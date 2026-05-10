@@ -13,13 +13,6 @@ interface RoundStepperProps {
   rounds: StepperRound[];
 }
 
-function formatOpensAt(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function RoundStepper({ rounds }: RoundStepperProps) {
   const slots = [1, 2, 3].map((n) => rounds.find((r) => r.number === n) ?? null);
 
@@ -65,11 +58,6 @@ export function RoundStepper({ rounds }: RoundStepperProps) {
                   }`}
                 >
                   Round {roundNum}
-                  {roundNum === 1 && slot && slot.status !== "closed" && (
-                    <span className="font-normal text-[var(--text-low)]">
-                      {" "}· {formatOpensAt(slot.opens_at)}
-                    </span>
-                  )}
                 </span>
               </div>
 
