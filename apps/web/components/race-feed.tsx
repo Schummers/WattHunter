@@ -24,11 +24,18 @@ export function RaceFeed({ leagueId, payload, tacticContext }: Props) {
   const firstFutureRef = useRef<HTMLDivElement | null>(null);
   const [openTacticStage, setOpenTacticStage] = useState<{ slug: string; name: string } | null>(null);
 
-  // Date of the most recent group that has at least one past or today card
+  // Date of the most recent group that has at least one past/today card WITH real data.
+  // A card counts as "having data" only if its teams array is non-empty — stages
+  // that were injected from the schedule but haven't had Pipeline B run yet are
+  // "today" cards with empty teams, and should not be the scroll target.
   const lastKnownDate =
     [...payload.groups]
       .reverse()
-      .find((g) => g.cards.some((c) => c.type === "past" || c.type === "today"))
+      .find((g) =>
+        g.cards.some(
+          (c) => (c.type === "past" || c.type === "today") && c.race.teams.length > 0
+        )
+      )
       ?.date ?? null;
 
   useLayoutEffect(() => {

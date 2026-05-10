@@ -15,11 +15,6 @@ export function useScrollDirection() {
     const main = document.querySelector("main");
     if (!main) return;
 
-    // Initialise at the current scroll position so a programmatic scrollIntoView
-    // on mount (e.g. RaceFeed scrolling to the last known result) does not
-    // trigger the hide logic.
-    lastScrollY.current = main.scrollTop;
-
     const handleScroll = () => {
       const currentY = main.scrollTop;
       if (currentY > lastScrollY.current && currentY > 32) {
@@ -30,8 +25,23 @@ export function useScrollDirection() {
       lastScrollY.current = currentY;
     };
 
-    main.addEventListener("scroll", handleScroll, { passive: true });
-    return () => main.removeEventListener("scroll", handleScroll);
+    // Double rAF: ensures we read the final scrollTop AFTER any programmatic
+    // scrollIntoView (fired in a sibling's useLayoutEffect) has fully settled —
+    // including on Safari where "auto" scroll can animate across a few frames.
+    // Without this, we'd initialise lastScrollY at 0, and the very first scroll
+    // event (fired as scrollIntoView lands) would trigger the hide logic.
+    let frameId: number;
+    frameId = requestAnimationFrame(() => {
+      frameId = requestAnimationFrame(() => {
+        lastScrollY.current = main.scrollTop;
+        main.addEventListener("scroll", handleScroll, { passive: true });
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      main.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   return visible;
