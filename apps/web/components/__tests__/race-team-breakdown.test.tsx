@@ -44,12 +44,12 @@ describe("RaceTeamBreakdown", () => {
     expect(screen.getByText(/★/)).toBeInTheDocument();
   });
 
-  it("formats team total bonus in euros and total XP (no + prefix)", () => {
+  it("formats team total bonus in k€ and total XP (no + prefix)", () => {
     render(<RaceTeamBreakdown teams={sampleTeams} isGtPhase />);
-    // "12 000 €" appears for both team total and rider bonus (same amount in fixture)
-    expect(screen.getAllByText("12 000 €").length).toBeGreaterThanOrEqual(1);
+    // "12 k€" appears for both team total and rider bonus (same amount in fixture)
+    expect(screen.getAllByText("12 k€").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("340").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("8 000 €").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("8 k€").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("280").length).toBeGreaterThanOrEqual(1);
   });
 

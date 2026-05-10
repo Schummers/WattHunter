@@ -2,11 +2,9 @@ import type { TeamRaceResult } from "@/lib/race-feed-types";
 
 function formatBonus(amount: number): string {
   if (amount <= 0) return "";
-  return (
-    Math.round(amount)
-      .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " €"
-  );
+  const k = amount / 1000;
+  const formatted = k % 1 === 0 ? String(Math.round(k)) : k.toFixed(1);
+  return formatted + " k€";
 }
 
 type Props = {
@@ -47,11 +45,11 @@ function TeamSection({
           }`}
         >
           {team.teamName}
-          {team.isMyTeam && <span className="ml-1">★</span>}
+          {team.isMyTeam && <span className="ml-1">&#9733;</span>}
         </span>
         {/* Fixed 2-column block: bonus | xp — widths match rider rows */}
         <div className="flex items-baseline font-mono shrink-0">
-          <span className="w-[84px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
+          <span className="w-[72px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
             {bonusStr}
           </span>
           <span className="w-[52px] text-right text-[length:var(--type-caption)] font-bold text-[var(--text-high)]">
@@ -77,7 +75,7 @@ function TeamSection({
               )}
               {/* Fixed 2-column block: bonus | xp — matches team header widths */}
               <div className="flex items-baseline font-mono shrink-0">
-                <span className="w-[84px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)]">
+                <span className="w-[72px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)]">
                   {riderBonus}
                 </span>
                 <span className="w-[52px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)]">
