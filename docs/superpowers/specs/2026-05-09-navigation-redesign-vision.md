@@ -136,106 +136,128 @@ Le header est **sticky** au scroll (toutes les pages). Les sub-tabs (underline t
 
 ## 4. Page Racing — détail
 
-### 4.1 Sous-navigation
+### 4.1 Sub-header Racing — informations contextuelles
 
-Underline tabs (4 sections) :
+Affiché sous le header universel (§3), spécifique à la page Racing :
 
-```
-[Feed] [Squad] [Tactics] [Peloton]
-```
-
-| Tab | Visibilité | État inactif |
-|-----|-----------|-------------|
-| **Feed** | Toujours | n/a |
-| **Squad** | J-5 avant + pendant un GT/course d'une semaine | Grayed out (color `text-ghost`), non-cliquable, tooltip "Disponible pendant les Grand Tours et courses d'une semaine" |
-| **Tactics** | Idem Squad | Idem |
-| **Peloton** | Toujours | n/a |
-
-**Indicateur "actif" :** dot cyan (4px, `accent-default`) à côté du label quand un GT/week-race est en cours sur les tabs Squad et Tactics.
-
-### 4.2 Sub-tab Feed — c'est le RaceFeed v1 (§ déjà spécifié)
-
-+ ajouts V2 :
-- **Nemesis card** intercalée entre étapes
-- **Phase start banner** au début de chaque phase
-- **Phase winner banner** à la fin de chaque phase
-- **Toggle "Cumul GC"** dans la Today card d'un GT (à confirmer cf. §13 q2)
-- **Section "Mouvements"** : "Team Astrid vous a dépassé de 40 XP" mini-cards qui apparaissent inline dans le feed quand un overtake significatif a lieu
-
-### 4.3 Sub-tab Squad
-
-Gestion du squad GT. Page (pas modale) car interaction complexe.
-
-**Layout :**
 ```
 ┌──────────────────────────────────────────────┐
-│ Giro d'Italia · Phase en cours              │
-│ ─────────────────────────────────────────── │
-│ RÔLES ASSIGNÉS                              │
-│ [GC]  Tadej Pogacar          ×              │
-│ [SPR] Mathieu van der Poel   ×              │
-│ [HUN] Stage Hunter           ×              │
-│ [DOM] Jonas Vingegaard       ×              │
-│ + Assigner un domestique                    │
-│ ─────────────────────────────────────────── │
-│ ROSTER NON-ASSIGNÉ                          │
-│ José De Cauwer                              │
-│ Egan Bernal                                 │
-│ ...                                          │
+│  #7/8  ·  40 000€              [████░░░]     │
 └──────────────────────────────────────────────┘
 ```
 
-- Réutilise les RPCs existants `gt_assign_role`, `gt_remove_from_squad`, `gt_swap_slot`
-- Drag & drop sur desktop, tap-tap sur mobile
+- **Rang** : position dans la ligue (classement XP cumulé), format `#N/Total`, font-mono, `accent-highlight`
+- **Trésorerie** : solde actuel, format `40 000€`, font-mono, `text-mid`
+- **Level bar** : progress XP courant → seuil niveau suivant, couleur `accent-default`, hauteur 4px, radius 2px, alignée à droite
+- Background : `bg-surface`, padding 8px 16px, border-bottom 1px `border-subtle`
 
-### 4.4 Sub-tab Tactics
+### 4.2 Boutons d'action rapide (remplace les sous-tabs)
 
-Placement des tactiques GT. Page (pas modale).
+**Le feed est toujours visible** — pas de navigation, pas de changement de page. Les 4 boutons ouvrent des modales par-dessus le feed.
 
-**Layout :**
+```
+[Peloton]  [Roles]  [Tactics]  [Goals]
+```
+
+| Bouton | Icône | Ouvre | Condition |
+|--------|-------|-------|-----------|
+| **Peloton** | `UsersThree` (Phosphor) | Modale vue compacte toutes équipes | Toujours |
+| **Roles** | `Crown` (Phosphor) | Modale gestion squad GT (assign, swap) | Pendant GT/week-race uniquement (sinon grisé) |
+| **Tactics** | `Lightning` (Phosphor) | Modale hub placement tactiques | Pendant GT/week-race uniquement (sinon grisé) |
+| **Goals** | `Target` (Phosphor) | Modale objectifs sponsor en cours | Toujours |
+
+**Style boutons :** pill, bg `bg-surface-active`, border 1px `border-default`, radius 20px, padding 6px 14px, 12px font-medium, `text-mid`. État actif (modale ouverte) : border `accent-default`, `text-high`.
+
+### 4.3 Feed — contenu permanent
+
+Le feed (RaceFeed v1) reste visible en permanence sous le sub-header et les boutons. Voir spec `racing-feed-v1-implementation.md` pour le détail. Ajouts V2 listés ci-dessous (§8).
+
+Ajouts V2 prévus dans le feed :
+- **Phase start banner** (priorité immédiate — voir §8.5 et §8.8)
+- **GC Standing card** (voir §8.9 et §8.10)
+- **Phase winner banner** (voir §8.6)
+- **Goal achieved card** (voir §8.11)
+- **DNF rider card** (voir §8.12)
+- **Mouvement cards** (voir §8.7)
+
+### 4.4 Modale Peloton — vue compacte toutes équipes
+
+Ouverte via le bouton Peloton. Bottom sheet scrollable sur mobile, dialog centré sur desktop.
+
+**Structure :** une section par équipe, triées classement XP descendant.
+
 ```
 ┌──────────────────────────────────────────────┐
-│ Giro d'Italia · 5 tactiques disponibles     │
+│ PELOTON · 6 équipes                    [×]  │
+│ ─────────────────────────────────────────── │
+│ LEOPARD TREK                                │
+│  [🖼] Vine    GC   [🖼] AT     SPR          │
+│  [🖼] Laporte STG  [🖼] …     DOM          │
+│ ─────────────────────────────────────────── │
+│ MON ÉQUIPE ★                                │
+│  [🖼] Pogacar GC   [🖼] vanAert SPR        │
+│  …                                          │
+└──────────────────────────────────────────────┘
+```
+
+**Specs rider cell (ultra-compact) :**
+- Photo : 24×24px, radius 4px
+- Nom : famille uniquement, `--type-caption` (10px), font-semibold, `text-high`, ellipsis si trop long
+- Rôle : `--type-caption` (10px), font-medium, `text-mid`, sous le nom
+- Ordre dans la grille : GC → SPR → KOM → TT → STG → DOM → hors-squad contracté
+- Abréviations rôles : `GC` · `SPR` · `KOM` · `TT` · `STG` · `DOM` · `—`
+
+**Règle :** utiliser les plus petits tokens du design system. Objectif : 3–4 rows de riders par équipe sans scroll horizontal.
+
+### 4.5 Modale Roles — gestion squad GT
+
+Ouverte via le bouton Roles. Grisé + tooltip si pas de GT/week-race actif.
+
+Reprend la logique de l'ancienne page `team/gt`. Réutilise les RPCs `gt_assign_role`, `gt_remove_from_squad`, `gt_swap_slot`.
+
+```
+┌──────────────────────────────────────────────┐
+│ Giro d'Italia · Phase en cours        [×]   │
+│ ─────────────────────────────────────────── │
+│ RÔLES ASSIGNÉS                              │
+│ [GC]  Tadej Pogacar              ×          │
+│ [SPR] Mathieu van der Poel       ×          │
+│ [STG] Stage Hunter               ×          │
+│ [DOM] Jonas Vingegaard           ×          │
+│ + Assigner un domestique                    │
+│ ─────────────────────────────────────────── │
+│ ROSTER NON-ASSIGNÉ                          │
+│ José De Cauwer · Egan Bernal · …            │
+└──────────────────────────────────────────────┘
+```
+
+### 4.6 Modale Tactics — hub placement tactiques GT
+
+Ouverte via le bouton Tactics. Grisé + tooltip si pas de GT/week-race actif.
+
+Réutilise les composants existants (`tactic-card`, `tactic-modal-shell`, `tactic-stage-list`, `tactic-boost-modal`, `tactic-nemesis-modal`). Le placement effectif passe par les sous-modales existantes.
+
+```
+┌──────────────────────────────────────────────┐
+│ Giro d'Italia · 5 tactiques disponibles [×] │
 │ ─────────────────────────────────────────── │
 │ ÉTAPE 3 · 6 mai · Montagne                  │
-│   [Unleash] [Overdrive] [Nemesis GC] [Bus]  │
 │   Aucune tactique placée · [+ Placer]       │
 │ ─────────────────────────────────────────── │
 │ ÉTAPE 4 · 7 mai · Plat                      │
 │   ★ Nemesis Sprint · vs Team Astrid         │
-│   [Modifier] [Annuler]                      │
 └──────────────────────────────────────────────┘
 ```
 
-- Réutilise les composants existants (`tactic-card`, `tactic-modal-shell`, `tactic-stage-list`, `tactic-boost-modal`, `tactic-nemesis-modal`)
-- L'écran sert de hub. Le placement effectif passe par les modales existantes.
+### 4.7 Modale Goals — objectifs sponsor en cours
 
-### 4.5 Sub-tab Peloton
+Ouverte via le bouton Goals. Toujours disponible.
 
-Vue macro de toutes les équipes de la ligue. Toujours visible.
-
-**Layout :**
-```
-┌──────────────────────────────────────────────┐
-│ PELOTON · 6 équipes · Giro 2026             │
-│ ─────────────────────────────────────────── │
-│ Team Astrid          Niv. 4    8 420 XP     │
-│   ├─ GC  · J. Vingegaard         (1/1)      │
-│   ├─ SPR · M. van der Poel       (1/1)      │
-│   └─ DOM · 4 coureurs                       │
-│ ─────────────────────────────────────────── │
-│ Mon équipe ★         Niv. 3    7 890 XP     │
-│   ├─ GC  · T. Pogacar            (1/1)      │
-│   └─ DOM · 3 coureurs                       │
-│ ─────────────────────────────────────────── │
-│ ...                                          │
-└──────────────────────────────────────────────┘
-```
-
-- Une carte par équipe, condensée
-- Roles count (combien de leaders, sprinters, hunters, domestiques) en visu compact
-- Icônes Phosphor pour gamification
-- Tap sur une équipe → ouvre `Ranking > Team detail`
+Liste des goals sponsor actifs pour la phase courante :
+- Nom du goal
+- Progression si mesurable (ex : "2/3 étapes top-10")
+- Reward (bonus € ou XP)
+- Badge "Accompli ✓" si déjà atteint
 
 ---
 
@@ -445,6 +467,98 @@ Apparaît entre 2 cards d'étapes quand une tactique Nemesis est résolue.
 - Background : `bg-subtle`, border `border-default`
 - Icône flèche : `Red-500` si on a perdu une place, `Emerald-500` si on en a gagné une
 - Inline dans le feed après la Today card concernée
+
+### 8.8 Phase start banner (priorité immédiate)
+
+Annonce l'ouverture d'une nouvelle phase d'enchères. Apparaît en tête de feed quand un nouveau round est ouvert.
+
+```
+┌──────────────────────────────────────────────┐
+│ 🏁  Giro d'Italia · Phase 5                 │
+│     Round 1 ouvert · Faites vos équipes     │
+│                                    [→]      │
+└──────────────────────────────────────────────┘
+```
+
+- Background : gradient subtil `cyan-950` → `bg-surface`, radius 12px
+- Titre : 14px, font-bold, `text-high`
+- Subtitle : 12px, `text-mid`
+- Bouton → : lien vers Auction tab Bids
+- **Priorité d'implémentation :** immédiate — composant quasi identique au `RaceFeedPhaseEndBanner` existant. Symétrique (ouverture vs fermeture de phase).
+
+### 8.9 GC Standing card — variante course à étapes (GT + week-race)
+
+Apparaît **uniquement sous la dernière card résultat avec données** (la plus récente past/today non-vide). Remplace le bouton "GC Ranking →" actuel. Visible uniquement pendant un GT ou une course d'une semaine.
+
+```
+┌──────────────────────────────────────────────┐
+│  GC · Giro d'Italia                         │
+│ ─────────────────────────────────────────── │
+│  1  [TA○] Team Astrid          +8 420 XP    │
+│ ─────────────────────────────────────────── │
+│  2  [ME★] Mon équipe           +7 890 XP    │
+│  3  [JP○] Jordan's Pick        +6 210 XP    │
+│ ─────────────────────────────────────────── │
+│  [4○] [5○] [6○]                             │
+└──────────────────────────────────────────────┘
+```
+
+**Layout 3 lignes :**
+- **Ligne 1 (#1)** : rang `1` (10px, font-bold, `text-low`) · avatar 28px · nom équipe (13px, font-bold, `text-high`) · XP (12px, font-mono, `accent-highlight`)
+- **Ligne 2 (#2 et #3)** : même structure que ligne 1, 12px, légèrement moins proéminent. XP affiché pour les 3 premiers uniquement.
+- **Ligne 3 (reste)** : avatars 20px en ligne horizontale, juste les initiales/skins, pas de nom ni XP
+- **Tap** : redirige vers `/league/[leagueId]/ranking?race=${parentRaceSlug}`
+- Pas de bouton "GC Ranking →" si cette card est présente
+
+**Condition d'affichage :** uniquement sous le dernier résultat connu (disparaît des cards précédentes). Jamais pour les classiques d'un jour (voir §8.10).
+
+### 8.10 Overall Ranking card — variante classique d'un jour
+
+Apparaît **sous la dernière card résultat** d'une classique d'un jour. Affiche le **classement cumulé de la ligue** (pas le GC de la course — les classiques n'ont pas de GC multi-étapes).
+
+Même layout 3 lignes que §8.9 mais :
+- Titre : `Classement général` (pas de nom de course)
+- Données : XP cumulé total de chaque équipe sur l'ensemble de la saison
+- Tap : redirige vers `/league/[leagueId]/ranking` (sans filtre race)
+
+### 8.11 Goal achieved card
+
+Apparaît dans le feed quand un **goal spécifique** d'un sponsor est accompli (pas les base goals). Intercalée après la card de la course qui a déclenché l'accomplissement.
+
+```
+┌──────────────────────────────────────────────┐
+│ 🎯  Goal accompli · [Nom du sponsor]        │
+│     [Nom du goal]             + 40 000€     │
+└──────────────────────────────────────────────┘
+```
+
+- Background : `rgba(16,185,129,0.06)`, border `rgba(16,185,129,0.2)`, radius 10px
+- Icône Target (Phosphor), `Emerald-500`
+- Titre : 12px, font-semibold, `text-high`
+- Reward : font-mono, `Emerald-500`, font-bold
+- **Scope :** goals spécifiques uniquement (pas les base goals permanents)
+
+### 8.12 DNF rider card (V2 — GT uniquement)
+
+Apparaît après une étape GT où un rider de ta squad a abandonné. Intercalée sous la card de l'étape concernée.
+
+```
+┌──────────────────────────────────────────────┐
+│ ⚠  DNF · T. Pogacar · Giro Étape 5         │
+│    Remboursement 50% disponible             │
+│    Tu perds ses XP accumulés (−340 XP)      │
+│    [Libérer et remplacer]                   │
+└──────────────────────────────────────────────┘
+```
+
+- Background : `rgba(245,158,11,0.06)`, border `rgba(245,158,11,0.2)`, radius 10px
+- Icône Warning (Phosphor ou Lucide), `Warning` token
+- Rider : nom abrégé · course · étape
+- Remboursement : 50% du salaire mensuel (à confirmer — règle mécanique à valider)
+- XP perdus : somme des XP marqués par ce rider depuis le début de la phase GT
+- CTA : `[Libérer et remplacer]` → ouvre la modale Roles avec le slot vide pré-sélectionné
+- **Scope :** GT uniquement (Giro, Tour, Vuelta). Pas pour les courses d'une semaine.
+- **Données :** requiert un champ `dnf: boolean` sur `rider_xp_daily` ou `race_results` (à ajouter en DB — migration V2)
 
 ---
 
