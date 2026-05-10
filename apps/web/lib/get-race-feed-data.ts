@@ -12,6 +12,7 @@ import {
   shortenRiderName,
   teamInitials,
 } from "./race-feed-helpers";
+import { getAchievementBySlug } from "./achievements";
 import type {
   NemesisData,
   RaceCardStatus,
@@ -109,10 +110,14 @@ export async function getRaceFeedData(
   // 2) Fetch team and rider lookup tables
   const { data: teamRows = [] } = await supabase
     .from("teams")
-    .select("id, name")
+    .select("id, name, equipped_achievement_slug")
     .eq("league_id", opts.leagueId);
   const teamById = new Map<string, string>();
-  for (const t of teamRows ?? []) teamById.set(t.id, t.name);
+  const teamEquippedSlugById = new Map<string, string | null>();
+  for (const t of teamRows ?? []) {
+    teamById.set(t.id, t.name);
+    teamEquippedSlugById.set(t.id, (t as { equipped_achievement_slug?: string | null }).equipped_achievement_slug ?? null);
+  }
 
   const { data: riderRows = [] } = await supabase
     .from("riders")
@@ -163,6 +168,10 @@ export async function getRaceFeedData(
     teams: TeamRaceResult[];
     winnerTeamId: string | null;
     winnerTeamInitials: string | null;
+    winnerTeamName: string | null;
+    winnerTeamBadgeUrl: string | null;
+    winnerTeamAchievementName: string | null;
+    winnerTeamAchievementTier: import("./achievements").AchievementTier | null;
   } => {
     const byTeam = new Map<string, RiderRaceResult[]>();
     for (const [k, v] of agg.entries()) {
@@ -195,10 +204,16 @@ export async function getRaceFeedData(
     }
     teams.sort((a, b) => b.totalXp - a.totalXp);
     const winner = teams[0] ?? null;
+    const winnerEquippedSlug = winner ? (teamEquippedSlugById.get(winner.teamId) ?? null) : null;
+    const winnerAchievement = winnerEquippedSlug ? getAchievementBySlug(winnerEquippedSlug) : undefined;
     return {
       teams,
       winnerTeamId: winner?.teamId ?? null,
       winnerTeamInitials: winner ? teamInitials(winner.teamName) : null,
+      winnerTeamName: winner?.teamName ?? null,
+      winnerTeamBadgeUrl: winnerAchievement?.badgeUrl ?? null,
+      winnerTeamAchievementName: winnerAchievement?.name ?? null,
+      winnerTeamAchievementTier: winnerAchievement?.tier ?? null,
     };
   };
 

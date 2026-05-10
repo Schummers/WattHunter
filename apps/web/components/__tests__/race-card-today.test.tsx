@@ -16,6 +16,10 @@ const baseRace: RaceDataWithBreakdown = {
   isGtPhase: true,
   winnerTeamId: "t1",
   winnerTeamInitials: "TA",
+  winnerTeamName: "Team Astrid",
+  winnerTeamBadgeUrl: null,
+  winnerTeamAchievementName: null,
+  winnerTeamAchievementTier: null,
   teams: [
     {
       teamId: "t1",

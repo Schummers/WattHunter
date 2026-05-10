@@ -25,6 +25,7 @@ export default function TeamLayout({
           tabs={[
             { label: "My Team", href: `/league/${leagueId}/team` },
             { label: gtLabel, href: `/league/${leagueId}/team/gt` },
+            { label: "Budget", href: `/league/${leagueId}/team/budget` },
           ]}
         />
       )}

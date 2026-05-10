@@ -35,6 +35,10 @@ export type RaceDataWithBreakdown = RaceData & {
   teams: TeamRaceResult[];
   winnerTeamId: string | null;
   winnerTeamInitials: string | null;
+  winnerTeamName: string | null;
+  winnerTeamBadgeUrl: string | null;
+  winnerTeamAchievementName: string | null;
+  winnerTeamAchievementTier: import("./achievements").AchievementTier | null;
 };
 
 export type NemesisData = {

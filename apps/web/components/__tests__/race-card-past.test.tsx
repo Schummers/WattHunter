@@ -16,6 +16,10 @@ const sampleRace: RaceDataWithBreakdown = {
   isGtPhase: true,
   winnerTeamId: "t1",
   winnerTeamInitials: "TA",
+  winnerTeamName: "Team Astrid",
+  winnerTeamBadgeUrl: null,
+  winnerTeamAchievementName: null,
+  winnerTeamAchievementTier: null,
   teams: [
     {
       teamId: "t1",
@@ -44,7 +48,8 @@ describe("RaceCardPast", () => {
     const trigger = screen.getByRole("button", { name: /Giro/i });
     fireEvent.click(trigger);
     expect(screen.getByText("T. Pogacar")).toBeInTheDocument();
-    expect(screen.getByText("Team Astrid")).toBeInTheDocument();
+    // "Team Astrid" appears both in the Option A header and in the breakdown
+    expect(screen.getAllByText("Team Astrid").length).toBeGreaterThanOrEqual(1);
   });
 
   it("collapses again on second tap", () => {

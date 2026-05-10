@@ -1387,6 +1387,7 @@ export type Database = {
         Row: {
           created_at: string
           cumulative_xp: number
+          equipped_achievement_slug: string | null
           id: string
           is_bankrupt: boolean
           league_id: string
@@ -1402,6 +1403,7 @@ export type Database = {
         Insert: {
           created_at?: string
           cumulative_xp?: number
+          equipped_achievement_slug?: string | null
           id?: string
           is_bankrupt?: boolean
           league_id: string
@@ -1417,6 +1419,7 @@ export type Database = {
         Update: {
           created_at?: string
           cumulative_xp?: number
+          equipped_achievement_slug?: string | null
           id?: string
           is_bankrupt?: boolean
           league_id?: string

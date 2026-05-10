@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Gavel, Users, BadgeEuro, Trophy, type LucideIcon } from "lucide-react";
+import { House, Gavel, Users, Medal, Trophy, type LucideIcon } from "lucide-react";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
-export type NavTabKey = "home" | "auction" | "team" | "budget" | "ranking";
+export type NavTabKey = "home" | "auction" | "team" | "budget" | "ranking" | "achievements";
 
 interface NavTab {
   key: NavTabKey;
@@ -15,11 +15,11 @@ interface NavTab {
 }
 
 const tabs: NavTab[] = [
-  { key: "home", label: "Home", icon: House, href: (id) => `/league/${id}` },
-  { key: "auction", label: "Auction", icon: Gavel, href: (id) => `/league/${id}/auction` },
-  { key: "team", label: "Team", icon: Users, href: (id) => `/league/${id}/team` },
-  { key: "budget", label: "Budget", icon: BadgeEuro, href: (id) => `/league/${id}/budget` },
-  { key: "ranking", label: "Ranking", icon: Trophy, href: (id) => `/league/${id}/ranking` },
+  { key: "home",         label: "Home",         icon: House,   href: (id) => `/league/${id}` },
+  { key: "auction",      label: "Auction",      icon: Gavel,   href: (id) => `/league/${id}/auction` },
+  { key: "team",         label: "Team",         icon: Users,   href: (id) => `/league/${id}/team` },
+  { key: "achievements", label: "Palmares",     icon: Medal,   href: (id) => `/league/${id}/achievements` },
+  { key: "ranking",      label: "Ranking",      icon: Trophy,  href: (id) => `/league/${id}/ranking` },
 ];
 
 interface BottomNavProps {

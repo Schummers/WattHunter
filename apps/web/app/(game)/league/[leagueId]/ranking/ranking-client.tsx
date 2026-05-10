@@ -5,10 +5,12 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { SegmentedControl } from "@/components/segmented-control";
 import { MovementTag } from "@/components/movement-tag";
+import { AchievementBadge } from "@/components/achievement-badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatThousands, countryCodeToFlag } from "@/lib/format";
 import { resolvePhotoUrl } from "@/lib/photo-url";
+import type { AchievementTier } from "@/lib/achievements";
 
 interface TeamRow {
   id: string;
@@ -20,6 +22,10 @@ interface TeamRow {
   movement: number;
   isMe: boolean;
   ownerName: string;
+  equippedBadgeUrl: string | null;
+  equippedBannerUrl: string | null;
+  equippedAchievementName: string | null;
+  equippedAchievementTier: AchievementTier | null;
 }
 
 interface RiderRow {
@@ -158,21 +164,44 @@ export function RankingClient({
           </div>
 
           <div className="divide-y divide-[var(--border-subtle)]">
-            {rankedTeams.map((team, i) => (
+            {rankedTeams.map((team) => (
               <Link
                 key={team.id}
                 href={`/league/${leagueId}/ranking/team/${team.id}`}
-                className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-hover)] ${
+                className={`relative flex items-center gap-3 px-4 py-3 transition-colors overflow-hidden hover:bg-[var(--bg-surface-hover)] ${
                   team.isMe ? "bg-[var(--bg-surface-active)]" : ""
                 }`}
               >
+                {/* Banner background (Option B) */}
+                {team.equippedBannerUrl && (
+                  <>
+                    <div
+                      className="absolute inset-0 bg-cover bg-center"
+                      style={{ backgroundImage: `url(${team.equippedBannerUrl})`, opacity: 0.12 }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[var(--bg-app)] via-transparent to-[var(--bg-app)]" />
+                  </>
+                )}
+
                 {/* Position */}
-                <span className="w-[22px] shrink-0 text-center font-mono text-[length:var(--type-emphasis)] font-bold text-[var(--text-mid)]">
-                  {i + 1}
+                <span className="relative w-[22px] shrink-0 text-center font-mono text-[length:var(--type-emphasis)] font-bold text-[var(--text-mid)]">
+                  {team.rank}
                 </span>
 
+                {/* Badge (when equipped) or spacer */}
+                {team.equippedBadgeUrl && team.equippedAchievementTier ? (
+                  <div className="relative shrink-0">
+                    <AchievementBadge
+                      badgeUrl={team.equippedBadgeUrl}
+                      tier={team.equippedAchievementTier}
+                      size={36}
+                      locked={false}
+                    />
+                  </div>
+                ) : null}
+
                 {/* Name/XP + Level/Treasury */}
-                <div className="flex-1 min-w-0">
+                <div className="relative flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] truncate">
@@ -189,7 +218,9 @@ export function RankingClient({
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-                      Lv.{team.level}
+                      {team.equippedAchievementName
+                        ? `${team.equippedAchievementName} · Lv.${team.level}`
+                        : `Lv.${team.level}`}
                     </span>
                     {isAllRaces && (
                       <span className="font-mono text-[length:var(--type-caption)] text-[var(--text-mid)]">
@@ -200,7 +231,7 @@ export function RankingClient({
                 </div>
 
                 {/* Chevron */}
-                <ChevronRight size={16} className="shrink-0 text-[var(--text-ghost)]" />
+                <ChevronRight size={16} className="relative shrink-0 text-[var(--text-ghost)]" />
               </Link>
             ))}
           </div>

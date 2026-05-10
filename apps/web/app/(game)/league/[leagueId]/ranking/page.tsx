@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
+import { getAchievementBySlug } from "@/lib/achievements";
 import { RankingClient } from "./ranking-client";
 
 export default async function RankingPage({
@@ -37,7 +38,7 @@ export default async function RankingPage({
   // All teams in league ordered by cumulative_xp DESC
   const { data: teamsRaw } = await supabase
     .from("teams")
-    .select("id, name, cumulative_xp, level, treasury")
+    .select("id, name, cumulative_xp, level, treasury, equipped_achievement_slug")
     .eq("league_id", leagueId)
     .order("cumulative_xp", { ascending: false });
 
@@ -234,17 +235,25 @@ export default async function RankingPage({
   }
 
   // Build serializable data for client
-  const teamsData = teams.map((t, i) => ({
-    id: t.id,
-    name: t.name,
-    xp: t.cumulative_xp,
-    level: t.level,
-    treasury: t.treasury,
-    rank: i + 1,
-    movement: teamMovement[t.id] ?? 0,
-    isMe: t.id === myTeamId,
-    ownerName: ownerByTeamId[t.id] ?? "Unknown",
-  }));
+  const teamsData = teams.map((t, i) => {
+    const equippedSlug = (t as { equipped_achievement_slug?: string | null }).equipped_achievement_slug ?? null;
+    const achievement = equippedSlug ? getAchievementBySlug(equippedSlug) : undefined;
+    return {
+      id: t.id,
+      name: t.name,
+      xp: t.cumulative_xp,
+      level: t.level,
+      treasury: t.treasury,
+      rank: i + 1,
+      movement: teamMovement[t.id] ?? 0,
+      isMe: t.id === myTeamId,
+      ownerName: ownerByTeamId[t.id] ?? "Unknown",
+      equippedBadgeUrl: achievement?.badgeUrl ?? null,
+      equippedBannerUrl: achievement?.bannerUrl ?? null,
+      equippedAchievementName: achievement?.name ?? null,
+      equippedAchievementTier: achievement?.tier ?? null,
+    };
+  });
 
   // Build rider data with owner info
   const riderOwnerMap: Record<string, { teamId: string; teamName: string; ownerName: string } | null> = {};

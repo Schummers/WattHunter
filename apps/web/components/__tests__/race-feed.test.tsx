@@ -16,6 +16,10 @@ const pastRace: RaceDataWithBreakdown = {
   isGtPhase: true,
   winnerTeamId: "t1",
   winnerTeamInitials: "TA",
+  winnerTeamName: "Team A",
+  winnerTeamBadgeUrl: null,
+  winnerTeamAchievementName: null,
+  winnerTeamAchievementTier: null,
   teams: [],
 };
 

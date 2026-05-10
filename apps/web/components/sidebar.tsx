@@ -8,8 +8,8 @@ import {
   House,
   Gavel,
   Users,
-  BadgeEuro,
   Trophy,
+  Medal,
   Settings,
   CircleHelp,
   ChevronDown,
@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getGTSubTabLabel } from "@/lib/gt-phases";
 
-type NavKey = "home" | "auction" | "team" | "budget" | "ranking";
+type NavKey = "home" | "auction" | "team" | "budget" | "ranking" | "achievements";
 
 interface NavItem {
   key: NavKey;
@@ -52,9 +52,10 @@ function buildNavItems(): NavItem[] {
       subItems: [
         { label: "My Team", href: (id) => `/league/${id}/team` },
         { label: gtLabel, href: (id) => `/league/${id}/team/gt` },
+        { label: "Budget", href: (id) => `/league/${id}/team/budget` },
       ],
     },
-    { key: "budget", label: "Budget", icon: BadgeEuro, href: (id) => `/league/${id}/budget` },
+    { key: "achievements", label: "Palmares", icon: Medal, href: (id) => `/league/${id}/achievements` },
     { key: "ranking", label: "Ranking", icon: Trophy, href: (id) => `/league/${id}/ranking` },
   ];
 }
@@ -68,7 +69,7 @@ interface SidebarProps {
   leagueId: string;
   leagueName: string;
   leagues: League[];
-  unlockedTabs: ("home" | "auction" | "team" | "budget" | "ranking")[];
+  unlockedTabs: NavKey[];
 }
 
 export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: SidebarProps) {
