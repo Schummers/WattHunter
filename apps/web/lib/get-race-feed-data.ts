@@ -44,12 +44,16 @@ export async function getRaceFeedData(
   const phaseStartIso = range.start.toISOString().slice(0, 10);
   const phaseEndIso = range.end.toISOString().slice(0, 10);
 
+  const cutoffPassed = isCutoffPassedCET();
+
   // 1) Fetch past+today races via race_results, future races via race_startlists
   const { data: pastRows = [] } = await supabase
     .from("race_results")
     .select("race_slug, race_name, race_date")
     .gte("race_date", phaseStartIso)
     .lte("race_date", phaseEndIso);
+
+  const scoredSlugs = new Set((pastRows ?? []).map((r) => r.race_slug));
 
   const { data: futureRows = [] } = await supabase
     .from("race_startlists")
@@ -203,8 +207,18 @@ export async function getRaceFeedData(
     const raceType = detectRaceType(slug);
     const parentSlug = getParentRaceSlug(slug);
     const parentLabel = parentSlug ? getParentRaceLabel(parentSlug) : null;
-    const status: RaceCardStatus =
-      date < todayIso ? "past" : date === todayIso ? "today" : "future";
+    let status: RaceCardStatus;
+    if (date < todayIso) {
+      status = "past";
+    } else if (date > todayIso) {
+      status = "future";
+    } else if (scoredSlugs.has(slug)) {
+      status = "today"; // scored today → show results card
+    } else if (cutoffPassed) {
+      status = "in_progress"; // unscored, after 11h → race underway
+    } else {
+      status = "future"; // unscored, before 11h → tactic button available
+    }
     return {
       raceSlug: slug,
       raceName: name,
@@ -228,12 +242,12 @@ export async function getRaceFeedData(
 
   for (const r of racesBySlug.values()) {
     const base = buildBaseRace(r.slug, r.name, r.date);
-    if (base.status === "future") {
-      pushCard(r.date, { type: "future", race: base });
+    if (base.status === "future" || base.status === "in_progress") {
+      pushCard(r.date, { type: base.status, race: base });
     } else {
       const breakdown = buildBreakdown(r.slug);
       const enriched: RaceDataWithBreakdown = { ...base, ...breakdown };
-      pushCard(r.date, { type: base.status, race: enriched });
+      pushCard(r.date, { type: base.status as "past" | "today", race: enriched });
     }
   }
 
@@ -331,4 +345,16 @@ export async function getRaceFeedData(
   }
 
   return { groups, nextPhaseRound1Date, nextPhaseLabel, isGtPhase, phaseId: phase.id };
+}
+
+function isCutoffPassedCET(): boolean {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: "Europe/Paris",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(new Date());
+  const h = parseInt(parts.find((p) => p.type === "hour")!.value, 10);
+  const m = parseInt(parts.find((p) => p.type === "minute")!.value, 10);
+  return h * 60 + m >= 11 * 60;
 }

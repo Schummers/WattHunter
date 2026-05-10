@@ -69,7 +69,7 @@ export function RaceFeed({ leagueId, payload, tacticContext }: Props) {
                     />
                   );
                 }
-                if (card.type === "future") {
+                if (card.type === "in_progress" || card.type === "future") {
                   let refProp: React.RefObject<HTMLDivElement | null> | null = null;
                   if (!firstFutureClaimed) {
                     refProp = firstFutureRef;
@@ -80,8 +80,9 @@ export function RaceFeed({ leagueId, payload, tacticContext }: Props) {
                       <RaceCardFuture
                         race={card.race}
                         leagueId={leagueId}
+                        isInProgress={card.type === "in_progress"}
                         onTacticClick={
-                          tacticContext
+                          card.type === "future" && tacticContext
                             ? () => setOpenTacticStage({ slug: card.race.raceSlug, name: card.race.raceTitle })
                             : undefined
                         }

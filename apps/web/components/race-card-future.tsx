@@ -7,9 +7,10 @@ type Props = {
   race: RaceData;
   leagueId: string;
   onTacticClick?: () => void;
+  isInProgress?: boolean;
 };
 
-export function RaceCardFuture({ race, onTacticClick }: Props) {
+export function RaceCardFuture({ race, onTacticClick, isInProgress }: Props) {
   const showTacticButton = race.isGtPhase && race.raceType === "stage";
 
   return (
@@ -20,9 +21,10 @@ export function RaceCardFuture({ race, onTacticClick }: Props) {
       {showTacticButton ? (
         <button
           type="button"
-          onClick={onTacticClick}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[var(--accent-default)]/30 bg-[rgba(6,182,212,0.10)] text-[var(--accent-default)] hover:bg-[rgba(6,182,212,0.18)] transition-colors"
-          aria-label="Place a tactic"
+          onClick={isInProgress ? undefined : onTacticClick}
+          disabled={isInProgress}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[var(--accent-default)]/30 bg-[rgba(6,182,212,0.10)] text-[var(--accent-default)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-[rgba(6,182,212,0.18)]"
+          aria-label={isInProgress ? "Race in progress" : "Place a tactic"}
         >
           <Plus size={14} />
         </button>

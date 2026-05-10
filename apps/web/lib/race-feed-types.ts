@@ -1,4 +1,4 @@
-export type RaceCardStatus = "past" | "today" | "future";
+export type RaceCardStatus = "past" | "today" | "in_progress" | "future";
 export type RaceType = "stage" | "classic";
 export type GtRole = "GC" | "SPR" | "HUN" | "DOM";
 
@@ -61,6 +61,7 @@ export type RemontadaData = {
 export type RaceFeedCard =
   | { type: "past"; race: RaceDataWithBreakdown }
   | { type: "today"; race: RaceDataWithBreakdown }
+  | { type: "in_progress"; race: RaceData }
   | { type: "future"; race: RaceData }
   | { type: "nemesis"; data: NemesisData; raceSlug: string }
   | { type: "remontada"; data: RemontadaData };
