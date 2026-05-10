@@ -9,6 +9,7 @@ export interface GtStage {
   slug: string; // e.g., "race/giro-d-italia/2026/stage-3"
   status: "past" | "today" | "upcoming";
   hasTacticActive?: boolean; // for the calling team
+  isTodayCutoffPassed?: boolean; // true if status==="today" and current time >= 11:00 CET
 }
 
 /**
@@ -41,8 +42,10 @@ export async function getGtStages(
     .eq("year", opts.year);
 
   const activeSlugs = new Set((tactics ?? []).map((t) => t.stage_slug));
+  const cutoffPassed = isCutoffPassedCET();
   for (const s of stages) {
     if (activeSlugs.has(s.slug)) s.hasTacticActive = true;
+    if (s.status === "today") s.isTodayCutoffPassed = cutoffPassed;
   }
 
   return stages.filter((s) => s.status !== "past");
@@ -50,6 +53,18 @@ export async function getGtStages(
 
 function phaseToGtSlug(phaseId: 4 | 6 | 8): string {
   return { 4: "giro-d-italia", 6: "tour-de-france", 8: "vuelta-a-espana" }[phaseId];
+}
+
+function isCutoffPassedCET(): boolean {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: "Europe/Paris",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(new Date());
+  const h = parseInt(parts.find((p) => p.type === "hour")!.value, 10);
+  const m = parseInt(parts.find((p) => p.type === "minute")!.value, 10);
+  return h * 60 + m >= 11 * 60;
 }
 
 function stageStatus(dateIso: string): "past" | "today" | "upcoming" {

@@ -25,20 +25,22 @@ export function StageList({
         {stages.map((s, i) => {
           const isSelected = value === s.slug;
           const isLocked = !!s.hasTacticActive;
+          const isCutoffLocked = s.status === "today" && !!s.isTodayCutoffPassed;
+          const isDisabled = isLocked || isCutoffLocked;
           const isToday = s.status === "today";
           const isFirst = i === 0;
           return (
             <button
               key={s.slug}
               type="button"
-              onClick={() => !isLocked && onChange(isSelected ? "" : s.slug)}
-              disabled={isLocked}
+              onClick={() => !isDisabled && onChange(isSelected ? "" : s.slug)}
+              disabled={isDisabled}
               className={cn(
                 "flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors",
                 !isFirst && "border-t border-[var(--border-subtle)]",
-                isSelected && !isLocked && "bg-[var(--badge-bg)]",
-                !isSelected && !isLocked && "hover:bg-[var(--bg-surface-hover)]",
-                isLocked && "cursor-not-allowed opacity-50"
+                isSelected && !isDisabled && "bg-[var(--badge-bg)]",
+                !isSelected && !isDisabled && "hover:bg-[var(--bg-surface-hover)]",
+                isDisabled && "cursor-not-allowed opacity-50"
               )}
             >
               <div
@@ -63,10 +65,15 @@ export function StageList({
                   {s.date}
                 </span>
               </div>
-              {isToday && !isLocked && (
+              {isToday && !isLocked && !isCutoffLocked && (
                 <Tag variant="highlighted" className="text-[length:var(--type-micro)]">
                   Today
                 </Tag>
+              )}
+              {isCutoffLocked && !isLocked && (
+                <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
+                  Cutoff
+                </span>
               )}
               {isLocked && (
                 <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
