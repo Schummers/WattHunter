@@ -7,6 +7,12 @@ function formatBonus(amount: number): string {
   return formatted + " k€";
 }
 
+function formatXp(xp: number): string {
+  // Max 1 decimal, trailing zeros stripped
+  const rounded = Math.round(xp * 10) / 10;
+  return rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(1);
+}
+
 type Props = {
   teams: TeamRaceResult[];
   isGtPhase: boolean;
@@ -47,13 +53,13 @@ function TeamSection({
           {team.teamName}
           {team.isMyTeam && <span className="ml-1">&#9733;</span>}
         </span>
-        {/* Fixed 2-column block: bonus | xp — widths match rider rows */}
-        <div className="flex items-baseline font-mono shrink-0">
-          <span className="w-[72px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
+        {/* Fixed 2-column block with gap-4 separator: bonus | xp */}
+        <div className="flex items-baseline gap-4 font-mono shrink-0">
+          <span className="w-[64px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
             {bonusStr}
           </span>
-          <span className="w-[52px] text-right text-[length:var(--type-caption)] font-bold text-[var(--text-high)]">
-            {team.totalXp}
+          <span className="w-[44px] text-right text-[length:var(--type-caption)] font-bold text-[var(--text-high)]">
+            {formatXp(team.totalXp)}
             <span className="ml-0.5 text-[10px] font-medium text-[var(--text-ghost)]">xp</span>
           </span>
         </div>
@@ -73,13 +79,13 @@ function TeamSection({
                   {rider.role}
                 </span>
               )}
-              {/* Fixed 2-column block: bonus | xp — matches team header widths */}
-              <div className="flex items-baseline font-mono shrink-0">
-                <span className="w-[72px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)]">
+              {/* Fixed 2-column block with gap-4 separator: bonus | xp */}
+              <div className="flex items-baseline gap-4 font-mono shrink-0">
+                <span className="w-[64px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)]">
                   {riderBonus}
                 </span>
-                <span className="w-[52px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)]">
-                  {rider.xpGained}
+                <span className="w-[44px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)]">
+                  {formatXp(rider.xpGained)}
                   <span className="ml-0.5 text-[10px] font-medium text-[var(--text-ghost)]">xp</span>
                 </span>
               </div>
