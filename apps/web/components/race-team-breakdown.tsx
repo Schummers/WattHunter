@@ -39,7 +39,7 @@ function TeamSection({
 
   return (
     <div className={`flex flex-col py-2 ${!isFirst ? "border-t border-[var(--border-subtle)]" : ""}`}>
-      {/* Team header row */}
+      {/* Team header row — same fixed column widths as rider rows for alignment */}
       <div className="flex items-baseline justify-between">
         <span
           className={`font-bold uppercase tracking-wider text-[length:var(--type-caption)] ${
@@ -49,17 +49,16 @@ function TeamSection({
           {team.teamName}
           {team.isMyTeam && <span className="ml-1">★</span>}
         </span>
-        <span className="flex items-baseline gap-3 font-mono">
-          {bonusStr && (
-            <span className="text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
-              {bonusStr}
-            </span>
-          )}
-          <span className="text-[length:var(--type-caption)] font-bold text-[var(--text-high)]">
+        {/* Fixed 2-column block: bonus | xp — widths match rider rows */}
+        <div className="flex items-baseline font-mono shrink-0">
+          <span className="w-[84px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
+            {bonusStr}
+          </span>
+          <span className="w-[52px] text-right text-[length:var(--type-caption)] font-bold text-[var(--text-high)]">
             {team.totalXp}
             <span className="ml-0.5 text-[10px] font-medium text-[var(--text-ghost)]">xp</span>
           </span>
-        </span>
+        </div>
       </div>
 
       {/* Rider rows */}
@@ -76,13 +75,16 @@ function TeamSection({
                   {rider.role}
                 </span>
               )}
-              <span className="font-mono text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)] min-w-[68px] text-right">
-                {riderBonus}
-              </span>
-              <span className="font-mono text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)] min-w-[48px] text-right">
-                {rider.xpGained}
-                <span className="ml-0.5 text-[10px] font-medium text-[var(--text-ghost)]">xp</span>
-              </span>
+              {/* Fixed 2-column block: bonus | xp — matches team header widths */}
+              <div className="flex items-baseline font-mono shrink-0">
+                <span className="w-[84px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)]">
+                  {riderBonus}
+                </span>
+                <span className="w-[52px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)]">
+                  {rider.xpGained}
+                  <span className="ml-0.5 text-[10px] font-medium text-[var(--text-ghost)]">xp</span>
+                </span>
+              </div>
             </div>
           );
         })}
