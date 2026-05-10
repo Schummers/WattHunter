@@ -54,8 +54,9 @@ export type RemontadaData = {
   teamName: string;
   isMyTeam: boolean;
   multiplier: number;
-  daysRemaining: number;
+  stagesRemaining: number;
   triggeredAt: string;
+  overtakenTeamName: string | null;
 };
 
 export type RaceFeedCard =

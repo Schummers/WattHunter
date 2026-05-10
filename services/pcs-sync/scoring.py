@@ -49,11 +49,18 @@ def _parse_supabase_ts(ts: str) -> datetime:
     return datetime.fromisoformat(s).replace(tzinfo=_tz.utc)
 
 
-def _previous_snapshot_date(today_str: str) -> str:
-    """Return yesterday's date string (YYYY-MM-DD) for the ranking comparison baseline."""
-    from datetime import date as _date, timedelta
-    d = _date.fromisoformat(today_str) if isinstance(today_str, str) else today_str
-    return (d - timedelta(days=1)).isoformat()
+def _latest_snapshot_date_before(supabase: Client, team_ids: list[str], today: str) -> str | None:
+    """Return the most recent date in team_ranking_daily before today, or None if no prior snapshot exists."""
+    resp = (
+        supabase.table("team_ranking_daily")
+        .select("date")
+        .in_("team_id", team_ids)
+        .lt("date", today)
+        .order("date", desc=True)
+        .limit(1)
+        .execute()
+    )
+    return resp.data[0]["date"] if resp.data else None
 
 
 # --- GT mode --------------------------------------------------------------
@@ -641,16 +648,23 @@ async def calculate_daily_scores(
                     "cumulative_xp": row["cumulative_xp"],
                 }, on_conflict="team_id,date").execute()
 
-            # 5c. Remontada: if this run touched a GT, compare yesterday's ranking to now and trigger.
+            # 5c. Remontada: if this run touched a GT, compare last snapshot to now and trigger.
             if remontada_stage_in_run:
-                yesterday_resp = supabase.table("team_ranking_daily").select(
-                    "team_id, rank"
-                ).eq("date", _previous_snapshot_date(today)).in_(
-                    "team_id", [r["id"] for r in league_rows]
-                ).execute()
-                pre_rows = yesterday_resp.data or []
-                pre_snapshot = [(r["team_id"], r["rank"]) for r in pre_rows]
-                pre_snapshot.sort(key=lambda x: x[1])
+                team_ids = [r["id"] for r in league_rows]
+                prev_date = _latest_snapshot_date_before(supabase, team_ids, today)
+                pre_rows = []
+                if prev_date:
+                    pre_rows = (
+                        supabase.table("team_ranking_daily")
+                        .select("team_id, rank")
+                        .eq("date", prev_date)
+                        .in_("team_id", team_ids)
+                        .execute()
+                    ).data or []
+                pre_snapshot = sorted(
+                    [(r["team_id"], r["rank"]) for r in pre_rows],
+                    key=lambda x: x[1],
+                )
 
                 if pre_snapshot:  # skip leagues with no prior baseline
                     overtakes = detect_overtakes(pre_snapshot, post_snapshot)

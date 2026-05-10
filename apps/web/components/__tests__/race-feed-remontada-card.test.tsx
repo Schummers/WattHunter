@@ -10,29 +10,30 @@ const data: RemontadaData = {
   teamName: "Pelu's Crew",
   isMyTeam: false,
   multiplier: 2.0,
-  daysRemaining: 3,
+  stagesRemaining: 3,
   triggeredAt: "2026-05-06",
+  overtakenTeamName: "bigdaddy",
 };
 
 describe("RaceFeedRemontadaCard", () => {
-  it("renders team name and boost duration", () => {
+  it("renders team name and overtaken team", () => {
     render(<RaceFeedRemontadaCard data={data} />);
     expect(screen.getByText(/Pelu's Crew/)).toBeInTheDocument();
-    expect(screen.getByText(/3 jours/)).toBeInTheDocument();
+    expect(screen.getByText(/Overtook bigdaddy in the rankings/)).toBeInTheDocument();
   });
 
-  it("renders multiplier as +N% format", () => {
-    render(<RaceFeedRemontadaCard data={{ ...data, multiplier: 2.0 }} />);
-    expect(screen.getByText(/\+100%/)).toBeInTheDocument();
+  it("renders multiplier as ×N format", () => {
+    render(<RaceFeedRemontadaCard data={data} />);
+    expect(screen.getByText(/×2 XP boost for the next 3 stages/)).toBeInTheDocument();
   });
 
-  it("renders multiplier 1.5 as +50%", () => {
-    render(<RaceFeedRemontadaCard data={{ ...data, multiplier: 1.5 }} />);
-    expect(screen.getByText(/\+50%/)).toBeInTheDocument();
+  it("renders singular 'stage' when only 1 stage remaining", () => {
+    render(<RaceFeedRemontadaCard data={{ ...data, stagesRemaining: 1 }} />);
+    expect(screen.getByText(/×2 XP boost for the next 1 stage\b/)).toBeInTheDocument();
   });
 
-  it("renders singular 'jour' when only 1 day remaining", () => {
-    render(<RaceFeedRemontadaCard data={{ ...data, daysRemaining: 1 }} />);
-    expect(screen.getByText(/1 jour\b/)).toBeInTheDocument();
+  it("omits overtaken line when overtakenTeamName is null", () => {
+    render(<RaceFeedRemontadaCard data={{ ...data, overtakenTeamName: null }} />);
+    expect(screen.queryByText(/Overtook/)).not.toBeInTheDocument();
   });
 });

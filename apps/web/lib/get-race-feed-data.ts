@@ -291,22 +291,23 @@ export async function getRaceFeedData(
       const { data: remRows = [] } = await supabase
         .from("remontada_boosts")
         .select(
-          "id, team_id, gt_identifier, triggered_at_stage, expires_after_stage, multiplier, created_at"
+          "id, team_id, gt_identifier, triggered_at_stage, expires_after_stage, multiplier, created_at, overtaken_team_id"
         )
         .eq("league_id", opts.leagueId)
         .eq("gt_identifier", gtIdent);
 
       for (const row of remRows ?? []) {
         const triggeredDateIso = (row.created_at as string).slice(0, 10);
-        const totalDuration = Math.max(0, (row.expires_after_stage ?? 0) - (row.triggered_at_stage ?? 0));
+        const stagesRemaining = Math.max(0, (row.expires_after_stage ?? 0) - (row.triggered_at_stage ?? 0));
         const data: RemontadaData = {
           boostId: row.id,
           teamId: row.team_id,
           teamName: teamById.get(row.team_id) ?? "?",
           isMyTeam: row.team_id === opts.myTeamId,
           multiplier: Number(row.multiplier),
-          daysRemaining: totalDuration,
+          stagesRemaining,
           triggeredAt: triggeredDateIso,
+          overtakenTeamName: row.overtaken_team_id ? (teamById.get(row.overtaken_team_id) ?? null) : null,
         };
         pushCard(triggeredDateIso, { type: "remontada", data });
       }
