@@ -134,7 +134,7 @@ export async function getRaceFeedData(
       ? { data: [] as any[] }
       : await supabase
           .from("sponsor_bonuses")
-          .select("race_slug, team_id, rider_id, amount")
+          .select("race_slug, team_id, rider_id, final_bonus")
           .in("race_slug", slugsForXp);
 
   // Aggregate XP + bonus by (race_slug, team_id, rider_id)
@@ -150,7 +150,7 @@ export async function getRaceFeedData(
   for (const row of bonusRows ?? []) {
     const k = aggKey(row.race_slug, row.team_id, row.rider_id);
     const cur = agg.get(k) ?? { xp: 0, bonus: 0 };
-    cur.bonus += Number(row.amount ?? 0);
+    cur.bonus += Number(row.final_bonus ?? 0);
     agg.set(k, cur);
   }
 
