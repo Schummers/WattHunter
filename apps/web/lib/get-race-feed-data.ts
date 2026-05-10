@@ -165,7 +165,7 @@ export async function getRaceFeedData(
       const parts = k.split("\x00");
       const [slug, teamId, riderId] = parts;
       if (slug !== raceSlug) continue;
-      if (v.xp < 1) continue;
+      if (v.xp < 1 && v.bonus < 1) continue;
       const list = byTeam.get(teamId!) ?? [];
       list.push({
         riderId: riderId!,
