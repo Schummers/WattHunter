@@ -44,18 +44,19 @@ describe("RaceTeamBreakdown", () => {
     expect(screen.getByText(/★/)).toBeInTheDocument();
   });
 
-  it("formats team total bonus in euros and total XP with + prefix", () => {
+  it("formats team total bonus in euros and total XP (no + prefix)", () => {
     render(<RaceTeamBreakdown teams={sampleTeams} isGtPhase />);
-    expect(screen.getByText("+12 000€")).toBeInTheDocument();
-    expect(screen.getByText("+340")).toBeInTheDocument();
-    expect(screen.getByText("+8 000€")).toBeInTheDocument();
-    expect(screen.getByText("+280")).toBeInTheDocument();
+    // "12 000 €" appears for both team total and rider bonus (same amount in fixture)
+    expect(screen.getAllByText("12 000 €").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("340").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("8 000 €").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("280").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders em-dash for riders without bonus", () => {
+  it("does not render anything for riders with zero bonus (hidden)", () => {
     render(<RaceTeamBreakdown teams={sampleTeams} isGtPhase />);
-    const dashes = screen.getAllByText("—");
-    expect(dashes.length).toBeGreaterThan(0);
+    // em-dash should no longer appear — zero bonus is hidden
+    expect(screen.queryByText("—")).not.toBeInTheDocument();
   });
 
   it("renders rider role badges only when isGtPhase is true", () => {

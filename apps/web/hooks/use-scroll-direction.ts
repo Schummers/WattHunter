@@ -15,6 +15,11 @@ export function useScrollDirection() {
     const main = document.querySelector("main");
     if (!main) return;
 
+    // Initialise at the current scroll position so a programmatic scrollIntoView
+    // on mount (e.g. RaceFeed scrolling to the last known result) does not
+    // trigger the hide logic.
+    lastScrollY.current = main.scrollTop;
+
     const handleScroll = () => {
       const currentY = main.scrollTop;
       if (currentY > lastScrollY.current && currentY > 32) {

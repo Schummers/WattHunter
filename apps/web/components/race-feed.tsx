@@ -57,6 +57,7 @@ export function RaceFeed({ leagueId, payload, tacticContext }: Props) {
                     <RaceCardPast
                       key={key}
                       race={card.race}
+                      leagueId={leagueId}
                       defaultExpanded={isLastKnown}
                     />
                   );
@@ -93,11 +94,23 @@ export function RaceFeed({ leagueId, payload, tacticContext }: Props) {
           </div>
         );
       })}
-      <RaceFeedPhaseEndBanner
-        leagueId={leagueId}
-        nextPhaseRound1Date={payload.nextPhaseRound1Date}
-        nextPhaseLabel={payload.nextPhaseLabel}
-      />
+      {/* Phase-end shown as a date group at the round 1 date */}
+      {payload.nextPhaseRound1Date && (
+        <RaceFeedDateGroup date={payload.nextPhaseRound1Date}>
+          <RaceFeedPhaseEndBanner
+            leagueId={leagueId}
+            nextPhaseRound1Date={payload.nextPhaseRound1Date}
+            nextPhaseLabel={payload.nextPhaseLabel}
+          />
+        </RaceFeedDateGroup>
+      )}
+      {!payload.nextPhaseRound1Date && (
+        <RaceFeedPhaseEndBanner
+          leagueId={leagueId}
+          nextPhaseRound1Date={null}
+          nextPhaseLabel={null}
+        />
+      )}
       {openTacticStage && tacticContext && (
         <RaceFeedTacticModal
           stageSlug={openTacticStage.slug}

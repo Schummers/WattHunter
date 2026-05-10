@@ -32,7 +32,7 @@ const sampleRace: RaceDataWithBreakdown = {
 
 describe("RaceCardPast", () => {
   it("renders title and winner avatar (collapsed)", () => {
-    render(<RaceCardPast race={sampleRace} />);
+    render(<RaceCardPast race={sampleRace} leagueId="league-1" />);
     expect(screen.getByText("Giro · Stage 1")).toBeInTheDocument();
     expect(screen.getByText("TA")).toBeInTheDocument();
     // breakdown not shown when collapsed
@@ -40,7 +40,7 @@ describe("RaceCardPast", () => {
   });
 
   it("expands the breakdown on tap", () => {
-    render(<RaceCardPast race={sampleRace} />);
+    render(<RaceCardPast race={sampleRace} leagueId="league-1" />);
     const trigger = screen.getByRole("button", { name: /Giro/i });
     fireEvent.click(trigger);
     expect(screen.getByText("T. Pogacar")).toBeInTheDocument();
@@ -48,7 +48,7 @@ describe("RaceCardPast", () => {
   });
 
   it("collapses again on second tap", () => {
-    render(<RaceCardPast race={sampleRace} />);
+    render(<RaceCardPast race={sampleRace} leagueId="league-1" />);
     const trigger = screen.getByRole("button", { name: /Giro/i });
     fireEvent.click(trigger);
     fireEvent.click(trigger);
@@ -57,7 +57,7 @@ describe("RaceCardPast", () => {
 
   it("shows fallback dash avatar when there is no winner", () => {
     const noWinner = { ...sampleRace, winnerTeamId: null, winnerTeamInitials: null, teams: [] };
-    render(<RaceCardPast race={noWinner} />);
+    render(<RaceCardPast race={noWinner} leagueId="league-1" />);
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 });

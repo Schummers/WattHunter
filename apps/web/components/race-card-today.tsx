@@ -31,7 +31,7 @@ export function RaceCardToday({ race, leagueId }: Props) {
             href={`/league/${leagueId}/ranking?race=${encodeURIComponent(race.parentRaceSlug!)}`}
             className="text-[length:var(--type-caption)] font-medium text-[var(--accent-default)] hover:text-[var(--accent-hover)] underline-offset-2 hover:underline"
           >
-            View GC standings for {race.parentRaceLabel} →
+            GC Ranking →
           </Link>
         </>
       )}

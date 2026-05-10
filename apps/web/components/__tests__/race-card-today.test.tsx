@@ -40,7 +40,7 @@ describe("RaceCardToday", () => {
 
   it("renders GC standings link for stage races (GT)", () => {
     render(<RaceCardToday race={baseRace} leagueId="league-1" />);
-    const link = screen.getByRole("link", { name: /View GC standings for Giro/ });
+    const link = screen.getByRole("link", { name: /GC Ranking/ });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute(
       "href",
