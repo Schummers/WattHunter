@@ -35,6 +35,20 @@ logger = logging.getLogger(__name__)
 LEVEL_THRESHOLDS = [0, 25, 150, 350, 600, 1200, 1800, 2400]
 
 
+def _parse_supabase_ts(ts: str) -> datetime:
+    """Parse Supabase timestamp — Python 3.9 compatible.
+
+    Python 3.9 fromisoformat rejects +00:00 offsets and non-standard microsecond widths.
+    Supabase always returns UTC, so we strip the offset and normalize to 6-digit µs.
+    """
+    from datetime import timezone as _tz
+    s = ts.replace("+00:00", "").replace("Z", "")
+    if "." in s:
+        base, frac = s.split(".", 1)
+        s = base + "." + (frac + "000000")[:6]
+    return datetime.fromisoformat(s).replace(tzinfo=_tz.utc)
+
+
 def _previous_snapshot_date(today_str: str) -> str:
     """Return yesterday's date string (YYYY-MM-DD) for the ranking comparison baseline."""
     from datetime import date as _date, timedelta
@@ -204,6 +218,7 @@ def _compute_rider_bonus(
 async def calculate_daily_scores(
     supabase: Client,
     race_slugs: list[str] | None = None,
+    ignore_role_cutoff: bool = False,
 ) -> dict:
     """
     For each contracted rider with pcs_points > 0 in race_results:
@@ -314,17 +329,22 @@ async def calculate_daily_scores(
         # Compute cutoff from the first GT slug's date (all slugs in one call share a date)
         _cutoff_date_str = _slug_dates.get(gt_slugs[0], today)
         _cutoff_dt = date.fromisoformat(str(_cutoff_date_str))
-        gt_cutoff = datetime(
-            _cutoff_dt.year, _cutoff_dt.month, _cutoff_dt.day, 11, 0, 0,
-            tzinfo=_paris_tz,
-        )
+        if ignore_role_cutoff:
+            # Retroactive scoring: accept all role/squad assignments regardless of time
+            from datetime import timezone as _tz
+            gt_cutoff = datetime(9999, 12, 31, 23, 59, 59, tzinfo=_tz.utc)
+        else:
+            gt_cutoff = datetime(
+                _cutoff_dt.year, _cutoff_dt.month, _cutoff_dt.day, 11, 0, 0,
+                tzinfo=_paris_tz,
+            )
 
         squad_resp = supabase.table("gt_squad").select(
             "team_id, rider_id, role, created_at, removed_at"
         ).eq("phase_id", phase_id).eq("year", year).execute()
         for r in (squad_resp.data or []):
-            created = datetime.fromisoformat(r["created_at"])
-            removed = datetime.fromisoformat(r["removed_at"]) if r.get("removed_at") else None
+            created = _parse_supabase_ts(r["created_at"])
+            removed = _parse_supabase_ts(r["removed_at"]) if r.get("removed_at") else None
             if created <= gt_cutoff and (removed is None or removed > gt_cutoff):
                 gt_squad_members[(r["team_id"], r["rider_id"])] = True
 
@@ -334,7 +354,7 @@ async def calculate_daily_scores(
             "applied_at", desc=True
         ).execute()
         for r in (role_resp.data or []):
-            applied = datetime.fromisoformat(r["applied_at"])
+            applied = _parse_supabase_ts(r["applied_at"])
             if applied > gt_cutoff:
                 continue
             key = (r["team_id"], r["rider_id"])
@@ -439,16 +459,19 @@ async def calculate_daily_scores(
                 raw_points = entry["pcs_points"]
                 race_slug = entry["race_slug"]
 
-                # === Compute base role multiplier + classif bonus — only for GT squad members.
+                # === Compute role multiplier (squad only) + classif bonus (all contracted GT riders).
                 in_squad = (team_id, rider_id) in gt_squad_members
                 gt_role_mult = 1.0
                 gt_classif_bonus = 0.0
-                role = "domestique"  # default; overridden below for squad members
+                role = "domestique"  # default; overridden for squad members with assigned role
                 gt_id = get_gt_identifier(race_slug)
                 stage_no = get_stage_number(race_slug)
-                if _is_gt_slug(race_slug) and in_squad:
-                    role = gt_roles.get((team_id, rider_id), "domestique")
-                    gt_role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
+                if _is_gt_slug(race_slug):
+                    if in_squad:
+                        role = gt_roles.get((team_id, rider_id), "domestique")
+                        gt_role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
+                    # All contracted riders in GT races earn classif bonus.
+                    # Role-matched squad riders earn ×1.5; everyone else ×1.0.
                     gt_classif_bonus = _classif_bonus(
                         classif_by_key.get((race_slug, rider_id), []),
                         role,

@@ -152,10 +152,13 @@ def get_active_multiplier(
         .select("triggered_at_stage, expires_after_stage, multiplier")
         .eq("team_id", team_id)
         .eq("gt_identifier", gt_identifier)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    row = resp.data
+    rows = (resp.data if resp else None) or []
+    if not rows:
+        return 1.0
+    row = rows[0]
     if not row:
         return 1.0
     if stage_number <= row["triggered_at_stage"]:

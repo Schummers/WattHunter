@@ -504,7 +504,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
     return imported_slugs
 
 
-async def run_post_race(race_slug: str | None = None, auto: bool = False, with_ranking: bool = False) -> None:
+async def run_post_race(race_slug: str | None = None, auto: bool = False, with_ranking: bool = False, no_cutoff: bool = False) -> None:
     """Post-race pipeline: import results then calculate scores."""
     from playwright.async_api import async_playwright
     from sync import get_supabase
@@ -576,7 +576,7 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
     # Calculate daily scores with the actual race slugs imported
     print()
     print("--- Calculating daily scores ---")
-    scoring_result = await calculate_daily_scores(supabase, race_slugs=all_imported_slugs or None)
+    scoring_result = await calculate_daily_scores(supabase, race_slugs=all_imported_slugs or None, ignore_role_cutoff=no_cutoff)
     print(json.dumps(scoring_result, indent=2))
 
     # Sponsor bonuses for race results
@@ -731,6 +731,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Also update global PCS ranking (normally done in pre-auction)",
     )
+    post_race.add_argument(
+        "--no-cutoff",
+        action="store_true",
+        help="Bypass the 11h CET role-assignment cutoff (retroactive scoring only)",
+    )
 
     # startlists
     startlists = subparsers.add_parser(
@@ -799,6 +804,7 @@ async def main() -> None:
             race_slug=args.race,
             auto=args.auto,
             with_ranking=args.with_ranking,
+            no_cutoff=args.no_cutoff,
         )
     elif args.command == "startlists":
         await run_startlists(args.race)
