@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentPhase, getPhaseRange, AUCTION_PHASES } from "./phases";
 import { GT_IDENTIFIER, isGTPhaseId } from "./gt-phases";
 import { GT_SCHEDULES } from "./gt-stage-schedule";
+import { WT_PARENT_SLUGS } from "./wt-race-slugs";
 import {
   detectRaceType,
   getParentRaceSlug,
@@ -69,6 +70,14 @@ export async function getRaceFeedData(
     }
   }
 
+  // Filter out non-World-Tour races
+  for (const slug of Array.from(racesBySlug.keys())) {
+    const parent = getParentRaceSlug(slug); // null for one-day races
+    if (!WT_PARENT_SLUGS.has(parent ?? slug)) {
+      racesBySlug.delete(slug);
+    }
+  }
+
   // Inject GT stage schedule for future stages (no race_startlists per-stage entries exist)
   if (isGtPhase) {
     const GT_SLUG_MAP = { 4: "giro-d-italia", 6: "tour-de-france", 8: "vuelta-a-espana" } as const;
@@ -82,7 +91,7 @@ export async function getRaceFeedData(
     const schedule = GT_SCHEDULES[`${gtSlug}/${year}`] ?? [];
     const gtName = GT_NAME_MAP[gtSlug];
     for (const entry of schedule) {
-      if (entry.date < todayIso || entry.date > phaseEndIso) continue;
+      if (entry.date < phaseStartIso || entry.date > phaseEndIso) continue;
       const slug = `race/${gtSlug}/${year}/stage-${entry.number}`;
       if (racesBySlug.has(slug)) continue;
       racesBySlug.set(slug, { slug, name: `${gtName} - Stage ${entry.number}`, date: entry.date });

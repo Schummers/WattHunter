@@ -29,7 +29,7 @@ export function RaceCardToday({ race, leagueId }: Props) {
           <div className="my-3 h-px bg-[var(--border-subtle)]" />
           <Link
             href={`/league/${leagueId}/ranking?race=${encodeURIComponent(race.parentRaceSlug!)}`}
-            className="block w-full text-center rounded-md px-3 py-2 text-[length:var(--type-caption)] font-medium text-[var(--accent-default)] bg-[rgba(6,182,212,0.06)] hover:bg-[rgba(6,182,212,0.10)] transition-colors"
+            className="text-[length:var(--type-caption)] font-medium text-[var(--accent-default)] hover:text-[var(--accent-hover)] underline-offset-2 hover:underline"
           >
             View GC standings for {race.parentRaceLabel} →
           </Link>

@@ -50,7 +50,7 @@ describe("getParentRaceLabel", () => {
 });
 
 describe("formatRaceTitle", () => {
-  it("formats a stage title as '<ParentLabel> · Etape N'", () => {
+  it("formats a stage title as '<ParentLabel> · Stage N'", () => {
     expect(
       formatRaceTitle({
         raceType: "stage",
@@ -58,7 +58,7 @@ describe("formatRaceTitle", () => {
         raceSlug: "race/giro-d-italia/2026/stage-2",
         parentRaceLabel: "Giro",
       })
-    ).toBe("Giro · Étape 2");
+    ).toBe("Giro · Stage 2");
   });
 
   it("falls back to raceName for classics", () => {

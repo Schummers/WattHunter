@@ -7,7 +7,7 @@ import type { RaceDataWithBreakdown } from "@/lib/race-feed-types";
 const sampleRace: RaceDataWithBreakdown = {
   raceSlug: "race/giro-d-italia/2026/stage-1",
   raceName: "Giro d'Italia - Stage 1",
-  raceTitle: "Giro · Étape 1",
+  raceTitle: "Giro · Stage 1",
   parentRaceSlug: "race/giro-d-italia/2026",
   parentRaceLabel: "Giro",
   raceDate: "2026-05-04",
@@ -33,7 +33,7 @@ const sampleRace: RaceDataWithBreakdown = {
 describe("RaceCardPast", () => {
   it("renders title and winner avatar (collapsed)", () => {
     render(<RaceCardPast race={sampleRace} />);
-    expect(screen.getByText("Giro · Étape 1")).toBeInTheDocument();
+    expect(screen.getByText("Giro · Stage 1")).toBeInTheDocument();
     expect(screen.getByText("TA")).toBeInTheDocument();
     // breakdown not shown when collapsed
     expect(screen.queryByText("T. Pogacar")).not.toBeInTheDocument();

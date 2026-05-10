@@ -7,7 +7,7 @@ import type { RaceDataWithBreakdown } from "@/lib/race-feed-types";
 const baseRace: RaceDataWithBreakdown = {
   raceSlug: "race/giro-d-italia/2026/stage-2",
   raceName: "Giro d'Italia - Stage 2",
-  raceTitle: "Giro · Étape 2",
+  raceTitle: "Giro · Stage 2",
   parentRaceSlug: "race/giro-d-italia/2026",
   parentRaceLabel: "Giro",
   raceDate: "2026-05-05",
@@ -33,7 +33,7 @@ const baseRace: RaceDataWithBreakdown = {
 describe("RaceCardToday", () => {
   it("renders title, winner avatar and breakdown", () => {
     render(<RaceCardToday race={baseRace} leagueId="league-1" />);
-    expect(screen.getByText("Giro · Étape 2")).toBeInTheDocument();
+    expect(screen.getByText("Giro · Stage 2")).toBeInTheDocument();
     expect(screen.getByText("TA")).toBeInTheDocument();
     expect(screen.getByText("T. Pogacar")).toBeInTheDocument();
   });

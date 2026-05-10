@@ -7,7 +7,7 @@ import type { RaceFeedPayload, RaceDataWithBreakdown, RaceData } from "@/lib/rac
 const pastRace: RaceDataWithBreakdown = {
   raceSlug: "race/giro-d-italia/2026/stage-1",
   raceName: "Giro - 1",
-  raceTitle: "Giro · Étape 1",
+  raceTitle: "Giro · Stage 1",
   parentRaceSlug: "race/giro-d-italia/2026",
   parentRaceLabel: "Giro",
   raceDate: "2026-05-04",
@@ -22,7 +22,7 @@ const pastRace: RaceDataWithBreakdown = {
 const todayRace: RaceDataWithBreakdown = {
   ...pastRace,
   raceSlug: "race/giro-d-italia/2026/stage-2",
-  raceTitle: "Giro · Étape 2",
+  raceTitle: "Giro · Stage 2",
   raceDate: "2026-05-05",
   status: "today",
 };
@@ -30,7 +30,7 @@ const todayRace: RaceDataWithBreakdown = {
 const futureRace: RaceData = {
   raceSlug: "race/giro-d-italia/2026/stage-3",
   raceName: "Giro - 3",
-  raceTitle: "Giro · Étape 3",
+  raceTitle: "Giro · Stage 3",
   parentRaceSlug: "race/giro-d-italia/2026",
   parentRaceLabel: "Giro",
   raceDate: "2026-05-06",
@@ -61,9 +61,9 @@ describe("RaceFeed", () => {
 
   it("renders past, today, and future cards", () => {
     render(<RaceFeed leagueId="L1" payload={payload} />);
-    expect(screen.getByText("Giro · Étape 1")).toBeInTheDocument();
-    expect(screen.getByText("Giro · Étape 2")).toBeInTheDocument();
-    expect(screen.getByText("Giro · Étape 3")).toBeInTheDocument();
+    expect(screen.getByText("Giro · Stage 1")).toBeInTheDocument();
+    expect(screen.getByText("Giro · Stage 2")).toBeInTheDocument();
+    expect(screen.getByText("Giro · Stage 3")).toBeInTheDocument();
   });
 
   it("renders the phase end banner at the bottom", () => {

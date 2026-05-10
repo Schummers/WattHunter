@@ -48,6 +48,7 @@ interface RankingClientProps {
   teams: TeamRow[];
   riders: RiderRow[];
   races: Race[];
+  initialRace?: string | null;
   teamXpByRace: Record<string, Record<string, number>>;
   riderXpByRace: Record<string, Record<string, number>>;
 }
@@ -68,9 +69,10 @@ export function RankingClient({
   races,
   teamXpByRace,
   riderXpByRace,
+  initialRace,
 }: RankingClientProps) {
   const [tabIndex, setTabIndex] = useState(0);
-  const [selectedRace, setSelectedRace] = useState<string | null>(null);
+  const [selectedRace, setSelectedRace] = useState<string | null>(initialRace ?? null);
 
   const isAllRaces = selectedRace === null;
 

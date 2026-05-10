@@ -4,10 +4,10 @@ import { useState } from "react";
 import type { RaceDataWithBreakdown } from "@/lib/race-feed-types";
 import { RaceTeamBreakdown } from "./race-team-breakdown";
 
-type Props = { race: RaceDataWithBreakdown };
+type Props = { race: RaceDataWithBreakdown; defaultExpanded?: boolean };
 
-export function RaceCardPast({ race }: Props) {
-  const [expanded, setExpanded] = useState(false);
+export function RaceCardPast({ race, defaultExpanded }: Props) {
+  const [expanded, setExpanded] = useState(defaultExpanded ?? false);
 
   return (
     <div className="rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-app)] overflow-hidden">

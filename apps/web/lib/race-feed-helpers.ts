@@ -38,7 +38,7 @@ export function formatRaceTitle(input: {
   if (input.raceType === "stage") {
     const stage = getStageNumber(input.raceSlug);
     const parent = input.parentRaceLabel ?? input.raceName.split(" - ")[0];
-    return `${parent} · Étape ${stage ?? "?"}`;
+    return `${parent} · Stage ${stage ?? "?"}`;
   }
   return input.raceName;
 }

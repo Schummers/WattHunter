@@ -131,7 +131,7 @@ export function RaceFeedTacticModal({ stageSlug, stageName, tacticContext, onClo
               subtitle={stageName}
               onClose={onClose}
             />
-            <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1">
+            <div className="grid grid-cols-2 gap-2">
               {TACTICS.map((t) => (
                 <TacticCard
                   key={t.id}

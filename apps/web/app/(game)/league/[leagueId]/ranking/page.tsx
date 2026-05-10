@@ -5,10 +5,13 @@ import { RankingClient } from "./ranking-client";
 
 export default async function RankingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ leagueId: string }>;
+  searchParams: Promise<{ race?: string }>;
 }) {
   const { leagueId } = await params;
+  const { race: initialRace } = await searchParams;
   const supabase = await createClient();
 
   const user = await getUser();
@@ -285,6 +288,7 @@ export default async function RankingPage({
       races={races}
       teamXpByRace={teamXpByRace}
       riderXpByRace={riderXpByRace}
+      initialRace={initialRace ?? null}
     />
   );
 }

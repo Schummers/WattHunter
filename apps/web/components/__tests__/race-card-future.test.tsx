@@ -7,7 +7,7 @@ import type { RaceData } from "@/lib/race-feed-types";
 const gtStage: RaceData = {
   raceSlug: "race/giro-d-italia/2026/stage-3",
   raceName: "Giro d'Italia - Stage 3",
-  raceTitle: "Giro · Étape 3",
+  raceTitle: "Giro · Stage 3",
   parentRaceSlug: "race/giro-d-italia/2026",
   parentRaceLabel: "Giro",
   raceDate: "2026-05-06",
@@ -31,7 +31,7 @@ const classic: RaceData = {
 describe("RaceCardFuture", () => {
   it("renders title", () => {
     render(<RaceCardFuture race={gtStage} leagueId="league-1" />);
-    expect(screen.getByText("Giro · Étape 3")).toBeInTheDocument();
+    expect(screen.getByText("Giro · Stage 3")).toBeInTheDocument();
   });
 
   it("renders + button for GT stages (calls onTacticClick)", () => {
