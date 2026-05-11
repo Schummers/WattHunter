@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { WarningCircleIcon } from "@phosphor-icons/react";
 import { claimDnfRefund } from "@/app/(game)/league/[leagueId]/team/gt/actions";
+import { resolvePhotoUrl } from "@/lib/photo-url";
 
 export interface GtDnfCardProps {
   leagueId: string;
@@ -99,7 +100,7 @@ export function GtDnfCard({
         {/* Photo */}
         {photoUrl ? (
           <Image
-            src={photoUrl}
+            src={resolvePhotoUrl(photoUrl) ?? ""}
             alt={riderName}
             width={40}
             height={40}

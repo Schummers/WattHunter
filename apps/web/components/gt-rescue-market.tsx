@@ -4,6 +4,7 @@ import { useState, useTransition, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { MagnifyingGlassIcon } from "@phosphor-icons/react"
+import { resolvePhotoUrl } from "@/lib/photo-url"
 import { placeEmergencyBid } from "@/app/(game)/league/[leagueId]/team/gt/rescue/actions"
 import { BackHeader } from "@/components/back-header"
 
@@ -201,7 +202,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
                   <div className="relative shrink-0 w-8 h-8 rounded-full overflow-hidden bg-[var(--bg-subtle)]">
                     {rider.photoUrl ? (
                       <Image
-                        src={rider.photoUrl}
+                        src={resolvePhotoUrl(rider.photoUrl) ?? ""}
                         alt={rider.name}
                         width={32}
                         height={32}
