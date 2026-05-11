@@ -147,7 +147,7 @@ export function GtDnfCard({
           {/* Buttons — secondary left, primary right */}
           <div className="flex gap-2 mt-1.5">
             <Button
-              size="sm"
+              size="xs"
               variant="outline"
               onClick={handleRefund}
               disabled={loading || claimed}
@@ -161,11 +161,18 @@ export function GtDnfCard({
               {loading ? "…" : `Refund +${refundK}€`}
             </Button>
             <Button
-              size="sm"
+              size="xs"
+              variant="outline"
               onClick={handleRefundAndReplace}
               disabled={loading || claimed}
+              style={{
+                background: "rgba(10,12,18,0.7)",
+                borderColor: "rgba(255,255,255,0.25)",
+                color: "var(--text-high)",
+                backdropFilter: "blur(4px)",
+              }}
             >
-              {loading ? "Processing…" : "Refund & Replace"}
+              {loading ? "…" : "Refund & Replace"}
             </Button>
           </div>
         </div>
