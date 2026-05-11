@@ -77,4 +77,21 @@ describe("placeBid — cross-round solvency (via RPC)", () => {
 
     expect(result).toEqual({ success: true });
   });
+
+  it("rejects a bid when RPC reports phase already started (late joiner)", async () => {
+    mockRpc.mockResolvedValueOnce({
+      data: { error: "Phase already started — join before Round 1 closes to participate" },
+      error: null,
+    });
+
+    const result = await placeBid({
+      auctionId: UUID_AUCTION,
+      riderId: UUID_RIDER_B,
+      amount: 50_000,
+      round: 2,
+    });
+
+    expect(result.error).toBeTruthy();
+    expect(result.error).toMatch(/Phase already started/);
+  });
 });
