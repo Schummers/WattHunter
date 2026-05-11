@@ -4,6 +4,7 @@ import { LobbyView } from "./lobby-view";
 import { RaceFeed } from "@/components/race-feed";
 import { getRaceFeedData } from "@/lib/get-race-feed-data";
 import type { TacticContextForFeed } from "@/lib/race-feed-types";
+import { GtDnfCard } from "@/components/gt-dnf-card";
 
 export default async function LeagueDashboardPage({
   params,
@@ -148,6 +149,82 @@ export default async function LeagueDashboardPage({
     };
   }
 
+  // Fetch unclaimed DNF riders for this team during an active GT phase
+  type DnfRider = {
+    gtSquadId: string;
+    contractId: string;
+    riderName: string;
+    photoUrl: string | null;
+    dnfStage: number;
+    gtXp: number;
+    refundAmount: number;
+  };
+  let dnfRiders: DnfRider[] = [];
+
+  if (teamId && raceFeedPayload.isGtPhase) {
+    const { data: dnfRows } = await supabase
+      .from("gt_squad")
+      .select(
+        `id, dnf_stage, phase_id, year,
+         riders:rider_id ( id, full_name, photo_url ),
+         contracts!inner ( id, locked_salary, status, team_id )`
+      )
+      .eq("team_id", teamId)
+      .not("dnf_stage", "is", null)
+      .eq("dnf_refund_claimed", false)
+      .is("removed_at", null);
+
+    if (dnfRows) {
+      for (const row of dnfRows) {
+        const rider = Array.isArray(row.riders) ? row.riders[0] : row.riders;
+        const contractsArr = Array.isArray(row.contracts) ? row.contracts : [row.contracts];
+        const contract = contractsArr.find(
+          (c: { status: string; team_id: string }) =>
+            c.status === "active" && c.team_id === teamId
+        );
+        if (!rider || !contract) continue;
+
+        const phaseToGtSlug: Record<number, string> = {
+          4: "race/giro-d-italia",
+          6: "race/tour-de-france",
+          8: "race/vuelta-a-espana",
+        };
+        const gtSlugPrefix = phaseToGtSlug[row.phase_id as number];
+        const year = row.year as number;
+
+        let gtXp = 0;
+        if (gtSlugPrefix) {
+          const { data: xpRows } = await supabase
+            .from("rider_xp_daily")
+            .select("xp_gained")
+            .eq("team_id", teamId)
+            .eq("rider_id", (rider as { id: string }).id)
+            .like("race_slug", `${gtSlugPrefix}/${year}%`);
+
+          gtXp = Math.round(
+            (xpRows ?? []).reduce(
+              (sum, r) => sum + Number((r as { xp_gained: number }).xp_gained ?? 0),
+              0
+            )
+          );
+        }
+
+        const typedRider = rider as { id: string; full_name: string; photo_url: string | null };
+        const typedContract = contract as { id: string; locked_salary: number; status: string; team_id: string };
+
+        dnfRiders.push({
+          gtSquadId: row.id,
+          contractId: typedContract.id,
+          riderName: typedRider.full_name,
+          photoUrl: typedRider.photo_url,
+          dnfStage: row.dnf_stage as number,
+          gtXp,
+          refundAmount: Math.round(typedContract.locked_salary * 0.5),
+        });
+      }
+    }
+  }
+
   return (
     <>
       {isLateJoinPending && (
@@ -158,6 +235,9 @@ export default async function LeagueDashboardPage({
           </p>
         </div>
       )}
+      {dnfRiders.map((dnf) => (
+        <GtDnfCard key={dnf.gtSquadId} leagueId={leagueId} {...dnf} />
+      ))}
       <RaceFeed leagueId={leagueId} payload={raceFeedPayload} tacticContext={tacticContext} />
     </>
   );

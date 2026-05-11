@@ -200,6 +200,28 @@ export async function clearRole(input: {
 }
 
 /**
+ * Claim a 50% salary refund for a DNF rider in the GT squad.
+ * Also forfeits any XP accumulated during the GT.
+ */
+export async function claimDnfRefund(
+  gtSquadId: string,
+  contractId: string
+): Promise<{ ok: boolean; refund_amount: number; xp_forfeited: number } | { error: string }> {
+  if (!UUID.safeParse(gtSquadId).success || !UUID.safeParse(contractId).success) {
+    return { error: "Invalid data" };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("gt_claim_dnf_refund", {
+    p_gt_squad_id: gtSquadId,
+    p_contract_id: contractId,
+  });
+
+  if (error) return { error: error.message };
+  return data as { ok: boolean; refund_amount: number; xp_forfeited: number };
+}
+
+/**
  * Read-only snapshot: squad + role + XP accumulated for this GT.
  */
 export async function getSquadWithRoles({
