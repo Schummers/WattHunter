@@ -693,6 +693,33 @@ async def run_pre_auction() -> None:
     print("Done — pre-auction complete.")
 
 
+async def run_detect_dnfs(race_slug: str, stage_number: int) -> None:
+    """Detect DNF riders from a GT stage and flag their gt_squad entries."""
+    from playwright.async_api import async_playwright
+    from sync import get_supabase
+    from dnf_detection import detect_and_flag_dnfs
+    from sync_race import fetch_html
+
+    supabase = get_supabase()
+
+    print(f"=== Detect DNFs: {race_slug} (stage {stage_number}) ===")
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        try:
+            context = await browser.new_context(user_agent=USER_AGENT)
+            page = await context.new_page()
+            html = await fetch_html(page, race_slug)
+            await context.close()
+        finally:
+            await browser.close()
+
+    result = detect_and_flag_dnfs(race_slug, stage_number, html, supabase)
+    print(f"Flagged: {result['flagged']}")
+    if result["errors"]:
+        print(f"Errors: {result['errors']}")
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -781,6 +808,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pre-auction — update global ranking + monthly finance.",
     )
 
+    # detect-dnfs
+    detect_dnfs_p = subparsers.add_parser(
+        "detect-dnfs",
+        help="Flag DNF riders in gt_squad after a stage.",
+    )
+    detect_dnfs_p.add_argument(
+        "--race",
+        required=True,
+        help='Stage slug, e.g. "race/giro-d-italia/2026/stage-3"',
+    )
+    detect_dnfs_p.add_argument(
+        "--stage",
+        type=int,
+        required=True,
+        help="Stage number, e.g. 3",
+    )
+
     return parser
 
 
@@ -812,6 +856,8 @@ async def main() -> None:
         await run_enrich_riders(args.start, args.end, retry_missing=args.retry_missing)
     elif args.command == "pre-auction":
         await run_pre_auction()
+    elif args.command == "detect-dnfs":
+        await run_detect_dnfs(args.race, args.stage)
     else:
         parser.print_help()
         sys.exit(1)
