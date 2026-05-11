@@ -706,12 +706,12 @@ async def run_detect_dnfs(race_slug: str, stage_number: int) -> None:
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(user_agent=USER_AGENT)
         try:
-            context = await browser.new_context(user_agent=USER_AGENT)
             page = await context.new_page()
             html = await fetch_html(page, race_slug)
-            await context.close()
         finally:
+            await context.close()
             await browser.close()
 
     result = detect_and_flag_dnfs(race_slug, stage_number, html, supabase)
