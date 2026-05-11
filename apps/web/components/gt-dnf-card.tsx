@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { WarningCircleIcon } from "@phosphor-icons/react";
 import { claimDnfRefund } from "@/app/(game)/league/[leagueId]/team/gt/actions";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 
@@ -30,11 +29,14 @@ export function GtDnfCard({
 }: GtDnfCardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [claimed, setClaimed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refundK = refundAmount >= 1000
     ? `${Math.round(refundAmount / 1000)}k`
     : String(refundAmount);
+
+  const resolvedPhoto = resolvePhotoUrl(photoUrl);
 
   async function handleRefund() {
     setLoading(true);
@@ -45,6 +47,7 @@ export function GtDnfCard({
       setLoading(false);
       return;
     }
+    setClaimed(true);
     router.refresh();
   }
 
@@ -60,158 +63,121 @@ export function GtDnfCard({
     router.push(`/league/${leagueId}/team/gt/rescue`);
   }
 
+  const borderColor = claimed
+    ? "rgba(34,197,94,0.5)"   // green-500 at 50% — success
+    : "rgba(217,119,6,0.5)";  // amber at 50% — warning
+
   return (
     <div
+      className="mx-4 mt-4 overflow-hidden relative"
       style={{
-        background: "var(--bg-surface)",
-        border: "1px solid var(--border-default)",
-        borderRadius: "var(--radius-lg)",
+        borderRadius: 12,
+        border: `1px solid ${borderColor}`,
+        minHeight: 110,
+        transition: "border-color 400ms",
       }}
-      className="mx-4 mt-4 overflow-hidden"
     >
-      {/* Header */}
-      <div
-        style={{
-          background: "rgba(217, 119, 6, 0.08)",
-          borderBottom: "1px solid var(--border-subtle)",
-        }}
-        className="flex items-center gap-2 px-4 py-3"
-      >
-        <WarningCircleIcon
-          size={16}
-          weight="fill"
-          style={{ color: "#d97706", flexShrink: 0 }}
-        />
-        <span
-          style={{
-            fontSize: "var(--type-caption)",
-            color: "#d97706",
-            fontWeight: 600,
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
-          }}
-        >
-          Rider DNF — Stage {dnfStage}
-        </span>
-      </div>
-
-      {/* Body */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        {/* Photo */}
-        {photoUrl ? (
+      {/* Background photo */}
+      {resolvedPhoto && (
+        <>
           <Image
-            src={resolvePhotoUrl(photoUrl) ?? ""}
-            alt={riderName}
-            width={40}
-            height={40}
-            className="rounded-full object-cover"
-            style={{ flexShrink: 0 }}
+            src={resolvedPhoto}
+            alt=""
+            fill
+            sizes="(max-width: 768px) 100vw, 600px"
+            className="object-cover object-top"
+            style={{ zIndex: 0 }}
+            priority
           />
-        ) : (
+          {/* Dark gradient overlay — left heavier for text legibility */}
           <div
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              background: "var(--bg-surface-hover)",
-              border: "1px solid var(--border-default)",
-              flexShrink: 0,
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to right, rgba(10,12,18,0.88) 0%, rgba(10,12,18,0.72) 55%, rgba(10,12,18,0.55) 100%)",
+              zIndex: 1,
             }}
           />
-        )}
+        </>
+      )}
 
-        {/* Rider info */}
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      {/* Card content */}
+      <div
+        className="relative flex items-center justify-between px-4 py-3 gap-3"
+        style={{ zIndex: 2, minHeight: 110 }}
+      >
+        {/* Left — text */}
+        <div className="flex flex-col gap-1 min-w-0">
           <span
             style={{
-              fontSize: "var(--type-body)",
+              fontSize: "var(--type-emphasis)",
+              fontWeight: 700,
               color: "var(--text-high)",
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              lineHeight: 1.2,
             }}
           >
-            {riderName}
+            {riderName} — DNF Stage {dnfStage}
           </span>
           <span
             style={{
               fontSize: "var(--type-caption)",
               color: "var(--text-mid)",
+              lineHeight: 1.4,
             }}
           >
             {gtXp > 0
-              ? `Earned ${gtXp} XP on this GT — forfeited on refund`
-              : "No XP earned on this GT"}
+              ? `Get a 50% refund — ${gtXp} XP earned will be forfeited`
+              : "Get a 50% refund — no GT XP will be lost"}
           </span>
+          {error && (
+            <span style={{ fontSize: "var(--type-caption)", color: "#ef4444" }}>
+              {error}
+            </span>
+          )}
         </div>
-      </div>
 
-      {/* Error */}
-      {error && (
-        <div className="px-4 pb-2">
-          <span
+        {/* Right — buttons stacked */}
+        <div className="flex flex-col gap-2 shrink-0">
+          <button
+            onClick={handleRefundAndReplace}
+            disabled={loading || claimed}
             style={{
               fontSize: "var(--type-caption)",
-              color: "#ef4444",
+              fontWeight: 600,
+              borderRadius: 6,
+              padding: "6px 12px",
+              border: "none",
+              background: "var(--accent-default)",
+              color: "#fff",
+              cursor: loading || claimed ? "not-allowed" : "pointer",
+              opacity: loading || claimed ? 0.6 : 1,
+              whiteSpace: "nowrap",
+              transition: "background 150ms",
             }}
           >
-            {error}
-          </span>
+            {loading ? "Processing…" : "Refund & Replace"}
+          </button>
+          <button
+            onClick={handleRefund}
+            disabled={loading || claimed}
+            style={{
+              fontSize: "var(--type-caption)",
+              fontWeight: 600,
+              borderRadius: 6,
+              padding: "6px 12px",
+              border: "1px solid rgba(255,255,255,0.15)",
+              background: "rgba(255,255,255,0.08)",
+              color: "var(--text-high)",
+              cursor: loading || claimed ? "not-allowed" : "pointer",
+              opacity: loading || claimed ? 0.6 : 1,
+              whiteSpace: "nowrap",
+              transition: "background 150ms",
+            }}
+          >
+            {loading ? "Processing…" : `Refund +${refundK}€`}
+          </button>
         </div>
-      )}
-
-      {/* Actions */}
-      <div className="flex items-center gap-2 px-4 pb-4">
-        <button
-          onClick={handleRefund}
-          disabled={loading}
-          style={{
-            fontSize: "var(--type-caption)",
-            fontWeight: 600,
-            borderRadius: "var(--radius-md)",
-            padding: "6px 12px",
-            border: "1px solid var(--border-default)",
-            background: "var(--bg-surface-hover)",
-            color: "var(--text-high)",
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.6 : 1,
-            transition: "background 150ms",
-          }}
-          onMouseEnter={(e) => {
-            if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-surface-active)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-surface-hover)";
-          }}
-        >
-          {loading ? "Processing…" : `Refund +${refundK}€`}
-        </button>
-
-        <button
-          onClick={handleRefundAndReplace}
-          disabled={loading}
-          style={{
-            fontSize: "var(--type-caption)",
-            fontWeight: 600,
-            borderRadius: "var(--radius-md)",
-            padding: "6px 12px",
-            border: "none",
-            background: "var(--accent-default)",
-            color: "#fff",
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.6 : 1,
-            transition: "background 150ms",
-          }}
-          onMouseEnter={(e) => {
-            if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "var(--accent-hover)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "var(--accent-default)";
-          }}
-        >
-          {loading ? "Processing…" : "Refund & Replace"}
-        </button>
       </div>
     </div>
   );
