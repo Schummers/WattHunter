@@ -82,6 +82,7 @@ def resolve_gt_rescue(phase_id: int, league_id: str, supabase_admin) -> dict[str
                     "locked_salary": amount,
                     "status": "active",
                     "purchased_at": date.today().isoformat(),
+                    "phase_recruited_id": phase_id,
                 })
                 .execute()
             )

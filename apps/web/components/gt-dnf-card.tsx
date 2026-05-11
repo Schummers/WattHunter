@@ -44,7 +44,7 @@ export function GtDnfCard({
   async function handleRefund() {
     setLoading(true);
     setError(null);
-    const result = await claimDnfRefund(gtSquadId, contractId);
+    const result = await claimDnfRefund(gtSquadId, contractId, leagueId);
     if ("error" in result) {
       setError(result.error);
       setLoading(false);
@@ -57,7 +57,7 @@ export function GtDnfCard({
   async function handleRefundAndReplace() {
     setLoading(true);
     setError(null);
-    const result = await claimDnfRefund(gtSquadId, contractId);
+    const result = await claimDnfRefund(gtSquadId, contractId, leagueId);
     if ("error" in result) {
       setError(result.error);
       setLoading(false);

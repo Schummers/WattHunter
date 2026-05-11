@@ -205,7 +205,8 @@ export async function clearRole(input: {
  */
 export async function claimDnfRefund(
   gtSquadId: string,
-  contractId: string
+  contractId: string,
+  leagueId?: string
 ): Promise<{ ok: boolean; refund_amount: number; xp_forfeited: number } | { error: string }> {
   if (!UUID.safeParse(gtSquadId).success || !UUID.safeParse(contractId).success) {
     return { error: "Invalid data" };
@@ -218,6 +219,7 @@ export async function claimDnfRefund(
   });
 
   if (error) return { error: error.message };
+  if (leagueId) revalidatePath(`/league/${leagueId}`);
   return data as { ok: boolean; refund_amount: number; xp_forfeited: number };
 }
 
