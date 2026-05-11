@@ -63,11 +63,15 @@ Reference photos (used to anchor banner generation) live in `apps/web/public/ach
 ## Image generation conventions
 
 From Group 1 we learned:
-- **Badges** : Nano Banana Pro, 1:1 aspect, 3D realistic object on dark background, ring-clippable circular composition
-- **Banners** : FLUX.2, 16:9 aspect, **documentary sport photography** style, riders visible in action, evocative of the race location
-- **Reference photos** can be placed in `apps/web/public/achievements/references/` and passed via `--image ./path` flag to Higgsfield CLI
-- The prompt style for badges has been "3D realistic object representing the race's iconic feature, dark background, single subject"
-- The prompt style for banners has been "documentary sport photo, cyclists in pack, race-specific landmark visible"
+- **Badges** : 1:1 aspect, **photorealistic physical object** on dark background, ring-clippable circular composition
+- **Banners** : 16:9 aspect, **documentary sport photography** style, riders visible in action, evocative of the race location
+- **Reference photos** can be placed in `apps/web/public/achievements/references/` and passed via `--image ./path` flag
+
+### ⚠️ DA Rule — Badges (validated 2026-05-11)
+**NO holographic effects. NO neon glows. NO 3D digital/game aesthetics.**
+Badges must look like **real physical objects** you could hold in your hand: medals, trophies, jerseys, sculpted objects, carved stone, polished metal.
+The cyan/gold/silver/orange ring effect is handled by CSS — the image itself stays grounded in physical reality.
+This applies to ALL groups, including dynamic tier cards.
 
 Badge + banner prompts in the tables below are intentionally **left empty** — to be filled in pass 2 after names and tiers are validated.
 
@@ -125,11 +129,11 @@ Names are first-pass proposals. User to validate before image generation.
 
 | Slug | Name (proposed) | Condition | Tier | DB | Badge prompt | Banner prompt |
 |------|-----------------|-----------|------|-----|---|---|
-| `monuments-collector` | Monument Collector | Top 10 at each of the 5 Monuments in the same season | top10 | ✅ aggregate `race_results.rank ≤ 10` joined with `rider_xp_daily` team ownership, count distinct monument slugs = 5 per season | _TBD_ | _TBD_ |
-| `monuments-hunter` | Monument Hunter | Top 5 on at least 3 different Monuments in the same season | podium | ✅ same shape, threshold rank ≤ 5, count distinct ≥ 3 | _TBD_ | _TBD_ |
-| `monuments-double` | Two of Five _(name to validate — alt: "Double Crown")_ | Career: rider from your team wins 2 distinct Monuments | victory | ✅ count distinct monument slugs where rank = 1 across all seasons | _TBD_ | _TBD_ |
-| `monument-man` | Monument Man | Highest cumulative XP across the 5 Monuments (real-time, one holder per league) | dynamic | ✅ SUM(`rider_xp_daily.xp_gained`) WHERE race_slug IN monuments, GROUP BY team_id, ORDER DESC LIMIT 1 | _TBD_ | _TBD_ |
-| `classic-man` | Classic King _(name to validate — alt: "Classic Man")_ | Highest cumulative XP across all one-day WT races (real-time) | dynamic | ⚠️ same shape but need a "one-day race" filter — derive from race_slug NOT matching `/stage-` pattern, OR maintain explicit list of WT one-day slugs | _TBD_ | _TBD_ |
+| `monuments-collector` | Monument Collector ✅ | Top 10 at each of the 5 Monuments in the same season | top10 ✅ | ✅ aggregate `race_results.rank ≤ 10` joined with `rider_xp_daily` team ownership, count distinct monument slugs = 5 per season | Five small cycling trophies in pentagon formation, 3D metallic silver finish, dark bg, studio lighting, no text | 5-panel horizontal strip: Roubaix cobbles / Kapelmuur / Liège forest / Como lake / Ligurian coast, cyclists in each panel |
+| `monuments-hunter` | Monument Hunter ✅ | Top 5 on at least 3 different Monuments in the same season | podium ✅ | ✅ same shape, threshold rank ≤ 5, count distinct ≥ 3 | **Shared with monuments-collector** (CSS ring = orange) | **Shared with monuments-collector** |
+| `monuments-double` | **Double Crown** ✅ | Career: rider from your team wins 2 distinct Monuments | victory ✅ | ✅ count distinct monument slugs where rank = 1 across all seasons | 3D double-sided trophy: one face grey cobblestones (Roubaix), other face golden autumn leaf + Italian lake (Lombardia), brushed gold base, dark bg | 5-panel strip with max contrast: rain cobbles / Flemish village / autumn forest / Como blue / Ligurian sun |
+| `monument-man` | Monument Man ✅ | Highest cumulative XP across the 5 Monuments (real-time, one holder per league) | dynamic ✅ | ✅ SUM(`rider_xp_daily.xp_gained`) WHERE race_slug IN monuments, GROUP BY team_id, ORDER DESC LIMIT 1 | Ornate gold cycling champion's medal, circular, 5 monument landmarks engraved around rim, dark bg, studio lighting, no text (**NOT holographic**) | Documentary still life: five distinct cycling race trophies lined up on dark stone shelf, different shapes, dramatic side lighting |
+| `classic-man` | **Classic Man** ✅ | Highest cumulative XP across all one-day WT races (real-time) | dynamic ✅ | ⚠️ same shape but need a "one-day race" filter — explicit `WT_ONE_DAY_SLUGS` constant recommended | _TBD — in validation (options: cobblestone crown / vintage wheel trophy)_ | Documentary, solo cyclist in breakaway on ancient cobbled road, storm clouds behind, peloton as dot on horizon |
 
 **Skipped from original spec** : "Le figurant des classiques" (rejected by user).
 
@@ -143,10 +147,10 @@ Per GT, 4 cards: GC Victory (gold), GC Podium (orange), KOM Victory (gold), Poin
 
 | Slug | Name | Condition | Tier | DB | Badge prompt | Banner prompt |
 |------|------|-----------|------|-----|---|---|
-| `giro-gc-victory` | Maglia Rosa | A rider from your team wins the Giro GC | victory | ✅ `race_results.rank = 1` WHERE race_slug = `race/giro-d-italia/{year}/gc` | _TBD_ | _TBD_ |
-| `giro-gc-podium`  | Rosa Podium _(name to validate)_ | A rider from your team finishes top 3 GC at the Giro | podium | ✅ rank ≤ 3 on the same GC slug | _TBD_ | _TBD_ |
-| `giro-kom-victory` | Maglia Azzurra | A rider from your team wins the KOM at the Giro | victory | ✅ `gt_daily_classifications` WHERE race_slug matches last Giro stage AND classification_type=`kom` AND rank=1 | _TBD_ | _TBD_ |
-| `giro-points-victory` | Maglia Ciclamino | A rider from your team wins the Points at the Giro | victory | ✅ same query, classification_type=`points` | _TBD_ | _TBD_ |
+| `giro-gc-victory` | Maglia Rosa ✅ | A rider from your team wins the Giro GC | victory ✅ | ✅ `race_results.rank = 1` WHERE race_slug = `race/giro-d-italia/{year}/gc` | Photorealistic Maglia Rosa jersey floating, dark bg, soft studio light, fabric folds, no text (**shared asset with podium — CSS ring differs**) | Cyclist in pink jersey celebrating with raised fist at mountain pass, Italian Dolomites, Nibali 2013 style |
+| `giro-gc-podium`  | Rosa Podium ✅ | A rider from your team finishes top 3 GC at the Giro | podium ✅ | ✅ rank ≤ 3 on the same GC slug | **Shared badge with giro-gc-victory** | Three riders on Giro podium, champagne spray, Roman architecture backdrop, warm evening light |
+| `giro-kom-victory` | Maglia Azzurra ✅ | A rider from your team wins the KOM at the Giro | victory ✅ | ✅ `gt_daily_classifications` WHERE race_slug matches last Giro stage AND classification_type=`kom` AND rank=1 | Photorealistic Maglia Azzurra (sky-blue) jersey floating, dark bg, soft studio light, same template as Rosa | Cyclist in blue KOM jersey attacking steep Dolomite pass, Ciccone 2019 style |
+| `giro-points-victory` | Maglia Ciclamino ✅ | A rider from your team wins the Points at the Giro | victory ✅ | ✅ same query, classification_type=`points` | Photorealistic Maglia Ciclamino (deep cyclamen purple-pink) jersey floating, dark bg, same template | Sprint finish, ciclamino jersey rider arms raised, Démare FDJ 2019 style |
 
 ### Tour de France (4 cards)
 
@@ -493,6 +497,30 @@ Credit cost : NB Pro = 2 cr, FLUX.2 = 1 cr. Roughly 26 badges + 26 banners + a f
 Save outputs to `apps/web/public/achievements/<group-folder>/badge-<slug>.png` and `banner-<slug>.png`. Use the slug *without* the tier suffix for shared assets (e.g. `badge-paris-roubaix.png` is shared across `paris-roubaix-victory`, `-podium`, `-top10`).
 
 Reference photos for banners (anchor style) live in `apps/web/public/achievements/references/`. User can add new ones if needed for specific races.
+
+---
+
+## Asset generation status (updated 2026-05-11)
+
+| Asset | File | Status |
+|-------|------|--------|
+| badge monuments-collector | `monuments-combined/badge-monuments-collector.jpg` | ✅ generated |
+| banner monuments-collector | `monuments-combined/banner-monuments-collector.jpg` | ✅ generated |
+| badge monuments-double | `monuments-combined/badge-monuments-double.jpg` | ✅ generated |
+| banner monuments-double | `monuments-combined/banner-monuments-double.jpg` | ✅ generated |
+| badge monument-man | `monuments-combined/badge-monument-man.jpg` | ✅ generated |
+| banner monument-man | `monuments-combined/banner-monument-man.jpg` | ✅ generated |
+| badge classic-man | `monuments-combined/badge-classic-man.jpg` | 🔄 in validation |
+| banner classic-man | `monuments-combined/banner-classic-man.jpg` | 🔄 in validation |
+| badge giro-gc (shared victory+podium) | `giro/badge-giro-gc.jpg` | ⏳ pending |
+| banner giro-gc-victory | `giro/banner-giro-gc-victory.jpg` | ⏳ pending |
+| banner giro-gc-podium | `giro/banner-giro-gc-podium.jpg` | ⏳ pending |
+| badge giro-kom | `giro/badge-giro-kom.jpg` | ⏳ pending |
+| banner giro-kom-victory | `giro/banner-giro-kom-victory.jpg` | ⏳ pending |
+| badge giro-points | `giro/badge-giro-points.jpg` | ⏳ pending |
+| banner giro-points-victory | `giro/banner-giro-points-victory.jpg` | ⏳ pending |
+
+**Note** : fichiers générés en `.jpg` (sortie Google AI Studio). Extensions à aligner dans `lib/achievements.ts` une fois tous les assets en place.
 
 ---
 
