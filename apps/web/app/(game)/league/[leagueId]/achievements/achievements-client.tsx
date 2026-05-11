@@ -1,17 +1,24 @@
 "use client";
 
-import { useTransition } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useState, useTransition } from "react";
+import { FilterChips } from "@/components/filter-chips";
 import { AchievementCard } from "@/components/achievement-card";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { equipAchievement } from "./actions";
 
 const MONUMENT_GROUPS = [
-  { label: "Paris-Roubaix",       prefix: "paris-roubaix" },
-  { label: "Tour des Flandres",   prefix: "flandres" },
+  { label: "Paris-Roubaix",        prefix: "paris-roubaix" },
+  { label: "Tour des Flandres",    prefix: "flandres" },
   { label: "Liège-Bastogne-Liège", prefix: "lbl" },
-  { label: "Il Lombardia",        prefix: "lombardia" },
-  { label: "Milan-San Remo",      prefix: "milan-sanremo" },
+  { label: "Il Lombardia",         prefix: "lombardia" },
+  { label: "Milan-San Remo",       prefix: "milan-sanremo" },
+];
+
+const FILTER_OPTIONS = [
+  { label: "Monuments" },
+  { label: "Grand Tour" },
+  { label: "Budget",  disabled: true },
+  { label: "Roster",  disabled: true },
 ];
 
 interface AchievementsClientProps {
@@ -25,6 +32,7 @@ export function AchievementsClient({
   equippedSlug,
   unlockedSlugs = [],
 }: AchievementsClientProps) {
+  const [activeFilter, setActiveFilter] = useState(0);
   const [isPending, startTransition] = useTransition();
 
   function handleEquip(slug: string) {
@@ -33,42 +41,67 @@ export function AchievementsClient({
     });
   }
 
+  function renderGroup(label: string, slugPrefix: string) {
+    const cards = ACHIEVEMENTS.filter((a) => a.slug.startsWith(slugPrefix));
+    if (cards.length === 0) return null;
+    return (
+      <div key={slugPrefix || label}>
+        <p className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)] mb-2">
+          {label}
+        </p>
+        <div className="flex flex-col gap-2">
+          {cards.map((achievement) => (
+            <AchievementCard
+              key={achievement.slug}
+              achievement={achievement}
+              unlocked={unlockedSlugs.includes(achievement.slug)}
+              equipped={equippedSlug === achievement.slug}
+              onEquip={handleEquip}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pb-24">
-      <Tabs defaultValue="monuments">
-        <TabsList variant="line" className="w-full px-4">
-          <TabsTrigger value="monuments">Monuments</TabsTrigger>
-          <TabsTrigger value="budget" disabled>Budget</TabsTrigger>
-          <TabsTrigger value="roster" disabled>Roster</TabsTrigger>
-          <TabsTrigger value="league" disabled>League</TabsTrigger>
-        </TabsList>
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3">
+        <h1 className="text-[length:var(--type-title)] font-bold text-[var(--text-high)] mb-3">
+          Palmares
+        </h1>
+        <FilterChips
+          options={FILTER_OPTIONS.map(({ label, disabled }) => ({
+            label,
+            variant: disabled ? undefined : "default",
+          }))}
+          activeIndex={activeFilter}
+          onChange={(i) => {
+            if (!FILTER_OPTIONS[i]?.disabled) setActiveFilter(i);
+          }}
+        />
+      </div>
 
-        <TabsContent value="monuments" className="mt-0">
-          <div className="flex flex-col gap-5 px-4 pt-4">
-            {MONUMENT_GROUPS.map(({ label, prefix }) => {
-              const cards = ACHIEVEMENTS.filter((a) => a.slug.startsWith(prefix));
-              return (
-                <div key={prefix}>
-                  <p className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)] mb-2">
-                    {label}
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    {cards.map((achievement) => (
-                      <AchievementCard
-                        key={achievement.slug}
-                        achievement={achievement}
-                        unlocked={unlockedSlugs.includes(achievement.slug)}
-                        equipped={equippedSlug === achievement.slug}
-                        onEquip={handleEquip}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </TabsContent>
-      </Tabs>
+      {/* Content */}
+      <div className="flex flex-col gap-5 px-4 pt-2">
+        {activeFilter === 0 && (
+          <>
+            {MONUMENT_GROUPS.map(({ label, prefix }) =>
+              renderGroup(label, prefix)
+            )}
+          </>
+        )}
+
+        {activeFilter === 1 && (
+          <>
+            {renderGroup("Monuments Combined", "monuments-")}
+            {renderGroup("Monument Man", "monument-man")}
+            {renderGroup("Classic Man", "classic-man")}
+            {renderGroup("Giro d'Italia", "giro-")}
+          </>
+        )}
+      </div>
 
       {isPending && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
