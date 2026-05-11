@@ -66,14 +66,33 @@ export function GtDnfCard({
 
   return (
     <div
+      className="mt-2 overflow-hidden relative"
       style={{
-        background: "var(--bg-surface)",
         border: `1px solid ${claimed ? "rgba(34,197,94,0.4)" : "rgba(217,119,6,0.4)"}`,
         borderRadius: 12,
         transition: "border-color 400ms",
       }}
     >
-      <div className="flex items-start gap-3 p-3">
+      {/* GT background image */}
+      <Image
+        src="/images/gt/dnf-card-bg.webp"
+        alt=""
+        fill
+        sizes="(max-width: 768px) 100vw, 600px"
+        className="object-cover object-center"
+        style={{ zIndex: 0 }}
+      />
+      {/* Dark overlay */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(to right, rgba(10,12,18,0.82) 0%, rgba(10,12,18,0.65) 60%, rgba(10,12,18,0.50) 100%)",
+          zIndex: 1,
+        }}
+      />
+
+      <div className="relative flex items-start gap-3 p-3" style={{ zIndex: 2 }}>
         {/* Photo — rectangular, 8px radius */}
         {resolvedPhoto ? (
           <Image
@@ -89,7 +108,7 @@ export function GtDnfCard({
               width: 48,
               height: 56,
               borderRadius: 8,
-              background: "var(--bg-subtle)",
+              background: "rgba(255,255,255,0.08)",
               flexShrink: 0,
             }}
           />
@@ -125,15 +144,8 @@ export function GtDnfCard({
             </span>
           )}
 
-          {/* Buttons */}
+          {/* Buttons — secondary left, primary right */}
           <div className="flex gap-2 mt-1.5">
-            <Button
-              size="xs"
-              onClick={handleRefundAndReplace}
-              disabled={loading || claimed}
-            >
-              {loading ? "Processing…" : "Refund & Replace"}
-            </Button>
             <Button
               size="xs"
               variant="outline"
@@ -141,6 +153,13 @@ export function GtDnfCard({
               disabled={loading || claimed}
             >
               {loading ? "…" : `Refund +${refundK}€`}
+            </Button>
+            <Button
+              size="xs"
+              onClick={handleRefundAndReplace}
+              disabled={loading || claimed}
+            >
+              {loading ? "Processing…" : "Refund & Replace"}
             </Button>
           </div>
         </div>
