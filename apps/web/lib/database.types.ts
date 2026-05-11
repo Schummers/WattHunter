@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -298,6 +299,70 @@ export type Database = {
           },
         ]
       }
+      gt_emergency_bids: {
+        Row: {
+          amount: number
+          created_at: string
+          gt_identifier: string
+          gt_year: number
+          id: string
+          league_id: string
+          phase_id: number
+          resolved: boolean
+          rider_id: string
+          team_id: string
+          won: boolean | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          gt_identifier: string
+          gt_year: number
+          id?: string
+          league_id: string
+          phase_id: number
+          resolved?: boolean
+          rider_id: string
+          team_id: string
+          won?: boolean | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          gt_identifier?: string
+          gt_year?: number
+          id?: string
+          league_id?: string
+          phase_id?: number
+          resolved?: boolean
+          rider_id?: string
+          team_id?: string
+          won?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gt_emergency_bids_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gt_emergency_bids_rider_id_fkey"
+            columns: ["rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gt_emergency_bids_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gt_role_assignments: {
         Row: {
           applied_at: string
@@ -349,6 +414,8 @@ export type Database = {
       gt_squad: {
         Row: {
           created_at: string
+          dnf_refund_claimed: boolean
+          dnf_stage: number | null
           id: string
           phase_id: number
           removed_at: string | null
@@ -359,6 +426,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dnf_refund_claimed?: boolean
+          dnf_stage?: number | null
           id?: string
           phase_id: number
           removed_at?: string | null
@@ -369,6 +438,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dnf_refund_claimed?: boolean
+          dnf_stage?: number | null
           id?: string
           phase_id?: number
           removed_at?: string | null
@@ -1580,6 +1651,21 @@ export type Database = {
         }
         Returns: Json
       }
+      gt_claim_dnf_refund: {
+        Args: { p_contract_id: string; p_gt_squad_id: string }
+        Returns: Json
+      }
+      gt_place_emergency_bid: {
+        Args: {
+          p_amount: number
+          p_gt_identifier: string
+          p_gt_year: number
+          p_league_id: string
+          p_phase_id: number
+          p_rider_id: string
+        }
+        Returns: Json
+      }
       gt_remove_from_squad: {
         Args: {
           p_phase_id: number
@@ -1770,3 +1856,5 @@ export const Constants = {
     Enums: {},
   },
 } as const
+A new version of Supabase CLI is available: v2.98.2 (currently installed v2.90.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
