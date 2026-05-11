@@ -1,146 +1,13 @@
 -- ============================================================
--- GT Rescue Window
--- 1. Schema: gt_squad DNF columns + gt_emergency_bids table
--- 2. treasury_log type constraint update
--- 3. release_rider: 7 days → 5 days cooldown
--- 4. RPC: gt_claim_dnf_refund
--- 5. RPC: gt_place_emergency_bid
+-- GT Rescue Window — fixes
+-- Corrected version of two RPCs from 20260519000000:
+--   1. gt_squad.year (not gt_year) in gt_claim_dnf_refund + gt_place_emergency_bid
+--   2. FOR UPDATE row lock in gt_claim_dnf_refund
+--   3. Explicit GRANT EXECUTE on grant_xp to supabase_admin
 -- ============================================================
 
 -- ============================================================
--- Part 1: Schema changes
--- ============================================================
-
--- 1a. gt_squad: track DNF state
-ALTER TABLE public.gt_squad
-  ADD COLUMN IF NOT EXISTS dnf_stage int DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS dnf_refund_claimed boolean NOT NULL DEFAULT false;
-
--- 1b. Emergency bids table
-CREATE TABLE IF NOT EXISTS public.gt_emergency_bids (
-  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  league_id      uuid NOT NULL REFERENCES public.leagues(id) ON DELETE CASCADE,
-  team_id        uuid NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
-  rider_id       uuid NOT NULL REFERENCES public.riders(id) ON DELETE RESTRICT,
-  amount         int NOT NULL CHECK (amount >= 5000 AND amount % 100 = 0),
-  phase_id       int NOT NULL CHECK (phase_id IN (4, 6, 8)),
-  gt_identifier  text NOT NULL,
-  gt_year        int NOT NULL,
-  resolved       boolean NOT NULL DEFAULT false,
-  won            boolean DEFAULT NULL,
-  created_at     timestamptz NOT NULL DEFAULT now()
-);
-
--- Max 1 active (unresolved) emergency bet per team per GT
-CREATE UNIQUE INDEX idx_gt_emergency_bids_one_per_team
-  ON public.gt_emergency_bids (team_id, phase_id, gt_identifier, gt_year)
-  WHERE resolved = false;
-
--- Enable RLS
-ALTER TABLE public.gt_emergency_bids ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "team members read own bids"
-  ON public.gt_emergency_bids FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.teams t
-      WHERE t.id = team_id AND t.user_id = auth.uid()
-    )
-  );
-
--- ============================================================
--- Part 2: Update treasury_log type constraint
--- ============================================================
-
-ALTER TABLE public.treasury_log
-  DROP CONSTRAINT IF EXISTS treasury_log_type_check;
-
-ALTER TABLE public.treasury_log
-  ADD CONSTRAINT treasury_log_type_check CHECK (
-    type IN (
-      'starting_fund',
-      'auction_purchase',
-      'monthly_salary',      -- deprecated, kept for existing data
-      'rider_revenue',       -- deprecated, kept for existing data
-      'sponsor_payment',
-      'bankruptcy_release',
-      'monthly_bonus',       -- deprecated, kept for existing data
-      'phase_salary',        -- deprecated, kept for existing data
-      'phase_sponsor_base',  -- deprecated, kept for existing data
-      'sponsor_bonus',
-      'release_fee',
-      'transfer_bonus',
-      'payday_salary',
-      'gt_dnf_refund',
-      'gt_emergency_purchase'
-    )
-  );
-
--- ============================================================
--- Part 3: release_rider — 7 days → 5 days cooldown
--- ============================================================
-CREATE OR REPLACE FUNCTION public.release_rider(
-  p_contract_id uuid,
-  p_current_phase_id int
-) RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_user_id uuid := auth.uid();
-  v_contract record;
-BEGIN
-  IF v_user_id IS NULL THEN
-    RETURN jsonb_build_object('error', 'Not authenticated');
-  END IF;
-
-  SELECT c.*, t.user_id AS team_user_id, t.league_id
-  INTO v_contract
-  FROM public.contracts c
-  JOIN public.teams t ON t.id = c.team_id
-  WHERE c.id = p_contract_id;
-
-  IF v_contract IS NULL THEN
-    RETURN jsonb_build_object('error', 'Contract not found');
-  END IF;
-
-  IF v_contract.team_user_id <> v_user_id THEN
-    RETURN jsonb_build_object('error', 'Not authorized');
-  END IF;
-
-  IF v_contract.status <> 'active' THEN
-    RETURN jsonb_build_object('error', 'Contract is not active');
-  END IF;
-
-  IF v_contract.phase_recruited_id = p_current_phase_id THEN
-    RETURN jsonb_build_object('error', 'Cannot release a rider recruited during the current phase');
-  END IF;
-
-  UPDATE public.contracts
-  SET status = 'released',
-      released_at = now(),
-      available_from = now() + interval '5 days'
-  WHERE id = p_contract_id;
-
-  DELETE FROM public.draft_bids
-  WHERE team_id = v_contract.team_id
-    AND rider_id = v_contract.rider_id;
-
-  UPDATE public.gt_squad
-  SET removed_at = now()
-  WHERE rider_id = v_contract.rider_id
-    AND team_id = v_contract.team_id
-    AND removed_at IS NULL;
-
-  RETURN jsonb_build_object('ok', true);
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.release_rider(uuid, int) TO authenticated;
-
--- ============================================================
--- Part 4: RPC gt_claim_dnf_refund
+-- RPC gt_claim_dnf_refund (corrected)
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.gt_claim_dnf_refund(
   p_gt_squad_id uuid,
@@ -167,6 +34,7 @@ BEGIN
   END IF;
 
   -- Validate gt_squad entry: must have dnf_stage set, not yet claimed, owned by caller
+  -- Fix: gt_squad uses column "year", not "gt_year"
   SELECT gs.team_id, gs.rider_id, gs.phase_id, gs.year
   INTO v_team_id, v_rider_id, v_phase_id, v_gt_year
   FROM public.gt_squad gs
@@ -248,7 +116,7 @@ $$;
 GRANT EXECUTE ON FUNCTION public.gt_claim_dnf_refund(uuid, uuid) TO authenticated;
 
 -- ============================================================
--- Part 5: RPC gt_place_emergency_bid
+-- RPC gt_place_emergency_bid (corrected)
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.gt_place_emergency_bid(
   p_rider_id      uuid,
@@ -281,6 +149,7 @@ BEGIN
   END IF;
 
   -- Eligibility gate: team must have claimed a DNF refund for this GT
+  -- Fix: gt_squad uses column "year", not "gt_year"
   IF NOT EXISTS (
     SELECT 1 FROM public.gt_squad
     WHERE team_id = v_team_id
