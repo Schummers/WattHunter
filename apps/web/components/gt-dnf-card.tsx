@@ -151,6 +151,12 @@ export function GtDnfCard({
               variant="outline"
               onClick={handleRefund}
               disabled={loading || claimed}
+              style={{
+                background: "rgba(10,12,18,0.7)",
+                borderColor: "rgba(255,255,255,0.25)",
+                color: "var(--text-high)",
+                backdropFilter: "blur(4px)",
+              }}
             >
               {loading ? "…" : `Refund +${refundK}€`}
             </Button>
