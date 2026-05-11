@@ -4,7 +4,7 @@ import { LobbyView } from "./lobby-view";
 import { RaceFeed } from "@/components/race-feed";
 import { getRaceFeedData } from "@/lib/get-race-feed-data";
 import type { TacticContextForFeed } from "@/lib/race-feed-types";
-import { GtDnfCard } from "@/components/gt-dnf-card";
+
 
 export default async function LeagueDashboardPage({
   params,
@@ -151,6 +151,7 @@ export default async function LeagueDashboardPage({
 
   // Fetch unclaimed DNF riders for this team during an active GT phase
   type DnfRider = {
+    leagueId: string;
     gtSquadId: string;
     contractId: string;
     riderName: string;
@@ -226,6 +227,7 @@ export default async function LeagueDashboardPage({
         const typedRider = rider as { id: string; full_name: string; photo_url: string | null };
 
         dnfRiders.push({
+          leagueId,
           gtSquadId: row.id,
           contractId: contract.id,
           riderName: typedRider.full_name,
@@ -248,10 +250,7 @@ export default async function LeagueDashboardPage({
           </p>
         </div>
       )}
-      {dnfRiders.map((dnf) => (
-        <GtDnfCard key={dnf.gtSquadId} leagueId={leagueId} {...dnf} />
-      ))}
-      <RaceFeed leagueId={leagueId} payload={raceFeedPayload} tacticContext={tacticContext} />
+      <RaceFeed leagueId={leagueId} payload={raceFeedPayload} tacticContext={tacticContext} dnfRiders={dnfRiders} />
     </>
   );
 }

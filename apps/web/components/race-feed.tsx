@@ -10,14 +10,16 @@ import { RaceFeedNemesisCard } from "./race-feed-nemesis-card";
 import { RaceFeedRemontadaCard } from "./race-feed-remontada-card";
 import { RaceFeedPhaseEndBanner } from "./race-feed-phase-end-banner";
 import { RaceFeedTacticModal } from "./race-feed-tactic-modal";
+import { GtDnfCard, type GtDnfCardProps } from "./gt-dnf-card";
 
 type Props = {
   leagueId: string;
   payload: RaceFeedPayload;
   tacticContext?: TacticContextForFeed | null;
+  dnfRiders?: GtDnfCardProps[];
 };
 
-export function RaceFeed({ leagueId, payload, tacticContext }: Props) {
+export function RaceFeed({ leagueId, payload, tacticContext, dnfRiders }: Props) {
   // Scroll to the most recent known result (last past/today group).
   // Falls back to the first future card if no results exist yet.
   const lastKnownRef = useRef<HTMLDivElement | null>(null);
@@ -51,6 +53,16 @@ export function RaceFeed({ leagueId, payload, tacticContext }: Props) {
     <div className="flex flex-col gap-4 px-4 pt-4 pb-16">
       {payload.groups.map((group) => {
         const isLastKnown = group.date === lastKnownDate;
+
+        // DNF cards whose stage matches a race in this date group
+        const dnfForGroup = (dnfRiders ?? []).filter((dnf) =>
+          group.cards.some(
+            (card) =>
+              "race" in card &&
+              card.race.raceSlug.endsWith(`/stage-${dnf.dnfStage}`)
+          )
+        );
+
         return (
           <div key={group.date} ref={isLastKnown ? lastKnownRef : undefined}>
             <RaceFeedDateGroup date={group.date}>
@@ -99,6 +111,9 @@ export function RaceFeed({ leagueId, payload, tacticContext }: Props) {
                 return null;
               })}
             </RaceFeedDateGroup>
+            {dnfForGroup.map((dnf) => (
+              <GtDnfCard key={dnf.gtSquadId} {...dnf} />
+            ))}
           </div>
         );
       })}

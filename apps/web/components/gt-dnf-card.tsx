@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { claimDnfRefund } from "@/app/(game)/league/[leagueId]/team/gt/actions";
 import { resolvePhotoUrl } from "@/lib/photo-url";
+import { Button } from "@/components/ui/button";
 
 export interface GtDnfCardProps {
   leagueId: string;
@@ -63,58 +64,45 @@ export function GtDnfCard({
     router.push(`/league/${leagueId}/team/gt/rescue`);
   }
 
-  const borderColor = claimed
-    ? "rgba(34,197,94,0.5)"   // green-500 at 50% — success
-    : "rgba(217,119,6,0.5)";  // amber at 50% — warning
-
   return (
     <div
-      className="mx-4 mt-4 overflow-hidden relative"
       style={{
+        background: "var(--bg-surface)",
+        border: `1px solid ${claimed ? "rgba(34,197,94,0.4)" : "rgba(217,119,6,0.4)"}`,
         borderRadius: 12,
-        border: `1px solid ${borderColor}`,
-        minHeight: 110,
         transition: "border-color 400ms",
       }}
     >
-      {/* Background photo */}
-      {resolvedPhoto && (
-        <>
+      <div className="flex items-start gap-3 p-3">
+        {/* Photo — rectangular, 8px radius */}
+        {resolvedPhoto ? (
           <Image
             src={resolvedPhoto}
-            alt=""
-            fill
-            sizes="(max-width: 768px) 100vw, 600px"
-            className="object-cover object-top"
-            style={{ zIndex: 0 }}
-            priority
+            alt={riderName}
+            width={48}
+            height={56}
+            style={{ borderRadius: 8, objectFit: "cover", flexShrink: 0 }}
           />
-          {/* Dark gradient overlay — left heavier for text legibility */}
+        ) : (
           <div
             style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(to right, rgba(10,12,18,0.88) 0%, rgba(10,12,18,0.72) 55%, rgba(10,12,18,0.55) 100%)",
-              zIndex: 1,
+              width: 48,
+              height: 56,
+              borderRadius: 8,
+              background: "var(--bg-subtle)",
+              flexShrink: 0,
             }}
           />
-        </>
-      )}
+        )}
 
-      {/* Card content */}
-      <div
-        className="relative flex items-center justify-between px-4 py-3 gap-3"
-        style={{ zIndex: 2, minHeight: 110 }}
-      >
-        {/* Left — text */}
-        <div className="flex flex-col gap-1 min-w-0">
+        {/* Content */}
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
           <span
             style={{
               fontSize: "var(--type-emphasis)",
               fontWeight: 700,
               color: "var(--text-high)",
-              lineHeight: 1.2,
+              lineHeight: 1.3,
             }}
           >
             {riderName} — DNF Stage {dnfStage}
@@ -130,53 +118,31 @@ export function GtDnfCard({
               ? `Get a 50% refund — ${gtXp} XP earned will be forfeited`
               : "Get a 50% refund — no GT XP will be lost"}
           </span>
+
           {error && (
             <span style={{ fontSize: "var(--type-caption)", color: "#ef4444" }}>
               {error}
             </span>
           )}
-        </div>
 
-        {/* Right — buttons stacked */}
-        <div className="flex flex-col gap-2 shrink-0">
-          <button
-            onClick={handleRefundAndReplace}
-            disabled={loading || claimed}
-            style={{
-              fontSize: "var(--type-caption)",
-              fontWeight: 600,
-              borderRadius: 6,
-              padding: "6px 12px",
-              border: "none",
-              background: "var(--accent-default)",
-              color: "#fff",
-              cursor: loading || claimed ? "not-allowed" : "pointer",
-              opacity: loading || claimed ? 0.6 : 1,
-              whiteSpace: "nowrap",
-              transition: "background 150ms",
-            }}
-          >
-            {loading ? "Processing…" : "Refund & Replace"}
-          </button>
-          <button
-            onClick={handleRefund}
-            disabled={loading || claimed}
-            style={{
-              fontSize: "var(--type-caption)",
-              fontWeight: 600,
-              borderRadius: 6,
-              padding: "6px 12px",
-              border: "1px solid rgba(255,255,255,0.15)",
-              background: "rgba(255,255,255,0.08)",
-              color: "var(--text-high)",
-              cursor: loading || claimed ? "not-allowed" : "pointer",
-              opacity: loading || claimed ? 0.6 : 1,
-              whiteSpace: "nowrap",
-              transition: "background 150ms",
-            }}
-          >
-            {loading ? "Processing…" : `Refund +${refundK}€`}
-          </button>
+          {/* Buttons */}
+          <div className="flex gap-2 mt-1.5">
+            <Button
+              size="xs"
+              onClick={handleRefundAndReplace}
+              disabled={loading || claimed}
+            >
+              {loading ? "Processing…" : "Refund & Replace"}
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={handleRefund}
+              disabled={loading || claimed}
+            >
+              {loading ? "…" : `Refund +${refundK}€`}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
