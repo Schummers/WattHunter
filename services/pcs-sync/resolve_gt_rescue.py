@@ -78,6 +78,7 @@ def resolve_gt_rescue(phase_id: int, league_id: str, supabase_admin) -> dict[str
                 .insert({
                     "team_id": team_id,
                     "rider_id": rider_id,
+                    "league_id": league_id,
                     "locked_salary": amount,
                     "status": "active",
                     "purchased_at": date.today().isoformat(),

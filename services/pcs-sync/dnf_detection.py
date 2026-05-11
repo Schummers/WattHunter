@@ -82,7 +82,7 @@ def detect_and_flag_dnfs(
     resp = (
         supabase_admin
         .from_("gt_squad")
-        .select("id, rider_id, riders(name, pcs_slug), team_id")
+        .select("id, rider_id, riders(full_name, pcs_slug), team_id")
         .eq("phase_id", phase_id)
         .eq("year", gt_year)
         .is_("removed_at", "null")
@@ -93,7 +93,7 @@ def detect_and_flag_dnfs(
         {
             "id": r["id"],
             "rider_id": r["rider_id"],
-            "rider_name": r["riders"]["name"],
+            "rider_name": r["riders"]["full_name"],
             "pcs_slug": r["riders"]["pcs_slug"] or "",
             "team_id": r["team_id"],
         }

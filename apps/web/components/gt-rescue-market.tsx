@@ -51,7 +51,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
 
   function handleSelectRider(rider: EligibleRider) {
     setSelectedRider(rider)
-    setBidAmount(rider.monthlySalary)
+    setBidAmount(Math.max(5000, rider.monthlySalary))
     setError(null)
   }
 
@@ -249,7 +249,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
             <input
               id="rescue-amount"
               type="number"
-              min={selectedRider.monthlySalary}
+              min={Math.max(5000, selectedRider.monthlySalary)}
               step={100}
               value={bidAmount}
               onChange={(e) =>
@@ -258,7 +258,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
               className="rounded-[6px] border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2 font-mono tabular-nums text-[length:var(--type-body)] text-[var(--text-high)] focus:outline-none focus:border-[var(--accent-default)] transition-colors"
             />
             <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-              Minimum {formatSalary(selectedRider.monthlySalary)} · increments of 100€
+              Minimum {formatSalary(Math.max(5000, selectedRider.monthlySalary))} · increments of 100€
             </p>
           </div>
         )}

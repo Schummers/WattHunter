@@ -162,6 +162,7 @@ export default async function LeagueDashboardPage({
   const dnfRiders: DnfRider[] = [];
 
   if (teamId && raceFeedPayload.isGtPhase) {
+    const currentYear = new Date().getFullYear();
     const { data: dnfRows } = await supabase
       .from("gt_squad")
       .select(
@@ -170,6 +171,8 @@ export default async function LeagueDashboardPage({
          contracts!inner ( id, locked_salary, status, team_id )`
       )
       .eq("team_id", teamId)
+      .eq("phase_id", raceFeedPayload.phaseId)
+      .eq("year", currentYear)
       .not("dnf_stage", "is", null)
       .eq("dnf_refund_claimed", false)
       .is("removed_at", null);

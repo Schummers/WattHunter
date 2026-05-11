@@ -73,10 +73,10 @@ BEGIN
   v_refund := ROUND(v_salary * 0.5);
 
   -- Get rider name for audit logs
-  SELECT name INTO v_rider_name FROM public.riders WHERE id = v_rider_id;
+  SELECT full_name INTO v_rider_name FROM public.riders WHERE id = v_rider_id;
 
   -- Sum GT XP earned by this rider for this team on this GT
-  SELECT COALESCE(SUM(xp), 0) INTO v_xp_total
+  SELECT COALESCE(SUM(xp_gained), 0) INTO v_xp_total
   FROM public.rider_xp_daily
   WHERE team_id = v_team_id
     AND rider_id = v_rider_id
