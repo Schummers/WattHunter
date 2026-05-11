@@ -55,8 +55,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
     setError(null)
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  function handleSubmit() {
     if (!selectedRider || bidAmount === "") return
 
     setError(null)
@@ -147,7 +146,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
         </span>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5">
         {/* Search */}
         <div className="flex flex-col gap-2">
           <label
@@ -276,7 +275,8 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
 
         {/* Submit */}
         <button
-          type="submit"
+          type="button"
+          onClick={handleSubmit}
           disabled={!selectedRider || bidAmount === "" || isPending}
           className="rounded-[6px] px-4 py-2.5 text-[length:var(--type-emphasis)] font-semibold text-[var(--cta-text)] disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
           style={{
@@ -285,7 +285,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
         >
           {isPending ? "Placing bid…" : "Place emergency bid"}
         </button>
-      </form>
+      </div>
     </div>
   )
 }
