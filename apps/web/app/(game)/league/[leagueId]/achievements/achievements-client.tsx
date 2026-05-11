@@ -25,12 +25,14 @@ interface AchievementsClientProps {
   leagueId: string;
   equippedSlug: string | null;
   unlockedSlugs?: string[];
+  dynamicRanks?: Record<string, number>;
 }
 
 export function AchievementsClient({
   leagueId,
   equippedSlug,
   unlockedSlugs = [],
+  dynamicRanks = {},
 }: AchievementsClientProps) {
   const [activeFilter, setActiveFilter] = useState(0);
   const [isPending, startTransition] = useTransition();
@@ -57,6 +59,7 @@ export function AchievementsClient({
               unlocked={unlockedSlugs.includes(achievement.slug)}
               equipped={equippedSlug === achievement.slug}
               onEquip={handleEquip}
+              dynamicRank={dynamicRanks[achievement.slug]}
             />
           ))}
         </div>
@@ -90,14 +93,14 @@ export function AchievementsClient({
             {MONUMENT_GROUPS.map(({ label, prefix }) =>
               renderGroup(label, prefix)
             )}
+            {renderGroup("Monuments Combined", "monuments-")}
+            {renderGroup("Monument Man", "monument-man")}
+            {renderGroup("Classic Man", "classic-man")}
           </>
         )}
 
         {activeFilter === 1 && (
           <>
-            {renderGroup("Monuments Combined", "monuments-")}
-            {renderGroup("Monument Man", "monument-man")}
-            {renderGroup("Classic Man", "classic-man")}
             {renderGroup("Giro d'Italia", "giro-")}
           </>
         )}

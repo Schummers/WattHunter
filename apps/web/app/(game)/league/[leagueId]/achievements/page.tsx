@@ -3,6 +3,23 @@ import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 import { AchievementsClient } from "./achievements-client";
 
+// One-day WT races for Classic Man (monuments + other WT one-day classics)
+const ONE_DAY_WT_PATTERNS = [
+  "race/paris-roubaix/%",
+  "race/ronde-van-vlaanderen/%",
+  "race/liege-bastogne-liege/%",
+  "race/il-lombardia/%",
+  "race/milano-sanremo/%",
+  "race/amstel-gold-race/%",
+  "race/la-fleche-wallonne/%",
+  "race/strade-bianche/%",
+  "race/e3-saxo-bank-classic/%",
+  "race/gent-wevelgem/%",
+  "race/dwars-door-vlaanderen/%",
+  "race/paris-nice/%",
+  "race/tirreno-adriatico/%",
+]
+
 // Monument race bases — used to match slugs across all years
 const MONUMENT_BASES = [
   { ilike: "race/paris-roubaix/%",           base: "paris-roubaix" },
@@ -186,11 +203,57 @@ export default async function AchievementsPage({
     }
   }
 
+  // ── Block 5: Dynamic leaderboards (Monument Man / Classic Man) ────────────
+  const dynamicRanks: Record<string, number> = {};
+
+  // All teams in this league
+  const { data: leagueMembers } = await supabase
+    .from("league_members")
+    .select("team_id")
+    .eq("league_id", leagueId);
+
+  const leagueTeamIds = (leagueMembers ?? []).map((m) => m.team_id).filter((id): id is string => id !== null);
+
+  if (leagueTeamIds.length > 0) {
+    // Monument Man: cumulative XP on monument races per team
+    const { data: monumentXpAll } = await supabase
+      .from("rider_xp_daily")
+      .select("team_id, xp_gained")
+      .in("team_id", leagueTeamIds)
+      .or(MONUMENT_BASES.map(({ ilike }) => `race_slug.ilike.${ilike}`).join(","));
+
+    const monumentXpByTeam = new Map<string, number>();
+    for (const row of monumentXpAll ?? []) {
+      monumentXpByTeam.set(row.team_id, (monumentXpByTeam.get(row.team_id) ?? 0) + (row.xp_gained ?? 0));
+    }
+    const monumentRanking = [...monumentXpByTeam.entries()].sort((a, b) => b[1] - a[1]);
+    const monumentRank = monumentRanking.findIndex(([tid]) => tid === myTeamId) + 1;
+    if (monumentRank > 0) dynamicRanks["monument-man"] = monumentRank;
+    if (monumentRank === 1) unlockedSlugs.push("monument-man");
+
+    // Classic Man: cumulative XP on all one-day WT races per team
+    const { data: classicXpAll } = await supabase
+      .from("rider_xp_daily")
+      .select("team_id, xp_gained")
+      .in("team_id", leagueTeamIds)
+      .or(ONE_DAY_WT_PATTERNS.map((p) => `race_slug.ilike.${p}`).join(","));
+
+    const classicXpByTeam = new Map<string, number>();
+    for (const row of classicXpAll ?? []) {
+      classicXpByTeam.set(row.team_id, (classicXpByTeam.get(row.team_id) ?? 0) + (row.xp_gained ?? 0));
+    }
+    const classicRanking = [...classicXpByTeam.entries()].sort((a, b) => b[1] - a[1]);
+    const classicRank = classicRanking.findIndex(([tid]) => tid === myTeamId) + 1;
+    if (classicRank > 0) dynamicRanks["classic-man"] = classicRank;
+    if (classicRank === 1) unlockedSlugs.push("classic-man");
+  }
+
   return (
     <AchievementsClient
       leagueId={leagueId}
       equippedSlug={equippedSlug}
       unlockedSlugs={[...new Set(unlockedSlugs)]}
+      dynamicRanks={dynamicRanks}
     />
   );
 }

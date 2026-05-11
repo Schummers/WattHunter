@@ -15,9 +15,10 @@ interface AchievementCardProps {
   unlocked: boolean;
   equipped: boolean;
   onEquip: (slug: string) => void;
+  dynamicRank?: number;
 }
 
-export function AchievementCard({ achievement, unlocked, equipped, onEquip }: AchievementCardProps) {
+export function AchievementCard({ achievement, unlocked, equipped, onEquip, dynamicRank }: AchievementCardProps) {
   const { slug, name, condition, tier, badgeUrl, bannerUrl } = achievement;
 
   return (
@@ -87,6 +88,7 @@ export function AchievementCard({ achievement, unlocked, equipped, onEquip }: Ac
           unlocked={unlocked}
           equipped={equipped}
           onClick={() => onEquip(slug)}
+          dynamicRank={dynamicRank}
         />
       </div>
     </div>
@@ -98,11 +100,13 @@ function RightAction({
   unlocked,
   equipped,
   onClick,
+  dynamicRank,
 }: {
   tier: string;
   unlocked: boolean;
   equipped: boolean;
   onClick: () => void;
+  dynamicRank?: number;
 }) {
   // Equipped: cyan filled checkmark
   if (equipped) {
@@ -153,6 +157,30 @@ function RightAction({
       >
         Equip
       </button>
+    );
+  }
+
+  // Dynamic locked with known rank: show "#N in league"
+  if (tier === "dynamic" && dynamicRank != null) {
+    return (
+      <span
+        style={{
+          flexShrink: 0,
+          display: "inline-flex",
+          alignItems: "center",
+          height: 22,
+          padding: "0 8px",
+          fontSize: "var(--type-micro)",
+          fontWeight: 700,
+          letterSpacing: "0.04em",
+          color: "var(--text-mid)",
+          borderRadius: 20,
+          border: "1px solid rgba(255,255,255,0.08)",
+          whiteSpace: "nowrap",
+        }}
+      >
+        #{dynamicRank} in league
+      </span>
     );
   }
 
