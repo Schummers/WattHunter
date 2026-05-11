@@ -720,6 +720,22 @@ async def run_detect_dnfs(race_slug: str, stage_number: int) -> None:
         print(f"Errors: {result['errors']}")
 
 
+async def run_resolve_gt_rescue(phase_id: int, league_id: str) -> None:
+    """Resolve rest-day GT emergency bids for a league."""
+    from sync import get_supabase
+    from resolve_gt_rescue import resolve_gt_rescue
+
+    supabase = get_supabase()
+    print(f"=== Resolve GT Rescue: phase {phase_id}, league {league_id} ===")
+    result = resolve_gt_rescue(phase_id, league_id, supabase)
+    print(f"Winners ({len(result['winners'])}):")
+    for w in result["winners"]:
+        print(f"  {w['rider']} → team {w['team_id']} @ {w['amount']}€")
+    print(f"Losers resolved: {result['losers_count']}")
+    if result["errors"]:
+        print(f"Errors: {result['errors']}")
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -825,6 +841,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Stage number, e.g. 3",
     )
 
+    # resolve-gt-rescue
+    resolve_p = subparsers.add_parser(
+        "resolve-gt-rescue",
+        help="Resolve rest-day emergency bids for a league.",
+    )
+    resolve_p.add_argument(
+        "--phase",
+        type=int,
+        required=True,
+        help="Phase ID: 4=Giro, 6=Tour, 8=Vuelta",
+    )
+    resolve_p.add_argument(
+        "--league",
+        required=True,
+        metavar="LEAGUE_ID",
+        help="League UUID",
+    )
+
     return parser
 
 
@@ -858,6 +892,8 @@ async def main() -> None:
         await run_pre_auction()
     elif args.command == "detect-dnfs":
         await run_detect_dnfs(args.race, args.stage)
+    elif args.command == "resolve-gt-rescue":
+        await run_resolve_gt_rescue(args.phase, args.league)
     else:
         parser.print_help()
         sys.exit(1)
