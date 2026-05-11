@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { MagnifyingGlassIcon } from "@phosphor-icons/react"
 import { placeEmergencyBid } from "@/app/(game)/league/[leagueId]/team/gt/rescue/actions"
+import { BackHeader } from "@/components/back-header"
 
 interface EligibleRider {
   id: string
@@ -81,48 +82,45 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
   // Already placed a bid — show confirmation state
   if (existingBid) {
     return (
-      <div className="flex flex-col gap-6 px-4 py-8 max-w-lg mx-auto">
-        <div className="flex flex-col gap-1">
-          <span className="text-[length:var(--type-label)] uppercase tracking-wide text-[var(--text-low)]">
-            {gtPhase.label} · Emergency Bid
-          </span>
-          <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
-            GT Rescue Window
-          </h1>
-        </div>
+      <div className="flex flex-col max-w-lg mx-auto">
+        <BackHeader label="Replace your rider" onBack={() => router.push(`/league/${leagueId}`)} />
+        <div className="flex flex-col gap-6 px-4 py-6">
+          <div className="flex flex-col gap-1">
+            <span className="text-[length:var(--type-label)] uppercase tracking-wide text-[var(--text-low)]">
+              {gtPhase.label} · Emergency Bid
+            </span>
+            <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
+              GT Rescue Window
+            </h1>
+          </div>
 
-        <div
-          className="rounded-[6px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 flex flex-col gap-3"
-          role="status"
-        >
-          <p className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-            Bid already placed
-          </p>
-          <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-            Your emergency bid of{" "}
-            <span className="font-mono tabular-nums text-[var(--text-high)]">
-              {formatSalary(existingBid.amount)}
-            </span>{" "}
-            is pending. It will be resolved at the next rest day.
-          </p>
-          <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-            Only one emergency bid is allowed per Grand Tour.
-          </p>
+          <div
+            className="rounded-[6px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 flex flex-col gap-3"
+            role="status"
+          >
+            <p className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+              Bid already placed
+            </p>
+            <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+              Your emergency bid of{" "}
+              <span className="font-mono tabular-nums text-[var(--text-high)]">
+                {formatSalary(existingBid.amount)}
+              </span>{" "}
+              is pending. It will be resolved at the next rest day.
+            </p>
+            <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+              Only one emergency bid is allowed per Grand Tour.
+            </p>
+          </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => router.push(`/league/${leagueId}`)}
-          className="rounded-[6px] border border-[var(--border-default)] px-4 py-2 text-[length:var(--type-body)] text-[var(--text-mid)] hover:border-[var(--border-hover)] hover:text-[var(--text-high)] transition-colors"
-        >
-          Back to league
-        </button>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-6 px-4 py-8 max-w-lg mx-auto">
+    <div className="flex flex-col max-w-lg mx-auto">
+      <BackHeader label="Replace your rider" onBack={() => router.push(`/league/${leagueId}`)} />
+      <div className="flex flex-col gap-6 px-4 py-6">
       {/* Header */}
       <div className="flex flex-col gap-1">
         <span className="text-[length:var(--type-label)] uppercase tracking-wide text-[var(--text-low)]">
@@ -285,6 +283,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
         >
           {isPending ? "Placing bid…" : "Place emergency bid"}
         </button>
+      </div>
       </div>
     </div>
   )
