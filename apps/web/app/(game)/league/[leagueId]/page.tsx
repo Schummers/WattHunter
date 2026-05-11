@@ -176,8 +176,7 @@ export default async function LeagueDashboardPage({
         .eq("phase_id", raceFeedPayload.phaseId)
         .eq("year", currentYear)
         .not("dnf_stage", "is", null)
-        .eq("dnf_refund_claimed", false)
-        .is("removed_at", null),
+        .eq("dnf_refund_claimed", false),
       supabase
         .from("gt_emergency_bids")
         .select("rider_id")
