@@ -159,7 +159,7 @@ export default async function LeagueDashboardPage({
     gtXp: number;
     refundAmount: number;
   };
-  let dnfRiders: DnfRider[] = [];
+  const dnfRiders: DnfRider[] = [];
 
   if (teamId && raceFeedPayload.isGtPhase) {
     const { data: dnfRows } = await supabase
