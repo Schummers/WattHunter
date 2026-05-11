@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { WarningCircle } from "@phosphor-icons/react";
+import { WarningCircleIcon } from "@phosphor-icons/react";
 import { claimDnfRefund } from "@/app/(game)/league/[leagueId]/team/gt/actions";
 
 export interface GtDnfCardProps {
@@ -77,7 +77,7 @@ export function GtDnfCard({
         }}
         className="flex items-center gap-2 px-4 py-3"
       >
-        <WarningCircle
+        <WarningCircleIcon
           size={16}
           weight="fill"
           style={{ color: "#d97706", flexShrink: 0 }}

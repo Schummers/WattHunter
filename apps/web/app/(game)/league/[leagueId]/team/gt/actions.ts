@@ -17,7 +17,7 @@ export type GtRole = (typeof ROLES)[number];
 export type GtPhaseId = 4 | 6 | 8;
 
 const RoleSchema = z.enum(ROLES);
-const UUID = z.string().uuid();
+const UUID = z.uuid();
 const PhaseIdSchema = z.union([z.literal(4), z.literal(6), z.literal(8)]);
 
 type RpcResult = { ok?: boolean; error?: string } | null;
