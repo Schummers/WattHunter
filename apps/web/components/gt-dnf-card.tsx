@@ -64,7 +64,6 @@ export function GtDnfCard({
       style={{
         background: "var(--bg-surface)",
         border: "1px solid var(--border-default)",
-        borderLeft: "3px solid #d97706",
         borderRadius: "var(--radius-lg)",
       }}
       className="mx-4 mt-4 overflow-hidden"

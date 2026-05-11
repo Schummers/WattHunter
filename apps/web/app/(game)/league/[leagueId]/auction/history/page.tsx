@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Search } from "lucide-react";
 import { formatEuro } from "@/lib/format";
+import { GT_FULL_NAME, type GtPhaseId } from "@/lib/gt-phases";
 
 export default async function AuctionHistoryPage({
   params,
@@ -75,6 +76,24 @@ export default async function AuctionHistoryPage({
   }
 
   const hasHistory = (rounds ?? []).length > 0;
+
+  // Fetch team for this user in this league
+  const { data: team } = await supabase
+    .from("teams")
+    .select("id")
+    .eq("league_id", leagueId)
+    .eq("user_id", user.id)
+    .single();
+
+  // Fetch resolved emergency bids for this team
+  const { data: emergencyBids } = team
+    ? await supabase
+        .from("gt_emergency_bids")
+        .select("id, phase_id, gt_year, amount, won, resolved, rider_id, riders:rider_id(full_name)")
+        .eq("team_id", team.id)
+        .eq("resolved", true)
+        .order("gt_year", { ascending: false })
+    : { data: [] };
 
   return (
     <div className="min-h-screen">
@@ -159,6 +178,42 @@ export default async function AuctionHistoryPage({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* GT Emergency Bids */}
+        {(emergencyBids ?? []).length > 0 && (
+          <div className="space-y-4 pt-2">
+            <div className="rounded-lg bg-[var(--bg-subtle)] px-3 py-2">
+              <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+                GT Emergency Bids
+              </span>
+            </div>
+            <div className="divide-y divide-[var(--border-subtle)]">
+              {(emergencyBids ?? []).map((bid) => {
+                const rider = Array.isArray(bid.riders) ? bid.riders[0] : bid.riders;
+                const riderName = (rider as { full_name: string } | null)?.full_name ?? "Unknown";
+                const gtName = GT_FULL_NAME[bid.phase_id as GtPhaseId] ?? `Phase ${bid.phase_id}`;
+                return (
+                  <div key={bid.id} className="flex items-center justify-between py-3 text-[length:var(--type-caption)]">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+                        {riderName}
+                      </span>
+                      <span className="text-[var(--text-low)]">
+                        {gtName} {bid.gt_year} · Emergency
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-[var(--text-mid)]">{formatEuro(bid.amount)}</span>
+                      <span className={bid.won ? "text-[var(--accent-default)]" : "text-[var(--text-low)] opacity-60"}>
+                        {bid.won ? "Won" : "Lost"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

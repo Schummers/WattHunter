@@ -4,6 +4,7 @@ import {
   getCurrentGTPhase,
   GT_IDENTIFIER,
   GT_FULL_NAME,
+  GT_RACE_SLUG_PREFIX,
   type GtPhaseId,
 } from "@/lib/gt-phases"
 import { GtRescueMarket } from "@/components/gt-rescue-market"
@@ -61,14 +62,26 @@ export default async function GtRescuePage({
     .eq("resolved", false)
     .maybeSingle()
 
-  // Fetch eligible riders: ever_in_pool=true, not already contracted in this league
+  // Riders contracted in this league (exclude from list)
   const { data: contractedRiderIds } = await supabase
     .from("contracts")
     .select("rider_id")
     .eq("league_id", leagueId)
     .eq("status", "active")
 
-  const excludedIds = (contractedRiderIds ?? []).map((r) => r.rider_id)
+  const excludedIds = new Set((contractedRiderIds ?? []).map((r) => r.rider_id))
+
+  // Startlist for current GT — rider_ids participating in this race
+  const gtSlugPrefix = GT_RACE_SLUG_PREFIX[phaseId]
+  const { data: startlistRows } = await supabase
+    .from("race_startlists")
+    .select("rider_id")
+    .eq("race_slug", `${gtSlugPrefix}/${gtYear}`)
+
+  const startlistIds = (startlistRows ?? []).map((r) => r.rider_id)
+
+  // If startlist is populated, filter to it; otherwise fall back to full pool
+  const useStartlist = startlistIds.length > 0
 
   let ridersQuery = supabase
     .from("riders")
@@ -77,8 +90,10 @@ export default async function GtRescuePage({
     .order("pcs_rank", { ascending: true, nullsFirst: false })
     .limit(200)
 
-  if (excludedIds.length > 0) {
-    ridersQuery = ridersQuery.not("id", "in", `(${excludedIds.join(",")})`)
+  if (useStartlist) {
+    ridersQuery = ridersQuery.in("id", startlistIds.filter((id) => !excludedIds.has(id)))
+  } else if (excludedIds.size > 0) {
+    ridersQuery = ridersQuery.not("id", "in", `(${[...excludedIds].join(",")})`)
   }
 
   const { data: ridersData } = await ridersQuery
