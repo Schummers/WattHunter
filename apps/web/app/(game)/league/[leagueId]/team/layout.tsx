@@ -14,7 +14,7 @@ export default function TeamLayout({
   const leagueId = params.leagueId;
 
   // Strategies page keeps its own page-level hide (unchanged access from My Team card).
-  const hideTabs = pathname.includes("/strategies");
+  const hideTabs = pathname.includes("/strategies") || pathname.includes("/rescue");
 
   const gtLabel = getGTSubTabLabel(); // "Giro Team" / "Tour Team" / "Vuelta Team" / "GT Team"
 

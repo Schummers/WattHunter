@@ -16,6 +16,7 @@ export interface GtDnfCardProps {
   dnfStage: number;
   gtXp: number;
   refundAmount: number;
+  initialClaimed?: boolean;
 }
 
 export function GtDnfCard({
@@ -27,10 +28,11 @@ export function GtDnfCard({
   dnfStage,
   gtXp,
   refundAmount,
+  initialClaimed,
 }: GtDnfCardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [claimed, setClaimed] = useState(false);
+  const [claimed, setClaimed] = useState(initialClaimed ?? false);
   const [error, setError] = useState<string | null>(null);
 
   const refundK = refundAmount >= 1000
@@ -49,7 +51,7 @@ export function GtDnfCard({
       return;
     }
     setClaimed(true);
-    router.refresh();
+    setLoading(false);
   }
 
   async function handleRefundAndReplace() {

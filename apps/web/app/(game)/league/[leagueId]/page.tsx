@@ -149,7 +149,8 @@ export default async function LeagueDashboardPage({
     };
   }
 
-  // Fetch unclaimed DNF riders for this team during an active GT phase
+  // Fetch DNF riders for this team during an active GT phase
+  // Shows both unclaimed entries AND claimed entries that have an active emergency bid
   type DnfRider = {
     leagueId: string;
     gtSquadId: string;
@@ -159,30 +160,56 @@ export default async function LeagueDashboardPage({
     dnfStage: number;
     gtXp: number;
     refundAmount: number;
+    initialClaimed?: boolean;
   };
   const dnfRiders: DnfRider[] = [];
 
   if (teamId && raceFeedPayload.isGtPhase) {
     const currentYear = new Date().getFullYear();
 
-    // Fetch DNF squad entries (no contracts embed — no FK between gt_squad and contracts)
-    const { data: dnfRows } = await supabase
-      .from("gt_squad")
-      .select(
-        `id, dnf_stage, phase_id, year, rider_id,
-         riders:rider_id ( id, full_name, photo_url )`
-      )
-      .eq("team_id", teamId)
-      .eq("phase_id", raceFeedPayload.phaseId)
-      .eq("year", currentYear)
-      .not("dnf_stage", "is", null)
-      .eq("dnf_refund_claimed", false)
-      .is("removed_at", null);
+    // Fetch unclaimed DNF entries + claimed entries with an active emergency bid
+    const [{ data: unclaimedRows }, { data: activeBids }] = await Promise.all([
+      supabase
+        .from("gt_squad")
+        .select(`id, dnf_stage, phase_id, year, rider_id, riders:rider_id ( id, full_name, photo_url )`)
+        .eq("team_id", teamId)
+        .eq("phase_id", raceFeedPayload.phaseId)
+        .eq("year", currentYear)
+        .not("dnf_stage", "is", null)
+        .eq("dnf_refund_claimed", false)
+        .is("removed_at", null),
+      supabase
+        .from("gt_emergency_bids")
+        .select("rider_id")
+        .eq("team_id", teamId)
+        .eq("phase_id", raceFeedPayload.phaseId)
+        .eq("gt_year", currentYear)
+        .eq("resolved", false),
+    ]);
 
-    if (dnfRows && dnfRows.length > 0) {
-      const riderIds = dnfRows.map((r) => r.rider_id as string);
+    // If team has an active emergency bid, show claimed DNF entries too (bid rider ≠ squad rider)
+    const hasActiveBid = (activeBids ?? []).length > 0;
+    let claimedRows: typeof unclaimedRows = [];
+    if (hasActiveBid) {
+      const { data } = await supabase
+        .from("gt_squad")
+        .select(`id, dnf_stage, phase_id, year, rider_id, riders:rider_id ( id, full_name, photo_url )`)
+        .eq("team_id", teamId)
+        .eq("phase_id", raceFeedPayload.phaseId)
+        .eq("year", currentYear)
+        .not("dnf_stage", "is", null)
+        .eq("dnf_refund_claimed", true);
+      claimedRows = data ?? [];
+    }
 
-      // Separate query for active contracts — no FK to gt_squad so must be done independently
+    const allRows = [
+      ...(unclaimedRows ?? []).map((r) => ({ ...r, initialClaimed: false })),
+      ...(claimedRows ?? []).map((r) => ({ ...r, initialClaimed: true })),
+    ];
+
+    if (allRows.length > 0) {
+      const riderIds = allRows.map((r) => r.rider_id as string);
+
       const { data: activeContracts } = await supabase
         .from("contracts")
         .select("id, rider_id, locked_salary")
@@ -194,21 +221,22 @@ export default async function LeagueDashboardPage({
         (activeContracts ?? []).map((c) => [c.rider_id as string, c])
       );
 
-      for (const row of dnfRows) {
+      const phaseToGtSlug: Record<number, string> = {
+        4: "race/giro-d-italia",
+        6: "race/tour-de-france",
+        8: "race/vuelta-a-espana",
+      };
+
+      for (const row of allRows) {
         const rider = Array.isArray(row.riders) ? row.riders[0] : row.riders;
         const contract = contractByRider.get(row.rider_id as string);
         if (!rider || !contract) continue;
 
-        const phaseToGtSlug: Record<number, string> = {
-          4: "race/giro-d-italia",
-          6: "race/tour-de-france",
-          8: "race/vuelta-a-espana",
-        };
         const gtSlugPrefix = phaseToGtSlug[row.phase_id as number];
         const year = row.year as number;
 
         let gtXp = 0;
-        if (gtSlugPrefix) {
+        if (gtSlugPrefix && !row.initialClaimed) {
           const { data: xpRows } = await supabase
             .from("rider_xp_daily")
             .select("xp_gained")
@@ -235,6 +263,7 @@ export default async function LeagueDashboardPage({
           dnfStage: row.dnf_stage as number,
           gtXp,
           refundAmount: Math.round((contract.locked_salary as number) * 0.5),
+          initialClaimed: row.initialClaimed,
         });
       }
     }

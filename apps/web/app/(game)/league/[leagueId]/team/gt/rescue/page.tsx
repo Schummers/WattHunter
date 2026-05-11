@@ -7,6 +7,7 @@ import {
   GT_RACE_SLUG_PREFIX,
   type GtPhaseId,
 } from "@/lib/gt-phases"
+import { getLevelByNumber } from "@/lib/levels"
 import { GtRescueMarket } from "@/components/gt-rescue-market"
 
 export default async function GtRescuePage({
@@ -38,6 +39,8 @@ export default async function GtRescuePage({
     .eq("user_id", user.id)
     .single()
   if (!team) redirect(`/league/${leagueId}`)
+
+  const poolMin = getLevelByNumber(team.level ?? 1).poolMin
 
   // Verify the team has a claimed DNF refund for this GT
   const { data: dnfClaimed } = await supabase
@@ -85,8 +88,10 @@ export default async function GtRescuePage({
 
   let ridersQuery = supabase
     .from("riders")
-    .select("id, full_name, photo_url, monthly_salary, pcs_rank")
+    .select("id, full_name, nationality, real_team, photo_url, pcs_rank, pcs_rank_prev, pcs_points_1yr")
     .eq("ever_in_pool", true)
+    .gte("pcs_rank", poolMin)
+    .lte("pcs_rank", 600)
     .order("pcs_rank", { ascending: true, nullsFirst: false })
     .limit(200)
 
@@ -100,10 +105,14 @@ export default async function GtRescuePage({
 
   const eligibleRiders = (ridersData ?? []).map((r) => ({
     id: r.id,
-    name: r.full_name,
-    photoUrl: r.photo_url ?? null,
-    monthlySalary: r.monthly_salary ?? 5000,
-    pcsRank: r.pcs_rank ?? null,
+    full_name: r.full_name,
+    nationality: r.nationality ?? null,
+    real_team: r.real_team ?? null,
+    photo_url: r.photo_url ?? null,
+    pcs_rank: r.pcs_rank ?? null,
+    pcs_rank_diff:
+      r.pcs_rank != null && r.pcs_rank_prev != null ? r.pcs_rank_prev - r.pcs_rank : null,
+    pcs_points_1yr: r.pcs_points_1yr ?? null,
   }))
 
   return (

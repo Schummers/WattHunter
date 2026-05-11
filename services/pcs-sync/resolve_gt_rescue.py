@@ -62,7 +62,7 @@ def resolve_gt_rescue(phase_id: int, league_id: str, supabase_admin) -> dict[str
             # Fetch rider name for logs
             rider_resp = (
                 supabase_admin.from_("riders")
-                .select("name")
+                .select("full_name")
                 .eq("id", rider_id)
                 .single()
                 .execute()
@@ -70,7 +70,7 @@ def resolve_gt_rescue(phase_id: int, league_id: str, supabase_admin) -> dict[str
             if not rider_resp.data:
                 summary["errors"].append(f"Rider {rider_id} not found")
                 continue
-            rider_name = rider_resp.data["name"]
+            rider_name = rider_resp.data["full_name"]
 
             # Create contract directly (service_role — no cooldown check, no place_bid validation)
             contract_resp = (
