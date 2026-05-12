@@ -1,5 +1,6 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { z } from "zod/v4"
 
@@ -31,5 +32,7 @@ export async function placeEmergencyBid(
   })
 
   if (error) return { error: error.message }
+
+  revalidatePath(`/league/${leagueId}`)
   return data as { ok: boolean }
 }
