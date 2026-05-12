@@ -17,6 +17,7 @@ export interface GtDnfCardProps {
   gtXp: number;
   refundAmount: number;
   initialClaimed?: boolean;
+  hasActiveBid?: boolean;
 }
 
 export function GtDnfCard({
@@ -29,6 +30,7 @@ export function GtDnfCard({
   gtXp,
   refundAmount,
   initialClaimed,
+  hasActiveBid,
 }: GtDnfCardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -55,6 +57,11 @@ export function GtDnfCard({
   }
 
   async function handleRefundAndReplace() {
+    // If already claimed, just navigate to rescue page (no second refund)
+    if (claimed) {
+      router.push(`/league/${leagueId}/team/gt/rescue`);
+      return;
+    }
     setLoading(true);
     setError(null);
     const result = await claimDnfRefund(gtSquadId, contractId, leagueId);
@@ -166,7 +173,7 @@ export function GtDnfCard({
               size="xs"
               variant="outline"
               onClick={handleRefundAndReplace}
-              disabled={loading || claimed}
+              disabled={loading || hasActiveBid}
               style={{
                 background: "rgba(10,12,18,0.7)",
                 borderColor: "rgba(255,255,255,0.25)",
@@ -174,7 +181,7 @@ export function GtDnfCard({
                 backdropFilter: "blur(4px)",
               }}
             >
-              {loading ? "…" : "Refund & Replace"}
+              {loading ? "…" : claimed ? (hasActiveBid ? "Bet placed" : "Replace") : "Refund & Replace"}
             </Button>
           </div>
         </div>
