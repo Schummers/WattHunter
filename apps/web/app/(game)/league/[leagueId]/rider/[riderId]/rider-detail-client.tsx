@@ -83,6 +83,7 @@ interface RiderDetailClientProps {
   draftAmount?: number | null;
   currentRound?: number | null;
   releaseIsPaidPhase?: boolean;
+  releaseIsBlocked?: boolean;
 }
 
 function getAge(birthdate: string | null): number | null {
@@ -123,6 +124,7 @@ export function RiderDetailClient({
   totalBonus,
   draftAmount,
   releaseIsPaidPhase,
+  releaseIsBlocked,
 }: RiderDetailClientProps) {
   const router = useRouter();
   const [tabIndex, setTabIndex] = useState(0);
@@ -651,6 +653,7 @@ export function RiderDetailClient({
         riderName={rider.full_name}
         contractId={contractData.contractId}
         isPaidPhase={releaseIsPaidPhase ?? false}
+        isBlockedThisPhase={releaseIsBlocked ?? false}
         onConfirm={handleReleaseConfirm}
         onCancel={() => { setReleaseConfirm(false); setReleaseError(null); }}
         error={releaseError}

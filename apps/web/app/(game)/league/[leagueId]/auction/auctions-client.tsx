@@ -440,11 +440,13 @@ export function AuctionsClient({
       {releaseConfirm && (() => {
         const riderEntry = rosterRiders.find((r) => r.contractId === releaseConfirm);
         const riderIsPaid = phaseConfirmed && riderEntry?.phaseRecruitedId !== currentPhaseId;
+        const riderIsBlocked = riderEntry?.phaseRecruitedId === currentPhaseId;
         return (
           <ReleaseConfirmModal
             riderName={riderEntry?.name ?? "this rider"}
             contractId={releaseConfirm}
             isPaidPhase={riderIsPaid}
+            isBlockedThisPhase={riderIsBlocked}
             onConfirm={handleReleaseConfirm}
             onCancel={() => { setReleaseConfirm(null); setReleaseError(null); }}
             error={releaseError}

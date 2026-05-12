@@ -71,6 +71,7 @@ export interface RiderDetailData {
   draftAmount: number | null;
   currentRound: number | null;
   releaseIsPaidPhase: boolean;
+  releaseIsBlocked: boolean;
 }
 
 export async function fetchRiderDetailData(
@@ -412,6 +413,7 @@ export async function fetchRiderDetailData(
 
   // Determine if release happens after payday (for contextual modal messaging)
   let releaseIsPaidPhase = false;
+  let releaseIsBlocked = false;
   if (contractData && userTeamId) {
     const { data: teamForPhase } = await supabase
       .from("teams")
@@ -420,9 +422,10 @@ export async function fetchRiderDetailData(
       .single();
     const confirmedId = teamForPhase?.phase_confirmed_id ?? null;
     const currentPhase = getCurrentPhase();
+    releaseIsBlocked = contractData.phaseRecruitedId === currentPhase.id;
     releaseIsPaidPhase =
       confirmedId === currentPhase.id &&
-      contractData.phaseRecruitedId !== currentPhase.id;
+      !releaseIsBlocked;
   }
 
   return {
@@ -464,5 +467,6 @@ export async function fetchRiderDetailData(
     draftAmount,
     currentRound,
     releaseIsPaidPhase,
+    releaseIsBlocked,
   };
 }
