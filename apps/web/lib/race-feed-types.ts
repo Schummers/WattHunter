@@ -37,6 +37,7 @@ export type RaceDataWithBreakdown = RaceData & {
   winnerTeamInitials: string | null;
   winnerTeamName: string | null;
   winnerTeamBadgeUrl: string | null;
+  winnerTeamBannerUrl: string | null;
   winnerTeamAchievementName: string | null;
   winnerTeamAchievementTier: import("./achievements").AchievementTier | null;
 };

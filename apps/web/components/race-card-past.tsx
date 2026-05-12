@@ -20,53 +20,81 @@ export function RaceCardPast({ race, leagueId, defaultExpanded }: Props) {
   const hasBadge = !!race.winnerTeamBadgeUrl;
 
   return (
-    <div className="rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-app)] overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="flex items-center justify-between w-full px-3.5 py-3 text-left"
+    // overflow-visible so the floating label can escape the border
+    <div className="relative rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-app)]">
+      {/* Floating label — centered on the top border line */}
+      <span
+        className="absolute left-3 text-[length:var(--type-micro)] font-semibold text-[var(--text-low)] z-10 whitespace-nowrap"
+        style={{
+          top: -6,
+          lineHeight: "12px",
+          paddingLeft: 4,
+          paddingRight: 4,
+          background: "var(--bg-app)",
+          borderRadius: 2,
+        }}
       >
-        <div className="flex flex-col gap-0.5 min-w-0 mr-3">
-          <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">
-            {race.raceTitle}
-          </span>
-          {hasBadge ? (
+        {race.raceTitle}
+      </span>
+
+      {/* Inner wrapper clips the banner to the card radius */}
+      <div className="overflow-hidden rounded-[10px]">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="relative flex items-center justify-between w-full px-3.5 py-3 text-left"
+        >
+          {race.winnerTeamBannerUrl && (
             <>
-              <span className="text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)] truncate">
-                {race.winnerTeamName}
-              </span>
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${race.winnerTeamBannerUrl})` }}
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to right, rgba(12,14,18,0.92) 0%, rgba(12,14,18,0.75) 50%, rgba(12,14,18,0.35) 100%)",
+                }}
+              />
+            </>
+          )}
+          <div className="relative z-10 flex flex-col gap-0.5 min-w-0 mr-3">
+            <span className="text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)] truncate">
+              {race.winnerTeamName ?? race.raceTitle}
+            </span>
+            {hasBadge && race.winnerTeamAchievementName && (
               <span
-                className="text-[length:var(--type-micro)] font-medium truncate"
+                className="text-[length:var(--type-caption)] font-semibold truncate"
                 style={{ color: "var(--accent-default)" }}
               >
                 {race.winnerTeamAchievementName}
               </span>
-            </>
-          ) : (
-            <span className="text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)] truncate">
-              {race.winnerTeamName ?? race.raceTitle}
-            </span>
-          )}
-        </div>
-        <WinnerCircle
-          initials={race.winnerTeamInitials}
-          badgeUrl={race.winnerTeamBadgeUrl}
-          tier={race.winnerTeamAchievementTier}
-        />
-      </button>
-      {expanded && (
-        <div className="border-t border-[var(--border-subtle)] px-3.5 py-3 flex flex-col gap-3">
-          <RaceTeamBreakdown teams={race.teams} isGtPhase={race.isGtPhase} />
-          {showGcLink && (
-            <Link
-              href={`/league/${leagueId}/ranking?race=${encodeURIComponent(race.parentRaceSlug!)}`}
-              className="block text-center text-[length:var(--type-caption)] font-medium text-[var(--accent-default)] hover:text-[var(--accent-hover)] underline-offset-2 hover:underline"
-            >
-              GC Ranking →
-            </Link>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+          <div className="relative z-10 shrink-0">
+            <WinnerCircle
+              initials={race.winnerTeamInitials}
+              badgeUrl={race.winnerTeamBadgeUrl}
+              tier={race.winnerTeamAchievementTier}
+            />
+          </div>
+        </button>
+
+        {expanded && (
+          <div className="border-t border-[var(--border-subtle)] px-3.5 py-3 flex flex-col gap-3">
+            <RaceTeamBreakdown teams={race.teams} isGtPhase={race.isGtPhase} />
+            {showGcLink && (
+              <Link
+                href={`/league/${leagueId}/ranking?race=${encodeURIComponent(race.parentRaceSlug!)}`}
+                className="block text-center text-[length:var(--type-caption)] font-medium text-[var(--accent-default)] hover:text-[var(--accent-hover)] underline-offset-2 hover:underline"
+              >
+                GC Ranking →
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -86,7 +114,7 @@ function WinnerCircle({
   if (!initials) {
     return (
       <span
-        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--bg-app)] text-[var(--text-ghost)] text-[length:var(--type-caption)] shrink-0"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--bg-app)] text-[var(--text-ghost)] text-[length:var(--type-caption)] shrink-0"
         aria-hidden="true"
       >
         {"—"}
@@ -95,7 +123,7 @@ function WinnerCircle({
   }
   return (
     <span
-      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-extrabold text-[var(--cta-text)] shrink-0"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[10px] font-extrabold text-[var(--cta-text)] shrink-0"
       style={{ background: "var(--cta-gradient)" }}
     >
       {initials}
