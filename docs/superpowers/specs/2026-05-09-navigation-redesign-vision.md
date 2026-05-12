@@ -1,10 +1,29 @@
 # Navigation & UX Redesign — Vision Spec (Phase 2)
 
 **Date :** 2026-05-09
-**Statut :** Vision exhaustive, à séquencer en plusieurs PRs après le V1 du Racing Feed
+**Statut :** ✅ Décisions finales validées 2026-05-13 — voir plan d'implémentation `docs/superpowers/plans/2026-05-13-navigation-redesign-implementation.md`
 **Spec V1 lié :** `2026-05-09-racing-feed-v1-implementation.md` (à shipper d'abord)
 
-Ce document recense **tout** ce qui a été discuté pour la refonte de la navigation et de l'UX. Il sert de source de vérité pour les itérations futures. Les questions encore ouvertes sont listées en §13.
+Ce document recense **tout** ce qui a été discuté pour la refonte de la navigation et de l'UX. Il sert de source de vérité pour les itérations futures. Les questions encore ouvertes du §13 sont tranchées ci-dessous.
+
+---
+
+## 0. Décisions finales (session wireframe 2026-05-12/13)
+
+| Sujet | Décision |
+|-------|----------|
+| Bottom nav | 4 tabs avec labels : **Racing · Auction · Team · Ranking** |
+| Palmares | Sub-tab dans Team → onglet **Achievements** |
+| Header top-right | Compound block `[#N · NNk€ \| JS]` : info non-cliquable + avatar gradient cyan cliquable, un seul container border partagée |
+| Tabs niveau 2 | Pill-chip **radius 8px** (actif = fond subtle + border, inactif = texte plain uniquement) |
+| Filter pills | **Radius 20px** — toujours avec outline, visuellement distinct des tabs |
+| Glassmorphisme | **Accepté** sur bottom nav + Contextual Action Bar (rejet spec v1 levé) |
+| Contextual Action Bar | Glass blur 20px, info ghost gauche, bouton pleine hauteur 0 inset, border-radius propres |
+| L2Tabs sticky | Hide-on-scroll (disparaît scroll down, réapparaît scroll up). TopBar = sticky toujours. |
+| Racing tabs | **Feed · Roles · Tactics · Peloton** — Goals = carte dans le Feed (pas de tab) |
+| Auction tabs | **Bids · Market · League · History** |
+| Team tabs | **My Team · Budget · Achievements** |
+| Ranking tabs | **Teams · Riders** |
 
 ---
 
