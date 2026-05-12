@@ -70,7 +70,8 @@ export type RaceFeedCard =
   | { type: "in_progress"; race: RaceData }
   | { type: "future"; race: RaceData }
   | { type: "nemesis"; data: NemesisData; raceSlug: string }
-  | { type: "remontada"; data: RemontadaData };
+  | { type: "remontada"; data: RemontadaData }
+  | { type: "rest_day"; date: string; gtName: string };
 
 export type RaceFeedDateGroup = {
   date: string;
@@ -89,8 +90,6 @@ export type TacticRival = {
   teamId: string;
   teamName: string;
   leaderName: string | null;
-  leaderId: string | null;
-  xp: number;
 };
 
 export type TacticContextForFeed = {
@@ -100,6 +99,4 @@ export type TacticContextForFeed = {
   activations: Array<{ tactic_type: string; stage_slug: string; outcome: string | null }>;
   gcRivals: TacticRival[];
   sprintRivals: TacticRival[];
-  myGcLeader: { name: string; xp: number } | null;
-  mySprinter: { name: string; xp: number } | null;
 };

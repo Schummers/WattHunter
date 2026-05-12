@@ -11,6 +11,7 @@ import { RaceFeedRemontadaCard } from "./race-feed-remontada-card";
 import { RaceFeedPhaseEndBanner } from "./race-feed-phase-end-banner";
 import { RaceFeedTacticModal } from "./race-feed-tactic-modal";
 import { GtDnfCard, type GtDnfCardProps } from "./gt-dnf-card";
+import { RaceCardRestDay } from "./race-card-rest-day";
 
 type Props = {
   leagueId: string;
@@ -101,6 +102,9 @@ export function RaceFeed({ leagueId, payload, tacticContext, dnfRiders }: Props)
                       />
                     </div>
                   );
+                }
+                if (card.type === "rest_day") {
+                  return <RaceCardRestDay key={key} gtName={card.gtName} />;
                 }
                 if (card.type === "nemesis") {
                   return <RaceFeedNemesisCard key={key} data={card.data} />;

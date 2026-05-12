@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentPhase, getPhaseRange, AUCTION_PHASES } from "./phases";
 import { GT_IDENTIFIER, isGTPhaseId } from "./gt-phases";
-import { GT_SCHEDULES } from "./gt-stage-schedule";
+import { GT_SCHEDULES, GT_REST_DAYS } from "./gt-stage-schedule";
 import { WT_PARENT_SLUGS } from "./wt-race-slugs";
 import {
   detectRaceType,
@@ -268,7 +268,25 @@ export async function getRaceFeedData(
     }
   }
 
-  // 7) Fetch and slot Nemesis cards (GT phases only)
+  // 7) Inject rest day cards (GT phases only)
+  if (isGtPhase) {
+    const GT_SLUG_MAP_RD = { 4: "giro-d-italia", 6: "tour-de-france", 8: "vuelta-a-espana" } as const;
+    const GT_NAME_MAP_RD = {
+      "giro-d-italia": "Giro d'Italia",
+      "tour-de-france": "Tour de France",
+      "vuelta-a-espana": "Vuelta a España",
+    } as const;
+    const gtSlugRd = GT_SLUG_MAP_RD[phase.id as 4 | 6 | 8];
+    const yearRd = referenceDate.getFullYear();
+    const gtNameRd = GT_NAME_MAP_RD[gtSlugRd];
+    const restDays = GT_REST_DAYS[`${gtSlugRd}/${yearRd}`] ?? [];
+    for (const date of restDays) {
+      if (date < phaseStartIso || date > phaseEndIso) continue;
+      pushCard(date, { type: "rest_day", date, gtName: gtNameRd });
+    }
+  }
+
+  // 8) Fetch and slot Nemesis cards (GT phases only)
   if (isGtPhase) {
     const { data: nemRows = [] } = await supabase
       .from("gt_tactic_activations")
