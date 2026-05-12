@@ -96,7 +96,9 @@ export default async function LeagueDashboardPage({
     const phaseId = raceFeedPayload.phaseId as 4 | 6 | 8;
     const year = new Date().getFullYear();
 
-    const [teamRows, activationRows, gcRoleRows, sprintRoleRows] = await Promise.all([
+    const gtSlugForPhase = ({ 4: "giro-d-italia", 6: "tour-de-france", 8: "vuelta-a-espana" } as const)[phaseId];
+
+    const [teamRows, activationRows] = await Promise.all([
       supabase.from("teams").select("id, name").eq("league_id", leagueId),
       supabase
         .from("gt_tactic_activations")
@@ -104,37 +106,45 @@ export default async function LeagueDashboardPage({
         .eq("team_id", teamId)
         .eq("phase_id", phaseId)
         .eq("year", year),
-      supabase
-        .from("gt_role_assignments")
-        .select("team_id, riders(full_name)")
-        .eq("phase_id", phaseId)
-        .eq("year", year)
-        .eq("role", "gc_leader")
-        .order("applied_at", { ascending: false }),
-      supabase
-        .from("gt_role_assignments")
-        .select("team_id, riders(full_name)")
-        .eq("phase_id", phaseId)
-        .eq("year", year)
-        .eq("role", "sprinter")
-        .order("applied_at", { ascending: false }),
     ]);
 
-    // Latest role assignment per team (rows ordered desc by applied_at)
-    const gcByTeam = new Map<string, string | null>();
-    for (const row of gcRoleRows.data ?? []) {
-      if (!gcByTeam.has(row.team_id)) {
-        gcByTeam.set(row.team_id, row.riders ? (row.riders as { full_name: string }).full_name : null);
-      }
-    }
-    const sprintByTeam = new Map<string, string | null>();
-    for (const row of sprintRoleRows.data ?? []) {
-      if (!sprintByTeam.has(row.team_id)) {
-        sprintByTeam.set(row.team_id, row.riders ? (row.riders as { full_name: string }).full_name : null);
-      }
+    const teamIdsInLeague = (teamRows.data ?? []).map((t) => t.id);
+
+    const [squadRows, xpRows] = await Promise.all([
+      supabase
+        .from("gt_squad")
+        .select("team_id, rider_id, role, riders(full_name)")
+        .in("team_id", teamIdsInLeague)
+        .eq("phase_id", phaseId)
+        .eq("year", year)
+        .in("role", ["gc_leader", "sprinter"])
+        .is("removed_at", null),
+      supabase
+        .from("rider_xp_daily")
+        .select("team_id, rider_id, xp_gained")
+        .in("team_id", teamIdsInLeague)
+        .like("race_slug", `race/${gtSlugForPhase}/${year}/%`),
+    ]);
+
+    const xpMap = new Map<string, number>();
+    for (const row of xpRows.data ?? []) {
+      const key = `${row.team_id}:${row.rider_id}`;
+      xpMap.set(key, (xpMap.get(key) ?? 0) + (row.xp_gained ?? 0));
     }
 
-    const rivals = (teamRows.data ?? []).filter((t) => t.id !== teamId);
+    type SquadRoleRow = { team_id: string; rider_id: string; role: string; riders: { full_name: string } | null };
+    const gcByTeam = new Map<string, SquadRoleRow>();
+    const sprintByTeam = new Map<string, SquadRoleRow>();
+    for (const row of (squadRows.data ?? []) as SquadRoleRow[]) {
+      if (row.role === "gc_leader") gcByTeam.set(row.team_id, row);
+      if (row.role === "sprinter") sprintByTeam.set(row.team_id, row);
+    }
+
+    const allTeams = teamRows.data ?? [];
+    const rivals = allTeams.filter((t) => t.id !== teamId);
+    const myGcRow = gcByTeam.get(teamId);
+    const mySprintRow = sprintByTeam.get(teamId);
+
     tacticContext = {
       teamId,
       phaseId,
@@ -144,8 +154,32 @@ export default async function LeagueDashboardPage({
         stage_slug: a.stage_slug,
         outcome: (a.outcome as string | null) ?? null,
       })),
-      gcRivals: rivals.map((t) => ({ teamId: t.id, teamName: t.name, leaderName: gcByTeam.get(t.id) ?? null })),
-      sprintRivals: rivals.map((t) => ({ teamId: t.id, teamName: t.name, leaderName: sprintByTeam.get(t.id) ?? null })),
+      gcRivals: rivals.map((t) => {
+        const row = gcByTeam.get(t.id);
+        return {
+          teamId: t.id,
+          teamName: t.name,
+          leaderName: row?.riders?.full_name ?? null,
+          leaderId: row?.rider_id ?? null,
+          xp: row ? (xpMap.get(`${t.id}:${row.rider_id}`) ?? 0) : 0,
+        };
+      }),
+      sprintRivals: rivals.map((t) => {
+        const row = sprintByTeam.get(t.id);
+        return {
+          teamId: t.id,
+          teamName: t.name,
+          leaderName: row?.riders?.full_name ?? null,
+          leaderId: row?.rider_id ?? null,
+          xp: row ? (xpMap.get(`${t.id}:${row.rider_id}`) ?? 0) : 0,
+        };
+      }),
+      myGcLeader: myGcRow
+        ? { name: myGcRow.riders?.full_name ?? "Unknown", xp: xpMap.get(`${teamId}:${myGcRow.rider_id}`) ?? 0 }
+        : null,
+      mySprinter: mySprintRow
+        ? { name: mySprintRow.riders?.full_name ?? "Unknown", xp: xpMap.get(`${teamId}:${mySprintRow.rider_id}`) ?? 0 }
+        : null,
     };
   }
 
