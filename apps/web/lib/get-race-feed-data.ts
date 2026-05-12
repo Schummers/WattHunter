@@ -170,6 +170,7 @@ export async function getRaceFeedData(
     winnerTeamInitials: string | null;
     winnerTeamName: string | null;
     winnerTeamBadgeUrl: string | null;
+    winnerTeamBannerUrl: string | null;
     winnerTeamAchievementName: string | null;
     winnerTeamAchievementTier: import("./achievements").AchievementTier | null;
   } => {
@@ -212,6 +213,7 @@ export async function getRaceFeedData(
       winnerTeamInitials: winner ? teamInitials(winner.teamName) : null,
       winnerTeamName: winner?.teamName ?? null,
       winnerTeamBadgeUrl: winnerAchievement?.badgeUrl ?? null,
+      winnerTeamBannerUrl: winnerAchievement?.bannerUrl ?? null,
       winnerTeamAchievementName: winnerAchievement?.name ?? null,
       winnerTeamAchievementTier: winnerAchievement?.tier ?? null,
     };

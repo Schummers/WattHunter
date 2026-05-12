@@ -9,19 +9,37 @@ export function RaceFeedRemontadaCard({ data }: Props) {
     ? `×${data.multiplier}`
     : `×${data.multiplier.toFixed(1)}`;
 
+  const overtookLine = data.overtakenTeamName
+    ? `${data.teamName} overtook ${data.overtakenTeamName}`
+    : data.teamName;
+
   return (
-    <div className="rounded-[10px] border bg-[rgba(245,158,11,0.06)] border-[rgba(245,158,11,0.20)] px-3 py-2.5">
-      <div className="flex items-center gap-2 text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
-        <Flame size={14} className="text-[var(--warning)]" aria-hidden="true" />
-        <span>Remontada · {data.teamName}</span>
-      </div>
-      {data.overtakenTeamName && (
-        <div className="mt-1 text-[length:var(--type-caption)] text-[var(--text-mid)]">
-          Overtook {data.overtakenTeamName} in the rankings
-        </div>
-      )}
-      <div className="mt-0.5 text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
-        {mult} XP boost for the next {data.stagesRemaining} {stageWord}
+    <div className="relative rounded-[10px] border border-[rgba(245,158,11,0.35)] bg-[var(--bg-app)]">
+      {/* Floating label — same pattern as RaceCardPast */}
+      <span
+        className="absolute left-3 z-10 flex items-center gap-1 whitespace-nowrap font-semibold"
+        style={{
+          top: -6,
+          lineHeight: "12px",
+          paddingLeft: 4,
+          paddingRight: 4,
+          fontSize: "var(--type-micro)",
+          background: "var(--bg-app)",
+          borderRadius: 2,
+          color: "var(--warning)",
+        }}
+      >
+        Remontada
+        <Flame size={10} aria-hidden="true" />
+      </span>
+
+      <div className="px-3.5 py-3 flex flex-col gap-0.5">
+        <span className="text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)] leading-tight">
+          {overtookLine}
+        </span>
+        <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+          {mult} XP boost for the next {data.stagesRemaining} {stageWord}
+        </span>
       </div>
     </div>
   );
