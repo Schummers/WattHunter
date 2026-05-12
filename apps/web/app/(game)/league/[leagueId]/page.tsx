@@ -189,7 +189,10 @@ export default async function LeagueDashboardPage({
         .eq("resolved", false),
     ]);
 
-    const hasActiveBid = (activeBids ?? []).length > 0;
+    // Per-rider Set: rider_ids that have an unresolved emergency bid
+    const activeBidRiderIds = new Set(
+      (activeBids ?? []).map((b) => b.rider_id as string)
+    );
 
     if (allDnfRows && allDnfRows.length > 0) {
       const riderIds = allDnfRows.map((r) => r.rider_id as string);
@@ -218,6 +221,11 @@ export default async function LeagueDashboardPage({
         if (!rider || !contract) continue;
 
         const isClaimed = (row as { dnf_refund_claimed?: boolean }).dnf_refund_claimed === true;
+        const hasActiveBidForRider = activeBidRiderIds.has(row.rider_id as string);
+
+        // Hide card when refund is claimed AND no pending bid — nothing left to act on
+        if (isClaimed && !hasActiveBidForRider) continue;
+
         const gtSlugPrefix = phaseToGtSlug[row.phase_id as number];
         const year = row.year as number;
 
@@ -250,7 +258,7 @@ export default async function LeagueDashboardPage({
           gtXp,
           refundAmount: Math.round((contract.locked_salary as number) * 0.5),
           initialClaimed: isClaimed,
-          hasActiveBid,
+          hasActiveBid: hasActiveBidForRider,
         });
       }
     }
