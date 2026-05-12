@@ -18,6 +18,7 @@ const baseRace: RaceDataWithBreakdown = {
   winnerTeamInitials: "TA",
   winnerTeamName: "Team Astrid",
   winnerTeamBadgeUrl: null,
+  winnerTeamBannerUrl: null,
   winnerTeamAchievementName: null,
   winnerTeamAchievementTier: null,
   teams: [
