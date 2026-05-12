@@ -50,7 +50,7 @@ export function RaceFeed({ leagueId, payload, tacticContext, dnfRiders }: Props)
   let firstFutureClaimed = false;
 
   return (
-    <div className="flex flex-col gap-4 px-4 pt-4 pb-16">
+    <div className="flex flex-col gap-6 px-4 pt-4 pb-16">
       {payload.groups.map((group) => {
         const isLastKnown = group.date === lastKnownDate;
 
