@@ -302,7 +302,8 @@ export async function getSquadWithRoles({
 }
 
 /**
- * Returns active-contract riders NOT currently in the GT squad.
+ * Returns all active-contract riders, annotated with their current GT squad role.
+ * Squad members appear in the list with in_squad=true so they can be swapped directly.
  */
 export async function getAvailableRiders({
   teamId,
@@ -327,14 +328,17 @@ export async function getAvailableRiders({
 
   const { data: squadRows } = await supabase
     .from("gt_squad")
-    .select("rider_id")
+    .select("rider_id, role")
     .eq("team_id", teamId)
     .eq("phase_id", phaseId)
     .eq("year", year)
     .is("removed_at", null);
 
-  const inSquad = new Set(
-    (squadRows ?? []).map((s) => (s as { rider_id: string }).rider_id)
+  const squadRoleMap = new Map<string, GtRole>(
+    (squadRows ?? []).map((s) => {
+      const row = s as { rider_id: string; role: GtRole };
+      return [row.rider_id, row.role];
+    })
   );
 
   type AvailableRider = {
@@ -351,11 +355,13 @@ export async function getAvailableRiders({
     rider_id: string;
     riders: AvailableRider | AvailableRider[] | null;
   }>)
-    .filter((c) => c.rider_id && !inSquad.has(c.rider_id))
+    .filter((c) => c.rider_id)
     .map((c) => {
       const rider = Array.isArray(c.riders) ? c.riders[0] : c.riders;
       return {
         riderId: c.rider_id,
+        gt_role: squadRoleMap.get(c.rider_id) ?? null,
+        in_squad: squadRoleMap.has(c.rider_id),
         rider,
       };
     })
@@ -364,4 +370,62 @@ export async function getAvailableRiders({
       const ptsB = b.rider?.pcs_points_1yr ?? 0;
       return ptsB - ptsA;
     });
+}
+
+/**
+ * Swap roles between two riders already in the GT squad.
+ * Sequence: demote A → assign A's role to B → assign B's old role to A.
+ */
+export async function swapSquadRoles({
+  teamId,
+  riderAId,
+  roleA,
+  riderBId,
+  roleB,
+  phaseId,
+  year,
+}: {
+  teamId: string;
+  riderAId: string;
+  roleA: GtRole;
+  riderBId: string;
+  roleB: GtRole;
+  phaseId: GtPhaseId;
+  year: number;
+}): Promise<ActionResponse> {
+  if (
+    !UUID.safeParse(teamId).success ||
+    !UUID.safeParse(riderAId).success ||
+    !UUID.safeParse(riderBId).success ||
+    !RoleSchema.safeParse(roleA).success ||
+    !RoleSchema.safeParse(roleB).success ||
+    !PhaseIdSchema.safeParse(phaseId).success
+  ) {
+    return { error: "Invalid data" };
+  }
+
+  const supabase = await createClient();
+  const args = { p_team_id: teamId, p_phase_id: phaseId, p_year: year };
+
+  const { data: d1, error: e1 } = await supabase.rpc("gt_assign_role", {
+    ...args, p_rider_id: riderAId, p_role: "domestique",
+  });
+  const err1 = extractError("gt_assign_role", d1, e1);
+  if (err1) return { error: err1 };
+
+  const { data: d2, error: e2 } = await supabase.rpc("gt_assign_role", {
+    ...args, p_rider_id: riderBId, p_role: roleA,
+  });
+  const err2 = extractError("gt_assign_role", d2, e2);
+  if (err2) return { error: err2 };
+
+  const { data: d3, error: e3 } = await supabase.rpc("gt_assign_role", {
+    ...args, p_rider_id: riderAId, p_role: roleB,
+  });
+  const err3 = extractError("gt_assign_role", d3, e3);
+  if (err3) return { error: err3 };
+
+  const leagueId = await getTeamLeagueId(teamId);
+  if (leagueId) revalidatePath(`/league/${leagueId}/team/gt`);
+  return { ok: true };
 }

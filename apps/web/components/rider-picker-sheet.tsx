@@ -6,10 +6,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   addToSquad,
   swapSlot,
+  swapSquadRoles,
   removeFromSquad,
   type GtRole,
   type GtPhaseId,
 } from "@/app/(game)/league/[leagueId]/team/gt/actions";
+
+const ROLE_LABEL: Record<GtRole, string> = {
+  gc_leader: "GC Leader",
+  sprinter: "Sprinter",
+  climber: "Climber",
+  tt_specialist: "TT Specialist",
+  stage_hunter: "Stage Hunter",
+  domestique: "Domestique",
+};
 import type { AvailableRiderEntry } from "@/app/(game)/league/[leagueId]/team/gt/gt-team-client";
 
 interface Props {
@@ -53,11 +63,27 @@ export function RiderPickerSheet({
     if (!selectedId) return;
     setErr(null);
     start(async () => {
-      const result = mode === "fill"
-        ? await addToSquad({ teamId, riderId: selectedId, role, phaseId, year })
-        : currentRiderId
-          ? await swapSlot({ teamId, oldRiderId: currentRiderId, newRiderId: selectedId, phaseId, year })
-          : ({ error: "No current rider for swap" } as const);
+      let result;
+      if (mode === "fill") {
+        result = await addToSquad({ teamId, riderId: selectedId, role, phaseId, year });
+      } else if (currentRiderId) {
+        const selectedEntry = availableRiders.find((r) => r.riderId === selectedId);
+        if (selectedEntry?.in_squad) {
+          result = await swapSquadRoles({
+            teamId,
+            riderAId: currentRiderId,
+            roleA: role,
+            riderBId: selectedId,
+            roleB: selectedEntry.gt_role ?? "domestique",
+            phaseId,
+            year,
+          });
+        } else {
+          result = await swapSlot({ teamId, oldRiderId: currentRiderId, newRiderId: selectedId, phaseId, year });
+        }
+      } else {
+        result = { error: "No current rider for swap" } as const;
+      }
 
       if ("error" in result) {
         setErr(result.error);
@@ -147,7 +173,7 @@ export function RiderPickerSheet({
                         {r.rider.full_name}
                       </span>
                       <span className="truncate text-[length:var(--type-caption)] text-[var(--text-low)]">
-                        {r.rider.real_team ?? ""}
+                        {r.in_squad ? ROLE_LABEL[r.gt_role!] : "Not in squad"}
                       </span>
                     </div>
                   </button>
@@ -174,13 +200,6 @@ export function RiderPickerSheet({
               Remove from squad
             </button>
           )}
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-[length:var(--type-body)] font-medium text-[var(--text-mid)] hover:text-[var(--text-high)]"
-          >
-            Cancel
-          </button>
           <button
             type="button"
             onClick={handleConfirm}

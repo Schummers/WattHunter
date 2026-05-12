@@ -29,6 +29,8 @@ interface SquadEntry {
 
 export interface AvailableRiderEntry {
   riderId: string;
+  gt_role: GtRole | null;
+  in_squad: boolean;
   rider: {
     id: string;
     full_name: string;
@@ -254,7 +256,7 @@ export function GtTeamClient({
           roleDesc={ROLE_ORDER.find((r) => r.role === sheetRole)!.desc}
           mode={sheetMode}
           currentRiderId={sheetCurrentRiderId}
-          availableRiders={availableRiders}
+          availableRiders={availableRiders.filter((r) => r.riderId !== sheetCurrentRiderId)}
           teamId={teamId}
           phaseId={phaseId}
           year={year}
