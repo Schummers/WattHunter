@@ -88,6 +88,8 @@ export type TacticRival = {
   teamId: string;
   teamName: string;
   leaderName: string | null;
+  leaderId: string | null;
+  xp: number;
 };
 
 export type TacticContextForFeed = {
@@ -97,4 +99,6 @@ export type TacticContextForFeed = {
   activations: Array<{ tactic_type: string; stage_slug: string; outcome: string | null }>;
   gcRivals: TacticRival[];
   sprintRivals: TacticRival[];
+  myGcLeader: { name: string; xp: number } | null;
+  mySprinter: { name: string; xp: number } | null;
 };

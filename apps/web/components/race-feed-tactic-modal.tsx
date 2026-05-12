@@ -2,17 +2,18 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Swords, Crosshair, Zap } from "lucide-react";
+import { Swords, Crosshair, Zap, AlertTriangle } from "lucide-react";
 import { ModalShell, ModalHeader, ModalActions } from "./tactic-modal-shell";
 import { TacticCard } from "./tactic-card";
 import { TACTICS, type TacticId, type TacticState } from "@/lib/tactics";
 import { placeTactic } from "@/app/(game)/league/[leagueId]/team/gt/tactics/actions";
 import type { TacticContextForFeed, TacticRival } from "@/lib/race-feed-types";
+import { cn } from "@/lib/utils";
 
 const BOOST_TACTICS = new Set<TacticId>(["unleash", "overdrive", "call_the_bus"]);
 const NEMESIS_TACTICS = new Set<TacticId>(["nemesis_gc", "nemesis_sprint"]);
 
-type Step = "select_tactic" | "confirm_boost" | "select_rival" | "confirm_nemesis";
+type Step = "select_tactic" | "confirm_boost" | "select_rival";
 
 type Props = {
   stageSlug: string;
@@ -22,7 +23,7 @@ type Props = {
 };
 
 export function RaceFeedTacticModal({ stageSlug, stageName, tacticContext, onClose }: Props) {
-  const { teamId, phaseId, year, activations, gcRivals, sprintRivals } = tacticContext;
+  const { teamId, phaseId, year, activations, gcRivals, sprintRivals, myGcLeader, mySprinter } = tacticContext;
   const router = useRouter();
   const [step, setStep] = useState<Step>("select_tactic");
   const [selectedTactic, setSelectedTactic] = useState<TacticId | null>(null);
@@ -75,7 +76,6 @@ export function RaceFeedTacticModal({ stageSlug, stageName, tacticContext, onClo
   };
 
   const rivals: TacticRival[] = selectedTactic === "nemesis_gc" ? gcRivals : sprintRivals;
-  const selectedRival = rivals.find((r) => r.teamId === selectedRivalId) ?? null;
   const tacticDef = selectedTactic ? TACTICS.find((t) => t.id === selectedTactic)! : null;
   const NemesisIcon = selectedTactic === "nemesis_gc" ? Swords : Crosshair;
 
@@ -91,20 +91,13 @@ export function RaceFeedTacticModal({ stageSlug, stageName, tacticContext, onClo
             submitDisabled={isPending}
           />
         ) : step === "select_rival" ? (
-          <ModalActions
-            onClose={() => setStep("select_tactic")}
-            onSubmit={() => { if (selectedRivalId) setStep("confirm_nemesis"); }}
-            submitLabel="Next"
-            submitDisabled={!selectedRivalId}
-          />
-        ) : step === "confirm_nemesis" ? (
           <div className="flex flex-col-reverse gap-2 lg:flex-row lg:justify-end">
             <button
               type="button"
-              onClick={() => setStep("select_rival")}
+              onClick={() => setStep("select_tactic")}
               className="px-4 py-2 text-[length:var(--type-body)] font-medium text-[var(--text-mid)] hover:text-[var(--text-high)]"
             >
-              Back
+              Cancel
             </button>
             <button
               type="button"
@@ -113,10 +106,10 @@ export function RaceFeedTacticModal({ stageSlug, stageName, tacticContext, onClo
                 const role = selectedTactic === "nemesis_gc" ? "gc_leader" as const : "sprinter" as const;
                 activate({ nemesisTargetTeamId: selectedRivalId, nemesisTargetRole: role });
               }}
-              disabled={isPending}
+              disabled={!selectedRivalId || isPending}
               className="rounded-[var(--radius-md)] bg-[var(--accent-default)] px-4 py-2.5 text-[length:var(--type-body)] font-semibold text-[var(--bg-app)] disabled:opacity-50"
             >
-              {isPending ? "Activating…" : "Activate"}
+              {isPending ? "Declaring..." : "Declare Nemesis"}
             </button>
           </div>
         ) : null
@@ -171,53 +164,113 @@ export function RaceFeedTacticModal({ stageSlug, stageName, tacticContext, onClo
             <ModalHeader
               icon={<NemesisIcon size={18} className="text-[var(--accent-default)]" />}
               title={tacticDef.name}
-              subtitle="Select a rival team"
-              onClose={onClose}
-            />
-            <ul className="flex flex-col gap-1.5">
-              {rivals.map((rival) => (
-                <li key={rival.teamId}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRivalId(rival.teamId)}
-                    className={`w-full rounded-[var(--radius-md)] border px-3 py-2.5 text-left transition-colors ${
-                      selectedRivalId === rival.teamId
-                        ? "border-[var(--accent-default)] bg-[var(--badge-bg)]"
-                        : "border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-[var(--border-hover)]"
-                    }`}
-                  >
-                    <div className="text-[length:var(--type-body)] font-semibold text-[var(--text-high)]">
-                      {rival.teamName}
-                    </div>
-                    {rival.leaderName && (
-                      <div className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-                        {rival.leaderName}
-                      </div>
-                    )}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-
-        {step === "confirm_nemesis" && tacticDef && selectedRival && (
-          <>
-            <ModalHeader
-              icon={<NemesisIcon size={18} className="text-[var(--accent-default)]" />}
-              title={tacticDef.name}
-              subtitle={stageName}
+              subtitle={`1 / 1 uses left · ${stageName}`}
+              subtitleMono
               onClose={onClose}
             />
             <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-              Activate{" "}
-              <span className="font-semibold text-[var(--text-high)]">{tacticDef.name}</span>{" "}
-              against{" "}
-              <span className="font-semibold text-[var(--text-high)]">{selectedRival.teamName}</span>{" "}
-              on{" "}
-              <span className="font-semibold text-[var(--text-high)]">{stageName}</span>?
+              {tacticDef.description}
             </p>
-            {error && <p className="text-[length:var(--type-caption)] text-red-400">{error}</p>}
+            <div className="flex items-start gap-2 rounded-[var(--radius-md)] border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2.5">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--warning)]" />
+              <div className="flex flex-col gap-1 text-[length:var(--type-caption)]">
+                <span className="font-semibold text-[var(--text-high)]">
+                  This is a duel, not a guarantee
+                </span>
+                <span className="text-[var(--text-mid)]">
+                  <strong className="text-[var(--text-high)]">Win</strong> → you score ×2, they lose 50%. <br />
+                  <strong className="text-[var(--text-high)]">Lose</strong> → you lose 25%, they gain 25%.
+                </span>
+              </div>
+            </div>
+            {(() => {
+              const myLeader = selectedTactic === "nemesis_gc" ? myGcLeader : mySprinter;
+              const roleLabel = selectedTactic === "nemesis_gc" ? "GC Leader" : "Sprinter";
+              return myLeader ? (
+                <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-subtle)] px-3 py-2">
+                  <div className="flex flex-col">
+                    <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+                      Your {roleLabel}
+                    </span>
+                    <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+                      {myLeader.name}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
+                      {myLeader.xp}
+                    </span>
+                    <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
+                      GT XP
+                    </span>
+                  </div>
+                </div>
+              ) : null;
+            })()}
+            <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+              <div className="flex items-baseline justify-between">
+                <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+                  Rival team
+                </span>
+                <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">≥ your GT XP</span>
+              </div>
+              {rivals.length === 0 ? (
+                <p className="rounded-[var(--radius-md)] bg-[var(--bg-subtle)] px-3 py-4 text-center text-[length:var(--type-caption)] text-[var(--text-mid)]">
+                  No rival team has matched or exceeded your GT XP yet.
+                </p>
+              ) : (
+                <div className="min-h-0 flex-1 overflow-y-auto rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-app)]">
+                  <div className="flex flex-col">
+                    {rivals.map((rival, i) => (
+                      <button
+                        key={rival.teamId}
+                        type="button"
+                        onClick={() => setSelectedRivalId(selectedRivalId === rival.teamId ? null : rival.teamId)}
+                        disabled={!rival.leaderName}
+                        className={cn(
+                          "flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors",
+                          i !== 0 && "border-t border-[var(--border-subtle)]",
+                          selectedRivalId === rival.teamId ? "bg-[var(--badge-bg)]" : "hover:bg-[var(--bg-surface-hover)]",
+                          !rival.leaderName && "cursor-not-allowed opacity-50"
+                        )}
+                      >
+                        <div
+                          role="radio"
+                          aria-checked={selectedRivalId === rival.teamId}
+                          className={cn(
+                            "flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                            selectedRivalId === rival.teamId
+                              ? "border-[var(--accent-default)] bg-[var(--accent-default)]"
+                              : "border-[var(--border-default)] bg-transparent"
+                          )}
+                        >
+                          {selectedRivalId === rival.teamId && (
+                            <div className="size-[7px] rounded-full bg-[var(--bg-app)]" />
+                          )}
+                        </div>
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+                            {rival.teamName}
+                          </span>
+                          <span className="truncate text-[length:var(--type-caption)] text-[var(--text-mid)]">
+                            {rival.leaderName ?? "No leader assigned"}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
+                            {rival.xp}
+                          </span>
+                          <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
+                            GT XP
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            {error && <p className="text-[length:var(--type-caption)] text-[var(--danger)]">{error}</p>}
           </>
         )}
       </div>
