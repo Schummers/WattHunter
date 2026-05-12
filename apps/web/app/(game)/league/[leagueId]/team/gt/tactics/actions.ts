@@ -84,15 +84,14 @@ export async function getEligibleRivals(opts: {
   const result = [];
   for (const t of teams) {
     const { data: roleRow } = await supabase
-      .from("gt_role_assignments")
+      .from("gt_squad")
       .select("rider_id, riders(full_name)")
       .eq("team_id", t.id)
       .eq("phase_id", opts.phaseId)
       .eq("year", opts.year)
       .eq("role", opts.role)
-      .order("applied_at", { ascending: false })
-      .limit(1)
-      .single();
+      .is("removed_at", null)
+      .maybeSingle();
 
     if (!roleRow) {
       result.push({ teamId: t.id, teamName: t.name, leader: null, xp: 0 });
