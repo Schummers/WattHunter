@@ -269,6 +269,11 @@ async def calculate_daily_scores(
             "is_itt": bool(h.get("is_itt", False)),
         })
 
+    # Build race_slug → race_date mapping for the second pass (classif-only entries).
+    race_date_by_slug: dict[str, str] = {}
+    for h in history.data:
+        race_date_by_slug.setdefault(h["race_slug"], h.get("race_date", today))
+
     # Pre-fetch existing rider_xp_daily for these race_slugs to compute deltas (idempotency).
     # On first run prev=0 → delta=total (same as before).
     # On re-run prev=total → delta=0 → teams unchanged (no double-count).
@@ -424,6 +429,7 @@ async def calculate_daily_scores(
     # --- Step 4: Calculate XP per team and persist ---
     for team_id, team_clist in team_contracts.items():
         total_xp = 0.0
+        processed_in_team: set[tuple[str, str]] = set()  # (rider_id, race_slug)
 
         for contract in team_clist:
             rider_id = contract["rider_id"]
@@ -581,6 +587,70 @@ async def calculate_daily_scores(
                     continue
 
                 total_xp += xp
+                processed_in_team.add((rider_id, race_slug))
+
+        # === Second pass: classif-only XP ===
+        # Squad riders who placed in GC/points/KOM classifications but had no stage result
+        # (0 PCS points) are skipped by the main loop. This pass creates their entries.
+        if classif_by_key:
+            for (c_race_slug, c_rider_id), classif_rows in classif_by_key.items():
+                if (team_id, c_rider_id) not in gt_squad_members:
+                    continue
+                if (c_rider_id, c_race_slug) in processed_in_team:
+                    continue  # already handled with stage points in main loop
+                contract = next(
+                    (c for c in team_clist if c["rider_id"] == c_rider_id), None
+                )
+                if not contract:
+                    continue
+
+                c_role = gt_roles.get((team_id, c_rider_id), "domestique")
+                c_classif_bonus = _classif_bonus(classif_rows, c_role)
+                if c_classif_bonus == 0:
+                    continue
+
+                c_gt_id = get_gt_identifier(c_race_slug)
+                c_stage_no = get_stage_number(c_race_slug)
+                c_remontada = 1.0
+                if c_gt_id and c_stage_no is not None:
+                    c_remontada = get_active_multiplier(
+                        supabase,
+                        team_id=team_id,
+                        gt_identifier=c_gt_id,
+                        stage_number=c_stage_no,
+                    )
+
+                c_xp = max(0, round(c_classif_bonus * c_remontada, 2))
+                c_date = race_date_by_slug.get(c_race_slug, today)
+
+                try:
+                    supabase.table("rider_xp_daily").upsert({
+                        "team_id": team_id,
+                        "rider_id": c_rider_id,
+                        "contract_id": contract["id"],
+                        "date": c_date,
+                        "raw_pcs_points": 0,
+                        "strategy_bonus": 0.0,
+                        "role_mult": 1.0,
+                        "classif_bonus": c_classif_bonus,
+                        "remontada_mult": c_remontada,
+                        "gt_role_mult": 1.0,
+                        "gt_classif_bonus": c_classif_bonus,
+                        "nemesis_modifier": 1.0,
+                        "tactic_applied": None,
+                        "xp_gained": c_xp,
+                        "race_slug": c_race_slug,
+                    }, on_conflict="team_id,rider_id,race_slug").execute()
+                except Exception as e:
+                    logger.error(
+                        f"rider_xp_daily classif upsert failed for rider {c_rider_id} "
+                        f"race {c_race_slug}: {e}"
+                    )
+                    errors.append(str(e))
+                    continue
+
+                total_xp += c_xp
+                processed_in_team.add((c_rider_id, c_race_slug))
 
         if total_xp == 0:
             continue
