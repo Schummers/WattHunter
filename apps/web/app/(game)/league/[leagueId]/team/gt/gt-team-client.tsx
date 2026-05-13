@@ -94,6 +94,7 @@ interface Props {
   squad: SquadEntry[];
   availableRiders: AvailableRiderEntry[];
   sponsor?: SponsorRow | null;
+  completedGoalIndices?: number[];
   activations: ActivationLite[];
   stages: GtStage[];
   eligibleGcRivals: EligibleRival[];
@@ -111,6 +112,7 @@ export function GtTeamClient({
   squad,
   availableRiders,
   sponsor,
+  completedGoalIndices,
   activations,
   stages,
   eligibleGcRivals,
@@ -160,6 +162,7 @@ export function GtTeamClient({
             sponsor={sponsor}
             expanded={sponsorOpen}
             onToggle={() => setSponsorOpen((v) => !v)}
+            completedGoalIndices={completedGoalIndices}
           />
         ) : (
           <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">

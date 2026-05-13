@@ -168,10 +168,12 @@ export function SponsorBonusCard({
   sponsor,
   expanded,
   onToggle,
+  completedGoalIndices,
 }: {
   sponsor: SponsorRow;
   expanded: boolean;
   onToggle: () => void;
+  completedGoalIndices?: number[];
 }) {
   const nationalities = sponsor.nationality
     ? sponsor.nationality.split("/").map((c) => c.trim())
@@ -223,7 +225,7 @@ export function SponsorBonusCard({
           ) : (
             <BaseBonusContent sponsor={sponsor} />
           )}
-          <GtGoalsPreview goals={goals} />
+          <GtGoalsPreview goals={goals} completedGoalIndices={completedGoalIndices} />
           <NationalityFooter sponsor={sponsor} />
         </div>
       )}

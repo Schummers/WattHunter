@@ -36,6 +36,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import sys
 from datetime import date
 from typing import Dict, List, Optional, Tuple
@@ -584,6 +585,23 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
     bonus_result = await process_race_bonuses(supabase, all_imported_slugs)
     print(f"  Sponsor bonuses: {bonus_result.get('bonuses_created', 0)} bonuses credited")
 
+    # GT Goal evaluation (V1b) — only for GT stages
+    gt_prefixes = ("race/giro-d-italia/", "race/tour-de-france/", "race/vuelta-a-espana/")
+    gt_parent = None
+    for s in all_imported_slugs:
+        if any(s.startswith(p) for p in gt_prefixes):
+            m = re.match(r"^(race/[a-z0-9-]+/\d{4})", s)
+            if m:
+                gt_parent = m.group(1)
+                break
+    if gt_parent:
+        from goal_evaluator import evaluate_gt_goals
+        goal_result = await evaluate_gt_goals(supabase, gt_parent)
+        print(f"  GT Goals: {goal_result.get('goals_completed', 0)} goals awarded")
+        if goal_result.get("errors"):
+            for err in goal_result["errors"]:
+                print(f"    ERROR: {err}")
+
     # Post-import verification: show contracted riders + imported points for manual cross-check
     if all_imported_slugs:
         print()
@@ -736,6 +754,21 @@ async def run_resolve_gt_rescue(phase_id: int, league_id: str) -> None:
         print(f"Errors: {result['errors']}")
 
 
+async def run_evaluate_goals(race_slug: str) -> None:
+    """Evaluate GT sponsor goals (one-time bonuses) for a Grand Tour."""
+    from sync import get_supabase
+    from goal_evaluator import evaluate_gt_goals
+
+    supabase = get_supabase()
+    print(f"=== Evaluate GT Goals: {race_slug} ===")
+    result = await evaluate_gt_goals(supabase, race_slug)
+    print(f"Goals completed: {result.get('goals_completed', 0)}")
+    if result.get("errors"):
+        for err in result["errors"]:
+            print(f"  ERROR: {err}")
+    print("Done.")
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -841,6 +874,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Stage number, e.g. 3",
     )
 
+    # evaluate-goals
+    eval_goals_p = subparsers.add_parser(
+        "evaluate-goals",
+        help="Evaluate GT sponsor goals (one-time bonuses) for a Grand Tour.",
+    )
+    eval_goals_p.add_argument(
+        "--race",
+        required=True,
+        metavar="SLUG",
+        help='GT parent slug, e.g. "race/giro-d-italia/2026"',
+    )
+
     # resolve-gt-rescue
     resolve_p = subparsers.add_parser(
         "resolve-gt-rescue",
@@ -890,6 +935,8 @@ async def main() -> None:
         await run_enrich_riders(args.start, args.end, retry_missing=args.retry_missing)
     elif args.command == "pre-auction":
         await run_pre_auction()
+    elif args.command == "evaluate-goals":
+        await run_evaluate_goals(args.race)
     elif args.command == "detect-dnfs":
         await run_detect_dnfs(args.race, args.stage)
     elif args.command == "resolve-gt-rescue":

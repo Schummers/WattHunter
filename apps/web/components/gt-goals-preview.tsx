@@ -1,5 +1,6 @@
 import { formatBudget } from "@/lib/sponsors";
 import { Tag } from "@/components/pill";
+import { Check } from "lucide-react";
 import type { GtGoal, GtGoalCategory } from "@/lib/gt-goals";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -17,14 +18,20 @@ const CATEGORY_LABELS: Record<GtGoalCategory, string> = {
   stage_hunter: "Stage Hunter",
 };
 
-function groupByCategory(goals: GtGoal[]): [GtGoalCategory, GtGoal[]][] {
-  const groups = new Map<GtGoalCategory, GtGoal[]>();
-  for (const g of goals) {
+interface IndexedGoal extends GtGoal {
+  originalIndex: number;
+}
+
+function groupByCategory(goals: GtGoal[]): [GtGoalCategory, IndexedGoal[]][] {
+  const groups = new Map<GtGoalCategory, IndexedGoal[]>();
+  for (let i = 0; i < goals.length; i++) {
+    const g = goals[i];
+    const indexed = { ...g, originalIndex: i };
     const list = groups.get(g.category);
     if (list) {
-      list.push(g);
+      list.push(indexed);
     } else {
-      groups.set(g.category, [g]);
+      groups.set(g.category, [indexed]);
     }
   }
   for (const list of groups.values()) {
@@ -33,9 +40,15 @@ function groupByCategory(goals: GtGoal[]): [GtGoalCategory, GtGoal[]][] {
   return [...groups.entries()];
 }
 
-export function GtGoalsPreview({ goals }: { goals: GtGoal[] }) {
+interface GtGoalsPreviewProps {
+  goals: GtGoal[];
+  completedGoalIndices?: number[];
+}
+
+export function GtGoalsPreview({ goals, completedGoalIndices = [] }: GtGoalsPreviewProps) {
   if (!goals.length) return null;
   const groups = groupByCategory(goals);
+  const completedSet = new Set(completedGoalIndices);
   return (
     <div className="mt-3 border-t border-[var(--border-default)] pt-3">
       {groups.map(([category, categoryGoals], groupIdx) => (
@@ -50,21 +63,30 @@ export function GtGoalsPreview({ goals }: { goals: GtGoal[] }) {
             </span>
           </div>
           <ul className="flex flex-col">
-            {categoryGoals.map((g, i) => (
-              <li key={`${g.label}-${i}`} className="flex items-baseline justify-between py-1">
-                <span className="flex items-baseline gap-1.5 min-w-0">
-                  <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
-                    {g.label}
+            {categoryGoals.map((g) => {
+              const isCompleted = completedSet.has(g.originalIndex);
+              return (
+                <li
+                  key={`${g.label}-${g.originalIndex}`}
+                  className={`flex items-baseline justify-between py-1 ${isCompleted ? "opacity-50" : ""}`}
+                >
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    {isCompleted && (
+                      <Check className="size-3.5 text-[var(--accent-default)] shrink-0 relative top-px" />
+                    )}
+                    <span className={`text-[length:var(--type-caption)] text-[var(--text-high)] ${isCompleted ? "line-through" : ""}`}>
+                      {g.label}
+                    </span>
+                    <span className="text-[length:var(--type-caption)] text-[var(--text-mid)] shrink-0">
+                      {g.role ? ROLE_LABELS[g.role] ?? g.role : "All"}
+                    </span>
                   </span>
-                  <span className="text-[length:var(--type-caption)] text-[var(--text-mid)] shrink-0">
-                    {g.role ? ROLE_LABELS[g.role] ?? g.role : "All"}
+                  <span className={`font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold tabular-nums shrink-0 ml-2 ${isCompleted ? "text-[var(--accent-default)]" : "text-[var(--text-high)]"}`}>
+                    +{formatBudget(g.reward)}
                   </span>
-                </span>
-                <span className="font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums shrink-0 ml-2">
-                  +{formatBudget(g.reward)}
-                </span>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ))}

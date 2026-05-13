@@ -69,7 +69,9 @@ export default async function GtTeamPage({
     : teamSponsorRes.data?.sponsors) as SponsorRow | null | undefined;
   const currentStage = getCurrentGTStage();
 
-  const [activations, stages, gcRivals, sprintRivals, myGc, mySprinter, incomings] =
+  const gtSlug = `race/${GT_IDENTIFIER[phaseId]}/${year}`;
+
+  const [activations, stages, gcRivals, sprintRivals, myGc, mySprinter, incomings, goalCompletionsRes] =
     await Promise.all([
       listTacticActivations({ teamId: team.id, phaseId, year }),
       getGtStages(supabase, { phaseId, year, teamId: team.id }),
@@ -78,12 +80,20 @@ export default async function GtTeamPage({
       getMyLeaderXp({ teamId: team.id, phaseId, year, role: "gc_leader" }),
       getMyLeaderXp({ teamId: team.id, phaseId, year, role: "sprinter" }),
       getIncomingNemesis({ teamId: team.id, phaseId, year }),
+      (supabase as any)
+        .from("sponsor_goal_completions")
+        .select("goal_index")
+        .eq("team_id", team.id)
+        .eq("race_slug", gtSlug),
     ]);
 
   const myGcXp = myGc.leader ? myGc.xp : 0;
   const mySprintXp = mySprinter.leader ? mySprinter.xp : 0;
   const eligibleGcRivals = gcRivals.filter((r) => r.xp >= myGcXp);
   const eligibleSprintRivals = sprintRivals.filter((r) => r.xp >= mySprintXp);
+  const completedGoalIndices: number[] = (goalCompletionsRes?.data ?? []).map(
+    (r: { goal_index: number }) => r.goal_index,
+  );
 
   return (
     <>
@@ -102,6 +112,7 @@ export default async function GtTeamPage({
         squad={squad}
         availableRiders={availableRiders}
         sponsor={sponsor ?? null}
+        completedGoalIndices={completedGoalIndices}
         activations={activations as ActivationLite[]}
         stages={stages}
         eligibleGcRivals={eligibleGcRivals}

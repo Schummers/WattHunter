@@ -52,7 +52,7 @@ export const GT_GOALS: GtGoalSet[] = [
   // T4 — Soudal Quick-Step (Sprint + Stage Hunter, nat: BE)
   { sponsorSlug: "soudal", goals: [
     { label: "Win points classification", reward: 150_000, role: "sprinter", category: "sprint" },
-    { label: "Win 2 stages", reward: 75_000, role: "sprinter", category: "sprint", tieredWith: 4 },
+    { label: "Win 2 stages", reward: 75_000, role: "sprinter", category: "sprint", tieredWith: 2 },
     { label: "Win a stage", reward: 50_000, role: "sprinter", category: "sprint", tieredWith: 1 },
     { label: "Wear ciclamino", reward: 50_000, role: "sprinter", category: "sprint" },
     { label: "2 different riders win a stage", reward: 75_000, role: null, category: "stage_hunter" },
@@ -62,7 +62,7 @@ export const GT_GOALS: GtGoalSet[] = [
   // T4 — Lidl-Trek (Sprint + Stage Hunter, nat: US/IT) — identical goals to Soudal
   { sponsorSlug: "lidl-trek", goals: [
     { label: "Win points classification", reward: 150_000, role: "sprinter", category: "sprint" },
-    { label: "Win 2 stages", reward: 75_000, role: "sprinter", category: "sprint", tieredWith: 4 },
+    { label: "Win 2 stages", reward: 75_000, role: "sprinter", category: "sprint", tieredWith: 2 },
     { label: "Win a stage", reward: 50_000, role: "sprinter", category: "sprint", tieredWith: 1 },
     { label: "Wear ciclamino", reward: 50_000, role: "sprinter", category: "sprint" },
     { label: "2 different riders win a stage", reward: 75_000, role: null, category: "stage_hunter" },
