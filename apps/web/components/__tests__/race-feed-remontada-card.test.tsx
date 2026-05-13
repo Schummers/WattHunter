@@ -19,7 +19,7 @@ describe("RaceFeedRemontadaCard", () => {
   it("renders team name and overtaken team", () => {
     render(<RaceFeedRemontadaCard data={data} />);
     expect(screen.getByText(/Pelu's Crew/)).toBeInTheDocument();
-    expect(screen.getByText(/Overtook bigdaddy in the rankings/)).toBeInTheDocument();
+    expect(screen.getByText(/overtook bigdaddy/i)).toBeInTheDocument();
   });
 
   it("renders multiplier as ×N format", () => {

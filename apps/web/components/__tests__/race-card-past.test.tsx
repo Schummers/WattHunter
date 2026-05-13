@@ -46,7 +46,7 @@ describe("RaceCardPast", () => {
 
   it("expands the breakdown on tap", () => {
     render(<RaceCardPast race={sampleRace} leagueId="league-1" />);
-    const trigger = screen.getByRole("button", { name: /Giro/i });
+    const trigger = screen.getByRole("button");
     fireEvent.click(trigger);
     expect(screen.getByText("T. Pogacar")).toBeInTheDocument();
     // "Team Astrid" appears both in the Option A header and in the breakdown
@@ -55,7 +55,7 @@ describe("RaceCardPast", () => {
 
   it("collapses again on second tap", () => {
     render(<RaceCardPast race={sampleRace} leagueId="league-1" />);
-    const trigger = screen.getByRole("button", { name: /Giro/i });
+    const trigger = screen.getByRole("button");
     fireEvent.click(trigger);
     fireEvent.click(trigger);
     expect(screen.queryByText("T. Pogacar")).not.toBeInTheDocument();

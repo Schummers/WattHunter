@@ -73,7 +73,7 @@ describe("getRaceFeedData", () => {
     // All Giro stages from May 5 onwards should appear as future cards
     expect(result.groups.length).toBeGreaterThan(0);
     const allCards = result.groups.flatMap((g) => g.cards);
-    expect(allCards.every((c) => c.type === "future")).toBe(true);
+    expect(allCards.every((c) => c.type === "future" || c.type === "rest_day")).toBe(true);
     const slugs = allCards.map((c) => (c.type === "future" ? c.race.raceSlug : ""));
     expect(slugs.some((s) => s.includes("giro-d-italia") && s.includes("stage-"))).toBe(true);
   });

@@ -38,6 +38,6 @@ describe("RaceFeedNemesisCard", () => {
     render(
       <RaceFeedNemesisCard data={{ ...winData, outcome: "pending" }} />
     );
-    expect(screen.getByText(/En attente/)).toBeInTheDocument();
+    expect(screen.getByText(/Pending/)).toBeInTheDocument();
   });
 });
