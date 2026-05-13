@@ -45,6 +45,7 @@ export type RaceDataWithBreakdown = RaceData & {
 export type NemesisData = {
   activationId: string;
   raceSlug: string;
+  nemesisType: "gc" | "sprint";
   attackerTeamName: string;
   attackerRiderShortName: string;
   targetTeamName: string;

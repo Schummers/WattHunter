@@ -318,6 +318,7 @@ export async function getRaceFeedData(
       const data: NemesisData = {
         activationId: row.id,
         raceSlug: row.stage_slug,
+        nemesisType: row.tactic_type === "nemesis_gc" ? "gc" : "sprint",
         attackerTeamName: teamById.get(row.team_id) ?? "?",
         attackerRiderShortName: row.resolved_attacker_rider_id
           ? shortenRiderName(riderById.get(row.resolved_attacker_rider_id) ?? "?")
