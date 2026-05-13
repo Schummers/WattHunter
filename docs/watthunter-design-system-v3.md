@@ -1136,15 +1136,17 @@ A locked row may contain a default tag with lock icon: `<span class="tag tag-def
 
 Quick reference for choosing the right component:
 
-| Question | → Underline Tabs | → Filter Chips | → Tags |
-|----------|-----------------|----------------|--------|
-| **Is it interactive?** | Yes (navigation) | Yes (filtering) | **No** (read-only) |
-| **What does it control?** | Page-level views | In-section data subsets | Nothing — displays info |
-| **Border radius** | None (underline) | 6px (squared) | 20px (pill) |
-| **Position in page** | Below app bar | Inside a section | Inline in rows/cards |
-| **Active indicator** | Cyan-500 underline | bg-surface-active + text-high | N/A |
-| **Typography** | 16px/600 (section) | 12px/500–600 (caption) | 12px/500 (caption) |
-| **Max per page** | 1 tab bar | Multiple chip groups | Unlimited |
+| Question | → L2 Tabs | → Underline Tabs | → Filter Pills | → Filter Chips | → Tags |
+|----------|-----------|-----------------|----------------|----------------|--------|
+| **Is it interactive?** | Yes (sub-nav) | Yes (navigation) | Yes (filtering) | Yes (filtering) | **No** (read-only) |
+| **What does it control?** | Sub-views within a section | Top-level page views (legacy) | Data subsets in nav redesign screens | In-section data subsets | Nothing — displays info |
+| **Border radius** | 8px active chip | None (underline) | 20px (pill) | 6px (squared) | 20px (pill) |
+| **Position in page** | Sticky below TopBar | Below app bar | Inside a section (Auction, Market) | Inside a section | Inline in rows/cards |
+| **Active indicator** | bg-surface-active + border `--radius-lg` chip | Cyan-500 underline | border-default outline (always visible) | bg-surface-active + text-high | N/A |
+| **Typography** | 14px/500–600 (emphasis) | 16px/600 (section) | 12px/500–600 (caption) | 12px/500–600 (caption) | 12px/500 (caption) |
+| **Max per page** | 1 tab bar per section | 1 tab bar | 1 group per section | Multiple chip groups | Unlimited |
+
+> **Key visual distinction:** L2 Tabs (8px chip) vs Filter Pills (20px pill) is intentional — despite both being interactive, the radius difference creates immediate hierarchy. L2 Tabs = navigation choice (changes content structure). Filter Pills = filtering (same structure, different data subset).
 
 ---
 
@@ -1173,11 +1175,12 @@ Base 4px. Scale harmonique pour mobile-first, dense data UI.
 |-------|-------|-------|-------------------|
 | `--radius-sm` | 4px | Small inner elements | — |
 | `--radius-md` | 6px | Filter chips (interactive), buttons, inputs | **Interactive** — squared = tappable |
-| `--radius-lg` | 8px | Cards, filter chip containers, bottom sheets | Structural container |
-| `--radius-pill` | 20px | Tags (non-interactive), badges | **Decorative** — pill = read-only |
+| `--radius-lg` | 8px | Cards, L2 tab active chip, filter chip containers | Structural / sub-nav chip |
+| `--radius-compound` | 10px | CompoundHeaderBlock container | Composite block |
+| `--radius-pill` | 20px | Tags (non-interactive), badges, Filter Pills | **Decorative** pill — or interactive filter (see decision matrix) |
 | `--radius-full` | 9999px | Avatars, notification dots, toggle thumbs | Circular element |
 
-> **Radius = affordance signal:** `--radius-md` (6px, squared) signals interactivity. `--radius-pill` (20px, rounded) signals decorative/read-only. This distinction helps users differentiate tappable filter chips from non-interactive tags at a glance.
+> **Radius = affordance signal (v3.1 update):** `--radius-md` (6px) = tappable control. `--radius-lg` (8px) = L2 tab chip. `--radius-pill` (20px) = decorative OR filter pill (context disambiguates). The introduction of L2 Tabs (8px active chip) adds a new layer to the hierarchy: 6px filters in-section data, 8px navigates sub-sections.
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -1647,6 +1650,414 @@ Les composants ci-dessous sont listés par ordre d'impact. Les cocher au fur et 
 
 ---
 
-*WattHunter Design System v3.0 — 2026-03-09*
+---
+
+## Navigation Redesign Components (v3.1 — 2026-05-13)
+
+These four components are introduced as part of the navigation redesign. They form the universal shell that wraps every screen.
+
+---
+
+## Glassmorphism Rules
+
+**Where:** Bottom nav + Contextual Action Bar **only**. Never on cards, inputs, or inline content.
+
+**Why only there:** These two components float above scrollable content. The blur creates physical depth — the content "breathes" beneath them. Using glassmorphism elsewhere would flatten the hierarchy.
+
+### Tokens
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--bg-glass` | `rgba(8, 14, 26, 0.80)` | Background of glass surfaces |
+| `--border-glass` | `rgba(255, 255, 255, 0.06)` | Top/bottom border of glass surfaces |
+| `--blur-glass` | `20px` | `backdrop-filter: blur()` value |
+
+### Implementation
+
+```css
+.glass-surface {
+  background: var(--bg-glass);
+  border-top: 1px solid var(--border-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass)); /* Safari */
+}
+```
+
+### Do's and Don'ts
+
+| ✅ Do | ❌ Don't |
+|------|---------|
+| Bottom nav + CTA bar only | Cards, list rows, modals |
+| Always pair with `--border-glass` top border | Glass without border (floats in air) |
+| Test on Safari (prefix required) | Forget `-webkit-backdrop-filter` |
+
+---
+
+## Component: L2 Navigation Tabs
+
+### Description
+
+Sub-navigation for switching between views within a screen section. Appears sticky just below the TopBar. Hides on scroll down, reappears on scroll up (uses `hooks/use-scroll-direction.ts`).
+
+**Not** the same as Underline Tabs (which are the legacy per-page tab pattern). L2 Tabs replace Underline Tabs in the navigation redesign.
+
+### When to use
+
+| Use L2 Tabs | Don't use L2 Tabs |
+|-------------|-------------------|
+| Switching between content structures on one screen | Filtering data within a view (use Filter Pills) |
+| Sub-views of a bottom nav section (Racing, Auction, Team, Ranking) | More than 4 destinations |
+| Sticky navigation below the universal TopBar | Nested inside a card or modal |
+
+### Spec
+
+```css
+/* Tab bar */
+.l2-tab-bar {
+  display: flex;
+  gap: var(--space-2);      /* 8px between tabs */
+  padding: var(--space-2) var(--space-4); /* 8px 16px */
+  background: var(--bg-app);
+  position: sticky;
+  top: 0;                   /* just below TopBar */
+  z-index: 10;
+  transition: transform var(--duration-normal) var(--easing-default);
+}
+
+.l2-tab-bar.hidden {
+  transform: translateY(-100%);
+}
+
+/* Individual tab */
+.l2-tab {
+  padding: 6px 14px;
+  font: 500 var(--type-emphasis) var(--font-sans);  /* 14px/500 */
+  color: var(--text-low);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-lg);  /* 8px — squarish chip */
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  white-space: nowrap;
+}
+
+/* Active state */
+.l2-tab.active {
+  background: var(--bg-surface-active);
+  border: 1px solid var(--border-hover);
+  color: var(--text-high);
+  font-weight: 600;
+}
+
+/* Hover (desktop only) */
+@media (hover: hover) {
+  .l2-tab:hover:not(.active) {
+    color: var(--text-mid);
+    background: var(--bg-surface-hover);
+  }
+}
+```
+
+### States
+
+| State | Background | Text | Border | Radius |
+|-------|-----------|------|--------|--------|
+| **Inactive** | transparent | `--text-low` | none | — |
+| **Active** | `--bg-surface-active` | `--text-high`, 600 | `--border-hover` (1px) | `--radius-lg` (8px) |
+| **Hover** | `--bg-surface-hover` | `--text-mid` | none | — |
+
+### Hide-on-scroll behavior
+
+```tsx
+// Reuse existing hook
+const scrollDir = useScrollDirection();
+
+<div className={cn("l2-tab-bar", scrollDir === "down" && "hidden")}>
+  {tabs.map(tab => <button key={tab} className={cn("l2-tab", active === tab && "active")} />)}
+</div>
+```
+
+### Tokens
+
+| Category | Token |
+|----------|-------|
+| Typography | `--type-emphasis` (14px/500–600 Geist Sans) |
+| Colors | `--text-low` (inactive), `--text-high` (active), `--text-mid` (hover) |
+| Background | transparent (inactive), `--bg-surface-active` (active), `--bg-surface-hover` (hover) |
+| Border | none (inactive), `--border-hover` 1px (active) |
+| Radius | `--radius-lg` (8px) — active chip only |
+| Spacing | `6px 14px` padding chip, `--space-2` gap, `--space-2 --space-4` bar padding |
+
+### Do's and Don'ts
+
+| ✅ Do | ❌ Don't |
+|------|---------|
+| `--radius-lg` (8px) active chip | Use underline (that's Underline Tabs) |
+| Plain text for inactive tabs | Add border or background to inactive tabs |
+| Hide on scroll with `use-scroll-direction` | Always visible — competes with content |
+| Max 4 tabs | 5+ tabs (truncation, overflow issues) |
+| `--type-emphasis` 14px | `--type-section` 16px — too prominent |
+
+---
+
+## Component: Filter Pills
+
+### Description
+
+Data-filtering control used inside the Auction / Market sections. Visually distinct from L2 Tabs via the 20px radius. Always show outline border (unlike Filter Chips which are borderless when inactive).
+
+The pill radius (same as Tags) is intentional: Filter Pills are "softer" than L2 Tabs (navigation) and signal "narrow the data" rather than "change the view."
+
+### Spec
+
+```css
+/* Container */
+.filter-pills {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: 2px; /* prevent border cut */
+}
+
+/* Individual pill */
+.filter-pill {
+  padding: 5px 14px;
+  font: 500 var(--type-caption) var(--font-sans);  /* 12px/500 */
+  color: var(--text-low);
+  background: transparent;
+  border: 1px solid var(--border-default);          /* always visible outline */
+  border-radius: var(--radius-pill);                /* 20px */
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  white-space: nowrap;
+}
+
+/* Active */
+.filter-pill.active {
+  background: var(--bg-surface-active);
+  border-color: var(--border-hover);
+  color: var(--text-high);
+  font-weight: 600;
+}
+
+/* Hover (desktop only) */
+@media (hover: hover) {
+  .filter-pill:hover:not(.active) {
+    color: var(--text-mid);
+    border-color: var(--border-hover);
+  }
+}
+```
+
+### Key differences vs Filter Chips
+
+| Aspect | Filter Pills (new) | Filter Chips (existing) |
+|--------|-------------------|------------------------|
+| Radius | `--radius-pill` (20px) | `--radius-md` (6px) |
+| Border inactive | `--border-default` (always) | `--border-default` (Option B) or none |
+| Context | Navigation redesign screens | Legacy in-section filtering |
+| Typography | `--type-caption` (12px) | `--type-caption` (12px) — same |
+
+### Tokens
+
+| Category | Token |
+|----------|-------|
+| Radius | `--radius-pill` (20px) |
+| Border | `--border-default` (inactive), `--border-hover` (active) — always present |
+| Background | transparent (inactive), `--bg-surface-active` (active) |
+| Typography | `--type-caption` (12px/500–600) |
+
+---
+
+## Component: CompoundHeaderBlock
+
+### Description
+
+The universal top-right element in the TopBar. Displays rank and treasury info (non-clickable) alongside the user avatar (clickable → profile/settings).
+
+**1 instance per screen**. Part of the universal TopBar — not duplicated per section.
+
+### Visual structure
+
+```
+┌─────────────────────────────────┐
+│  #3 · 142k€  │  JS             │
+│  (non-clickable)│ (clickable)   │
+└─────────────────────────────────┘
+       ↑ overflow-hidden, radius-compound (10px)
+```
+
+- **Left zone:** Rank `#N` + separator dot + treasury `NNk€` — plain text, no interaction
+- **Separator:** `border-right: 1px solid var(--border-default)`
+- **Right zone:** Avatar initials — gradient cyan, clickable
+
+### Spec
+
+```css
+/* Outer container */
+.compound-header {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-compound);  /* 10px */
+  overflow: hidden;
+  height: 32px;
+}
+
+/* Info zone (non-interactive) */
+.compound-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);              /* 0 12px */
+  font: 600 var(--type-caption) var(--font-mono); /* 12px/600 Geist Mono — numbers */
+  color: var(--text-high);
+  white-space: nowrap;
+  user-select: none;
+  border-right: 1px solid var(--border-default);
+}
+
+/* Avatar zone (interactive) */
+.compound-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(to bottom right, var(--color-cyan-600), var(--color-cyan-400));
+  font: 700 var(--type-micro) var(--font-sans);  /* 10px/700 */
+  color: var(--cta-text);                         /* #020617 */
+  cursor: pointer;
+  transition: opacity var(--duration-fast);
+}
+
+.compound-avatar:hover {
+  opacity: 0.85;
+}
+```
+
+### Data fetching
+
+The layout `app/(game)/league/[leagueId]/layout.tsx` fetches rank + treasury and passes them as props down to TopBar → CompoundHeaderBlock.
+
+```ts
+// Rank: sort teams by XP descending, find index of current team
+const myRank = rankData.findIndex(t => t.id === teamId) + 1;
+
+// Treasury: teams.treasury (current team)
+```
+
+Format: `#3 · 142k€` — rank as `#N`, treasury in `k€` (divide by 1000, round to nearest k).
+
+### Tokens
+
+| Category | Token |
+|----------|-------|
+| Container | `--radius-compound` (10px), `--border-default` |
+| Typography | `--type-caption` + Geist Mono (numbers), `--type-micro` (initials) |
+| Colors | `--text-high` (info), `--cta-text` (initials) |
+| Avatar gradient | `cyan-600 → cyan-400` (bottom-right) |
+| Height | 32px fixed |
+
+### Do's and Don'ts
+
+| ✅ Do | ❌ Don't |
+|------|---------|
+| Numbers in Geist Mono | Body text font for rank/treasury |
+| `overflow: hidden` on container | Rounded corners on zones individually |
+| Avatar only clickable | Make info zone clickable |
+| `#N · NNk€` format | Full treasury (hard to scan) |
+
+---
+
+## Component: ContextualActionBar
+
+### Description
+
+A sticky glass bar that floats above the bottom nav, providing contextual info (left) and a primary action button (right). Used on Auction screens. Adapts dynamically to the current state (active phase / pending round / phase closed).
+
+**Glass surface** — uses `--bg-glass` + `--blur-glass`. One instance per screen maximum.
+
+### States
+
+| Phase state | Info text (left ghost) | Button (right) |
+|-------------|------------------------|----------------|
+| Active | `8/10 slots · 33k€ left` | `[Place Bid]` |
+| Pending (commissioner) | `Round 2 · 3 bids pending` | `[Validate Round]` |
+| Closed | `Phase closed · Next: Jun 2` | `[View History]` |
+
+### Spec
+
+```css
+/* Bar container */
+.cta-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  height: 56px;
+  background: var(--bg-glass);
+  border-top: 1px solid var(--border-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  overflow: hidden;
+  border-radius: 0 0 0 0;  /* no radius — flush with bottom nav above */
+}
+
+/* Info zone (ghost, left) */
+.cta-bar__info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  font: 500 var(--type-caption) var(--font-sans);
+  color: var(--text-low);
+}
+
+/* Action button (right, full-height) */
+.cta-bar__btn {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-5);                        /* 0 20px */
+  font: 600 var(--type-emphasis) var(--font-sans);  /* 14px/600 */
+  color: var(--cta-text);
+  background: var(--cta-gradient);
+  border-left: 1px solid var(--border-glass);
+  border-radius: 0 0 var(--radius-lg) 0;            /* bottom-right only — or overflow on container */
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration-fast);
+}
+
+.cta-bar__btn:hover {
+  background: var(--cta-gradient-hover);
+}
+```
+
+### Tokens
+
+| Category | Token |
+|----------|-------|
+| Background | `--bg-glass` |
+| Border | `--border-glass` (top + left separator) |
+| Blur | `--blur-glass` (20px) |
+| Info text | `--type-caption` (12px), `--text-low` |
+| Button text | `--type-emphasis` (14px/600), `--cta-text` |
+| Button background | `--cta-gradient` → `--cta-gradient-hover` |
+| Height | 56px |
+
+### Do's and Don'ts
+
+| ✅ Do | ❌ Don't |
+|------|---------|
+| Full-height button (align-self: stretch) | Button with top/bottom margin |
+| Glass background + blur | Solid opaque background |
+| Dynamic text based on phase state | Static "Place Bid" regardless of context |
+| Single primary action | Two buttons in the bar |
+
+---
+
+*WattHunter Design System v3.1 — 2026-05-13*
 *Palette: Sky Blue Night (~18% sat, ~200° hue) | Fonts: Geist Sans + Geist Mono*
-*Historique: v0 Radix Slate → v1.0 Teal B1 (195°, 12%) → v1.1 text-low fix → v2.0 Blue Night (220°, 18%) → v2.1 Sky Blue Night (200°, 18%) → v2.2 +Sky-500 accent-label, type scale 11 niveaux → v2.3 +Card Standard, +Brand Card XP → v2.4 Sky-500 restreint (gradients + badges only), cyan-400 hero stat maintenu, +badge-bg token → v3.0 Component system: +Underline Tabs, +Filter Chips (Contained Light), +Tags (4 variants), radius-as-affordance (6px interactive / 20px decorative), +radius-pill token*
+*Historique: v0 Radix Slate → v1.0 Teal B1 (195°, 12%) → v1.1 text-low fix → v2.0 Blue Night (220°, 18%) → v2.1 Sky Blue Night (200°, 18%) → v2.2 +Sky-500 accent-label, type scale 11 niveaux → v2.3 +Card Standard, +Brand Card XP → v2.4 Sky-500 restreint (gradients + badges only), cyan-400 hero stat maintenu, +badge-bg token → v3.0 Component system: +Underline Tabs, +Filter Chips (Contained Light), +Tags (4 variants), radius-as-affordance (6px interactive / 20px decorative), +radius-pill token → v3.1 Navigation Redesign: +L2 Tabs (8px chip), +Filter Pills (20px, always-outline), +CompoundHeaderBlock, +ContextualActionBar, +Glassmorphism rules, +radius-compound (10px)*

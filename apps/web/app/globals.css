@@ -45,6 +45,7 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  --radius-compound: 10px;
   --radius-pill: 20px;
   --radius-full: 9999px;
   --border-width-default: 1px;
@@ -146,6 +147,11 @@
   --cta-text: #020617;
   --cta-gradient: linear-gradient(to bottom right, var(--color-cyan-500), var(--color-cyan-400));
   --cta-gradient-hover: linear-gradient(to bottom right, var(--color-cyan-600), var(--color-cyan-500));
+
+  /* Glassmorphism — bottom nav + contextual action bar only */
+  --bg-glass: rgba(8, 14, 26, 0.80);
+  --border-glass: rgba(255, 255, 255, 0.06);
+  --blur-glass: 20px;
   /* Spacing (base 4px) */
   --space-1: 4px;
   --space-2: 8px;
