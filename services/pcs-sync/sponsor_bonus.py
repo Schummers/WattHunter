@@ -211,6 +211,32 @@ async def process_race_bonuses(
     if not race_results:
         return {"status": "completed", "bonuses_created": 0, "errors": []}
 
+    # Step 1b — For GT stages, build GT squad membership set (team_id, rider_id).
+    # Mirrors the scoring rule: non-squad riders earn 0 XP on GT stages → same for bonuses.
+    import re as _re
+
+    def _is_gt_stage(slug: str) -> bool:
+        return any(gt in slug for gt in GRAND_TOUR_SLUGS) and "/stage-" in slug
+
+    gt_stage_slugs = {r["race_slug"] for r in race_results if _is_gt_stage(r["race_slug"])}
+    gt_squad_set: set[tuple[str, str]] = set()  # (team_id, rider_id)
+    if gt_stage_slugs:
+        years: set[int] = set()
+        for s in gt_stage_slugs:
+            m = _re.search(r"/(\d{4})/", s)
+            if m:
+                years.add(int(m.group(1)))
+        for year in years:
+            squad_resp = (
+                supabase.table("gt_squad")
+                .select("team_id,rider_id,removed_at")
+                .eq("year", year)
+                .execute()
+            )
+            for row in squad_resp.data or []:
+                if not row.get("removed_at"):
+                    gt_squad_set.add((row["team_id"], row["rider_id"]))
+
     # Step 2 — Fetch active/notice contracts with rider nationality
     contracts_resp = (
         supabase.table("contracts")
@@ -264,6 +290,10 @@ async def process_race_bonuses(
             sponsor = team_sponsor.get(team_id)
 
             if not sponsor:
+                continue
+
+            # GT stage: only squad members can trigger sponsor bonuses (mirrors XP scoring rule).
+            if _is_gt_stage(race_slug) and (team_id, rider_id) not in gt_squad_set:
                 continue
 
             base_bonus, multiplier, final_bonus = calculate_bonus(
