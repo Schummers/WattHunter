@@ -60,7 +60,7 @@ function TeamSection({
           </span>
           <span className="w-[44px] text-right text-[length:var(--type-caption)] font-bold text-[var(--text-high)]">
             {formatXp(team.totalXp)}
-            <span className="ml-0.5 text-[10px] font-medium text-[var(--text-ghost)]">xp</span>
+            <span className="ml-0.5 text-[length:var(--type-micro)] font-medium text-[var(--text-ghost)]">xp</span>
           </span>
         </div>
       </div>
@@ -75,7 +75,7 @@ function TeamSection({
                 {rider.riderShortName}
               </span>
               {isGtPhase && rider.role && (
-                <span className="rounded px-1.5 py-px text-[10px] font-bold uppercase tracking-wider text-[var(--text-ghost)] bg-[var(--bg-surface-active)]">
+                <span className="rounded px-1.5 py-px text-[length:var(--type-micro)] font-bold uppercase tracking-wider text-[var(--text-ghost)] bg-[var(--bg-surface-active)]">
                   {rider.role}
                 </span>
               )}
@@ -86,7 +86,7 @@ function TeamSection({
                 </span>
                 <span className="w-[44px] text-right text-[length:var(--type-caption)] font-semibold text-[var(--text-mid)]">
                   {formatXp(rider.xpGained)}
-                  <span className="ml-0.5 text-[10px] font-medium text-[var(--text-ghost)]">xp</span>
+                  <span className="ml-0.5 text-[length:var(--type-micro)] font-medium text-[var(--text-ghost)]">xp</span>
                 </span>
               </div>
             </div>

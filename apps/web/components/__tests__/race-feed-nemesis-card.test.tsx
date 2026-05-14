@@ -12,6 +12,7 @@ const winData: NemesisData = {
   targetTeamName: "Team Astrid",
   targetRiderShortName: "J. Vingegaard",
   outcome: "attacker_won",
+      nemesisType: "gc",
   isMyTeamAttacker: true,
 };
 

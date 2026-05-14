@@ -123,7 +123,7 @@ function WinnerCircle({
   }
   return (
     <span
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[10px] font-extrabold text-[var(--cta-text)] shrink-0"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[length:var(--type-micro)] font-extrabold text-[var(--cta-text)] shrink-0"
       style={{ background: "var(--cta-gradient)" }}
     >
       {initials}
