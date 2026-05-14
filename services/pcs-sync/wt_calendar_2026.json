@@ -137,7 +137,12 @@
     "name": "Giro d'Italia",
     "start_date": "2026-05-08",
     "end_date": "2026-05-31",
-    "type": "stage-race"
+    "type": "stage-race",
+    "rest_days": [
+      "2026-05-11",
+      "2026-05-18",
+      "2026-05-25"
+    ]
   },
   {
     "slug": "race/dauphine/2026",

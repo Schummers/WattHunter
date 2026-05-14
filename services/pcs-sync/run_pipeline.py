@@ -38,7 +38,7 @@ import json
 import os
 import re
 import sys
-from datetime import date
+from datetime import date, timedelta
 from typing import Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
@@ -138,11 +138,22 @@ def race_meta(slug: str) -> Tuple[str, str]:
     # For stage slugs, compute the actual stage date
     m = re.match(r"^.+/stage-(\d+)$", slug)
     if m and entry.get("start_date"):
-        from datetime import timedelta
         stage_num = int(m.group(1))
         start = date.fromisoformat(entry["start_date"])
-        stage_date = start + timedelta(days=stage_num - 1)
-        date_val = stage_date.isoformat()
+        rest_days = set(entry.get("rest_days") or [])
+        if rest_days:
+            # Walk day-by-day from start, skipping rest days, until we reach stage N
+            current = start
+            count = 0
+            while True:
+                if current.isoformat() not in rest_days:
+                    count += 1
+                    if count == stage_num:
+                        break
+                current += timedelta(days=1)
+            date_val = current.isoformat()
+        else:
+            date_val = (start + timedelta(days=stage_num - 1)).isoformat()
         name = f"{name} — Stage {stage_num}"
 
     # For /gc slugs, use end_date (final day of stage race)
@@ -183,12 +194,22 @@ def find_races_for_today() -> List[Dict]:
                 start = race.get("start_date", "")
                 end = race.get("end_date", "")
                 if start and end and start <= today_str <= end:
-                    day_offset = (date.fromisoformat(today_str) - date.fromisoformat(start)).days + 1
+                    # Count racing days (non-rest) from start up to and including today
+                    rest_set = set(race.get("rest_days") or [])
+                    if today_str in rest_set:
+                        continue  # today is a rest day, no stage to import
+                    current = date.fromisoformat(start)
+                    today_d = date.fromisoformat(today_str)
+                    stage_num = 0
+                    while current <= today_d:
+                        if current.isoformat() not in rest_set:
+                            stage_num += 1
+                        current += timedelta(days=1)
                     matches.append({
                         "slug": race.get("slug"),
                         "name": race.get("name"),
-                        "date": start,
-                        "stage_num": day_offset,
+                        "date": today_str,
+                        "stage_num": stage_num,
                         "type": "stage-race",
                     })
         else:
