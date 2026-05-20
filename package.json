@@ -12,7 +12,9 @@
     "ds-shots": "tsx scripts/screenshot-states.ts"
   },
   "devDependencies": {
+    "@types/node": "^20.19.37",
     "glob": "^13.0.6",
+    "playwright": "^1.60.0",
     "tsx": "^4.22.3",
     "turbo": "^2",
     "vitest": "^4.0.18"

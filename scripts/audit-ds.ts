@@ -42,7 +42,7 @@ const RULES: Rule[] = [
     class: "B",
     name: "Hardcoded hex color",
     pattern: /#[0-9a-fA-F]{3,8}\b/g,
-    skip: (m, line) => {
+    skip: (_m, line) => {
       // Skip svg fill/stroke="#..." inside icon files (rare in apps/web/, but defensive)
       // Skip comments
       const trimmed = line.trim();
@@ -89,7 +89,7 @@ const RULES: Rule[] = [
     class: "E",
     name: "Number variable in non-mono context (heuristic)",
     pattern: /\{(xp|price|amount|treasury|salary|count|total|points|score|rank|bid|cost|level)\b[^}]*\}/g,
-    skip: (m, line) => {
+    skip: (_m, line) => {
       return /font-mono|--type-(display|stat|stat-small)/.test(line);
     },
   },
