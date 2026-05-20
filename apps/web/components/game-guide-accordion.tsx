@@ -566,6 +566,7 @@ export function GameGuideAccordion() {
               onClick={() => toggle(section.id)}
               className="flex w-[calc(100%+2rem)] items-center gap-3 py-3 -mx-4 px-4 text-left transition-colors hover:bg-[var(--bg-subtle)]"
             >
+              {/* DS-EXCEPTION: rounded-lg (8px = --radius-lg) used here as decorative container, not interactive element */}
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface)]">
                 <Icon size={18} className="text-[var(--text-mid)]" />
               </div>
@@ -586,6 +587,7 @@ export function GameGuideAccordion() {
             </button>
 
             {/* Content */}
+            {/* DS-EXCEPTION: max-h-[2000px] for accordion animation — grid-rows approach would require refactor; consistent with GT Tactics accordion pattern in codebase */}
             <div
               className={`overflow-hidden transition-all duration-200 ${
                 isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
