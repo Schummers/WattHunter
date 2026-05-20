@@ -14,7 +14,7 @@ export function BackHeader({ label, onBack }: BackHeaderProps) {
     <div className="sticky top-0 z-40 bg-[var(--bg-app)]">
       <button
         onClick={() => (onBack ? onBack() : router.back())}
-        className="flex min-h-[40px] items-center gap-2 px-4 py-2 text-[length:var(--type-emphasis)] font-semibold text-[var(--text-mid)] hover:text-[var(--text-high)] transition-colors"
+        className="flex min-h-10 items-center gap-2 px-4 py-2 text-[length:var(--type-emphasis)] font-semibold text-[var(--text-mid)] hover:text-[var(--text-high)] transition-colors"
       >
         <ArrowLeft size={18} />
         {label}
