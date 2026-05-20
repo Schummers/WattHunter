@@ -14,6 +14,7 @@ import { Plus, Minus } from "lucide-react";
 import { BID_INCREMENT, snapToIncrement, computeAvailableBudget } from "@/lib/budget";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 import { ReleaseConfirmModal } from "@/components/release-confirm-modal";
+import { Tag } from "@/components/pill";
 
 type RiderContext = "market" | "team" | "ranking";
 
@@ -378,25 +379,18 @@ export function RiderDetailClient({
           </div>
 
           <div className="flex flex-wrap gap-1.5">
+            {/* D-001 à D-004: inline spans migrés vers <Tag> — text-mid intentionnel (specialty/metrics, plus saillant que text-low) */}
             {rider.specialty && (
-              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">
-                {rider.specialty}
-              </span>
+              <Tag className="text-[var(--text-mid)]">{rider.specialty}</Tag>
             )}
             {age !== null && (
-              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium font-mono text-[var(--text-mid)]">
-                {age} yrs
-              </span>
+              <Tag className="font-mono text-[var(--text-mid)]">{age} yrs</Tag>
             )}
             {rider.height_cm && (
-              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium font-mono text-[var(--text-mid)]">
-                {rider.height_cm} cm
-              </span>
+              <Tag className="font-mono text-[var(--text-mid)]">{rider.height_cm} cm</Tag>
             )}
             {rider.weight_kg && (
-              <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 text-[length:var(--type-caption)] font-medium font-mono text-[var(--text-mid)]">
-                {rider.weight_kg} kg
-              </span>
+              <Tag className="font-mono text-[var(--text-mid)]">{rider.weight_kg} kg</Tag>
             )}
           </div>
         </div>
@@ -431,7 +425,7 @@ export function RiderDetailClient({
                 <div className="flex flex-1 flex-col items-center">
                   <div className={`flex w-full items-center justify-center gap-1 h-10 px-3 rounded-md ${
                     bidInputError
-                      ? "border border-red-400"
+                      ? "border border-[var(--danger-border)]"
                       : bidAmount !== null
                         ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
                         : "border border-[var(--border-default)] bg-transparent"
@@ -483,9 +477,9 @@ export function RiderDetailClient({
                         setBidInputValue(String(next));
                         setBidInputError(null);
                       }}
-                      className={`w-full bg-transparent text-center text-base md:text-[length:var(--type-stat-small)] font-bold font-mono tabular-nums outline-none ${
+                      className={`w-full bg-transparent text-center text-[length:var(--type-stat-small)] font-bold font-mono tabular-nums outline-none ${
                         bidInputError
-                          ? "text-red-400"
+                          ? "text-[var(--status-danger)]"
                           : bidAmount !== null
                             ? "text-[var(--accent-default)]"
                             : "text-[var(--text-low)]"
@@ -493,7 +487,8 @@ export function RiderDetailClient({
                     />
                     <span className="text-[length:var(--type-body)] text-[var(--text-ghost)]">€</span>
                   </div>
-                  <span className={`mt-[3px] text-[length:var(--type-micro)] ${bidInputError ? "text-red-400" : "text-[var(--text-ghost)]"}`}>
+                  {/* C-001 EXCEPTION: mt-[3px] — valeur définissante sub-token (3px), pas de token --space-* à 3px. Même pattern que py-[3px] dans pill.tsx. */}
+                  <span className={`mt-[3px] text-[length:var(--type-micro)] ${bidInputError ? "text-[var(--status-danger)]" : "text-[var(--text-ghost)]"}`}>
                     {bidInputError ?? <>min <span className="font-mono">{formatThousands(minSalary)}</span> €</>}
                   </span>
                 </div>
@@ -525,7 +520,7 @@ export function RiderDetailClient({
               type="button"
               disabled={saving}
               onClick={handleRemoveDraft}
-              className="w-full rounded-[var(--radius-md)] border border-[var(--danger-border)] text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-[var(--danger-bg)] transition-colors disabled:opacity-50"
+              className="w-full rounded-[var(--radius-md)] border border-[var(--danger-border)] text-[var(--status-danger)] py-2.5 text-[length:var(--type-body)] font-medium hover:bg-[var(--danger-bg)] transition-colors disabled:opacity-50"
             >
               {saving ? "Removing..." : "Cancel Draft"}
             </button>
@@ -536,7 +531,7 @@ export function RiderDetailClient({
               type="button"
               disabled={saving}
               onClick={handleReleaseClick}
-              className="w-full rounded-[var(--radius-md)] border border-[var(--danger-border)] text-red-400 py-2.5 text-[length:var(--type-body)] font-medium hover:bg-[var(--danger-bg)] transition-colors disabled:opacity-50"
+              className="w-full rounded-[var(--radius-md)] border border-[var(--danger-border)] text-[var(--status-danger)] py-2.5 text-[length:var(--type-body)] font-medium hover:bg-[var(--danger-bg)] transition-colors disabled:opacity-50"
             >
               {saving ? "Releasing..." : "Release Rider"}
             </button>

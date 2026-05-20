@@ -75,7 +75,7 @@ export function ReleaseConfirmModal({
             disabled={isDisabled}
             className={`flex-1 rounded-[var(--radius-md)] py-2.5 text-[length:var(--type-emphasis)] font-semibold transition-colors disabled:opacity-50 ${
               isPaidPhase && !isBlockedThisPhase
-                ? "border border-[var(--danger-border)] bg-[var(--danger-bg)] text-red-400 hover:bg-[var(--danger-bg)]"
+                ? "border border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--status-danger)] hover:bg-[var(--danger-bg)]"
                 : "border border-[var(--border-default)] bg-[var(--bg-surface-active)] text-[var(--text-high)] hover:bg-[var(--bg-surface-hover)]"
             }`}
           >
