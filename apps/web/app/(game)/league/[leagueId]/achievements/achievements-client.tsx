@@ -110,7 +110,7 @@ export function AchievementsClient({
       </div>
 
       {isPending && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--scrim-light)]">
           <div className="rounded-lg bg-[var(--bg-surface)] px-4 py-3 text-[length:var(--type-body)] text-[var(--text-mid)]">
             Equipping…
           </div>

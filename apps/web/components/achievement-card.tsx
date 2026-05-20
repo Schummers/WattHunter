@@ -24,16 +24,17 @@ export function AchievementCard({ achievement, unlocked, equipped, onEquip, dyna
   return (
     <div
       style={{
-        borderRadius: 20,
+        borderRadius: "var(--radius-pill)",
         overflow: "hidden",
         border: equipped
           ? "1.5px solid var(--accent-default)"
-          : "1px solid rgba(255,255,255,0.08)",
+          : "1px solid var(--border-subtle)",
         background: "var(--bg-surface)",
         boxShadow: equipped ? "0 0 0 1px var(--accent-default)" : "none",
       }}
     >
       {/* Banner preview — always full color */}
+      {/* C-001 EXCEPTION: height: 56 — valeur structurelle de la carte achievement, pas de token --space-* à 56px. Exception documentée. */}
       <div style={{ height: 56, position: "relative", overflow: "hidden" }}>
         <div
           style={{
@@ -44,6 +45,7 @@ export function AchievementCard({ achievement, unlocked, equipped, onEquip, dyna
             backgroundPosition: "center",
           }}
         />
+        {/* B-002 EXCEPTION: gradient de lisibilité banner-overlay — aucun token DS pour un gradient directionnel. Exception documentée. */}
         <div
           style={{
             position: "absolute",
@@ -123,9 +125,9 @@ function RightAction({
           fontSize: "var(--type-caption)",
           fontWeight: 700,
           color: "var(--accent-default)",
-          borderRadius: 6,
+          borderRadius: "var(--radius-md)",
           border: "1px solid var(--accent-default)",
-          background: "rgba(6,182,212,0.12)",
+          background: "var(--badge-bg)",
         }}
         aria-label="Equipped"
       >
@@ -149,7 +151,7 @@ function RightAction({
           letterSpacing: "0.06em",
           textTransform: "uppercase",
           color: "var(--accent-default)",
-          borderRadius: 6,
+          borderRadius: "var(--radius-md)",
           border: "1px solid var(--accent-default)",
           background: "transparent",
           cursor: "pointer",
@@ -171,11 +173,12 @@ function RightAction({
           height: 22,
           padding: "0 8px",
           fontSize: "var(--type-micro)",
+          fontFamily: "var(--font-geist-mono, monospace)",
           fontWeight: 700,
           letterSpacing: "0.04em",
           color: "var(--text-mid)",
-          borderRadius: 20,
-          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: "var(--radius-pill)",
+          border: "1px solid var(--border-subtle)",
           whiteSpace: "nowrap",
         }}
       >
@@ -198,8 +201,8 @@ function RightAction({
         letterSpacing: "0.06em",
         textTransform: "uppercase",
         color: "var(--text-ghost)",
-        borderRadius: 20,
-        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: "var(--radius-pill)",
+        border: "1px solid var(--border-subtle)",
       }}
     >
       {TIER_LABEL[tier]}
