@@ -278,7 +278,7 @@ export function AuctionsClient({
               Roster
             </span>
             <span className="text-[length:var(--type-caption)] font-semibold text-[var(--text-low)]">
-              <span className="font-mono">{rosterCount}/{maxSlots}</span> slots
+              <span className="font-mono tabular-nums">{rosterCount}/{maxSlots}</span> slots
             </span>
           </div>
 
@@ -304,7 +304,7 @@ export function AuctionsClient({
                           {formatThousands(rider.lockedSalary)} €
                         </span>
                         <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-                          +<span className="font-mono">{rider.xp}</span> XP
+                          +<span className="font-mono tabular-nums">{rider.xp}</span> XP
                         </span>
                       </div>
                       {(isRound1 || hasOpenRound) && (
@@ -315,7 +315,7 @@ export function AuctionsClient({
                             handleReleaseClick(rider.contractId);
                           }}
                           aria-label="Release rider"
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--danger-bg)] text-red-400 transition-colors hover:bg-[var(--danger-bg)]"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--danger-bg)] text-[var(--danger)] transition-colors hover:bg-[var(--danger-bg)]"
                         >
                           <X size={14} />
                         </button>
@@ -340,8 +340,8 @@ export function AuctionsClient({
             <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
               Draft Bids
             </span>
-            <span className={`text-[length:var(--type-caption)] font-semibold ${totalCount > maxSlots ? 'text-red-400' : 'text-[var(--text-low)]'}`}>
-              <span className="font-mono">{totalCount}/{maxSlots}</span> slots
+            <span className={`text-[length:var(--type-caption)] font-semibold ${totalCount > maxSlots ? 'text-[var(--danger)]' : 'text-[var(--text-low)]'}`}>
+              <span className="font-mono tabular-nums">{totalCount}/{maxSlots}</span> slots
               {totalCount > maxSlots && <span className="font-normal"> — over limit</span>}
             </span>
           </div>
@@ -398,7 +398,7 @@ export function AuctionsClient({
         {/* Validate error */}
         {validateError && (
           <div className="px-4">
-            <p className="rounded-lg border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-[length:var(--type-caption)] text-red-400">
+            <p className="rounded-lg border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-[length:var(--type-caption)] text-[var(--danger)]">
               {validateError}
             </p>
           </div>
@@ -407,7 +407,7 @@ export function AuctionsClient({
         {/* Validate success */}
         {validateSuccess && (
           <div className="px-4">
-            <p className="rounded-lg border border-[var(--success-border)] bg-[var(--success-bg)] px-3 py-2 text-[length:var(--type-caption)] text-emerald-400">
+            <p className="rounded-lg border border-[var(--success-border)] bg-[var(--success-bg)] px-3 py-2 text-[length:var(--type-caption)] text-[var(--success)]">
               {roundResolved
                 ? "All teams validated — round resolved! Contracts created."
                 : "Round validated! Your bids have been submitted."}
