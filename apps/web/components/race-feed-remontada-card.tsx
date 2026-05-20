@@ -14,19 +14,16 @@ export function RaceFeedRemontadaCard({ data }: Props) {
     : data.teamName;
 
   return (
-    <div className="relative rounded-[10px] border border-[rgba(245,158,11,0.35)] bg-[var(--bg-app)]">
+    <div className="relative rounded-[var(--radius-compound)] border border-[rgba(245,158,11,0.35)] bg-[var(--bg-app)]">
       {/* Floating label — same pattern as RaceCardPast */}
       <span
-        className="absolute left-3 z-10 flex items-center gap-1 whitespace-nowrap font-semibold"
+        className="absolute left-3 z-10 flex items-center gap-1 whitespace-nowrap font-semibold leading-3 text-[length:var(--type-micro)] text-[var(--warning)]"
         style={{
           top: -6,
-          lineHeight: "12px",
           paddingLeft: 4,
           paddingRight: 4,
-          fontSize: "var(--type-micro)",
           background: "var(--bg-app)",
           borderRadius: 2,
-          color: "var(--warning)",
         }}
       >
         Remontada
@@ -38,7 +35,7 @@ export function RaceFeedRemontadaCard({ data }: Props) {
           {overtookLine}
         </span>
         <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-          {mult} XP boost for the next {data.stagesRemaining} {stageWord}
+          <span className="font-mono tabular-nums">{mult}</span> XP boost for the next <span className="font-mono tabular-nums">{data.stagesRemaining}</span> {stageWord}
         </span>
       </div>
     </div>

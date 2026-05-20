@@ -14,7 +14,7 @@ export function RaceCardToday({ race, leagueId }: Props) {
   const hasBadge = !!race.winnerTeamBadgeUrl;
 
   return (
-    <div className="rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-app)] px-3.5 py-3.5">
+    <div className="rounded-[var(--radius-compound)] border border-[var(--border-default)] bg-[var(--bg-app)] px-3.5 py-3.5">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-col gap-0.5 min-w-0">
@@ -89,7 +89,7 @@ function WinnerAvatar({
   }
   return (
     <span
-      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-extrabold text-[var(--cta-text)] shrink-0"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[length:var(--type-micro)] font-extrabold text-[var(--cta-text)] shrink-0"
       style={{ background: "var(--cta-gradient)" }}
     >
       {initials}

@@ -21,13 +21,12 @@ export function RaceCardPast({ race, leagueId, defaultExpanded }: Props) {
 
   return (
     // overflow-visible so the floating label can escape the border
-    <div className="relative rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-app)]">
+    <div className="relative rounded-[var(--radius-compound)] border border-[var(--border-default)] bg-[var(--bg-app)]">
       {/* Floating label — centered on the top border line */}
       <span
-        className="absolute left-3 text-[length:var(--type-micro)] font-semibold text-[var(--text-low)] z-10 whitespace-nowrap"
+        className="absolute left-3 text-[length:var(--type-micro)] font-semibold text-[var(--text-low)] z-10 whitespace-nowrap leading-3"
         style={{
           top: -6,
-          lineHeight: "12px",
           paddingLeft: 4,
           paddingRight: 4,
           background: "var(--bg-app)",
@@ -38,7 +37,7 @@ export function RaceCardPast({ race, leagueId, defaultExpanded }: Props) {
       </span>
 
       {/* Inner wrapper clips the banner to the card radius */}
-      <div className="overflow-hidden rounded-[10px]">
+      <div className="overflow-hidden rounded-[var(--radius-compound)]">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -123,7 +122,7 @@ function WinnerCircle({
   }
   return (
     <span
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[10px] font-extrabold text-[var(--cta-text)] shrink-0"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[length:var(--type-micro)] font-extrabold text-[var(--cta-text)] shrink-0"
       style={{ background: "var(--cta-gradient)" }}
     >
       {initials}

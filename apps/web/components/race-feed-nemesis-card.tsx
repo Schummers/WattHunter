@@ -41,7 +41,7 @@ export function RaceFeedNemesisCard({ data }: Props) {
   }
 
   return (
-    <div className="rounded-[10px] border bg-[rgba(239,68,68,0.06)] border-[rgba(239,68,68,0.20)] px-3 py-2.5">
+    <div className="rounded-[var(--radius-compound)] border bg-[var(--danger-bg)] border-[var(--danger-border)] px-3 py-2.5">
       <div className="flex items-center gap-2 text-[length:var(--type-caption)] font-semibold text-[var(--text-high)]">
         <Swords size={14} className="text-[var(--danger)]" aria-hidden="true" />
         <span>{typeLabel}</span>
