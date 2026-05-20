@@ -55,7 +55,7 @@ export function StickyBar({
 
   return (
     <div
-      className={`fixed inset-x-0 z-30 border-t border-[var(--border-default)] bg-[var(--bg-subtle)] py-2 transition-[bottom] duration-200${alwaysShow ? " lg:left-[180px] lg:bottom-0" : " lg:hidden"}`}
+      className={`fixed inset-x-0 z-30 border-t border-[var(--border-default)] bg-[var(--bg-subtle)] py-2 transition-[bottom] duration-200${alwaysShow ? " lg:left-[var(--sidebar-width,180px)] lg:bottom-0" : " lg:hidden"}`}
       style={bottomStyle}
     >
       {children ? (
@@ -63,7 +63,7 @@ export function StickyBar({
       ) : (
         <div className="space-y-1 px-4">
           <div className="flex items-center justify-between">
-            <span className={`text-[length:var(--type-emphasis)] font-semibold ${isDeficit ? "text-red-400" : "text-[var(--text-high)]"}`}>
+            <span className={`text-[length:var(--type-emphasis)] font-semibold ${isDeficit ? "text-[var(--danger)]" : "text-[var(--text-high)]"}`}>
               {slotInfo && <span className="font-mono">{slotInfo}</span>}
               {slotInfo && budgetInfo && " · "}
               {budgetInfo && <span className="font-mono">{budgetInfo}</span>}
@@ -71,7 +71,7 @@ export function StickyBar({
             <button
               onClick={onSave}
               disabled={!saveEnabled || saving || isDeficit}
-              className={`rounded-lg px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold ${
+              className={`rounded-md px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold ${
                 isDeficit
                   ? "bg-[var(--bg-surface)] text-[var(--text-low)] cursor-not-allowed"
                   : "cta-gradient text-[var(--cta-text)] disabled:opacity-40"
@@ -81,7 +81,7 @@ export function StickyBar({
             </button>
           </div>
           {isDeficit && deficitMessage && (
-            <p className="text-[length:var(--type-caption)] text-red-400">{deficitMessage}</p>
+            <p className="text-[length:var(--type-caption)] text-[var(--danger)]">{deficitMessage}</p>
           )}
           {warningMessage && (
             <p className="text-[length:var(--type-caption)] text-[var(--text-high)]">{warningMessage}</p>
