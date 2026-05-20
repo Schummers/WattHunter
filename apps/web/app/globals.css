@@ -143,6 +143,18 @@
   /* Layout */
   --sidebar-width: 180px;
 
+  /* Gamification tokens — achievement tier rings */
+  --tier-victory: #fbbf24;          /* amber-400 — gold ring for victory tier */
+  --tier-victory-glow: rgba(251, 191, 36, 0.27);
+  --tier-victory-glow-mid: rgba(251, 191, 36, 0.53);
+  --tier-victory-glow-outer: rgba(251, 191, 36, 0.13);
+  --tier-podium: var(--warning);    /* amber-500 = --warning */
+  --tier-podium-glow: var(--warning-border); /* rgba(245,158,11,0.30) */
+  --tier-locked: var(--color-b1-8); /* #40535d — neutral grey for locked/top10 */
+  --tier-dynamic: var(--color-cyan-400);     /* #22d3ee */
+  --tier-dynamic-glow: rgba(34, 211, 238, 0.27);
+  --tier-dynamic-glow-mid: rgba(34, 211, 238, 0.27);
+
   /* Aliases (backward compat) */
   --status-success: var(--success);
   --status-danger: var(--danger);
@@ -428,4 +440,15 @@
     --type-nav: 12px;
     --type-micro: 12px;
   }
+}
+
+/* Achievement badge animations — used by components/achievement-badge.tsx */
+@keyframes achievement-breathe {
+  0%, 100% { box-shadow: 0 0 8px var(--tier-victory-glow); }
+  50%       { box-shadow: 0 0 24px var(--tier-victory-glow-mid), 0 0 40px var(--tier-victory-glow-outer); }
+}
+
+@keyframes achievement-pulse {
+  0%, 100% { box-shadow: 0 0 6px var(--tier-dynamic); }
+  50%       { box-shadow: 0 0 18px var(--tier-dynamic), 0 0 32px var(--tier-dynamic-glow-mid); }
 }
