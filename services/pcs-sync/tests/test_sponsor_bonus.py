@@ -382,7 +382,7 @@ RIDER_ID = "bbbb-0000-0000-0001"
 
 @pytest.mark.asyncio
 async def test_process_race_bonuses_qualifying_result():
-    """Qualifying result creates a sponsor bonus entry and credits treasury."""
+    """Qualifying result creates a sponsor bonus entry and credits treasury via RPC."""
     from sponsor_bonus import process_race_bonuses
 
     # Lotto sponsor data as stored in DB
@@ -412,13 +412,7 @@ async def test_process_race_bonuses_qualifying_result():
             "sponsor_id": "sp-lotto",
             "sponsors": lotto_row,
         }],
-        # 4. sponsor_bonuses upsert
-        [],
-        # 5. teams select (treasury)
-        {"id": TEAM_ID, "treasury": 500_000},
-        # 6. teams update (treasury credit)
-        [],
-        # 7. treasury_log insert
+        # 4. sponsor_bonuses batch upsert
         [],
     )
 
@@ -427,6 +421,61 @@ async def test_process_race_bonuses_qualifying_result():
     assert result["status"] == "completed"
     assert result["bonuses_created"] == 1
     assert result["errors"] == []
+
+    # RPC was called once with the correct team and bonus entries
+    sb.rpc.assert_called_once_with("credit_sponsor_bonuses", {
+        "p_team_id": TEAM_ID,
+        "p_bonuses": [{
+            "amount": 3000,
+            "rider_id": RIDER_ID,
+            "description": "Sponsor bonus: gc rank 5 in race/paris-nice/2026 (×1.0)",
+        }],
+    })
+
+
+@pytest.mark.asyncio
+async def test_process_race_bonuses_rpc_failure_captured():
+    """RPC failure for treasury credit is captured in errors, not raised."""
+    from sponsor_bonus import process_race_bonuses
+
+    lotto_row = {**LOTTO, "id": "sp-lotto"}
+
+    sb = make_supabase(
+        # 1. race_results fetch
+        [{
+            "rider_id": RIDER_ID,
+            "race_slug": "race/paris-nice/2026",
+            "race_class": "stage_race",
+            "stage": None,
+            "rank": 5,
+            "pcs_points": 40,
+            "race_date": "2026-03-09",
+        }],
+        # 2. contracts
+        [{
+            "team_id": TEAM_ID,
+            "rider_id": RIDER_ID,
+            "status": "active",
+            "riders": {"nationality": "FR"},
+        }],
+        # 3. team_sponsors
+        [{
+            "team_id": TEAM_ID,
+            "sponsor_id": "sp-lotto",
+            "sponsors": lotto_row,
+        }],
+        # 4. sponsor_bonuses batch upsert
+        [],
+    )
+
+    # Make the RPC raise an exception
+    sb.rpc.return_value.execute.side_effect = Exception("DB connection lost")
+
+    result = await process_race_bonuses(sb, ["race/paris-nice/2026"])
+
+    assert result["status"] == "completed"
+    assert result["bonuses_created"] == 1
+    assert any("rpc credit_sponsor_bonuses" in e for e in result["errors"])
 
 
 @pytest.mark.asyncio

@@ -213,29 +213,90 @@ async def process_race_bonuses(
 
     # Step 1b — For GT stages, build GT squad membership set (team_id, rider_id).
     # Mirrors the scoring rule: non-squad riders earn 0 XP on GT stages → same for bonuses.
+    # Temporal check: rider must have been in the squad at 11:00 CET on race day
+    # (same cutoff as scoring.py) — prevents retroactive bonuses for late squad additions.
     import re as _re
+    from datetime import date as _date, datetime as _datetime
+    from zoneinfo import ZoneInfo as _ZoneInfo
+
+    _paris_tz = _ZoneInfo("Europe/Paris")
 
     def _is_gt_stage(slug: str) -> bool:
         return any(gt in slug for gt in GRAND_TOUR_SLUGS) and "/stage-" in slug
 
+    def _parse_ts(val: str | None) -> _datetime | None:
+        """Parse Supabase timestamp — Python 3.9 compatible.
+
+        Python 3.9 fromisoformat rejects +00:00 offsets and non-standard
+        microsecond widths. Supabase always returns UTC.
+        """
+        if not val:
+            return None
+        from datetime import timezone as _tz
+        s = val.replace("+00:00", "").replace("Z", "")
+        if "." in s:
+            base, frac = s.split(".", 1)
+            s = base + "." + (frac + "000000")[:6]
+        return _datetime.fromisoformat(s).replace(tzinfo=_tz.utc)
+
     gt_stage_slugs = {r["race_slug"] for r in race_results if _is_gt_stage(r["race_slug"])}
-    gt_squad_set: set[tuple[str, str]] = set()  # (team_id, rider_id)
+
+    # Map each GT stage slug → race_date for cutoff computation
+    _gt_slug_dates: dict[str, str] = {}
+    for r in race_results:
+        if r["race_slug"] in gt_stage_slugs and r.get("race_date"):
+            _gt_slug_dates.setdefault(r["race_slug"], r["race_date"])
+
+    # Build per-slug squad sets: slug → set of (team_id, rider_id)
+    gt_squad_by_slug: dict[str, set[tuple[str, str]]] = {}
     if gt_stage_slugs:
         years: set[int] = set()
+        phase_ids: set[int] = set()
         for s in gt_stage_slugs:
             m = _re.search(r"/(\d{4})/", s)
             if m:
                 years.add(int(m.group(1)))
+            # Derive phase_id from GT slug
+            if "giro-d-italia" in s:
+                phase_ids.add(4)
+            elif "tour-de-france" in s:
+                phase_ids.add(6)
+            elif "vuelta-a-espana" in s:
+                phase_ids.add(8)
+
+        # Fetch all squad rows for matching years (query once, filter per slug)
+        all_squad_rows: list[dict] = []
         for year in years:
             squad_resp = (
                 supabase.table("gt_squad")
-                .select("team_id,rider_id,removed_at")
+                .select("team_id,rider_id,created_at,removed_at")
                 .eq("year", year)
                 .execute()
             )
-            for row in squad_resp.data or []:
-                if not row.get("removed_at"):
-                    gt_squad_set.add((row["team_id"], row["rider_id"]))
+            all_squad_rows.extend(squad_resp.data or [])
+
+        for slug in gt_stage_slugs:
+            race_date_str = _gt_slug_dates.get(slug)
+            if not race_date_str:
+                # Fallback: no date filtering (accept all current members)
+                gt_squad_by_slug[slug] = {
+                    (row["team_id"], row["rider_id"])
+                    for row in all_squad_rows
+                    if not row.get("removed_at")
+                }
+                continue
+
+            # 11:00 CET on race day — same cutoff as scoring.py
+            rd = _date.fromisoformat(str(race_date_str))
+            cutoff = _datetime(rd.year, rd.month, rd.day, 11, 0, 0, tzinfo=_paris_tz)
+
+            members: set[tuple[str, str]] = set()
+            for row in all_squad_rows:
+                created = _parse_ts(row["created_at"])
+                removed = _parse_ts(row.get("removed_at"))
+                if created and created <= cutoff and (removed is None or removed > cutoff):
+                    members.add((row["team_id"], row["rider_id"]))
+            gt_squad_by_slug[slug] = members
 
     # Step 2 — Fetch active/notice contracts with rider nationality
     contracts_resp = (
@@ -270,6 +331,8 @@ async def process_race_bonuses(
         team_sponsor[ts["team_id"]] = ts.get("sponsors") or {}
 
     # Step 4 — Process each result
+    upsert_rows: list[dict] = []
+    team_bonus_entries: dict[str, list[dict]] = {}
     for result in race_results:
         rider_id = result["rider_id"]
         race_slug = result["race_slug"]
@@ -292,8 +355,8 @@ async def process_race_bonuses(
             if not sponsor:
                 continue
 
-            # GT stage: only squad members can trigger sponsor bonuses (mirrors XP scoring rule).
-            if _is_gt_stage(race_slug) and (team_id, rider_id) not in gt_squad_set:
+            # GT stage: only squad members (at race time) can trigger sponsor bonuses.
+            if _is_gt_stage(race_slug) and (team_id, rider_id) not in gt_squad_by_slug.get(race_slug, set()):
                 continue
 
             base_bonus, multiplier, final_bonus = calculate_bonus(
@@ -305,66 +368,113 @@ async def process_race_bonuses(
 
             sponsor_id = sponsor.get("id")
 
-            # Step 5 — Upsert to sponsor_bonuses
-            try:
-                supabase.table("sponsor_bonuses").upsert(
-                    {
-                        "team_id": team_id,
-                        "sponsor_id": sponsor_id,
-                        "rider_id": rider_id,
-                        "race_slug": race_slug,
-                        "race_date": race_date,
-                        "result_type": result_type,
-                        "rider_rank": rank,
-                        "base_bonus": base_bonus,
-                        "multiplier": float(multiplier),
-                        "final_bonus": final_bonus,
-                    },
-                    on_conflict="team_id,rider_id,race_slug,result_type",
-                ).execute()
-                bonuses_created += 1
-            except Exception as exc:
-                errors.append(f"upsert sponsor_bonus team={team_id} rider={rider_id}: {exc}")
-                continue
+            # Accumulate for batch operations (no DB call in the loop)
+            upsert_rows.append({
+                "team_id": team_id,
+                "sponsor_id": sponsor_id,
+                "rider_id": rider_id,
+                "race_slug": race_slug,
+                "race_date": race_date,
+                "result_type": result_type,
+                "rider_rank": rank,
+                "base_bonus": base_bonus,
+                "multiplier": float(multiplier),
+                "final_bonus": final_bonus,
+            })
+            team_bonus_entries.setdefault(team_id, []).append({
+                "amount": final_bonus,
+                "rider_id": rider_id,
+                "description": (
+                    f"Sponsor bonus: {result_type} rank {rank} "
+                    f"in {race_slug} (×{multiplier})"
+                ),
+            })
+            bonuses_created += 1
 
-            # Step 6 — Credit treasury
-            try:
-                team_resp = (
-                    supabase.table("teams")
-                    .select("id,treasury")
-                    .eq("id", team_id)
-                    .execute()
-                )
-                team_data = team_resp.data
-                current_treasury = (
-                    team_data.get("treasury", 0)
-                    if isinstance(team_data, dict)
-                    else (team_data[0].get("treasury", 0) if team_data else 0)
-                )
-                new_treasury = current_treasury + final_bonus
+    # --- Batch upsert sponsor_bonuses (1 call instead of N) ---
+    if upsert_rows:
+        try:
+            supabase.table("sponsor_bonuses").upsert(
+                upsert_rows,
+                on_conflict="team_id,rider_id,race_slug,result_type",
+            ).execute()
+        except Exception as exc:
+            errors.append(f"batch upsert sponsor_bonuses: {exc}")
 
-                supabase.table("teams").update(
-                    {"treasury": new_treasury}
-                ).eq("id", team_id).execute()
+    # --- Atomic treasury credit per team via RPC ---
+    for team_id, entries in team_bonus_entries.items():
+        try:
+            supabase.rpc("credit_sponsor_bonuses", {
+                "p_team_id": team_id,
+                "p_bonuses": entries,
+            }).execute()
+        except Exception as exc:
+            logger.error(
+                f"[SponsorBonus] RPC credit_sponsor_bonuses FAILED "
+                f"for team={team_id}: {exc}"
+            )
+            errors.append(f"rpc credit_sponsor_bonuses team={team_id}: {exc}")
 
-                supabase.table("treasury_log").insert(
-                    {
-                        "team_id": team_id,
-                        "type": "sponsor_bonus",
-                        "amount": final_bonus,
-                        "description": (
-                            f"Sponsor bonus: {result_type} rank {rank} "
-                            f"in {race_slug} (×{multiplier})"
-                        ),
-                        "rider_id": rider_id,
-                    }
-                ).execute()
-            except Exception as exc:
-                logger.error(f"[SponsorBonus] Treasury credit FAILED for team={team_id}, bonus={final_bonus}: {exc}")
-                errors.append(f"treasury credit team={team_id}: {exc}")
+    # Step 7 — Cleanup: remove stale GT sponsor bonuses for non-squad riders.
+    # When the temporal squad check now excludes a rider who previously had a bonus
+    # (e.g., added to squad after race day), we must delete the bonus row and
+    # reverse the treasury credit.
+    reverted_count = 0
+    for slug in gt_stage_slugs:
+        squad_for_slug = gt_squad_by_slug.get(slug, set())
+        # Fetch existing bonuses for this GT stage slug
+        existing_resp = (
+            supabase.table("sponsor_bonuses")
+            .select("id, team_id, rider_id, final_bonus")
+            .eq("race_slug", slug)
+            .execute()
+        )
+        for bonus_row in (existing_resp.data or []):
+            key = (bonus_row["team_id"], bonus_row["rider_id"])
+            if key not in squad_for_slug:
+                # This rider was not in the squad at race time — revert bonus
+                try:
+                    # Debit treasury
+                    team_resp = (
+                        supabase.table("teams")
+                        .select("id,treasury")
+                        .eq("id", bonus_row["team_id"])
+                        .single()
+                        .execute()
+                    )
+                    if team_resp.data:
+                        old_treasury = team_resp.data.get("treasury", 0)
+                        new_treasury = max(0, old_treasury - bonus_row["final_bonus"])
+                        supabase.table("teams").update(
+                            {"treasury": new_treasury}
+                        ).eq("id", bonus_row["team_id"]).execute()
+
+                        supabase.table("treasury_log").insert({
+                            "team_id": bonus_row["team_id"],
+                            "type": "sponsor_bonus_revert",
+                            "amount": -bonus_row["final_bonus"],
+                            "description": (
+                                f"Reverted: rider not in GT squad at race time ({slug})"
+                            ),
+                            "rider_id": bonus_row["rider_id"],
+                        }).execute()
+
+                    # Delete the stale bonus row
+                    supabase.table("sponsor_bonuses").delete().eq(
+                        "id", bonus_row["id"]
+                    ).execute()
+                    reverted_count += 1
+                    logger.info(
+                        f"[SponsorBonus] Reverted stale bonus id={bonus_row['id']} "
+                        f"team={bonus_row['team_id'][:8]} rider={bonus_row['rider_id'][:8]} "
+                        f"slug={slug} amount={bonus_row['final_bonus']}"
+                    )
+                except Exception as exc:
+                    errors.append(f"revert stale bonus id={bonus_row['id']}: {exc}")
 
     return {
         "status": "completed",
         "bonuses_created": bonuses_created,
+        "bonuses_reverted": reverted_count,
         "errors": errors,
     }
