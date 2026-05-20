@@ -202,6 +202,7 @@ export function RiderDialog({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder={rider.monthly_salary.toString()}
+              className="font-mono tabular-nums"
             />
           </div>
 
