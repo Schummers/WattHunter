@@ -74,7 +74,7 @@ export function AchievementsClient({
     <div className="pb-24">
       {/* Header */}
       <div className="px-4 pt-4 pb-3">
-        <h1 className="text-[length:var(--type-title)] font-bold text-[var(--text-high)] mb-3">
+        <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)] mb-3">
           Palmares
         </h1>
         <FilterChips

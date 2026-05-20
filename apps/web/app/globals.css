@@ -116,6 +116,7 @@
   --accent-active: var(--color-cyan-700);
   --accent-focus-ring: rgba(103, 232, 249, 0.4);
   --badge-bg: rgba(14, 165, 233, 0.10);
+  --badge-bg-hover: rgba(6, 182, 212, 0.18);
   --accent-label: #0ea5e9;
 
   /* Status / Semantic colors */
@@ -136,7 +137,11 @@
 
   /* Modal scrim and surface overlay — use instead of bg-black/X and bg-white/5. */
   --scrim: rgba(0, 0, 0, 0.50);
+  --scrim-light: rgba(0, 0, 0, 0.30);
   --surface-overlay: rgba(255, 255, 255, 0.05);
+
+  /* Layout */
+  --sidebar-width: 180px;
 
   /* Aliases (backward compat) */
   --status-success: var(--success);

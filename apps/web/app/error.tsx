@@ -17,7 +17,7 @@ export default function GlobalError({
     <html>
       <body className="bg-[var(--bg-app)] text-[var(--text-high)] flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4 p-8">
-          <h2 className="text-[length:var(--type-title)] font-semibold">
+          <h2 className="text-[length:var(--type-page-title)] font-semibold">
             Something went wrong
           </h2>
           <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">

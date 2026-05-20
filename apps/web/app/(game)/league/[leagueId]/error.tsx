@@ -19,7 +19,7 @@ export default function LeagueError({
   return (
     <div className="flex items-center justify-center min-h-[60vh] p-8">
       <div className="text-center space-y-4 max-w-md">
-        <h2 className="text-[length:var(--type-title)] font-semibold">
+        <h2 className="text-[length:var(--type-page-title)] font-semibold">
           Something went wrong
         </h2>
         <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
