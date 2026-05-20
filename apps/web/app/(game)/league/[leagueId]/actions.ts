@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { z } from "zod/v4";
 
 const LaunchSchema = z.object({
-  leagueId: z.string().uuid(),
+  leagueId: z.uuid(),
   roundDates: z
     .array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"))
     .min(1)

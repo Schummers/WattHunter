@@ -10,10 +10,10 @@ import { z } from "zod/v4";
 // ---------------------------------------------------------------------------
 
 const SetRoundDatesSchema = z.object({
-  leagueId: z.string().uuid(),
+  leagueId: z.uuid(),
   rounds: z.array(
     z.object({
-      auctionId: z.string().uuid(),
+      auctionId: z.uuid(),
       date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
     })
   ).max(8, "Cannot configure more than 8 rounds per phase"),

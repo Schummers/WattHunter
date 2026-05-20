@@ -14,8 +14,8 @@ const StrategyInputSchema = z.object({
 });
 
 const SaveStrategiesSchema = z.object({
-  teamId: z.string().uuid(),
-  leagueId: z.string().uuid(),
+  teamId: z.uuid(),
+  leagueId: z.uuid(),
   strategies: z.array(StrategyInputSchema),
 });
 

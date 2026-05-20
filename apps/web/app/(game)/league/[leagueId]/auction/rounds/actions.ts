@@ -9,11 +9,11 @@ const DateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 const TimeStr = z.string().regex(/^\d{2}:\d{2}$/, "HH:mm");
 
 const UpdateRoundDatesSchema = z.object({
-  leagueId: z.string().uuid(),
+  leagueId: z.uuid(),
   rounds: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
         date: DateStr,
         time: TimeStr,
       })
@@ -23,7 +23,7 @@ const UpdateRoundDatesSchema = z.object({
 });
 
 const CreateNextPhaseSchema = z.object({
-  leagueId: z.string().uuid(),
+  leagueId: z.uuid(),
   rounds: z
     .array(
       z.object({

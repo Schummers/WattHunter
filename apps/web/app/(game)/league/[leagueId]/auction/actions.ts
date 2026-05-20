@@ -14,8 +14,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // ---------------------------------------------------------------------------
 
 const AddDraftSchema = z.object({
-  leagueId: z.string().uuid(),
-  riderId: z.string().uuid(),
+  leagueId: z.uuid(),
+  riderId: z.uuid(),
   amount: z
     .number()
     .int()
@@ -24,13 +24,13 @@ const AddDraftSchema = z.object({
 });
 
 const RemoveDraftSchema = z.object({
-  leagueId: z.string().uuid(),
-  riderId: z.string().uuid(),
+  leagueId: z.uuid(),
+  riderId: z.uuid(),
 });
 
 const UpdateDraftAmountSchema = z.object({
-  leagueId: z.string().uuid(),
-  riderId: z.string().uuid(),
+  leagueId: z.uuid(),
+  riderId: z.uuid(),
   amount: z
     .number()
     .int()
@@ -217,7 +217,7 @@ export async function updateDraftAmount(input: {
 // ---------------------------------------------------------------------------
 
 const ValidateRoundSchema = z.object({
-  leagueId: z.string().uuid(),
+  leagueId: z.uuid(),
 });
 
 export async function validateRound(input: { leagueId: string }) {
@@ -338,7 +338,7 @@ async function triggerPhasePayday(
 // ---------------------------------------------------------------------------
 
 const ForceResolveSchema = z.object({
-  leagueId: z.string().uuid(),
+  leagueId: z.uuid(),
 });
 
 interface ResolvedAuction {

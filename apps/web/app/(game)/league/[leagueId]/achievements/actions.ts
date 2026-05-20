@@ -7,7 +7,7 @@ import { ACHIEVEMENTS } from "@/lib/achievements";
 import { z } from "zod/v4";
 
 const EquipSchema = z.object({
-  leagueId: z.string().uuid(),
+  leagueId: z.uuid(),
   slug: z.string().min(1).max(100),
 });
 

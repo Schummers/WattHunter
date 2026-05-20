@@ -5,12 +5,12 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 
 const UpdateTeamNameSchema = z.object({
-  teamId: z.string().uuid(),
+  teamId: z.uuid(),
   name: z.string().trim().min(2).max(30),
 });
 
 const LeaveLeagueSchema = z.object({
-  leagueId: z.string().uuid(),
+  leagueId: z.uuid(),
 });
 
 const UpdateUserNameSchema = z.object({
@@ -22,7 +22,7 @@ const UpdateUserEmailSchema = z.object({
 });
 
 const UpdateLeagueNameSchema = z.object({
-  leagueId: z.string().uuid(),
+  leagueId: z.uuid(),
   name: z.string().trim().min(2).max(50),
 });
 

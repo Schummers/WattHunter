@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 
 const BidSchema = z.object({
-  auctionId: z.string().uuid(),
-  riderId: z.string().uuid(),
+  auctionId: z.uuid(),
+  riderId: z.uuid(),
   amount: z.number().int().positive().max(100_000_000),
   round: z.number().int().min(1).max(8),
 });
@@ -33,8 +33,8 @@ export async function placeBid(input: z.infer<typeof BidSchema>) {
 }
 
 const CancelBidSchema = z.object({
-  bidId: z.string().uuid(),
-  auctionId: z.string().uuid(),
+  bidId: z.uuid(),
+  auctionId: z.uuid(),
 });
 
 export async function cancelBid(bidId: string, auctionId: string) {

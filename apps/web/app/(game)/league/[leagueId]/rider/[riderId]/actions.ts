@@ -6,7 +6,7 @@ import { getCurrentPhase } from "@/lib/phases";
 import { z } from "zod/v4";
 
 const ReleaseSchema = z.object({
-  contractId: z.string().uuid(),
+  contractId: z.uuid(),
 });
 
 export async function releaseRider(contractId: string) {
