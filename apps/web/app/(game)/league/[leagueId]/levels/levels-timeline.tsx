@@ -80,9 +80,9 @@ export function LevelsTimeline({
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)]"
                 style={{
                   backgroundColor: isCompleted
-                    ? "rgba(16,185,129,0.10)"
+                    ? "var(--success-bg)"
                     : isCurrent
-                    ? "rgba(14,165,233,0.10)"
+                    ? "var(--badge-bg)"
                     : "var(--bg-surface-active)",
                 }}
               >
@@ -144,12 +144,7 @@ export function LevelsTimeline({
                     {descriptions.map((desc, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <div
-                          className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
-                          style={{
-                            backgroundColor: isCurrent
-                              ? "var(--accent-label)"
-                              : "var(--text-ghost)",
-                          }}
+                          className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${isCurrent ? "bg-[var(--accent-label)]" : "bg-[var(--text-ghost)]"}`}
                         />
                         <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
                           {renderBoldText(desc, state)}
