@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { RiderCard } from "@/components/rider-card";
 import { BrandCard } from "@/components/brand-card";
+import { Badge } from "@/components/ui/badge";
 import { getMaxSlots, getProgressPct, getNextLevel } from "@/lib/levels";
 import { countryCodeToFlag } from "@/lib/format";
 import { riderMatchesStrategy } from "@/lib/boost";
@@ -234,9 +235,9 @@ export default async function MyTeamPage({
                     </span>
                   </div>
                   {slot!.boostPct > 0 && (
-                    <span className="rounded-[var(--radius-pill)] bg-[var(--badge-bg)] px-2 py-0.5 text-[length:var(--type-caption)] font-semibold text-[var(--accent-highlight)]">
+                    <Badge variant="highlighted" className="shrink-0 font-mono tabular-nums text-[var(--accent-highlight)]">
                       +{slot!.boostPct}%
-                    </span>
+                    </Badge>
                   )}
                   <ChevronRight size={14} className="shrink-0 text-[var(--text-ghost)]" />
                 </div>
@@ -271,7 +272,7 @@ export default async function MyTeamPage({
             Roster
           </span>
           <span className="text-[length:var(--type-caption)] font-semibold text-[var(--text-low)]">
-            <span className="font-mono">{riderCount}/{maxSlots}</span> slots
+            <span className="font-mono tabular-nums">{riderCount}/{maxSlots}</span> slots
           </span>
         </div>
 
