@@ -2,7 +2,7 @@
 
 > **Living document** — Updated with every rule change.
 > Source of truth for implemented and planned game mechanics.
-> Last updated: 2026-05-09
+> Last updated: 2026-05-15
 
 ## Overview
 
@@ -117,7 +117,7 @@ At payday, after `treasury += sponsor_budget − salaries`:
 | Minimum bid | Rider's market salary (formula §4.4) |
 | Minimum increment | 100 EUR |
 | Multiples | Bids must be multiples of 100 EUR |
-| Calendar | 8 phases aligned to the WT, 3 rounds each |
+| Calendar | 9 phases aligned to the WT, 3 rounds each |
 
 > **Auction = recurring monthly salary:** The winning bid is NOT a one-time purchase price. It becomes the recurring monthly salary (`locked_salary`) deducted at every payday.
 
@@ -339,8 +339,8 @@ At the start of each phase, the player **confirms** their configuration:
 - **Éligibilité** : joueurs classés rank 4+ dans la ligue au moment du trigger. Inactif si la ligue a <4 joueurs.
 - **Trigger** : le joueur A dépasse le joueur B dans le classement ligue → boost déclenché pour A.
 - **Contrainte anti-ping-pong** : 1 trigger max par paire ordonnée A→B par GT. Reset au GT suivant.
-- **Reward** : tous les points de A pendant les **3 prochaines stages effectives** sont multipliés par **2x**.
-- **Cumul** : si A déclenche un autre overtake pendant son boost, le timer se refresh à 3 stages (pas de stacking — reste 2x).
+- **Reward** : tous les points de A pendant les **3 prochaines stages effectives** sont multipliés par **1.5x**.
+- **Cumul** : si A déclenche un autre overtake pendant son boost, le timer se refresh à 3 stages (pas de stacking — reste 1.5x).
 - **UX** : banner 🔥 "Remontada Boost active" affiché sur la sub-tab GT de la page Team. Indicateur passif 🔥 visible dans le classement ligue.
 
 ### 12.2 Co-Unlock Rule (Mécanisme 2)
@@ -400,3 +400,66 @@ At the start of each phase, the player **confirms** their configuration:
 - The commissioner can manually grant XP to a team via the `grant_xp` RPC (admin tool).
 - Each adjustment is recorded in `team_xp_adjustments` with type, amount, and reason for full traceability.
 - Used for compensating bugs, pre-season tournament rewards, or manual catch-up after PCS sync issues.
+
+---
+
+## 15. Late Join (Mid-Season)
+
+A player can join an **active league** (one that has already started auctions).
+
+| Rule | Value |
+|------|-------|
+| Starting XP | Average of existing teams' cumulative XP |
+| Starting treasury | Average of existing teams' treasury (rounded to nearest 100) |
+| Starting level | Computed from average XP (`compute_level`) |
+| Sponsor | None — player must select one (locked until next phase if Round 1 closed) |
+| Strategies | None — player configures after joining |
+
+- The new team inherits the league's progression so they are competitive immediately.
+- Treasury is rounded to the nearest 100 (because bids must be multiples of 100).
+- No retroactive race results — XP starts accumulating from the join date.
+
+---
+
+## 16. GT Rescue (DNF Refund/Replace)
+
+During Grand Tours, riders can abandon (DNF). The GT Rescue system gives players options when this happens.
+
+### Trigger
+- A rider in a player's GT squad is detected as DNF during stage scoring.
+- The `dnf_stage` is recorded on the `gt_squad` entry.
+
+### Options
+
+| Option | Effect | Timing |
+|--------|--------|--------|
+| **Refund** | Claim salary refund → contract auto-released (immediate, no cooldown) | Anytime during the GT after DNF |
+| **Replace** | Place an emergency bid on a new rider | During GT rescue window |
+
+### Emergency bids
+- Same rules as regular bids: min = rider's market salary, multiples of 100.
+- Budget validation: `treasury >= bid amount`.
+- Only riders **not already in the league** can be emergency-bid.
+- The emergency contract has `phase_recruited_id` set (same release lock as regular contracts).
+
+### Refund
+- On refund claim: contract is **immediately released** (no 7-day cooldown — this is an exception to §5).
+- The phase salary is credited back to treasury.
+
+---
+
+## 17. Sponsor GT Goals (V1b)
+
+> Applies to **T4 sponsors** (Ineos, Decathlon AG2R, Soudal Quick-Step, Lidl-Trek).
+
+T4 sponsors offer **one-time bonus goals** during Grand Tours, on top of regular race-result bonuses (§9).
+
+### Structure
+- Each T4 sponsor defines a set of GT-specific goals (e.g., "Podium GC final", "Stage win").
+- Goals are **role-gated**: only riders with the matching GT role (GC leader, stage hunter, domestique) can trigger a goal.
+- Goals follow a "best of two" tiered structure: if a higher-tier goal is completed, the lower-tier payout is replaced (not cumulated).
+- Each goal pays **once per GT** — tracked in `sponsor_goal_completions`.
+
+### Evaluation
+- Goals are evaluated after each stage scoring.
+- Payout is credited to treasury immediately upon goal completion.

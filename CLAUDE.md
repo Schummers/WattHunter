@@ -20,11 +20,18 @@ Pourquoi : local et remote doivent toujours être identiques. Un `supabase db re
 
 Exception autorisée : `supabase migration repair --status applied <version> --linked` pour resynchroniser une migration déjà appliquée manuellement (rattrapage uniquement, pas une habitude).
 
+## Rule #3 — Architecture & Memory Are Single Sources of Truth
+Avant tout travail non-trivial, lire dans cet ordre :
+1. **`docs/ARCHITECTURE.md`** — arborescence détaillée, server actions, RPCs, composants. Mis à jour avec le code.
+2. **`~/.claude/projects/-Users-jonathanschummers-Documents-WattHunter/memory/MEMORY.md`** — index features, gotchas DB, historique des décisions.
+
+Ce CLAUDE.md ne duplique PAS ces fichiers (counts, listes de fichiers, historique) — il ne contient que des règles durables et des contraintes métier. Si une info manque ici, c'est qu'elle vit dans ARCHITECTURE.md ou MEMORY.md.
+
 ## Stack
 - Next.js 16 App Router, TypeScript strict mode
 - Tailwind CSS v4 + Shadcn UI
 - Supabase (Postgres + Auth + Realtime + Edge Functions)
-- Python FastAPI microservice (Railway) pour le sync PCS
+- Python CLI scripts pour le sync PCS (exécution **locale** uniquement — voir Sync PCS ci-dessous)
 - Turborepo monorepo, pnpm workspaces
 
 ## Commands
@@ -32,10 +39,10 @@ Exception autorisée : `supabase migration repair --status applied <version> --l
 - `pnpm build` — build de production
 - `pnpm lint` — ESLint sur tous les packages
 - `pnpm typecheck` — tsc --noEmit sur tous les packages
+- `pnpm test` — vitest (apps/web)
 - `supabase db push` — applique les migrations en attente
 - `supabase functions serve` — Edge Functions en local
 - `supabase db reset --linked` — reset + reseed (DESTRUCTIF)
-- `cd services/pcs-sync && uvicorn main:app --reload` — service Python en local
 
 ## Local Supabase (DB dev)
 - **Runtime** : Colima + Docker CLI (`brew install colima docker`)
@@ -48,37 +55,30 @@ Exception autorisée : `supabase migration repair --status applied <version> --l
 - `vector` et `edge-runtime` exclus car incompatibles avec Colima (socket Docker mount + JSR fetch)
 
 ## Sync PCS (données coureurs)
-3 pipelines scraping procyclingstats.com, tous lancés manuellement via CLI.
+Pipelines de scraping procyclingstats.com lancés manuellement via CLI.
 - **Exécution locale uniquement** (IP résidentielle requise — Cloudflare bloque les IPs datacenter)
 - Nécessite Python 3.9+, Playwright Chromium, fichier `.env` dans `services/pcs-sync/`
-- Top 600 PCS global ranking
 
-### Lancer les pipelines
+### Commandes principales
 ```bash
 cd services/pcs-sync
 
-# Pipeline A — Init riders (1x/an) : sync top 600 PCS riders + season rankings 3 ans
+# Init riders (1x/an) : sync top 600 PCS + season rankings 3 ans
 python3 run_pipeline.py init-riders
 
-# Pipeline B — Post-race : résultats + ranking global + scoring
+# Post-race : résultats + ranking + scoring
 python3 run_pipeline.py post-race --race "race/paris-nice/2026/stage-3"
-python3 run_pipeline.py post-race --race "race/omloop-het-nieuwsblad/2026"
 
-# Pipeline C — Startlists : programme prévisionnel
+# Startlists : programme prévisionnel
 python3 run_pipeline.py startlists --race "race/paris-nice/2026"
 
-# Pipeline D — Finance par phase : SUPPRIMÉ — remplacé par confirmPhaseSetup server action (in-app)
-
-# Pipeline E — Enrichissement coureurs (1x/an) : photo, bio, spécialité, teams, résultats
-python3 run_pipeline.py enrich-riders
-python3 run_pipeline.py enrich-riders --start 401 --end 600
+# Enrichissement coureurs (1x/an, ~1h/100 riders) : photo, bio, spécialité, teams
+python3 run_pipeline.py enrich-riders [--start N --end M]
 ```
-- Pipeline A : ~5 min (top 600 riders + 3 rankings)
-- Pipeline B : ~30s (1 résultat + 1 ranking + scoring)
-- Pipeline C : ~15s (1 page startlist)
-- Pipeline D : SUPPRIMÉ (remplacé par server action confirmPhaseSetup)
-- Pipeline E : ~1h (100 coureurs) / ~6h (600 coureurs, batch de 5 + 1min pause)
-- Calendrier WT : `services/pcs-sync/wt_calendar_2026.json`
+
+Autres scripts (auxiliaires, voir `run_pipeline.py --help` et `services/pcs-sync/`) : `resolve_gt_rescue`, `resolve_now`, `retry_failed`, `dnf_detection`, `sponsor_bonus`, `goal_evaluator`, `remontada`, `tactics`, `validation`, `backfill_traceability`.
+
+Calendrier WT : `services/pcs-sync/wt_calendar_2026.json`.
 
 ## Language rule
 - ALL user-facing text in the app MUST be in English (UI labels, error messages, placeholders, button text, etc.)
@@ -92,143 +92,48 @@ python3 run_pipeline.py enrich-riders --start 401 --end 600
 - NEVER muter treasury_log directement — utiliser les fonctions helper.
 - NEVER modifier les montants de bonus sponsor directement — ils sont définis dans la table `sponsors`.
 - NEVER autoriser une enchère si treasury < total des enchères actives.
-- NEVER skip la validation Zod sur les inputs d'API routes.
-- NEVER libérer un coureur hors de la fenêtre d'enchères — le release prend effet au début de la phase suivante (sauf auto-release faillite).
+- NEVER skip la validation Zod sur les inputs de server actions / API routes.
+- NEVER libérer un coureur hors de la fenêtre d'enchères — le release prend effet au début de la phase suivante (sauf auto-release faillite/DNF rescue).
 - NEVER autoriser une validation si treasury < total des salaires + bids actifs.
 - NEVER autoriser une enchère sur un coureur releasé depuis moins de 7 jours (cooldown anti-exploit).
+- NEVER mettre de logique métier dans une server action TS — pattern obligatoire : Zod validation → `supabase.rpc(...)` → error forwarding.
 
-## Constantes du jeu (calibrer avant le lancement alpha)
-- Trésorerie départ : 200 000 €
-- 1 sponsor par équipe, gating par niveau uniquement (pas de conditions d'éligibilité)
-- Sponsor par défaut (Lotto T1) : 250 000 € / phase (fixe)
-- 6 tiers sponsors : T1(Nv.1) T2(Nv.2) T3(Nv.3) T4(Nv.4) T5(Nv.6) T6(Nv.8)
-- Bonus sponsor = crédités sur résultats de course (voir design spec)
-- Multiplicateurs : ×2 Monument/Grand Tour, ×1.25 nationalité (T1-T4)
-- Finance par phase : income sponsor + salaires déductés 1x par phase WT
-- Enchère = salaire mensuel récurrent (pas un achat unique)
-- Salaire mensuel = pts_PCS × 2 000 / 12 (pas de plafond)
-- Salaire plancher (enchère min) : 5 000 €/mois
-- Incrément d'enchère : 100 €/mois (pas 500)
-- Release = gratuit (salaire de la phase non remboursé)
-- Durée d'enchère : chaque round dure de sa date jusqu'à la date du round suivant (dernier round = fin de journée)
-- 8 niveaux alignés sur les 8 phases WT (Season Start → Vuelta)
-- Slots coureurs : 6 (Nv.1) → 7 → 8 → 9 → 10 → 11 → 12 (Nv.7-8)
-- Stratégies actives max : 1 (Nv.1-2) → 2 (Nv.3-6) → 3 (Nv.7-8)
-- 4 types de strategies : Speciality (Nv.1) → Nationality (Nv.3) → Teams (Nv.5) → Age (Nv.7)
-- Pool = Top 600 PCS global (12 mois glissants), gating par rang selon niveau
-- Pool min : Nv.1=#300 | Nv.2=#200 | Nv.3=#100 | Nv.4=#30 | Nv.5=#20 | Nv.6=#10 | Nv.7=#4 | Nv.8=#1
-- XP : Nv.2=25 | Nv.3=150 | Nv.4=350 | Nv.5=600 | Nv.6=1200 | Nv.7=1800 | Nv.8=2400
+## Constantes du jeu
+Source unique : **`docs/GAME_RULES.md` §11 — Game Constants**. Ne PAS dupliquer les valeurs ici.
 
+Quand une constante change → mettre à jour GAME_RULES.md §11 (et le code). CLAUDE.md ne contient que les "anti-intuitions" ci-dessous (choses que Claude devinerait mal) :
+- Enchère = salaire mensuel **récurrent** (pas un achat unique)
+- Salaire = **pas de plafond** (formule : pts_PCS × 2 000 / 12)
+- Incrément = **100 €** (pas 500, pas 1 000)
+- Release = **gratuit** mais salaire phase non remboursé
+- Finance = **1x par phase WT** (pas mensuel)
+
+## Rule #4 — Update Living Docs After Every Feature
+Après chaque feature shipped, mettre à jour **dans la même session** :
+1. **`docs/GAME_RULES.md`** — si une règle, constante, ou mécanique a changé
+2. **`docs/ARCHITECTURE.md`** — si une route, RPC, table, ou composant a été ajouté
+3. **Déplacer** le plan/spec dans `docs/archive/plans/` ou `docs/archive/specs/`
+4. **`MEMORY.md`** — ajouter une ligne dans l'index features si c'est un feature set majeur
+
+Ne PAS sauter cette étape. L'absence de mise à jour est la première cause de drift documentaire.
+
+## Features livrées (résumé)
+Détails complets, plans et migrations dans MEMORY.md.
+- **Sponsors v2** — 6 tiers, 13 sponsors, race result bonuses
+- **Anti-Runaway** — Remontada Boost + Co-Unlock + Level Curve Stretch
+- **Grand Tour** — V1a squad builder + V1b sponsor goal evaluation + payout
+- **GT Tactics** — 5 tactiques (Unleash, Overdrive, Nemesis GC/Sprint, Call the Bus)
+- **GT Rescue** — DNF refund/replace window avec auto-release sur refund claim
+- **Achievements** — système d'achievements (voir `app/(game)/.../achievements/`)
+- **Race Feed** — cards Home (past race, remontada, nemesis, rest day, GT goals)
+- **Palmares** — page profil rider avec onglets Monuments / dynamiques + league rank
 
 ## Blockers ouverts (résoudre avant alpha)
-- [x] Simulation Excel : calibrer taux de conversion → remplacé par bonus sponsor fixes (voir design spec)
+- [x] Simulation Excel : calibrer taux de conversion → remplacé par bonus sponsor fixes
 - [x] Valider la tolérance au rate limit de procyclingstats → résolu : 15s pause entre équipes, fresh context par team
+- [x] Charte graphique / branding → Design System v3 (Sky Blue Night + Cyan)
 - [ ] Valider l'exactitude des données PCS pour le calcul des salaires
-- [ ] Définir la stratégie de notifications in-app (pas d'emails)
-- [ ] Définir la charte graphique / branding
-
-## Références PRD
-- PRD_01_OVERVIEW.md — vision, goals, personas, priorités features
-- PRD_02_MECHANICS.md — économie, scoring, politiques, sponsors, enchères
-- PRD_03_TECHNICAL.md — schéma DB, requirements, ordre d'implémentation
-
-## Architecture
-```
-watthunter/
-├── apps/web/                    # Next.js 16 App Router
-│   ├── app/(auth)/              # Login, signup, onboarding, password reset, league create/join/choose
-│   │   ├── forgot-password/
-│   │   ├── reset-password/
-│   │   └── league/{create,join,choose}/
-│   ├── app/(legal)/             # Privacy + Terms
-│   ├── app/(game)/league/[leagueId]/  # Main game shell (auth guard + responsive layout)
-│   │   ├── page.tsx             # Home / Lobby
-│   │   ├── team/                # My Team
-│   │   │   ├── auctions/        # Draft bids tab
-│   │   │   │   └── rounds/      # Round validation
-│   │   │   ├── market/          # Recruits tab
-│   │   │   │   └── history/     # Auction history
-│   │   │   ├── strategies/      # Strategies tab
-│   │   │   └── gt/              # Grand Tour squad builder
-│   │   │       └── tactics/     # 5 in-race tactics placement
-│   │   ├── budget/              # Budget P&L
-│   │   │   ├── marketplace/     # Sponsor marketplace
-│   │   │   └── transactions/    # Transaction log
-│   │   ├── rider/[riderId]/     # Rider Detail (PCS + Game stats)
-│   │   ├── auction/             # Auction calendar
-│   │   │   ├── [auctionId]/     # Auction detail + results
-│   │   │   ├── status/          # Round status table + force-resolve button
-│   │   │   ├── rounds/          # Round dates (commissioner)
-│   │   │   ├── market/          # Recruits redirect
-│   │   │   └── history/         # Auction history
-│   │   ├── ranking/             # League ranking
-│   │   │   └── team/[teamId]/   # Opponent team profile
-│   │   ├── levels/              # Level progression
-│   │   ├── help/                # Game guide
-│   │   └── settings/            # Settings page
-│   ├── components/              # App components — see ARCHITECTURE.md for full list
-│   ├── components/ui/           # Shadcn components (button, badge, avatar, tabs, etc.)
-│   ├── hooks/                   # Shared hooks (use-scroll-direction)
-│   └── lib/
-│       ├── supabase/
-│       │   ├── browser.ts       # Anon browser client
-│       │   ├── server.ts        # Anon server client (cookies)
-│       │   ├── admin.ts         # Service-role client (server-only, RPCs admin)
-│       │   ├── middleware.ts    # Session refresh + route protection
-│       │   ├── get-user.ts
-│       │   └── get-open-auction.ts
-│       ├── tactics.ts           # 5 GT tactics catalog + helpers
-│       ├── co-unlock.ts         # Co-Unlock Rule eligibility
-│       ├── remontada.ts         # Remontada Boost helpers
-│       ├── gt-{goals,phases,stages}.ts  # GT helpers
-│       ├── sponsors.ts          # Sponsor data + bonus calculation
-│       ├── strategies.ts        # 4 strategy types + matching
-│       ├── levels.ts            # 8-level system source of truth
-│       └── (boost, budget, calendar, format, phases, photo-url, rider-detail-data, env, utils)
-├── services/pcs-sync/           # Python — sync procyclingstats
-├── supabase/
-│   ├── migrations/              # 83 migrations SQL (28 tables)
-│   ├── functions/               # Edge Functions
-│   └── seed/                    # Stratégies + sponsors
-├── docs/                        # See ARCHITECTURE.md for layout
-└── CLAUDE.md
-```
-
-### SECURITY DEFINER RPCs (mutations critiques)
-12 RPCs user-callable + 4 trigger functions + 2 helpers (`compute_level`, `is_league_member`, `set_updated_at`, `handle_new_user`). Le code TS se limite à : Zod validation → `supabase.rpc(...)` → error forwarding.
-
-- `place_bid` — enchère avec 11 validations (budget cross-round, level gating, slots, co-unlock, 7-day cooldown)
-- `validate_round` — conversion draft_bids → auction_bids + auto-resolve si consensus
-- `release_rider` — libération coureur avec phase lock (effet à la phase suivante)
-- `confirm_phase_setup` — payday : sponsor income + salaires + bankruptcy cascade + activation sponsor/strategies pending
-- `leave_league` — quitter ligue avec cascade cleanup
-- `join_league_by_code` — rejoindre ligue avec code invite + init XP (late-join supporté)
-- `grant_xp` — ajustement XP admin avec traçabilité (table `team_xp_adjustments`)
-- `gt_add_to_squad` — ajout coureur au squad GT (cap 8)
-- `gt_assign_role` — assignation rôle GT (append-only, cutoff 11:00 CET)
-- `gt_remove_from_squad` — retrait coureur du squad GT (soft-delete)
-- `gt_swap_slot` — swap coureurs dans le squad GT
-- `place_tactic` — placement tactique GT avec validation (usage limit, stage lock)
-
-RPC interne (appelée par `scoring.py`, pas user-callable) :
-- `resolve_nemesis_for_stage` — résolution PvP duel Nemesis lors du scoring d'une étape
-
-Trigger : `teams_protect_sensitive_fields` — bloque UPDATE direct sur level/treasury/xp/user_id/league_id (sauf service_role/supabase_admin).
-
-### Server Actions (TS — lectures + drafts)
-- `app/(auth)/league/create/actions.ts` — create league
-- `app/(auth)/league/join/actions.ts` — join league via code (→ `join_league_by_code`)
-- `app/(game)/league/[leagueId]/actions.ts` — league-level actions (force-resolve, etc.)
-- `app/(game)/league/[leagueId]/auction/[auctionId]/actions.ts` — placeBid (→ RPC), cancelBid, draft bids CRUD
-- `app/(game)/league/[leagueId]/auction/actions.ts` — validateRound (→ RPC), addDraft, removeDraft
-- `app/(game)/league/[leagueId]/auction/market/actions.ts` — confirmPhaseSetup (→ RPC)
-- `app/(game)/league/[leagueId]/auction/rounds/actions.ts` — round dates management
-- `app/(game)/league/[leagueId]/budget/actions.ts` — budget operations
-- `app/(game)/league/[leagueId]/rider/[riderId]/actions.ts` — releaseRider (→ RPC)
-- `app/(game)/league/[leagueId]/settings/actions.ts` — updateTeamName, leaveLeague (→ RPC), updateLeagueName
-- `app/(game)/league/[leagueId]/team/gt/actions.ts` — GT squad management (→ `gt_*` RPCs)
-- `app/(game)/league/[leagueId]/team/gt/tactics/actions.ts` — placeTactic (→ RPC), get rivals
-- `app/(game)/league/[leagueId]/team/strategies/actions.ts` — strategy management
+- [ ] Définir la stratégie de notifications in-app (pas d'emails — décision actée)
 
 ## Gestion du contexte (compression)
 - **Fichier de session** : `~/.claude/projects/-Users-jonathanschummers-Documents-WattHunter/memory/sessions/YYYY-MM-DD.md`
@@ -237,7 +142,7 @@ Trigger : `teams_protect_sensitive_fields` — bloque UPDATE direct sur level/tr
 - **Backlog centralisé** : `docs/archive/TODO_BACKLOG.md` — source unique pour le bug fixing et les tâches UI
 - Prévenir l'utilisateur quand une sauvegarde de contexte est faite
 
-## Design System (v3.0 — 2026-03-09)
+## Design System (v3.0 + navigation tokens v3.1)
 - Source of truth : `docs/watthunter-design-system-v3.md`
 - Palette : Sky Blue Night (200° hue, ~18% sat) + Tailwind Cyan — tokens in `apps/web/app/globals.css`
 - Font : Geist Sans (UI) + Geist Mono (ALL numbers) — package `geist`
