@@ -107,7 +107,7 @@ export default async function AuctionHistoryPage({
           <input
             type="text"
             placeholder="Search rider or team..."
-            className="h-9 w-full rounded-lg border border-[var(--border-default)] bg-transparent pl-9 pr-3 text-base md:text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none focus:border-[var(--accent-focus-ring)]"
+            className="h-9 w-full rounded-lg border border-[var(--border-default)] bg-transparent pl-9 pr-3 text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none focus:border-[var(--accent-focus-ring)]"
           />
         </div>
 

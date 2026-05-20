@@ -213,7 +213,7 @@ export default async function StatusPage({
                       {row.team_name}
                     </span>
                     <span className="text-[length:var(--type-caption)] text-[var(--text-low)] shrink-0">
-                      Lv.{row.level}
+                      Lv.<span className="font-mono">{row.level}</span>
                     </span>
                   </div>
                   <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">

@@ -46,7 +46,7 @@ export function StatusClient({ leagueId, unvalidatedTeams }: Props) {
         </p>
         <Button
           variant="outline"
-          className="w-full md:w-auto border-[var(--danger)] text-[var(--danger)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger)] hover:border-[var(--danger)]"
+          className="w-full md:w-auto border-[var(--danger-border)] text-[var(--danger)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger)] hover:border-[var(--danger-border)]"
           onClick={() => {
             setError(null);
             setOpen(true);
@@ -80,7 +80,7 @@ export function StatusClient({ leagueId, unvalidatedTeams }: Props) {
           )}
 
           {error && (
-            <div className="rounded-[var(--radius-md)] border border-[var(--warning)] bg-[var(--warning-bg)] p-3 text-[length:var(--type-caption)] text-[var(--warning)]">
+            <div className="rounded-[var(--radius-md)] border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3 text-[length:var(--type-caption)] text-[var(--warning)]">
               {error}
             </div>
           )}
