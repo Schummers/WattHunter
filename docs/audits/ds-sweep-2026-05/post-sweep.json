@@ -1,0 +1,1760 @@
+{
+  "count": 195,
+  "violations": [
+    {
+      "id": "B-001",
+      "file": "apps/web/lib/levels.ts",
+      "line": 2,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#300",
+      "context": "{ level: 1, xp: 0,    slots: 6,  pool: \"#300-600\", poolMin: 300, strategy: \"Speciality\",  maxActive: 1, sponsor: \"Lotto · 250K\" },"
+    },
+    {
+      "id": "B-002",
+      "file": "apps/web/lib/levels.ts",
+      "line": 3,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#200",
+      "context": "{ level: 2, xp: 25,   slots: 7,  pool: \"#200-600\", poolMin: 200, strategy: null,          maxActive: 1, sponsor: \"Astana · 350K\" },"
+    },
+    {
+      "id": "B-003",
+      "file": "apps/web/lib/levels.ts",
+      "line": 4,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#100",
+      "context": "{ level: 3, xp: 150,  slots: 8,  pool: \"#100-600\", poolMin: 100, strategy: \"Nationality\", maxActive: 2, sponsor: \"T3 · 450K (×4)\" },"
+    },
+    {
+      "id": "B-001",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 78,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f59e0b",
+      "context": "monuments(\"paris-roubaix-victory\", \"Hell of the North\",     \"A rider from your team wins Paris-Roubaix\",                    \"victory\", \"#f59e0b\"),"
+    },
+    {
+      "id": "B-002",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 79,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f59e0b",
+      "context": "monuments(\"paris-roubaix-podium\",  \"Survivor of the North\", \"A rider from your team finishes top 3 at Paris-Roubaix\",       \"podium\",  \"#f59e0b\"),"
+    },
+    {
+      "id": "B-003",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 80,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f59e0b",
+      "context": "monuments(\"paris-roubaix-top10\",   \"Hell Participant\",      \"A rider from your team finishes top 10 at Paris-Roubaix\",      \"top10\",   \"#f59e0b\"),"
+    },
+    {
+      "id": "B-004",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 82,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#eab308",
+      "context": "monuments(\"flandres-victory\", \"Patron of Flanders\",   \"A rider from your team wins the Tour of Flanders\",           \"victory\", \"#eab308\"),"
+    },
+    {
+      "id": "B-005",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 83,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#eab308",
+      "context": "monuments(\"flandres-podium\",  \"Soldier of Flanders\",  \"A rider from your team finishes top 3 at Tour of Flanders\",  \"podium\",  \"#eab308\"),"
+    },
+    {
+      "id": "B-006",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 84,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#eab308",
+      "context": "monuments(\"flandres-top10\",   \"Flemish Contender\",    \"A rider from your team finishes top 10 at Tour of Flanders\", \"top10\",   \"#eab308\"),"
+    },
+    {
+      "id": "B-007",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 86,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#d946ef",
+      "context": "monuments(\"lbl-victory\", \"La Doyenne\",      \"A rider from your team wins Liège-Bastogne-Liège\",                   \"victory\", \"#d946ef\"),"
+    },
+    {
+      "id": "B-008",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 87,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#d946ef",
+      "context": "monuments(\"lbl-podium\",  \"Dame de Bronze\",  \"A rider from your team finishes top 3 at Liège-Bastogne-Liège\",     \"podium\",  \"#d946ef\"),"
+    },
+    {
+      "id": "B-009",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 88,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#d946ef",
+      "context": "monuments(\"lbl-top10\",   \"Ardennes Raider\", \"A rider from your team finishes top 10 at Liège-Bastogne-Liège\",    \"top10\",   \"#d946ef\"),"
+    },
+    {
+      "id": "B-010",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 90,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f97316",
+      "context": "monuments(\"lombardia-victory\", \"Il Diavolo\",      \"A rider from your team wins Il Lombardia\",                \"victory\", \"#f97316\"),"
+    },
+    {
+      "id": "B-011",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 91,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f97316",
+      "context": "monuments(\"lombardia-podium\",  \"L'Ombre de Côme\", \"A rider from your team finishes top 3 at Il Lombardia\",  \"podium\",  \"#f97316\"),"
+    },
+    {
+      "id": "B-012",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 92,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f97316",
+      "context": "monuments(\"lombardia-top10\",   \"Autumn Racer\",    \"A rider from your team finishes top 10 at Il Lombardia\", \"top10\",   \"#f97316\"),"
+    },
+    {
+      "id": "B-013",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 94,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#06b6d4",
+      "context": "monuments(\"milan-sanremo-victory\", \"Primavera\",         \"A rider from your team wins Milan-San Remo\",                \"victory\", \"#06b6d4\"),"
+    },
+    {
+      "id": "B-014",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 95,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#06b6d4",
+      "context": "monuments(\"milan-sanremo-podium\",  \"Riviera Finisher\",  \"A rider from your team finishes top 3 at Milan-San Remo\",  \"podium\",  \"#06b6d4\"),"
+    },
+    {
+      "id": "B-015",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 96,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#06b6d4",
+      "context": "monuments(\"milan-sanremo-top10\",   \"Poggio Climber\",    \"A rider from your team finishes top 10 at Milan-San Remo\", \"top10\",   \"#06b6d4\"),"
+    },
+    {
+      "id": "B-016",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 99,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#6b7280",
+      "context": "mc(\"monuments-collector\", \"Monument Collector\", \"A rider from your team finishes top 10 at each of the 5 Monuments in the same season\", \"top10\",   \"#6b7280\"),"
+    },
+    {
+      "id": "B-017",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 100,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f59e0b",
+      "context": "mc(\"monuments-hunter\",    \"Monument Hunter\",    \"A rider from your team finishes top 5 at 3 or more Monuments in the same season\",      \"podium\",  \"#f59e0b\", \"monuments-collector\"),"
+    },
+    {
+      "id": "B-018",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 101,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf24",
+      "context": "mc(\"monuments-double\",    \"Double Crown\",       \"A rider from your team wins 2 distinct Monuments over their career\",                    \"victory\", \"#fbbf24\"),"
+    },
+    {
+      "id": "B-019",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 102,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#22d3ee",
+      "context": "mc(\"monument-man\",        \"Monument Man\",       \"Your team leads the league in cumulative XP across all 5 Monuments\",                   \"dynamic\", \"#22d3ee\"),"
+    },
+    {
+      "id": "B-020",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 103,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#22d3ee",
+      "context": "mc(\"classic-man\",         \"Classic Man\",        \"Your team leads the league in cumulative XP across all one-day WT races\",              \"dynamic\", \"#22d3ee\"),"
+    },
+    {
+      "id": "B-021",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 106,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#ed5298",
+      "context": "gt(\"giro-gc-victory\",     \"Maglia Rosa\",       \"A rider from your team wins the Giro d'Italia GC\",              \"victory\", \"#ed5298\", \"giro\", \"badge-giro-gc\",     \"banner-giro-gc-victory\"),"
+    },
+    {
+      "id": "B-022",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 107,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#ed5298",
+      "context": "gt(\"giro-gc-podium\",      \"Rosa Podium\",       \"A rider from your team finishes top 3 GC at the Giro d'Italia\", \"podium\",  \"#ed5298\", \"giro\", \"badge-giro-gc\",     \"banner-giro-gc-podium\"),"
+    },
+    {
+      "id": "B-023",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 108,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#4a90e2",
+      "context": "gt(\"giro-kom-victory\",    \"Maglia Azzurra\",    \"A rider from your team wins the KOM jersey at the Giro d'Italia\",    \"victory\", \"#4a90e2\", \"giro\", \"badge-giro-kom\",    \"banner-giro-kom-victory\"),"
+    },
+    {
+      "id": "B-024",
+      "file": "apps/web/lib/achievements.ts",
+      "line": 109,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#d83cab",
+      "context": "gt(\"giro-points-victory\", \"Maglia Ciclamino\",  \"A rider from your team wins the Points jersey at the Giro d'Italia\", \"victory\", \"#d83cab\", \"giro\", \"badge-giro-points\", \"banner-giro-points-victory\"),"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/components/tactic-stage-list.tsx",
+      "line": 74,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-002",
+      "file": "apps/web/components/tactic-stage-list.tsx",
+      "line": 79,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/components/tactic-nemesis-modal.tsx",
+      "line": 119,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-002",
+      "file": "apps/web/components/tactic-nemesis-modal.tsx",
+      "line": 130,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-003",
+      "file": "apps/web/components/tactic-nemesis-modal.tsx",
+      "line": 138,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-004",
+      "file": "apps/web/components/tactic-nemesis-modal.tsx",
+      "line": 206,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-005",
+      "file": "apps/web/components/tactic-nemesis-modal.tsx",
+      "line": 223,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-006",
+      "file": "apps/web/components/tactic-nemesis-modal.tsx",
+      "line": 283,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/components/tactic-boost-modal.tsx",
+      "line": 81,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/components/sponsor-bonus-details.tsx",
+      "line": 38,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-[var(--tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-[var(--tracking-wide)] text-[var(--text-low)] block mb-2\">"
+    },
+    {
+      "id": "C-001",
+      "file": "apps/web/components/segmented-control.tsx",
+      "line": 14,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "p-[3px]",
+      "context": "// p-[3px] below: DS Option C canonical container padding. Intentional exception"
+    },
+    {
+      "id": "C-002",
+      "file": "apps/web/components/segmented-control.tsx",
+      "line": 18,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "p-[3px]",
+      "context": "<div className=\"flex w-full rounded-[var(--radius-lg)] border border-[var(--border-default)] p-[3px] gap-1.5\">"
+    },
+    {
+      "id": "E-001",
+      "file": "apps/web/components/rider-card.tsx",
+      "line": 190,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{xp.toLocaleString()}",
+      "context": "{xp.toLocaleString()}"
+    },
+    {
+      "id": "B-001",
+      "file": "apps/web/components/race-team-breakdown.tsx",
+      "line": 54,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#9733",
+      "context": "{team.isMyTeam && <span className=\"ml-1\">&#9733;</span>}"
+    },
+    {
+      "id": "A-002",
+      "file": "apps/web/components/race-team-breakdown.tsx",
+      "line": 63,
+      "class": "A",
+      "rule": "text-[Npx] bypasses token scale",
+      "current": "text-[10px]",
+      "context": "<span className=\"ml-0.5 text-[10px] font-medium text-[var(--text-ghost)]\">xp</span>"
+    },
+    {
+      "id": "A-003",
+      "file": "apps/web/components/race-team-breakdown.tsx",
+      "line": 78,
+      "class": "A",
+      "rule": "text-[Npx] bypasses token scale",
+      "current": "text-[10px]",
+      "context": "<span className=\"rounded px-1.5 py-px text-[10px] font-bold uppercase tracking-wider text-[var(--text-ghost)] bg-[var(--bg-surface-active)]\">"
+    },
+    {
+      "id": "D-004",
+      "file": "apps/web/components/race-team-breakdown.tsx",
+      "line": 78,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"rounded px-1.5 py-px text-[10px] font-bold uppercase tracking-",
+      "context": "<span className=\"rounded px-1.5 py-px text-[10px] font-bold uppercase tracking-wider text-[var(--text-ghost)] bg-[var(--bg-surface-active)]\">"
+    },
+    {
+      "id": "A-005",
+      "file": "apps/web/components/race-team-breakdown.tsx",
+      "line": 89,
+      "class": "A",
+      "rule": "text-[Npx] bypasses token scale",
+      "current": "text-[10px]",
+      "context": "<span className=\"ml-0.5 text-[10px] font-medium text-[var(--text-ghost)]\">xp</span>"
+    },
+    {
+      "id": "B-001",
+      "file": "apps/web/components/race-feed-tactic-modal.tsx",
+      "line": 158,
+      "class": "B",
+      "rule": "Hardcoded Tailwind palette color",
+      "current": "text-red-400",
+      "context": "{error && <p className=\"text-[length:var(--type-caption)] text-red-400\">{error}</p>}"
+    },
+    {
+      "id": "D-002",
+      "file": "apps/web/components/race-feed-tactic-modal.tsx",
+      "line": 192,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-003",
+      "file": "apps/web/components/race-feed-tactic-modal.tsx",
+      "line": 203,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-004",
+      "file": "apps/web/components/race-feed-tactic-modal.tsx",
+      "line": 212,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-005",
+      "file": "apps/web/components/race-feed-tactic-modal.tsx",
+      "line": 263,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "C-001",
+      "file": "apps/web/components/pill.tsx",
+      "line": 7,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "py-[3px]",
+      "context": "\"inline-flex items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-pill)] py-[3px] px-2.5 text-[length:var(--type-caption)] font-medium [&>svg]:size-3 [&>svg]:shrink-0\","
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/components/metric-box.tsx",
+      "line": 22,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/components/gt-rescue-market.tsx",
+      "line": 241,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/components/gt-goals-preview.tsx",
+      "line": 61,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "B-001",
+      "file": "apps/web/components/gt-dnf-card.tsx",
+      "line": 151,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#ef4444",
+      "context": "<span style={{ fontSize: \"var(--type-caption)\", color: \"#ef4444\" }}>"
+    },
+    {
+      "id": "B-001",
+      "file": "apps/web/components/game-guide-accordion.tsx",
+      "line": 264,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#500",
+      "context": "[\"#500\", \"114\", \"228,000 EUR\", \"19,000 EUR\"],"
+    },
+    {
+      "id": "B-002",
+      "file": "apps/web/components/game-guide-accordion.tsx",
+      "line": 265,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#100",
+      "context": "[\"#100\", \"400\", \"800,000 EUR\", \"66,600 EUR\"],"
+    },
+    {
+      "id": "B-003",
+      "file": "apps/web/components/game-guide-accordion.tsx",
+      "line": 386,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#300",
+      "context": "[\"1\", \"Season Start\",   \"0\",     \"6\",  \"1\", \"#300–600\", \"Speciality strategy + Lotto T1 (250K)\"],"
+    },
+    {
+      "id": "B-004",
+      "file": "apps/web/components/game-guide-accordion.tsx",
+      "line": 387,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#200",
+      "context": "[\"2\", \"Classics P1\",    \"25\",    \"7\",  \"1\", \"#200–600\", \"Astana T2 (350K)\"],"
+    },
+    {
+      "id": "B-005",
+      "file": "apps/web/components/game-guide-accordion.tsx",
+      "line": 388,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#100",
+      "context": "[\"3\", \"Classics P2\",    \"150\",   \"8\",  \"2\", \"#100–600\", \"Nationality strategy + T3 sponsors (450K)\"],"
+    },
+    {
+      "id": "B-006",
+      "file": "apps/web/components/game-guide-accordion.tsx",
+      "line": 414,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#300",
+      "context": "#300-600. As you level up, higher-ranked (better) riders become available. At Level 8,"
+    },
+    {
+      "id": "C-001",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 123,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "gap-[10px]",
+      "context": "<div className=\"flex items-center gap-[10px]\">"
+    },
+    {
+      "id": "C-002",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 139,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "px-[3px]",
+      "context": "<span className=\"absolute -bottom-0.5 -right-0.5 rounded bg-[var(--bg-surface-active)] border border-[var(--border-default)] px-[3px] py-px font-mono text-[length:var(--type-micro)] leading-none text-"
+    },
+    {
+      "id": "C-003",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 167,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "px-[5px]",
+      "context": "<span className=\"shrink-0 rounded-[var(--radius-pill)] bg-[var(--badge-bg)] px-[5px] py-px font-mono text-[length:var(--type-micro)] font-semibold text-[var(--accent-highlight)]\">"
+    },
+    {
+      "id": "B-004",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 193,
+      "class": "B",
+      "rule": "Hardcoded Tailwind palette color",
+      "current": "text-red-400",
+      "context": "className=\"flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--danger-bg)] text-red-400 transition-colors hover:bg-[var(--danger-bg)]\""
+    },
+    {
+      "id": "A-005",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 207,
+      "class": "A",
+      "rule": "Tailwind preset text size bypasses token scale",
+      "current": "text-lg",
+      "context": "className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-surface-active)] text-lg transition-colors ${"
+    },
+    {
+      "id": "C-006",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 227,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "px-[10px]",
+      "context": "className={`h-10 w-full rounded-[var(--radius-md)] border bg-[var(--bg-surface)] px-[10px] py-[9px] text-center font-mono text-[length:var(--type-emphasis)] focus:outline-none ${"
+    },
+    {
+      "id": "C-007",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 227,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "py-[9px]",
+      "context": "className={`h-10 w-full rounded-[var(--radius-md)] border bg-[var(--bg-surface)] px-[10px] py-[9px] text-center font-mono text-[length:var(--type-emphasis)] focus:outline-none ${"
+    },
+    {
+      "id": "B-008",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 229,
+      "class": "B",
+      "rule": "Hardcoded Tailwind palette color",
+      "current": "border-red-400",
+      "context": "? \"border-red-400 text-red-400 focus:border-red-400\""
+    },
+    {
+      "id": "B-009",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 229,
+      "class": "B",
+      "rule": "Hardcoded Tailwind palette color",
+      "current": "text-red-400",
+      "context": "? \"border-red-400 text-red-400 focus:border-red-400\""
+    },
+    {
+      "id": "B-010",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 229,
+      "class": "B",
+      "rule": "Hardcoded Tailwind palette color",
+      "current": "border-red-400",
+      "context": "? \"border-red-400 text-red-400 focus:border-red-400\""
+    },
+    {
+      "id": "B-011",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 233,
+      "class": "B",
+      "rule": "Hardcoded Tailwind palette color",
+      "current": "text-red-400",
+      "context": "<span className={`mt-[3px] text-[length:var(--type-micro)] ${inputError ? \"text-red-400\" : \"text-[var(--text-low)]\"}`}>"
+    },
+    {
+      "id": "C-012",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 233,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "mt-[3px]",
+      "context": "<span className={`mt-[3px] text-[length:var(--type-micro)] ${inputError ? \"text-red-400\" : \"text-[var(--text-low)]\"}`}>"
+    },
+    {
+      "id": "A-013",
+      "file": "apps/web/components/draft-bid-card.tsx",
+      "line": 243,
+      "class": "A",
+      "rule": "Tailwind preset text size bypasses token scale",
+      "current": "text-lg",
+      "context": "className=\"flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-surface-active)] text-lg text-[var(--text-mid)] transition-"
+    },
+    {
+      "id": "C-001",
+      "file": "apps/web/components/config-cards.tsx",
+      "line": 55,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "p-[10px]",
+      "context": "className=\"relative flex flex-1 flex-col rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] p-[10px] transition-colors hover:bg-[var(--bg-surface-hover)] cursor-pointer\""
+    },
+    {
+      "id": "D-002",
+      "file": "apps/web/components/config-cards.tsx",
+      "line": 57,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-micro)] font-semibold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-micro)] font-semibold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "C-003",
+      "file": "apps/web/components/config-cards.tsx",
+      "line": 68,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "p-[10px]",
+      "context": "<div className=\"relative flex flex-1 flex-col rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] p-[10px]\">"
+    },
+    {
+      "id": "D-004",
+      "file": "apps/web/components/config-cards.tsx",
+      "line": 69,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-micro)] font-semibold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-micro)] font-semibold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "C-005",
+      "file": "apps/web/components/config-cards.tsx",
+      "line": 85,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "p-[10px]",
+      "context": "className=\"relative flex flex-1 flex-col rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] p-[10px] transition-colors hover:bg-[var(--bg-surface-hover)] cursor-pointer\""
+    },
+    {
+      "id": "D-006",
+      "file": "apps/web/components/config-cards.tsx",
+      "line": 87,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-micro)] font-semibold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-micro)] font-semibold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "C-007",
+      "file": "apps/web/components/config-cards.tsx",
+      "line": 96,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "p-[10px]",
+      "context": "<div className=\"relative flex flex-1 flex-col rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] p-[10px]\">"
+    },
+    {
+      "id": "D-008",
+      "file": "apps/web/components/config-cards.tsx",
+      "line": 97,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-micro)] font-semibold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-micro)] font-semibold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "C-009",
+      "file": "apps/web/components/config-cards.tsx",
+      "line": 135,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "px-[5px]",
+      "context": "<span className=\"rounded-[var(--radius-pill)] bg-[var(--badge-bg)] px-[5px] py-px text-[length:var(--type-micro)] font-semibold text-[var(--accent-highlight)]\">"
+    },
+    {
+      "id": "C-001",
+      "file": "apps/web/components/budget-summary.tsx",
+      "line": 34,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "py-[10px]",
+      "context": "className={`rounded-lg border bg-[var(--bg-surface)] px-3 py-[10px] transition-colors ${"
+    },
+    {
+      "id": "C-002",
+      "file": "apps/web/components/budget-summary.tsx",
+      "line": 39,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "py-[3px]",
+      "context": "<div className=\"flex items-center justify-between py-[3px]\">"
+    },
+    {
+      "id": "C-003",
+      "file": "apps/web/components/budget-summary.tsx",
+      "line": 50,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "py-[3px]",
+      "context": "<div className=\"flex items-center justify-between py-[3px]\">"
+    },
+    {
+      "id": "C-004",
+      "file": "apps/web/components/budget-summary.tsx",
+      "line": 62,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "py-[3px]",
+      "context": "<div className=\"flex items-center justify-between py-[3px]\">"
+    },
+    {
+      "id": "B-005",
+      "file": "apps/web/components/budget-summary.tsx",
+      "line": 66,
+      "class": "B",
+      "rule": "Hardcoded Tailwind palette color",
+      "current": "text-red-400",
+      "context": "<span className=\"font-mono text-[length:var(--type-caption)] text-red-400\">"
+    },
+    {
+      "id": "C-006",
+      "file": "apps/web/components/budget-summary.tsx",
+      "line": 73,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "py-[3px]",
+      "context": "<div className=\"flex items-center justify-between py-[3px]\">"
+    },
+    {
+      "id": "B-007",
+      "file": "apps/web/components/budget-summary.tsx",
+      "line": 77,
+      "class": "B",
+      "rule": "Hardcoded Tailwind palette color",
+      "current": "text-red-400",
+      "context": "<span className=\"font-mono text-[length:var(--type-caption)] text-red-400\">"
+    },
+    {
+      "id": "B-008",
+      "file": "apps/web/components/budget-summary.tsx",
+      "line": 89,
+      "class": "B",
+      "rule": "Hardcoded Tailwind palette color",
+      "current": "text-red-400",
+      "context": "isDeficit ? \"text-red-400\" : \"text-[var(--text-high)]\""
+    },
+    {
+      "id": "B-009",
+      "file": "apps/web/components/budget-summary.tsx",
+      "line": 96,
+      "class": "B",
+      "rule": "Hardcoded Tailwind palette color",
+      "current": "text-red-400",
+      "context": "isDeficit ? \"text-red-400\" : \"text-[var(--accent-highlight)]\""
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/components/brand-card.tsx",
+      "line": 50,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "E-002",
+      "file": "apps/web/components/brand-card.tsx",
+      "line": 61,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{xp.toLocaleString()}",
+      "context": "{xp.toLocaleString()}"
+    },
+    {
+      "id": "E-003",
+      "file": "apps/web/components/brand-card.tsx",
+      "line": 68,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{rank}",
+      "context": "# {rank}"
+    },
+    {
+      "id": "E-004",
+      "file": "apps/web/components/brand-card.tsx",
+      "line": 79,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{level}",
+      "context": "Level {level}{!isMaxLevel && ` → ${level + 1}`}"
+    },
+    {
+      "id": "E-005",
+      "file": "apps/web/components/brand-card.tsx",
+      "line": 79,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{level + 1}",
+      "context": "Level {level}{!isMaxLevel && ` → ${level + 1}`}"
+    },
+    {
+      "id": "E-006",
+      "file": "apps/web/components/brand-card.tsx",
+      "line": 94,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{xp.toLocaleString()}",
+      "context": "{xp.toLocaleString()}"
+    },
+    {
+      "id": "B-001",
+      "file": "apps/web/app/layout.tsx",
+      "line": 15,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#111113",
+      "context": "themeColor: \"#111113\","
+    },
+    {
+      "id": "C-001",
+      "file": "apps/web/components/ui/tabs.tsx",
+      "line": 29,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "p-[3px]",
+      "context": "\"rounded-lg p-[3px] group-data-[orientation=horizontal]/tabs:h-9 data-[variant=line]:rounded-none group/tabs-list text-muted-foreground inline-flex w-fit items-center justify-center group-data-[orient"
+    },
+    {
+      "id": "A-001",
+      "file": "apps/web/components/ui/select.tsx",
+      "line": 40,
+      "class": "A",
+      "rule": "Tailwind preset text size bypasses token scale",
+      "current": "text-base",
+      "context": "\"flex w-full items-center justify-between gap-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2 text-base md:text-[length:var(--type-body)] text-[var("
+    },
+    {
+      "id": "A-001",
+      "file": "apps/web/components/ui/input.tsx",
+      "line": 11,
+      "class": "A",
+      "rule": "Tailwind preset text size bypasses token scale",
+      "current": "text-base",
+      "context": "\"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground bg-[var(--bg-surface)] border-[var(--border-default)] h-9 w-full min-w-0 rounded-md borde"
+    },
+    {
+      "id": "A-002",
+      "file": "apps/web/components/ui/input.tsx",
+      "line": 11,
+      "class": "A",
+      "rule": "Tailwind preset text size bypasses token scale",
+      "current": "text-base",
+      "context": "\"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground bg-[var(--bg-surface)] border-[var(--border-default)] h-9 w-full min-w-0 rounded-md borde"
+    },
+    {
+      "id": "C-001",
+      "file": "apps/web/components/ui/badge.tsx",
+      "line": 8,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "px-[10px]",
+      "context": "\"inline-flex items-center justify-center rounded-[var(--radius-pill)] border border-transparent px-[10px] py-[3px] text-[length:var(--type-caption)] font-medium w-fit whitespace-nowrap shrink-0 [&>svg"
+    },
+    {
+      "id": "C-002",
+      "file": "apps/web/components/ui/badge.tsx",
+      "line": 8,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "py-[3px]",
+      "context": "\"inline-flex items-center justify-center rounded-[var(--radius-pill)] border border-transparent px-[10px] py-[3px] text-[length:var(--type-caption)] font-medium w-fit whitespace-nowrap shrink-0 [&>svg"
+    },
+    {
+      "id": "B-001",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 2,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f59e0b",
+      "context": "{ slug: \"paris-roubaix\",  label: \"Paris-Roubaix\",          accent: \"#f59e0b\", achievement: \"Hell of the North\" },"
+    },
+    {
+      "id": "B-002",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 3,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#eab308",
+      "context": "{ slug: \"flandres\",       label: \"Tour des Flandres\",       accent: \"#eab308\", achievement: \"Patron of Flanders\" },"
+    },
+    {
+      "id": "B-003",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 4,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#d946ef",
+      "context": "{ slug: \"lbl\",            label: \"Liège-Bastogne-Liège\",    accent: \"#d946ef\", achievement: \"La Doyenne\" },"
+    },
+    {
+      "id": "B-004",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 5,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f97316",
+      "context": "{ slug: \"lombardia\",      label: \"Il Lombardia\",            accent: \"#f97316\", achievement: \"Il Diavolo\" },"
+    },
+    {
+      "id": "B-005",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 6,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#06b6d4",
+      "context": "{ slug: \"milan-sanremo\",  label: \"Milan-San Remo\",          accent: \"#06b6d4\", achievement: \"Primavera\" },"
+    },
+    {
+      "id": "B-006",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 11,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#0c0e12",
+      "context": "<div style={{ background: \"#0c0e12\", minHeight: \"100vh\", padding: \"40px 40px\", fontFamily: \"var(--font-geist-sans, -apple-system, sans-serif)\", color: \"#f0f4fa\" }}>"
+    },
+    {
+      "id": "B-007",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 11,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f0f4fa",
+      "context": "<div style={{ background: \"#0c0e12\", minHeight: \"100vh\", padding: \"40px 40px\", fontFamily: \"var(--font-geist-sans, -apple-system, sans-serif)\", color: \"#f0f4fa\" }}>"
+    },
+    {
+      "id": "B-008",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 13,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#525d6e",
+      "context": "<h1 style={{ fontSize: 13, fontWeight: 700, letterSpacing: \"0.12em\", color: \"#525d6e\", textTransform: \"uppercase\", marginBottom: 4, textAlign: \"center\" }}>"
+    },
+    {
+      "id": "B-009",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 16,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#525d6e",
+      "context": "<p style={{ fontSize: 11, color: \"#525d6e\", textAlign: \"center\", marginBottom: 8 }}>"
+    },
+    {
+      "id": "B-010",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 31,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf24",
+      "context": "{ label: \"Victory\", ring: \"#fbbf24\", glow: \"0 0 20px #fbbf2466, 0 0 40px #fbbf2422\", anim: \"breathe 3s ease-in-out infinite\" },"
+    },
+    {
+      "id": "B-011",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 31,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf2466",
+      "context": "{ label: \"Victory\", ring: \"#fbbf24\", glow: \"0 0 20px #fbbf2466, 0 0 40px #fbbf2422\", anim: \"breathe 3s ease-in-out infinite\" },"
+    },
+    {
+      "id": "B-012",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 31,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf2422",
+      "context": "{ label: \"Victory\", ring: \"#fbbf24\", glow: \"0 0 20px #fbbf2466, 0 0 40px #fbbf2422\", anim: \"breathe 3s ease-in-out infinite\" },"
+    },
+    {
+      "id": "B-013",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 32,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f59e0b",
+      "context": "{ label: \"Podium\", ring: \"#f59e0b\", glow: \"0 0 8px #f59e0b55\", anim: \"none\" },"
+    },
+    {
+      "id": "B-014",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 32,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f59e0b55",
+      "context": "{ label: \"Podium\", ring: \"#f59e0b\", glow: \"0 0 8px #f59e0b55\", anim: \"none\" },"
+    },
+    {
+      "id": "B-015",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 33,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#6b7280",
+      "context": "{ label: \"Top 10\", ring: \"#6b7280\", glow: \"none\", anim: \"none\" },"
+    },
+    {
+      "id": "B-016",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 34,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#22d3ee",
+      "context": "{ label: \"Dynamic\", ring: \"#22d3ee\", glow: \"0 0 12px #22d3ee66\", anim: \"pulse-ring 2.5s ease-in-out infinite\" },"
+    },
+    {
+      "id": "B-017",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 34,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#22d3ee66",
+      "context": "{ label: \"Dynamic\", ring: \"#22d3ee\", glow: \"0 0 12px #22d3ee66\", anim: \"pulse-ring 2.5s ease-in-out infinite\" },"
+    },
+    {
+      "id": "B-018",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 40,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#1a1e26",
+      "context": "<div style={{ width: 40, height: 40, borderRadius: \"50%\", border: `2px solid ${r.ring}`, boxShadow: r.glow, animation: r.anim, background: \"#1a1e26\" }} />"
+    },
+    {
+      "id": "B-019",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 41,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#525d6e",
+      "context": "<span style={{ fontSize: 9, color: \"#525d6e\", textTransform: \"uppercase\", letterSpacing: \"0.08em\" }}>{r.label}</span>"
+    },
+    {
+      "id": "B-020",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 46,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf2444",
+      "context": "0%, 100% { box-shadow: 0 0 8px #fbbf2444; }"
+    },
+    {
+      "id": "B-021",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 47,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf2488",
+      "context": "50%       { box-shadow: 0 0 24px #fbbf2488, 0 0 40px #fbbf2422; }"
+    },
+    {
+      "id": "B-022",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 47,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf2422",
+      "context": "50%       { box-shadow: 0 0 24px #fbbf2488, 0 0 40px #fbbf2422; }"
+    },
+    {
+      "id": "B-023",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 50,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#22d3ee",
+      "context": "0%, 100% { box-shadow: 0 0 6px #22d3ee; }"
+    },
+    {
+      "id": "B-024",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 51,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#22d3ee",
+      "context": "50%       { box-shadow: 0 0 18px #22d3ee, 0 0 32px #22d3ee44; }"
+    },
+    {
+      "id": "B-025",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 51,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#22d3ee44",
+      "context": "50%       { box-shadow: 0 0 18px #22d3ee, 0 0 32px #22d3ee44; }"
+    },
+    {
+      "id": "B-026",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 63,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf24",
+      "context": "{ tier: \"Victory\",  ring: \"#fbbf24\", glow: \"0 0 20px #fbbf2466, 0 0 40px #fbbf2422\", anim: \"breathe 3s ease-in-out infinite\" },"
+    },
+    {
+      "id": "B-027",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 63,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf2466",
+      "context": "{ tier: \"Victory\",  ring: \"#fbbf24\", glow: \"0 0 20px #fbbf2466, 0 0 40px #fbbf2422\", anim: \"breathe 3s ease-in-out infinite\" },"
+    },
+    {
+      "id": "B-028",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 63,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf2422",
+      "context": "{ tier: \"Victory\",  ring: \"#fbbf24\", glow: \"0 0 20px #fbbf2466, 0 0 40px #fbbf2422\", anim: \"breathe 3s ease-in-out infinite\" },"
+    },
+    {
+      "id": "B-029",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 64,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f59e0b",
+      "context": "{ tier: \"Podium\",   ring: \"#f59e0b\", glow: \"0 0 8px #f59e0b55\", anim: \"none\" },"
+    },
+    {
+      "id": "B-030",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 64,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f59e0b55",
+      "context": "{ tier: \"Podium\",   ring: \"#f59e0b\", glow: \"0 0 8px #f59e0b55\", anim: \"none\" },"
+    },
+    {
+      "id": "B-031",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 65,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#6b7280",
+      "context": "{ tier: \"Top 10\",   ring: \"#6b7280\", glow: \"none\", anim: \"none\" },"
+    },
+    {
+      "id": "B-032",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 66,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#22d3ee",
+      "context": "{ tier: \"Dynamic\",  ring: \"#22d3ee\", glow: \"0 0 12px #22d3ee66\", anim: \"pulse-ring 2.5s ease-in-out infinite\" },"
+    },
+    {
+      "id": "B-033",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 66,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#22d3ee66",
+      "context": "{ tier: \"Dynamic\",  ring: \"#22d3ee\", glow: \"0 0 12px #22d3ee66\", anim: \"pulse-ring 2.5s ease-in-out infinite\" },"
+    },
+    {
+      "id": "B-034",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 71,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#525d6e",
+      "context": "<div style={{ fontSize: 10, fontWeight: 700, color: \"#525d6e\", letterSpacing: \"0.08em\", textTransform: \"uppercase\", marginBottom: 16, paddingBottom: 6, borderBottom: \"1px solid rgba(255,255,255,0.06)\""
+    },
+    {
+      "id": "B-035",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 78,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#525d6e",
+      "context": "<div style={{ fontSize: 9, color: \"#525d6e\", marginBottom: 12, textTransform: \"uppercase\", letterSpacing: \"0.06em\" }}>Badge · 4 ring tiers</div>"
+    },
+    {
+      "id": "B-036",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 89,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#525d6e",
+      "context": "{size === 48 && <span style={{ fontSize: 8, color: \"#525d6e\" }}>{r.tier}</span>}"
+    },
+    {
+      "id": "B-037",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 99,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#525d6e",
+      "context": "<div style={{ fontSize: 9, color: \"#525d6e\", marginBottom: 12, textTransform: \"uppercase\", letterSpacing: \"0.06em\" }}>En contexte · Profile card</div>"
+    },
+    {
+      "id": "B-038",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 106,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#525d6e",
+      "context": "<div style={{ fontSize: 9, color: \"#525d6e\", marginBottom: 8, textTransform: \"uppercase\", letterSpacing: \"0.06em\" }}>Banner 16:9</div>"
+    },
+    {
+      "id": "B-039",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 121,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f0f4fa",
+      "context": "<div style={{ fontSize: 14, fontWeight: 700, color: \"#f0f4fa\" }}>Les Rouleurs du Nord</div>"
+    },
+    {
+      "id": "B-040",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 131,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#12151a",
+      "context": "<div style={{ borderRadius: 12, overflow: \"hidden\", border: \"1px solid rgba(255,255,255,0.08)\", background: \"#12151a\" }}>"
+    },
+    {
+      "id": "B-041",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 137,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f0f4fa",
+      "context": "<div style={{ fontSize: 13, fontWeight: 700, color: \"#f0f4fa\" }}>Les Rouleurs du Nord</div>"
+    },
+    {
+      "id": "B-042",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 142,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf24",
+      "context": "border: `2px solid #fbbf24`, boxShadow: \"0 0 16px #fbbf2466\","
+    },
+    {
+      "id": "B-043",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 142,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#fbbf2466",
+      "context": "border: `2px solid #fbbf24`, boxShadow: \"0 0 16px #fbbf2466\","
+    },
+    {
+      "id": "B-044",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 147,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#f0f4fa",
+      "context": "<div style={{ fontSize: 12, fontWeight: 600, color: \"#f0f4fa\" }}>Les Rouleurs du Nord</div>"
+    },
+    {
+      "id": "B-045",
+      "file": "apps/web/app/prototype/page.tsx",
+      "line": 148,
+      "class": "B",
+      "rule": "Hardcoded hex color",
+      "current": "#525d6e",
+      "context": "<div style={{ fontSize: 11, color: \"#525d6e\", marginTop: 2 }}>Level 4 · 1 420 XP</div>"
+    },
+    {
+      "id": "A-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/lobby-view.tsx",
+      "line": 207,
+      "class": "A",
+      "rule": "Tailwind preset text size bypasses token scale",
+      "current": "text-base",
+      "context": "className=\"flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] outline-none [color-scheme:dark]\""
+    },
+    {
+      "id": "E-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/team/page.tsx",
+      "line": 191,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{xp}",
+      "context": "xp={xp}"
+    },
+    {
+      "id": "E-002",
+      "file": "apps/web/app/(game)/league/[leagueId]/team/page.tsx",
+      "line": 192,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{level}",
+      "context": "level={level}"
+    },
+    {
+      "id": "E-003",
+      "file": "apps/web/app/(game)/league/[leagueId]/team/page.tsx",
+      "line": 194,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{rank}",
+      "context": "rank={rank}"
+    },
+    {
+      "id": "E-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/ranking/ranking-client.tsx",
+      "line": 68,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{amount}",
+      "context": "return `€${amount}`;"
+    },
+    {
+      "id": "D-002",
+      "file": "apps/web/app/(game)/league/[leagueId]/ranking/ranking-client.tsx",
+      "line": 161,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-003",
+      "file": "apps/web/app/(game)/league/[leagueId]/ranking/ranking-client.tsx",
+      "line": 252,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "C-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/levels/levels-timeline.tsx",
+      "line": 133,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "pl-[52px]",
+      "context": "<div className=\"pl-[52px] pr-1 pb-3 space-y-2\">"
+    },
+    {
+      "id": "E-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/auctions-client.tsx",
+      "line": 389,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{treasury}",
+      "context": "treasury={treasury}"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/team/strategies/strategies-client.tsx",
+      "line": 183,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "E-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/team/strategies/page.tsx",
+      "line": 140,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{level}",
+      "context": "level={level}"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/team/budget/budget-client.tsx",
+      "line": 89,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/team/gt/page.tsx",
+      "line": 145,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/team/gt/gt-team-client.tsx",
+      "line": 208,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-semibold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-semibold uppercase tracking-wide text-[var(--text-high)]\">"
+    },
+    {
+      "id": "C-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/rider/[riderId]/rider-detail-client.tsx",
+      "line": 490,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "mt-[3px]",
+      "context": "{/* C-001 EXCEPTION: mt-[3px] — valeur définissante sub-token (3px), pas de token --space-* à 3px. Même pattern que py-[3px] dans pill.tsx. */}"
+    },
+    {
+      "id": "C-002",
+      "file": "apps/web/app/(game)/league/[leagueId]/rider/[riderId]/rider-detail-client.tsx",
+      "line": 490,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "py-[3px]",
+      "context": "{/* C-001 EXCEPTION: mt-[3px] — valeur définissante sub-token (3px), pas de token --space-* à 3px. Même pattern que py-[3px] dans pill.tsx. */}"
+    },
+    {
+      "id": "C-003",
+      "file": "apps/web/app/(game)/league/[leagueId]/rider/[riderId]/rider-detail-client.tsx",
+      "line": 491,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "mt-[3px]",
+      "context": "<span className={`mt-[3px] text-[length:var(--type-micro)] ${bidInputError ? \"text-[var(--status-danger)]\" : \"text-[var(--text-ghost)]\"}`}>"
+    },
+    {
+      "id": "D-004",
+      "file": "apps/web/app/(game)/league/[leagueId]/rider/[riderId]/rider-detail-client.tsx",
+      "line": 756,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/market/market-client.tsx",
+      "line": 434,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "E-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/[auctionId]/treasury-widget.tsx",
+      "line": 32,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{treasury.toLocaleString(\"en-US\")}",
+      "context": "{treasury.toLocaleString(\"en-US\")} EUR"
+    },
+    {
+      "id": "E-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/[auctionId]/rider-dialog.tsx",
+      "line": 202,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{amount}",
+      "context": "value={amount}"
+    },
+    {
+      "id": "E-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/[auctionId]/auction-client.tsx",
+      "line": 74,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.id}",
+      "context": "key={bid.id}"
+    },
+    {
+      "id": "E-002",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/[auctionId]/auction-client.tsx",
+      "line": 85,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.amount.toLocaleString(\"en-US\")}",
+      "context": "{bid.amount.toLocaleString(\"en-US\")} EUR"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/history/page.tsx",
+      "line": 146,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "E-002",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/history/page.tsx",
+      "line": 161,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.id}",
+      "context": "key={bid.id}"
+    },
+    {
+      "id": "E-003",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/history/page.tsx",
+      "line": 168,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.bidder_name}",
+      "context": "<span>{bid.bidder_name}</span>"
+    },
+    {
+      "id": "D-004",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/history/page.tsx",
+      "line": 188,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "E-005",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/history/page.tsx",
+      "line": 196,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.phase_id}",
+      "context": "const gtName = GT_FULL_NAME[bid.phase_id as GtPhaseId] ?? `Phase ${bid.phase_id}`;"
+    },
+    {
+      "id": "E-006",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/history/page.tsx",
+      "line": 198,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.id}",
+      "context": "<div key={bid.id} className=\"flex items-center justify-between py-3 text-[length:var(--type-caption)]\">"
+    },
+    {
+      "id": "E-007",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/history/page.tsx",
+      "line": 204,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.gt_year}",
+      "context": "{gtName} {bid.gt_year} · Emergency"
+    },
+    {
+      "id": "E-008",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/history/page.tsx",
+      "line": 209,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.won ? \"text-[var(--accent-default)]\" : \"text-[var(--text-low)] opacity-60\"}",
+      "context": "<span className={bid.won ? \"text-[var(--accent-default)]\" : \"text-[var(--text-low)] opacity-60\"}>"
+    },
+    {
+      "id": "E-009",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/history/page.tsx",
+      "line": 210,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.won ? \"Won\" : \"Lost\"}",
+      "context": "{bid.won ? \"Won\" : \"Lost\"}"
+    },
+    {
+      "id": "D-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/team/budget/transactions/transactions-client.tsx",
+      "line": 82,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "C-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/team/budget/marketplace/marketplace-client.tsx",
+      "line": 150,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "pl-[42px]",
+      "context": "{/* DS-EXCEPTION: pl-[42px] aligns with radio button (h-[18px] + gap-2.5 + px-3.5) — no Tailwind utility maps to this exact layout constraint */}"
+    },
+    {
+      "id": "C-002",
+      "file": "apps/web/app/(game)/league/[leagueId]/team/budget/marketplace/marketplace-client.tsx",
+      "line": 152,
+      "class": "C",
+      "rule": "Hardcoded spacing (arbitrary px)",
+      "current": "pl-[42px]",
+      "context": "<div className=\"pl-[42px] pr-3.5 pb-3.5\">"
+    },
+    {
+      "id": "E-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/ranking/team/[teamId]/page.tsx",
+      "line": 229,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{rank}",
+      "context": "#{rank} in game"
+    },
+    {
+      "id": "D-002",
+      "file": "apps/web/app/(game)/league/[leagueId]/ranking/team/[teamId]/page.tsx",
+      "line": 274,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "D-003",
+      "file": "apps/web/app/(game)/league/[leagueId]/ranking/team/[teamId]/page.tsx",
+      "line": 301,
+      "class": "D",
+      "rule": "Inline <span> rendering UPPERCASE + tracking — likely Badge label",
+      "current": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-",
+      "context": "<span className=\"text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]\">"
+    },
+    {
+      "id": "E-001",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/[auctionId]/results/page.tsx",
+      "line": 94,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.id}",
+      "context": "<TableRow key={bid.id}>"
+    },
+    {
+      "id": "E-002",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/[auctionId]/results/page.tsx",
+      "line": 96,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.riders?.full_name}",
+      "context": "{bid.riders?.full_name}"
+    },
+    {
+      "id": "E-003",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/[auctionId]/results/page.tsx",
+      "line": 99,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.riders?.real_team}",
+      "context": "{bid.riders?.real_team}"
+    },
+    {
+      "id": "E-004",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/[auctionId]/results/page.tsx",
+      "line": 102,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.riders?.specialty}",
+      "context": "{bid.riders?.specialty}"
+    },
+    {
+      "id": "E-005",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/[auctionId]/results/page.tsx",
+      "line": 111,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.teams?.name}",
+      "context": "{bid.teams?.name}"
+    },
+    {
+      "id": "E-006",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/[auctionId]/results/page.tsx",
+      "line": 114,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{bid.amount.toLocaleString(\"en-US\")}",
+      "context": "{bid.amount.toLocaleString(\"en-US\")} EUR"
+    },
+    {
+      "id": "E-007",
+      "file": "apps/web/app/(game)/league/[leagueId]/auction/[auctionId]/results/page.tsx",
+      "line": 137,
+      "class": "E",
+      "rule": "Number variable in non-mono context (heuristic)",
+      "current": "{total.toLocaleString(\"en-US\")}",
+      "context": "{total.toLocaleString(\"en-US\")} EUR"
+    }
+  ]
+}
