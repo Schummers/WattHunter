@@ -342,13 +342,15 @@ export async function getRaceFeedData(
       const { data: remRows = [] } = await supabase
         .from("remontada_boosts")
         .select(
-          "id, team_id, gt_identifier, triggered_at_stage, expires_after_stage, multiplier, created_at, overtaken_team_id"
+          "id, team_id, gt_identifier, triggered_at_stage, expires_after_stage, multiplier, created_at, updated_at, overtaken_team_id"
         )
         .eq("league_id", opts.leagueId)
         .eq("gt_identifier", gtIdent);
 
       for (const row of remRows ?? []) {
-        const triggeredDateIso = (row.created_at as string).slice(0, 10);
+        // Use updated_at (last overtake reset) rather than created_at (first boost creation)
+        // so the card appears at the date of the most recent overtake trigger.
+        const triggeredDateIso = ((row.updated_at ?? row.created_at) as string).slice(0, 10);
         const stagesRemaining = Math.max(0, (row.expires_after_stage ?? 0) - (row.triggered_at_stage ?? 0));
         const data: RemontadaData = {
           boostId: row.id,

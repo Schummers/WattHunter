@@ -86,7 +86,7 @@ def detect_overtakes(
 from postgrest.exceptions import APIError
 
 BOOST_WINDOW_STAGES = 3
-DEFAULT_MULTIPLIER = 2.0
+DEFAULT_MULTIPLIER = 1.5
 
 def record_overtake(
     supabase: Client,
