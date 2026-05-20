@@ -10,8 +10,11 @@ Sweep one-shot — voir spec `docs/2026-05-20-ds-compliance-sweep-design.md`.
 - `follow-ups.md` — items hors scope repérés en cours de route
 - `blocked.md` — violations skippées par les agents, à trancher par Jonathan
 
+## Baseline
+Total violations baseline: 249
+
 ## Status
-- [ ] Phase 0 — outils
+- [x] Phase 0 — outils
 - [ ] Phase 1 — sitemap
 - [ ] Phase 2 — audits
 - [ ] Phase 3 — repairs

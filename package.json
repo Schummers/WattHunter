@@ -7,9 +7,14 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "test": "turbo test"
+    "test": "turbo test",
+    "audit-ds": "tsx scripts/audit-ds.ts",
+    "ds-shots": "tsx scripts/screenshot-states.ts"
   },
   "devDependencies": {
-    "turbo": "^2"
+    "glob": "^13.0.6",
+    "tsx": "^4.22.3",
+    "turbo": "^2",
+    "vitest": "^4.0.18"
   }
 }
