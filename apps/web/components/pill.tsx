@@ -3,7 +3,8 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const tagVariants = cva(
-  "inline-flex items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-pill)] py-[3px] px-[10px] text-[length:var(--type-caption)] font-medium [&>svg]:size-3 [&>svg]:shrink-0",
+  /* DS canonical: tag padding-y = 3px (intentional — no Tailwind utility covers 3px exactly; py-0.5=2px too small, py-1=4px too large). MISSING_TOKEN: candidate --space-tag-y for future DS token audit. */
+  "inline-flex items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-pill)] py-[3px] px-2.5 text-[length:var(--type-caption)] font-medium [&>svg]:size-3 [&>svg]:shrink-0",
   {
     variants: {
       variant: {
