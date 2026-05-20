@@ -275,7 +275,7 @@ export default async function TeamDetailPage({
             Active Roster
           </span>
           <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)]">
-            {activeContracts.length} rider{activeContracts.length !== 1 ? "s" : ""}
+            <span className="font-mono tabular-nums">{activeContracts.length}</span> rider{activeContracts.length !== 1 ? "s" : ""}
           </span>
         </div>
 
@@ -302,7 +302,7 @@ export default async function TeamDetailPage({
                 Former Riders
               </span>
               <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)]">
-                {formerContracts.length} rider{formerContracts.length !== 1 ? "s" : ""}
+                <span className="font-mono tabular-nums">{formerContracts.length}</span> rider{formerContracts.length !== 1 ? "s" : ""}
               </span>
             </div>
 

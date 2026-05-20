@@ -184,6 +184,7 @@ export function RankingClient({
                 )}
 
                 {/* Position */}
+                {/* DS-EXCEPTION: w-[22px] — layout constraint for rank column; w-5=20px and w-6=24px both cause misalignment with 1-3 digit rank numbers */}
                 <span className="relative w-[22px] shrink-0 text-center font-mono text-[length:var(--type-emphasis)] font-bold text-[var(--text-mid)]">
                   {team.rank}
                 </span>
@@ -265,6 +266,7 @@ export function RankingClient({
                   }`}
                 >
                   {/* Position */}
+                  {/* DS-EXCEPTION: w-[22px] — layout constraint for rank column (see teams tab) */}
                   <span className="w-[22px] shrink-0 text-center font-mono text-[length:var(--type-emphasis)] font-bold text-[var(--text-mid)]">
                     {i + 1}
                   </span>
