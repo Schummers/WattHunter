@@ -3,6 +3,37 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPhase } from "@/lib/phases";
+import { z } from "zod/v4";
+
+const DateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
+const TimeStr = z.string().regex(/^\d{2}:\d{2}$/, "HH:mm");
+
+const UpdateRoundDatesSchema = z.object({
+  leagueId: z.string().uuid(),
+  rounds: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        date: DateStr,
+        time: TimeStr,
+      })
+    )
+    .min(1)
+    .max(3),
+});
+
+const CreateNextPhaseSchema = z.object({
+  leagueId: z.string().uuid(),
+  rounds: z
+    .array(
+      z.object({
+        date: DateStr,
+        time: TimeStr,
+      })
+    )
+    .min(1)
+    .max(3),
+});
 
 function getParisOffset(dateStr: string): string {
   const date = new Date(`${dateStr}T12:00:00Z`);
@@ -28,6 +59,9 @@ export async function updateRoundDates(input: {
   // Each round: date+time = closes_at for that round (post-Task 8 form shape).
   rounds: { id: string; date: string; time: string }[];
 }) {
+  const parsed = UpdateRoundDatesSchema.safeParse(input);
+  if (!parsed.success) return { error: "Invalid data" };
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -40,24 +74,16 @@ export async function updateRoundDates(input: {
   const { data: league } = await supabase
     .from("leagues")
     .select("id, commissioner_id")
-    .eq("id", input.leagueId)
+    .eq("id", parsed.data.leagueId)
     .single();
 
   if (!league || league.commissioner_id !== user.id) {
     return { error: "Only the Race Director can edit round dates." };
   }
 
-  if (!input.rounds || input.rounds.length === 0) {
-    return { error: "No rounds to update." };
-  }
-
-  for (let i = 0; i < input.rounds.length; i++) {
-    const round = input.rounds[i];
+  for (let i = 0; i < parsed.data.rounds.length; i++) {
+    const round = parsed.data.rounds[i];
     const { date, time } = round;
-
-    if (!date || !time) {
-      return { error: `Round ${i + 1}: date and time are required.` };
-    }
 
     // Only update closes_at — never opens_at (lazy-open relies on the original opens_at).
     const closesAt = toParisIso(date, time);
@@ -72,8 +98,8 @@ export async function updateRoundDates(input: {
     }
   }
 
-  revalidatePath(`/league/${input.leagueId}/auction`);
-  revalidatePath(`/league/${input.leagueId}/auction/rounds`);
+  revalidatePath(`/league/${parsed.data.leagueId}/auction`);
+  revalidatePath(`/league/${parsed.data.leagueId}/auction/rounds`);
   return { success: true };
 }
 
@@ -82,6 +108,9 @@ export async function createNextPhaseAuctions(input: {
   // Each round: date+time = closes_at for that round (post-Task 8 form shape).
   rounds: { date: string; time: string }[];
 }) {
+  const parsed = CreateNextPhaseSchema.safeParse(input);
+  if (!parsed.success) return { error: "Invalid data" };
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -94,7 +123,7 @@ export async function createNextPhaseAuctions(input: {
   const { data: league } = await supabase
     .from("leagues")
     .select("id, commissioner_id, status")
-    .eq("id", input.leagueId)
+    .eq("id", parsed.data.leagueId)
     .single();
 
   if (!league || league.commissioner_id !== user.id) {
@@ -108,22 +137,12 @@ export async function createNextPhaseAuctions(input: {
   const { data: existing } = await supabase
     .from("auctions")
     .select("id")
-    .eq("league_id", input.leagueId)
+    .eq("league_id", parsed.data.leagueId)
     .in("status", ["open", "scheduled"])
     .limit(1);
 
   if (existing && existing.length > 0) {
     return { error: "Active rounds already exist. Edit them instead." };
-  }
-
-  if (!input.rounds || input.rounds.length === 0 || input.rounds.length > 3) {
-    return { error: "Configure 1 to 3 rounds." };
-  }
-
-  for (const round of input.rounds) {
-    if (!round.date || !round.time) {
-      return { error: "All rounds require a date and time." };
-    }
   }
 
   // Derive Round 1 opens_at from the current auction phase (auctionDates[0]).
@@ -144,12 +163,12 @@ export async function createNextPhaseAuctions(input: {
   }
 
   // Build closes_at for each round from the form inputs.
-  const closesTimes = input.rounds.map((round) =>
+  const closesTimes = parsed.data.rounds.map((round) =>
     toParisIso(round.date, round.time)
   );
 
-  const rows = input.rounds.map((_, i) => ({
-    league_id: input.leagueId,
+  const rows = parsed.data.rounds.map((_, i) => ({
+    league_id: parsed.data.leagueId,
     name: `Round ${i + 1}`,
     // All rounds start as 'scheduled' — lazy-open handles Round 1,
     // validate_round handles Round 2 and 3.
@@ -163,7 +182,7 @@ export async function createNextPhaseAuctions(input: {
   const { error: insertError } = await supabase.from("auctions").insert(rows);
   if (insertError) return { error: "Failed to create auction rounds." };
 
-  revalidatePath(`/league/${input.leagueId}/auction`);
-  revalidatePath(`/league/${input.leagueId}/auction/rounds`);
+  revalidatePath(`/league/${parsed.data.leagueId}/auction`);
+  revalidatePath(`/league/${parsed.data.leagueId}/auction/rounds`);
   return { success: true };
 }

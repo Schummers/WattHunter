@@ -1,11 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockRpc } = vi.hoisted(() => ({
+const { mockRpc, mockGetUser } = vi.hoisted(() => ({
   mockRpc: vi.fn(),
+  mockGetUser: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
+    auth: {
+      getUser: mockGetUser,
+    },
     rpc: mockRpc,
   })),
 }));
@@ -23,7 +27,21 @@ import { releaseRider } from "./actions";
 const CONTRACT_ID = "cccccccc-0000-4000-8000-000000000001";
 
 describe("releaseRider (via RPC)", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+  });
+
+  it("returns error for invalid UUID", async () => {
+    const result = await releaseRider("not-a-uuid");
+    expect(result).toEqual({ error: "Invalid data" });
+  });
+
+  it("returns error when not authenticated", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    const result = await releaseRider(CONTRACT_ID);
+    expect(result).toEqual({ error: "Not authenticated" });
+  });
 
   it("forwards RPC auth error", async () => {
     mockRpc.mockResolvedValueOnce({ data: { error: "Not authenticated" }, error: null });

@@ -2,6 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { z } from "zod/v4";
+
+const LaunchSchema = z.object({
+  leagueId: z.string().uuid(),
+  roundDates: z
+    .array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"))
+    .min(1)
+    .max(3),
+});
 
 /**
  * Compute the Europe/Paris UTC offset for a given date.
@@ -22,6 +31,9 @@ export async function launchFirstAuction(
   leagueId: string,
   roundDates: string[] // ["2026-03-08", "2026-03-09", "2026-03-10"]
 ) {
+  const parsed = LaunchSchema.safeParse({ leagueId, roundDates });
+  if (!parsed.success) return { error: "Invalid data" };
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -43,10 +55,6 @@ export async function launchFirstAuction(
 
   if (league.status !== "pending") {
     return { error: "The league has already started." };
-  }
-
-  if (!roundDates || roundDates.length === 0 || roundDates.length > 3) {
-    return { error: "Please configure 1 to 3 rounds." };
   }
 
   const auctionRows = roundDates.map((dateStr, i) => {

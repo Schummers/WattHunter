@@ -39,7 +39,10 @@ export function AchievementsClient({
 
   function handleEquip(slug: string) {
     startTransition(async () => {
-      await equipAchievement(leagueId, slug);
+      const result = await equipAchievement(leagueId, slug);
+      if (result?.error) {
+        console.error("Failed to equip achievement:", result.error);
+      }
     });
   }
 

@@ -3,9 +3,22 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { getCurrentPhase } from "@/lib/phases";
+import { z } from "zod/v4";
+
+const ReleaseSchema = z.object({
+  contractId: z.string().uuid(),
+});
 
 export async function releaseRider(contractId: string) {
+  const parsed = ReleaseSchema.safeParse({ contractId });
+  if (!parsed.success) return { error: "Invalid data" };
+
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
   const currentPhase = getCurrentPhase();
 
   const { data, error } = await supabase.rpc("release_rider", {

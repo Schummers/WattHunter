@@ -2,11 +2,33 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { z } from "zod/v4";
+
+const UpdateTeamNameSchema = z.object({
+  teamId: z.string().uuid(),
+  name: z.string().trim().min(2).max(30),
+});
+
+const LeaveLeagueSchema = z.object({
+  leagueId: z.string().uuid(),
+});
+
+const UpdateUserNameSchema = z.object({
+  name: z.string().trim().min(2).max(30),
+});
+
+const UpdateUserEmailSchema = z.object({
+  email: z.string().trim().email(),
+});
+
+const UpdateLeagueNameSchema = z.object({
+  leagueId: z.string().uuid(),
+  name: z.string().trim().min(2).max(50),
+});
 
 export async function updateTeamName(teamId: string, name: string) {
-  if (!name.trim()) return { error: "Team name cannot be empty" };
-  if (name.trim().length < 2) return { error: "Team name must be at least 2 characters" };
-  if (name.trim().length > 30) return { error: "Team name too long (max 30 chars)" };
+  const parsed = UpdateTeamNameSchema.safeParse({ teamId, name });
+  if (!parsed.success) return { error: "Invalid data" };
 
   const supabase = await createClient();
   const {
@@ -25,7 +47,7 @@ export async function updateTeamName(teamId: string, name: string) {
 
   const { error } = await supabase
     .from("teams")
-    .update({ name: name.trim() })
+    .update({ name: parsed.data.name })
     .eq("id", teamId);
 
   if (error) return { error: error.message };
@@ -35,6 +57,9 @@ export async function updateTeamName(teamId: string, name: string) {
 }
 
 export async function leaveLeague(leagueId: string) {
+  const parsed = LeaveLeagueSchema.safeParse({ leagueId });
+  if (!parsed.success) return { error: "Invalid data" };
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("leave_league", {
@@ -51,13 +76,12 @@ export async function leaveLeague(leagueId: string) {
 }
 
 export async function updateUserName(name: string) {
-  if (!name.trim()) return { error: "Name cannot be empty" };
-  if (name.trim().length < 2) return { error: "Name must be at least 2 characters" };
-  if (name.trim().length > 30) return { error: "Name too long (max 30 chars)" };
+  const parsed = UpdateUserNameSchema.safeParse({ name });
+  if (!parsed.success) return { error: "Invalid data" };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({
-    data: { full_name: name.trim() },
+    data: { full_name: parsed.data.name },
   });
 
   if (error) return { error: error.message };
@@ -67,10 +91,11 @@ export async function updateUserName(name: string) {
 }
 
 export async function updateUserEmail(email: string) {
-  if (!email.trim()) return { error: "Email cannot be empty" };
+  const parsed = UpdateUserEmailSchema.safeParse({ email });
+  if (!parsed.success) return { error: "Invalid data" };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.updateUser({ email: email.trim() });
+  const { error } = await supabase.auth.updateUser({ email: parsed.data.email });
 
   if (error) return { error: error.message };
 
@@ -79,9 +104,8 @@ export async function updateUserEmail(email: string) {
 }
 
 export async function updateLeagueName(leagueId: string, name: string) {
-  if (!name.trim()) return { error: "League name cannot be empty" };
-  if (name.trim().length < 2) return { error: "League name must be at least 2 characters" };
-  if (name.trim().length > 50) return { error: "League name too long (max 50 chars)" };
+  const parsed = UpdateLeagueNameSchema.safeParse({ leagueId, name });
+  if (!parsed.success) return { error: "Invalid data" };
 
   const supabase = await createClient();
   const {
@@ -102,7 +126,7 @@ export async function updateLeagueName(leagueId: string, name: string) {
 
   const { error } = await supabase
     .from("leagues")
-    .update({ name: name.trim() })
+    .update({ name: parsed.data.name })
     .eq("id", leagueId);
 
   if (error) return { error: error.message };
