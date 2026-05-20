@@ -343,7 +343,7 @@ export function MarketClient({
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div
-          className={`flex items-center gap-0.5 rounded-lg px-2 h-7 transition-colors focus-within:border-[var(--accent-default)] ${
+          className={`flex items-center gap-0.5 rounded-md px-2 h-7 transition-colors focus-within:border-[var(--accent-default)] ${
             currentBid
               ? "border border-[var(--accent-default)] bg-[var(--bg-surface-hover)]"
               : "border border-[var(--border-default)] bg-transparent"
@@ -366,7 +366,7 @@ export function MarketClient({
             onMouseDown={(e) => e.stopPropagation()}
             onFocus={(e) => e.stopPropagation()}
             autoComplete="off"
-            className={`w-20 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
+            className={`w-20 bg-transparent text-right text-[length:var(--type-body)] font-semibold font-mono tabular-nums outline-none ${
               currentBid
                 ? "text-[var(--accent-default)]"
                 : "text-[var(--text-low)]"
@@ -379,7 +379,7 @@ export function MarketClient({
         {/* Min salary — only visible when there's an active bid */}
         {(bids[r.id] || savedDraftIds.has(r.id)) && (
           <div className="text-[length:var(--type-micro)] text-[var(--text-low)] mt-px">
-            Min: <span className="font-mono">€{formatThousands(minSalary)}</span>
+            Min: <span className="font-mono tabular-nums">€{formatThousands(minSalary)}</span>
           </div>
         )}
         {errors[r.id] && (
@@ -406,7 +406,7 @@ export function MarketClient({
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
-            className="flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
+            className="flex-1 bg-transparent text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
           />
           {search && (
             <button
@@ -546,13 +546,13 @@ export function MarketClient({
       >
         <div className="flex items-center justify-between">
           <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-            <span className="font-mono">{totalBidCount}/{maxSlots}</span> slots &middot; <span className="font-mono">{formatEuro(remainingBudget)}</span>
+            <span className="font-mono tabular-nums">{totalBidCount}/{maxSlots}</span> slots &middot; <span className="font-mono tabular-nums">{formatEuro(remainingBudget)}</span>
           </span>
           <button
             type="button"
             onClick={handleAddToDraft}
             disabled={!hasPendingBids || saving}
-            className="rounded-lg px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold cta-gradient text-[var(--cta-text)] disabled:opacity-40"
+            className="rounded-md px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold cta-gradient text-[var(--cta-text)] disabled:opacity-40"
           >
             {saving
               ? "Saving..."
