@@ -3,6 +3,7 @@
 import { RailLink } from "@/components/rail-link";
 import { ChevronRight, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { MovementTag } from "@/components/movement-tag";
 import { RiderLockBadge } from "@/components/rider-lock-badge";
 import { resolvePhotoUrl } from "@/lib/photo-url";
@@ -111,7 +112,8 @@ export function RiderCard({
           </AvatarFallback>
         </Avatar>
         {rider.pcs_rank != null && (
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[length:var(--type-micro)] font-semibold font-mono text-[var(--text-mid)] bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-full px-1.5 leading-tight">
+          // Avatar overlay: kept as custom span (absolute positioning prevents Badge substitution). tabular-nums added per DS rule E.
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[length:var(--type-micro)] font-semibold font-mono tabular-nums text-[var(--text-mid)] bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-full px-1.5 leading-tight">
             #{rider.pcs_rank}
           </span>
         )}
@@ -133,9 +135,10 @@ export function RiderCard({
             <MovementTag movement={rider.pcs_rank_diff} />
           )}
           {boostPct != null && boostPct > 0 && (
-            <span className="shrink-0 bg-[var(--badge-bg)] text-[var(--accent-highlight)] text-[length:var(--type-micro)] font-semibold rounded-[var(--radius-pill)] px-1.5 py-0.5">
+            // D-001: replaced inline span with <Badge>. Uses --accent-highlight (cyan-400) override instead of default --accent-label (sky-500) to preserve visual intent.
+            <Badge variant="highlighted" className="shrink-0 font-mono tabular-nums text-[var(--accent-highlight)] px-1.5 py-0.5">
               +{boostPct}%
-            </span>
+            </Badge>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -183,7 +186,7 @@ export function RiderCard({
         <div className="shrink-0">{rightContent}</div>
       ) : xp != null ? (
         <div className="flex flex-col items-end shrink-0">
-          <span className="text-[length:var(--type-stat-small)] font-bold font-mono text-[var(--text-high)]">
+          <span className="text-[length:var(--type-stat-small)] font-bold font-mono tabular-nums text-[var(--text-high)]">
             {xp.toLocaleString()}
           </span>
           <span className="text-[length:var(--type-micro)] font-semibold text-[var(--text-low)]">XP</span>
