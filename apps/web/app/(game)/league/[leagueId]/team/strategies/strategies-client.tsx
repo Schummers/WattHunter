@@ -184,7 +184,7 @@ export function StrategiesClient({
           Slots
         </span>
         <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-          {activeCount} / {maxActive} max active
+          <span className="font-mono tabular-nums">{activeCount}</span> / <span className="font-mono tabular-nums">{maxActive}</span> max active
         </span>
       </div>
 
@@ -328,7 +328,7 @@ export function StrategiesClient({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <span className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-              {coveredCount} / {totalRiders} riders covered
+              <span className="font-mono tabular-nums">{coveredCount}</span> / <span className="font-mono tabular-nums">{totalRiders}</span> riders covered
             </span>
             <span className="text-[length:var(--type-body)] font-bold font-mono text-[var(--accent-highlight)]">
               +{boostPct}% boost
