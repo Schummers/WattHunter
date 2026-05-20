@@ -113,7 +113,7 @@ export function BudgetClient({
                 -{formatCompact(phaseSalaries)}
               </span>
             </div>
-            <div className="border-t border-white/10 pt-1.5">
+            <div className="border-t border-[var(--border-glass)] pt-1.5">
               <div className="flex items-center justify-between text-[length:var(--type-caption)]">
                 <span className="font-semibold text-[var(--text-high)]">Phase result</span>
                 <span className="font-[family-name:var(--font-geist-mono)] font-bold text-[var(--text-high)] tabular-nums">
@@ -127,7 +127,7 @@ export function BudgetClient({
 
       {/* Bankruptcy risk warning */}
       {isBankruptcyRisk && (
-        <div className="mx-4 mt-2 flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-[length:var(--type-caption)] text-red-400">
+        <div className="mx-4 mt-2 flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-3 py-2 text-[length:var(--type-caption)] text-[var(--danger)]">
           <span>⚠</span>
           <span>Bankruptcy risk — your salaries exceed your sponsor income</span>
         </div>

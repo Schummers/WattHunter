@@ -147,6 +147,7 @@ function SponsorCard({
       </button>
 
       {/* Expanded bonus content — indented past radio */}
+      {/* DS-EXCEPTION: pl-[42px] aligns with radio button (h-[18px] + gap-2.5 + px-3.5) — no Tailwind utility maps to this exact layout constraint */}
       {expanded && !isLocked && (
         <div className="pl-[42px] pr-3.5 pb-3.5">
           {sponsor.has_explicit_prestige ? (
