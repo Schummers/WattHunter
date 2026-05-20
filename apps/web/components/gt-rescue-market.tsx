@@ -123,7 +123,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
             onMouseDown={(e) => e.stopPropagation()}
             onFocus={(e) => e.stopPropagation()}
             autoComplete="off"
-            className={`w-20 bg-transparent text-right text-base md:text-[length:var(--type-body)] font-semibold font-mono outline-none ${
+            className={`w-20 bg-transparent text-right text-[length:var(--type-body)] font-semibold font-mono outline-none ${
               isSelected ? "text-[var(--accent-default)]" : "text-[var(--text-low)]"
             }`}
           />
@@ -167,7 +167,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
             {gtPhase.label} · Closes at end of rest day
           </p>
         </div>
-        <div className="px-4 mt-6 rounded-[6px] border border-[var(--border-default)] bg-[var(--bg-surface)] mx-4 p-6 flex flex-col gap-3">
+        <div className="px-4 mt-6 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] mx-4 p-6 flex flex-col gap-3">
           <p className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
             Bid already placed
           </p>
@@ -222,7 +222,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
-            className="flex-1 bg-transparent text-base md:text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
+            className="flex-1 bg-transparent text-[length:var(--type-body)] text-[var(--text-high)] placeholder:text-[var(--text-ghost)] outline-none"
           />
           {search && (
             <button
@@ -239,7 +239,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
       {/* Counter */}
       <div className="px-4 pb-2">
         <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-          {filtered.length} available · {hasBid ? 1 : 0}/1 bet
+          <span className="font-mono tabular-nums">{filtered.length}</span> available · <span className="font-mono tabular-nums">{hasBid ? 1 : 0}</span>/1 bet
         </span>
       </div>
 
