@@ -23,13 +23,17 @@ describe("RaceFeedRemontadaCard", () => {
   });
 
   it("renders multiplier as ×N format", () => {
-    render(<RaceFeedRemontadaCard data={data} />);
-    expect(screen.getByText(/×2 XP boost for the next 3 stages/)).toBeInTheDocument();
+    const { container } = render(<RaceFeedRemontadaCard data={data} />);
+    // Multiplier is wrapped in a separate <span> for font-mono tabular-nums (DS sweep 2026-05),
+    // so the text is split across nodes — match against the parent textContent instead.
+    expect(container.textContent).toMatch(/×2 XP boost for the next 3 stages/);
   });
 
   it("renders singular 'stage' when only 1 stage remaining", () => {
-    render(<RaceFeedRemontadaCard data={{ ...data, stagesRemaining: 1 }} />);
-    expect(screen.getByText(/×2 XP boost for the next 1 stage\b/)).toBeInTheDocument();
+    const { container } = render(
+      <RaceFeedRemontadaCard data={{ ...data, stagesRemaining: 1 }} />,
+    );
+    expect(container.textContent).toMatch(/×2 XP boost for the next 1 stage\b/);
   });
 
   it("omits overtaken line when overtakenTeamName is null", () => {
