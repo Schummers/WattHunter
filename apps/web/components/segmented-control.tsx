@@ -12,6 +12,7 @@ export function SegmentedControl({
   onChange,
 }: SegmentedControlProps) {
   return (
+    // p-[3px]: DS Option C canonical container padding. Intentional exception — no Tailwind utility covers 3px (p-px=1px, p-0.5=2px, p-1=4px). MISSING_TOKEN candidate: --space-0.75.
     <div className="flex w-full rounded-[var(--radius-lg)] border border-[var(--border-default)] p-[3px] gap-1.5">
       {segments.map((segment, index) => (
         <button
