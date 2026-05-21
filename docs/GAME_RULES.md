@@ -435,18 +435,34 @@ During Grand Tours, riders can abandon (DNF). The GT Rescue system gives players
 
 | Option | Effect | Timing |
 |--------|--------|--------|
-| **Refund** | Claim salary refund → contract auto-released (immediate, no cooldown) | Anytime during the GT after DNF |
-| **Replace** | Place an emergency bid on a new rider | During GT rescue window |
+| **Refund** | Claim 50% salary refund + contract auto-released (5-day cooldown) + earned GT XP forfeited | Anytime during the GT after DNF |
+| **Replace** | Place an emergency bid on a new rider (same league) | Until end of **1st rest day** of the GT (Europe/Paris) |
+
+### Replace window — why gated to the 1st rest day
+- Without a gate, a player could DNF late in the GT and recruit a fresh
+  rider for the upcoming WT phase at a discounted "emergency" price. Closing
+  the replace window at the 1st rest day prevents this exploit while still
+  giving a fair early-GT rescue path.
+- The cutoff is materialized in `public.gt_rescue_windows`
+  (`gt_identifier`, `gt_year`, `replace_closes_at`) and enforced server-side
+  inside the `gt_place_emergency_bid` RPC. The UI mirrors the gate via
+  `getReplaceWindowClosesAt()` in `apps/web/lib/gt-stage-schedule.ts`.
+- Special case Giro 2026 : 3 rest days (11/18/25 May) due to the opening
+  transfer. The 11 May rest day counts as rest day 1 — simplification, no
+  exception baked into the rule.
 
 ### Emergency bids
-- Same rules as regular bids: min = rider's market salary, multiples of 100.
+- Same rules as regular bids: min = rider's market salary, multiples of 100, ≥ 5000 €.
 - Budget validation: `treasury >= bid amount`.
 - Only riders **not already in the league** can be emergency-bid.
 - The emergency contract has `phase_recruited_id` set (same release lock as regular contracts).
+- One active emergency bid per team per GT.
 
 ### Refund
-- On refund claim: contract is **immediately released** (no 7-day cooldown — this is an exception to §5).
-- The phase salary is credited back to treasury.
+- Refund amount: **50% of locked phase salary**, credited to treasury.
+- All GT XP earned by the rider on that GT for the team is **forfeited** (negative `grant_xp` call).
+- Contract is **released** with the standard 5-day cooldown (`available_from = now() + 5d`).
+- Refund is available the **entire duration of the GT**, not just on rest days.
 
 ---
 

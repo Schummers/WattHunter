@@ -7,6 +7,7 @@ import { RiderCard } from "@/components/rider-card"
 import { StickyBar } from "@/components/sticky-bar"
 import { placeEmergencyBid } from "@/app/(game)/league/[leagueId]/team/gt/rescue/actions"
 import { formatThousands, countryCodeToFlag, calcMinSalary, formatEuro } from "@/lib/format"
+import { getReplaceWindowClosesAt } from "@/lib/gt-stage-schedule"
 
 interface Rider {
   id: string
@@ -42,6 +43,26 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
   const [selectedRiderId, setSelectedRiderId] = useState<string | null>(null)
   const [bidAmount, setBidAmount] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
+
+  // Replace window : open until end of 1st chronological rest day (Europe/Paris).
+  // Refund stays available the whole GT — but replace is gated to prevent
+  // late-GT cheap recruits aimed at the next WT phase.
+  const replaceClosesAt = useMemo(
+    () => getReplaceWindowClosesAt(gtPhase.gtIdentifier, gtPhase.gtYear),
+    [gtPhase.gtIdentifier, gtPhase.gtYear],
+  )
+  const isReplaceClosed = useMemo(
+    () => replaceClosesAt !== null && Date.now() > replaceClosesAt.getTime(),
+    [replaceClosesAt],
+  )
+  const closesAtLabel = useMemo(() => {
+    if (!replaceClosesAt) return null
+    return replaceClosesAt.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      timeZone: "Europe/Paris",
+    })
+  }, [replaceClosesAt])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return eligibleRiders
@@ -145,6 +166,42 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
     )
   }
 
+  // Replace window closed — refund is still available elsewhere, but no new
+  // emergency bid can be placed past the 1st rest day.
+  if (isReplaceClosed && !existingBid) {
+    return (
+      <div className="pb-20">
+        <div className="px-4 pt-3 pb-2">
+          <button
+            type="button"
+            onClick={() => router.push(`/league/${leagueId}`)}
+            className="flex items-center gap-1.5 text-[length:var(--type-body)] text-[var(--text-mid)] hover:text-[var(--text-high)] transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </button>
+        </div>
+        <div className="px-4 pt-2 space-y-1">
+          <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
+            Grand Tour Emergency Bid
+          </h1>
+          <p className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+            {gtPhase.label} · Closed
+          </p>
+        </div>
+        <div className="px-4 mt-6 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] mx-4 p-6 flex flex-col gap-3">
+          <p className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
+            Replace window closed
+          </p>
+          <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+            Emergency bids close at the end of the first rest day. Refund is
+            still available for any new DNF until the end of the Grand Tour.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   // Already placed a bid — show confirmation state
   if (existingBid) {
     return (
@@ -206,7 +263,9 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
           Grand Tour Emergency Bid
         </h1>
         <p className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-          {gtPhase.label} · Closes at end of rest day · 1 bid allowed
+          {gtPhase.label}
+          {closesAtLabel ? ` · Closes ${closesAtLabel} 23:59 CET` : " · Closes at end of rest day"}
+          {" · 1 bid allowed"}
         </p>
       </div>
 

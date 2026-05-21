@@ -352,6 +352,7 @@ users ←──── league_members ────→ leagues
        gt_daily_classifications        (cache GC/sprint/KOM par stage)
        gt_tactic_activations           (5 tactiques, 1 usage chacune par GT)
        gt_emergency_bids               (DNF replacement bids during GT)
+       gt_rescue_windows               (replace window cutoff per (gt_identifier, gt_year))
        sponsor_goal_completions        (one-time sponsor goal payout tracking)
 ```
 

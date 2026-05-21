@@ -34,3 +34,26 @@ export const GT_SCHEDULES: Record<string, GtStageEntry[]> = {
 export const GT_REST_DAYS: Record<string, string[]> = {
   "giro-d-italia/2026": ["2026-05-11", "2026-05-18", "2026-05-25"],
 };
+
+/**
+ * GT Rescue : returns the moment the REPLACE window closes for a given GT.
+ *
+ * Rule (2026-05-21) : replace = end of 1st chronological rest day, Europe/Paris.
+ * Refund stays available the whole GT — only replace is gated.
+ *
+ * The 2026 Giro has a special transfer rest day on 05-11 (3 rest days total).
+ * Per user decision : on simplifie, the 1st rest day always counts.
+ *
+ * Returns null if no rest day data is configured for that GT.
+ */
+export function getReplaceWindowClosesAt(
+  gtIdentifier: string,
+  gtYear: number,
+): Date | null {
+  const key = `${gtIdentifier}/${gtYear}`;
+  const restDays = GT_REST_DAYS[key];
+  if (!restDays || restDays.length === 0) return null;
+  // 1st rest day, end of day Europe/Paris (CEST = +02:00 ; all current GTs are
+  // in summer so DST is constant ; revisit if a GT ever runs outside summer).
+  return new Date(`${restDays[0]}T23:59:59+02:00`);
+}

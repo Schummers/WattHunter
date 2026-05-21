@@ -53,4 +53,20 @@ describe("placeEmergencyBid", () => {
     expect(result).toEqual({ error: "Invalid input" });
     expect(mockRpc).not.toHaveBeenCalled();
   });
+
+  it("propagates 'replace window closed' jsonb error from the RPC", async () => {
+    // The RPC returns the error inside the jsonb data payload (postgres-level
+    // success), not as a postgrest error. The UI detects it via `"error" in result`.
+    mockRpc.mockResolvedValueOnce({
+      data: { error: "replace window closed" },
+      error: null,
+    });
+
+    const result = await placeEmergencyBid(VALID_INPUT);
+
+    expect(result).toEqual({ error: "replace window closed" });
+    // revalidatePath is still called because postgrest didn't error — that's
+    // fine, the UI gates on `"error" in result` and shows the message.
+    // (We don't assert mockRevalidatePath here — current contract is loose.)
+  });
 });
