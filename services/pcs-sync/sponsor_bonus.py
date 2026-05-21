@@ -333,6 +333,25 @@ async def process_race_bonuses(
     # Step 4 — Process each result
     upsert_rows: list[dict] = []
     team_bonus_entries: dict[str, list[dict]] = {}
+
+    # Idempotence guard: pre-fetch existing sponsor_bonuses keys for this race batch.
+    # sponsor_bonuses has a UNIQUE INDEX (team_id, rider_id, race_slug, result_type) so
+    # the UPSERT below is naturally idempotent — but credit_sponsor_bonuses RPC inserts
+    # into treasury_log + credits teams.treasury unconditionally. Without this filter,
+    # rerunning the pipeline on the same race re-credits previously paid bonuses.
+    existing_bonus_keys: set[tuple[str, str, str, str]] = set()
+    if race_slugs:
+        existing_bonuses_resp = (
+            supabase.table("sponsor_bonuses")
+            .select("team_id,rider_id,race_slug,result_type")
+            .in_("race_slug", race_slugs)
+            .execute()
+        )
+        existing_bonus_keys = {
+            (r["team_id"], r["rider_id"], r["race_slug"], r["result_type"])
+            for r in (existing_bonuses_resp.data or [])
+        }
+
     for result in race_results:
         rider_id = result["rider_id"]
         race_slug = result["race_slug"]
@@ -381,6 +400,13 @@ async def process_race_bonuses(
                 "multiplier": float(multiplier),
                 "final_bonus": final_bonus,
             })
+
+            # Skip treasury credit if this bonus key already exists in sponsor_bonuses.
+            # The upsert above is idempotent; this guard keeps treasury_log idempotent too.
+            bonus_key = (team_id, rider_id, race_slug, result_type)
+            if bonus_key in existing_bonus_keys:
+                continue
+
             team_bonus_entries.setdefault(team_id, []).append({
                 "amount": final_bonus,
                 "rider_id": rider_id,

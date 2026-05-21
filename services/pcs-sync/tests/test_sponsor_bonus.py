@@ -412,7 +412,9 @@ async def test_process_race_bonuses_qualifying_result():
             "sponsor_id": "sp-lotto",
             "sponsors": lotto_row,
         }],
-        # 4. sponsor_bonuses batch upsert
+        # 4. sponsor_bonuses idempotence pre-fetch (none exist yet)
+        [],
+        # 5. sponsor_bonuses batch upsert
         [],
     )
 
@@ -464,7 +466,9 @@ async def test_process_race_bonuses_rpc_failure_captured():
             "sponsor_id": "sp-lotto",
             "sponsors": lotto_row,
         }],
-        # 4. sponsor_bonuses batch upsert
+        # 4. sponsor_bonuses idempotence pre-fetch (none exist yet)
+        [],
+        # 5. sponsor_bonuses batch upsert
         [],
     )
 
@@ -509,6 +513,8 @@ async def test_process_race_bonuses_non_qualifying_result():
             "sponsor_id": "sp-lotto",
             "sponsors": lotto_row,
         }],
+        # 4. sponsor_bonuses idempotence pre-fetch (unused — bonus never qualifies)
+        [],
     )
 
     result = await process_race_bonuses(sb, ["race/paris-nice/2026"])
@@ -558,3 +564,58 @@ async def test_process_race_bonuses_no_active_contracts():
 
     assert result["status"] == "completed"
     assert result["bonuses_created"] == 0
+
+
+@pytest.mark.asyncio
+async def test_process_race_bonuses_idempotent_on_rerun():
+    """If a sponsor_bonus row already exists for (team, rider, race, result_type),
+    the RPC must NOT be called again — prevents duplicate treasury credits.
+
+    Regression test for the 2026-05-20 Giro bug where 5 reruns of the pipeline
+    re-credited the same stage-8 win 6 times.
+    """
+    from sponsor_bonus import process_race_bonuses
+
+    lotto_row = {**LOTTO, "id": "sp-lotto"}
+
+    sb = make_supabase(
+        # 1. race_results — qualifying result (Lotto gc threshold 25, rank 5 qualifies)
+        [{
+            "rider_id": RIDER_ID,
+            "race_slug": "race/paris-nice/2026",
+            "race_class": "stage_race",
+            "stage": None,
+            "rank": 5,
+            "pcs_points": 40,
+            "race_date": "2026-03-09",
+        }],
+        # 2. contracts
+        [{
+            "team_id": TEAM_ID,
+            "rider_id": RIDER_ID,
+            "status": "active",
+            "riders": {"nationality": "BE"},
+        }],
+        # 3. team_sponsors
+        [{
+            "team_id": TEAM_ID,
+            "sponsor_id": "sp-lotto",
+            "sponsors": lotto_row,
+        }],
+        # 4. sponsor_bonuses idempotence pre-fetch — ALREADY EXISTS from prior run
+        [{
+            "team_id": TEAM_ID,
+            "rider_id": RIDER_ID,
+            "race_slug": "race/paris-nice/2026",
+            "result_type": "gc",
+        }],
+        # 5. sponsor_bonuses upsert (still happens — idempotent at DB level)
+        [],
+    )
+
+    result = await process_race_bonuses(sb, ["race/paris-nice/2026"])
+
+    assert result["status"] == "completed"
+    assert result["errors"] == []
+    # CRITICAL: the RPC must NOT have been called (no double-credit)
+    sb.rpc.assert_not_called()
