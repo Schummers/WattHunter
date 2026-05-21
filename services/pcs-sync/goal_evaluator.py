@@ -76,6 +76,35 @@ def _parse_ts(ts: str) -> datetime:
     return datetime.fromisoformat(s).replace(tzinfo=_tz.utc)
 
 
+# ---------------------------------------------------------------------------
+# Pagination helper — Supabase PostgREST caps responses at 1000 rows by default.
+# GT pipelines fetch entire grand tours (1500+ rows across stages), so we must
+# paginate. Without this, late-stage results (e.g. ITT stage 10) get truncated
+# and goals silently fail to credit.
+# ---------------------------------------------------------------------------
+
+def _fetch_all(query_factory, page_size: int = 1000) -> list[dict]:
+    """Run a Supabase query repeatedly with .range() until all rows fetched.
+
+    Args:
+        query_factory: callable returning a fresh, unrun query builder.
+        page_size: rows per page (matches PostgREST default cap).
+
+    Returns:
+        Flat list of all rows.
+    """
+    all_rows: list[dict] = []
+    offset = 0
+    while True:
+        resp = query_factory().range(offset, offset + page_size - 1).execute()
+        rows = resp.data or []
+        all_rows.extend(rows)
+        if len(rows) < page_size:
+            break
+        offset += page_size
+    return all_rows
+
+
 def _gt_cutoff_for_date(race_date: date) -> datetime:
     return datetime(race_date.year, race_date.month, race_date.day, 11, 0, 0, tzinfo=_PARIS_TZ)
 
@@ -350,11 +379,10 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
     if not t4_teams:
         return {"status": "completed", "goals_completed": 0, "errors": []}
 
-    # --- Fetch race_results for all stages + GC ---
-    results_resp = supabase.table("race_results").select(
+    # --- Fetch race_results for all stages + GC (paginated, see _fetch_all) ---
+    all_results: list[dict] = _fetch_all(lambda: supabase.table("race_results").select(
         "rider_id, race_slug, rank, stage, is_itt, race_date"
-    ).like("race_slug", f"{gt_parent_slug}%").execute()
-    all_results: list[dict] = results_resp.data or []
+    ).like("race_slug", f"{gt_parent_slug}%"))
 
     # Build stage_wins: {stage_slug: winner_rider_id}
     stage_wins: dict[str, str] = {}
@@ -394,25 +422,23 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
     )
     last_stage_slug = stage_slugs_sorted[-1] if stage_slugs_sorted else None
 
-    # --- Fetch gt_daily_classifications ---
-    classif_resp = supabase.table("gt_daily_classifications").select(
+    # --- Fetch gt_daily_classifications (paginated) ---
+    classif_rows = _fetch_all(lambda: supabase.table("gt_daily_classifications").select(
         "race_slug, rider_id, classification_type, rank"
-    ).like("race_slug", f"{gt_parent_slug}%").execute()
+    ).like("race_slug", f"{gt_parent_slug}%"))
 
     classifications: dict[str, list[dict]] = {}
-    for c in (classif_resp.data or []):
+    for c in classif_rows:
         classifications.setdefault(c["race_slug"], []).append(c)
 
-    # --- Fetch GT squad + role assignments ---
-    squad_resp = supabase.table("gt_squad").select(
+    # --- Fetch GT squad + role assignments (paginated) ---
+    squad_rows = _fetch_all(lambda: supabase.table("gt_squad").select(
         "team_id, rider_id, role, created_at, removed_at"
-    ).eq("phase_id", phase_id).eq("year", year).execute()
-    squad_rows = squad_resp.data or []
+    ).eq("phase_id", phase_id).eq("year", year))
 
-    role_resp = supabase.table("gt_role_assignments").select(
+    role_rows = _fetch_all(lambda: supabase.table("gt_role_assignments").select(
         "team_id, rider_id, role, applied_at"
-    ).eq("phase_id", phase_id).eq("year", year).execute()
-    role_rows = role_resp.data or []
+    ).eq("phase_id", phase_id).eq("year", year))
 
     # --- Fetch rider nationalities ---
     rider_ids = set()
