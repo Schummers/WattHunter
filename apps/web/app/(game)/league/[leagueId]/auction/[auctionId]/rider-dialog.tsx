@@ -46,12 +46,12 @@ interface RiderDialogProps {
 }
 
 const SPECIALTY_NAMES: Record<string, string> = {
-  climber: "Grimpeur",
-  sprinter: "Sprinteur",
+  climber: "Climber",
+  sprinter: "Sprinter",
   rouleur: "Rouleur",
   puncheur: "Puncheur",
-  time_trialist: "Contre-la-montre",
-  all_rounder: "Polyvalent",
+  time_trialist: "Time Trialist",
+  all_rounder: "All-Rounder",
 };
 
 export function RiderDialog({

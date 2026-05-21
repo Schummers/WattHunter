@@ -89,12 +89,12 @@ export function RiderTable({ riders, myBidRiderIds, onRiderClick }: RiderTablePr
           className="h-9 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-[length:var(--type-body)]"
         >
           <option value="">All specialties</option>
-          <option value="climber">Grimpeur</option>
-          <option value="sprinter">Sprinteur</option>
+          <option value="climber">Climber</option>
+          <option value="sprinter">Sprinter</option>
           <option value="rouleur">Rouleur</option>
           <option value="puncheur">Puncheur</option>
-          <option value="time_trialist">CLM</option>
-          <option value="all_rounder">Polyvalent</option>
+          <option value="time_trialist">Time Trialist</option>
+          <option value="all_rounder">All-Rounder</option>
         </select>
       </div>
 
