@@ -323,6 +323,7 @@ At the start of each phase, the player **confirms** their configuration:
 | Round resolution | Auto on consensus, or manual force-resolve from Status tab |
 | GT Tactics per Grand Tour | 1 of each type (5 total) |
 | Commissioner round dates | Editable at any time before round closes |
+| Remontada Boost multiplier | ×1.5 (3 stages, GT only) |
 
 ---
 

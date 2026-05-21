@@ -325,7 +325,7 @@ users ←──── league_members ────→ leagues
        ├── contracts → riders         │
        ├── team_strategies → strategies
        ├── team_sponsors → sponsors
-       ├── treasury_log
+       ├── treasury_log                 (types: sponsor_bonus, sponsor_bonus_revert, payday_salary, gt_dnf_refund, gt_goal_bonus, …)
        ├── rider_xp_daily              (avec role_mult, gt_classif_bonus, remontada_mult)
        ├── team_xp_adjustments         (audit trail grant_xp admin)
        └── team_ranking_daily          (snapshots quotidiens overtake detection)

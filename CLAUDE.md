@@ -107,6 +107,7 @@ Quand une constante change → mettre à jour GAME_RULES.md §11 (et le code). C
 - Incrément = **100 €** (pas 500, pas 1 000)
 - Release = **gratuit** mais salaire phase non remboursé
 - Finance = **1x par phase WT** (pas mensuel)
+- Remontada Boost = **×1.5** (nerfé de ×2.0 le 2026-05-20, pas ×2)
 
 ## Rule #4 — Update Living Docs After Every Feature
 Après chaque feature shipped, mettre à jour **dans la même session** :
