@@ -226,6 +226,7 @@ async def calculate_daily_scores(
     supabase: Client,
     race_slugs: list[str] | None = None,
     ignore_role_cutoff: bool = False,
+    skip_overtake_detection: bool = False,
 ) -> dict:
     """
     For each contracted rider with pcs_points > 0 in race_results:
@@ -719,7 +720,8 @@ async def calculate_daily_scores(
                 }, on_conflict="team_id,date").execute()
 
             # 5c. Remontada: if this run touched a GT, compare last snapshot to now and trigger.
-            if remontada_stage_in_run:
+            # Skip during retroactive rescores (skip_overtake_detection=True) to avoid phantom triggers.
+            if remontada_stage_in_run and not skip_overtake_detection:
                 team_ids = [r["id"] for r in league_rows]
                 prev_date = _latest_snapshot_date_before(supabase, team_ids, today)
                 pre_rows = []

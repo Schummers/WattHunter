@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentPhase, getPhaseRange, AUCTION_PHASES } from "./phases";
-import { GT_IDENTIFIER, isGTPhaseId } from "./gt-phases";
+import { GT_IDENTIFIER, GT_RACE_SLUG_PREFIX, isGTPhaseId } from "./gt-phases";
 import { GT_SCHEDULES, GT_REST_DAYS } from "./gt-stage-schedule";
 import { WT_PARENT_SLUGS } from "./wt-race-slugs";
 import {
@@ -347,11 +347,18 @@ export async function getRaceFeedData(
         .eq("league_id", opts.leagueId)
         .eq("gt_identifier", gtIdent);
 
+      const year = referenceDate.getFullYear();
+      const slugPrefix = GT_RACE_SLUG_PREFIX[phaseId];
+
       for (const row of remRows ?? []) {
-        // Use updated_at (last overtake reset) rather than created_at (first boost creation)
-        // so the card appears at the date of the most recent overtake trigger.
-        const triggeredDateIso = ((row.updated_at ?? row.created_at) as string).slice(0, 10);
-        const stagesRemaining = Math.max(0, (row.expires_after_stage ?? 0) - (row.triggered_at_stage ?? 0));
+        // Anchor the card at the race_date of the stage where the overtake was triggered
+        // (the "real" date of the event), not at updated_at (which moves on every reset).
+        const triggeredStage = row.triggered_at_stage ?? 0;
+        const stageSlug = `${slugPrefix}/${year}/stage-${triggeredStage}`;
+        const stageRace = racesBySlug.get(stageSlug);
+        const fallbackIso = ((row.updated_at ?? row.created_at) as string).slice(0, 10);
+        const triggeredDateIso = stageRace ? stageRace.date : fallbackIso;
+        const stagesRemaining = Math.max(0, (row.expires_after_stage ?? 0) - triggeredStage);
         const data: RemontadaData = {
           boostId: row.id,
           teamId: row.team_id,
