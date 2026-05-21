@@ -323,7 +323,6 @@ At the start of each phase, the player **confirms** their configuration:
 | Round resolution | Auto on consensus, or manual force-resolve from Status tab |
 | GT Tactics per Grand Tour | 1 of each type (5 total) |
 | Commissioner round dates | Editable at any time before round closes |
-| Remontada Boost multiplier | ×1.5 (3 stages, GT only) |
 
 ---
 
@@ -334,7 +333,9 @@ At the start of each phase, the player **confirms** their configuration:
 
 3 mécanismes toujours actifs (league-wide, pas d'opt-in commissioner) pour limiter les écarts structurels entre le leader et les joueurs hors-podium.
 
-### 12.1 Remontada Boost (Mécanisme 1)
+### 12.1 Remontada Boost (Mécanisme 1) — DÉSACTIVÉ 2026-05-21
+
+> **DISABLED** — mécanique désactivée via feature-flag (`REMONTADA_ENABLED = False`). Trop fragile aux recalculs rétroactifs : tout rescore d'un stage passé peut corrompre l'historique des triggers/boosts, créant des cascades d'overtakes "fantômes" non mérités. Code conservé dans le codebase pour réactivation éventuelle si la mécanique est repensée. Voir `MEMORY.md` pour le contexte de la décision.
 
 - **Scope** : Grand Tours uniquement (Giro, Tour de France, Vuelta).
 - **Éligibilité** : joueurs classés rank 4+ dans la ligue au moment du trigger. Inactif si la ligue a <4 joueurs.

@@ -1,8 +1,14 @@
 // apps/web/lib/remontada.ts
 // Anti-Runaway Mechanism 1: Remontada Boost — server-side active boost fetch.
 // Spec: docs/plans/2026-04-23-anti-runaway-system-design.md §3
+//
+// DISABLED 2026-05-21 — feature-flag off. The fetch returns null without
+// hitting the DB. See docs/GAME_RULES.md §12.1 and MEMORY.md for context.
 
 import { createClient } from "@/lib/supabase/server";
+
+// Feature flag — keep in sync with REMONTADA_ENABLED in services/pcs-sync/remontada.py
+const REMONTADA_ENABLED = false;
 
 export type RemontadaBoost = {
   team_id: string;
@@ -20,6 +26,8 @@ export async function getActiveRemontadaBoost(
   gtIdentifier: RemontadaBoost["gt_identifier"],
   currentStageNumber: number,
 ): Promise<RemontadaBoost | null> {
+  if (!REMONTADA_ENABLED) return null;
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("remontada_boosts")

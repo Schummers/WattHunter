@@ -342,9 +342,9 @@ users ←──── league_members ────→ leagues
 
        sponsor_bonuses                 (paiements bonus par resultat)
 
-       Anti-Runaway:
-       remontada_boost_triggers        (1 trigger max par paire ordonnée A→B par GT)
-       remontada_boosts                (boost actif : stages restantes, ×2 mult)
+       Anti-Runaway (Remontada désactivé depuis 2026-05-21, tables vides) :
+       remontada_boost_triggers        (inactif — 1 trigger max par paire ordonnée A→B par GT)
+       remontada_boosts                (inactif — boost actif : stages restantes, multiplier)
 
        Grand Tour Mode:
        gt_squad                        (cap 8 coureurs par phase)

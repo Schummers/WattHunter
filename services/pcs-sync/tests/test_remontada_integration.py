@@ -3,7 +3,15 @@ Uses in-memory fakes for supabase tables (no DB roundtrip)."""
 from unittest.mock import MagicMock, patch
 import pytest
 
+import remontada as _remontada
 from remontada import detect_overtakes, record_overtake, snapshot_league_ranking
+
+
+# Re-enable the feature flag for these tests — Remontada is disabled by default
+# since 2026-05-21 (see docs/GAME_RULES.md §12.1).
+@pytest.fixture(autouse=True)
+def _enable_remontada(monkeypatch):
+    monkeypatch.setattr(_remontada, "REMONTADA_ENABLED", True)
 
 
 def test_end_to_end_overtake_records_trigger_and_boost():

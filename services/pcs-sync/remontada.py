@@ -88,6 +88,13 @@ from postgrest.exceptions import APIError
 BOOST_WINDOW_STAGES = 3
 DEFAULT_MULTIPLIER = 1.5
 
+# Feature flag — Remontada Boost mecanique desactivee le 2026-05-21.
+# Fragile au recalcul retroactif (la detection d'overtakes corrompt l'historique
+# des triggers/boosts a chaque rescore). Code conserve pour reactivation future.
+# Voir docs/GAME_RULES.md §12.1 et MEMORY.md.
+REMONTADA_ENABLED = False
+
+
 def record_overtake(
     supabase: Client,
     *,
@@ -105,6 +112,9 @@ def record_overtake(
     Reset cumul: upsert on (team_id, gt_identifier) replaces expires_after_stage with
     triggered_at_stage + BOOST_WINDOW_STAGES, keeping multiplier at DEFAULT_MULTIPLIER.
     """
+    if not REMONTADA_ENABLED:
+        return False
+
     # 1) Try to insert the trigger (unique key enforces 1 per pair per GT).
     try:
         supabase.table("remontada_boost_triggers").insert({
@@ -147,6 +157,9 @@ def get_active_multiplier(
     Window semantics: a boost triggered at stage T covers stages T+1..T+BOOST_WINDOW_STAGES
     (i.e., expires_after_stage inclusive). The trigger stage itself (T) is NOT boosted.
     """
+    if not REMONTADA_ENABLED:
+        return 1.0
+
     resp = (
         supabase.table("remontada_boosts")
         .select("triggered_at_stage, expires_after_stage, multiplier")

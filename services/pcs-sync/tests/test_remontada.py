@@ -1,5 +1,15 @@
+import pytest
 from unittest.mock import MagicMock
+import remontada as _remontada
 from remontada import get_gt_identifier, get_stage_number, snapshot_league_ranking
+
+
+# Re-enable the feature flag for these tests — Remontada is disabled by default
+# since 2026-05-21 (see docs/GAME_RULES.md §12.1). The tests below validate the
+# logic that runs when the flag is re-enabled.
+@pytest.fixture(autouse=True)
+def _enable_remontada(monkeypatch):
+    monkeypatch.setattr(_remontada, "REMONTADA_ENABLED", True)
 
 def test_gt_identifier_giro():
     assert get_gt_identifier("race/giro-d-italia/2026/stage-5") == "giro-d-italia"

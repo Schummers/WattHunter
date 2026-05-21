@@ -107,7 +107,7 @@ Quand une constante change → mettre à jour GAME_RULES.md §11 (et le code). C
 - Incrément = **100 €** (pas 500, pas 1 000)
 - Release = **gratuit** mais salaire phase non remboursé
 - Finance = **1x par phase WT** (pas mensuel)
-- Remontada Boost = **×1.5** (nerfé de ×2.0 le 2026-05-20, pas ×2)
+- Remontada Boost **DÉSACTIVÉ** depuis 2026-05-21 (feature-flag, code conservé)
 
 ## Rule #4 — Update Living Docs After Every Feature
 Après chaque feature shipped, mettre à jour **dans la même session** :
@@ -121,7 +121,7 @@ Ne PAS sauter cette étape. L'absence de mise à jour est la première cause de 
 ## Features livrées (résumé)
 Détails complets, plans et migrations dans MEMORY.md.
 - **Sponsors v2** — 6 tiers, 13 sponsors, race result bonuses
-- **Anti-Runaway** — Remontada Boost + Co-Unlock + Level Curve Stretch
+- **Anti-Runaway** — Co-Unlock + Level Curve Stretch (Remontada Boost désactivé 2026-05-21)
 - **Grand Tour** — V1a squad builder + V1b sponsor goal evaluation + payout
 - **GT Tactics** — 5 tactiques (Unleash, Overdrive, Nemesis GC/Sprint, Call the Bus)
 - **GT Rescue** — DNF refund/replace window avec auto-release sur refund claim

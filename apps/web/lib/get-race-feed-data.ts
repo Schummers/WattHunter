@@ -335,7 +335,10 @@ export async function getRaceFeedData(
   }
 
   // 8) Fetch and slot Remontada cards (GT phases only)
-  if (isGtPhase) {
+  // Feature flag — Remontada disabled 2026-05-21. Keep in sync with
+  // services/pcs-sync/remontada.py and apps/web/lib/remontada.ts.
+  const REMONTADA_ENABLED = false;
+  if (isGtPhase && REMONTADA_ENABLED) {
     const phaseId = phase.id as 4 | 6 | 8;
     const gtIdent = GT_IDENTIFIER[phaseId];
     if (gtIdent) {
