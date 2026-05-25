@@ -39,7 +39,7 @@ FAILED_SLUGS = [
 
 
 async def main():
-    from playwright.async_api import async_playwright
+    from browser_session import BrowserSession
 
     supabase = get_supabase()
 
@@ -59,41 +59,31 @@ async def main():
     ok = 0
     still_failed = []
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        try:
-            for i, rider in enumerate(riders):
-                rider_id = rider["id"]
-                pcs_slug = rider["pcs_slug"]
-                pcs_rank = rider.get("pcs_rank", "?")
+    async with BrowserSession() as browser:
+        for i, rider in enumerate(riders):
+            rider_id = rider["id"]
+            pcs_slug = rider["pcs_slug"]
+            pcs_rank = rider.get("pcs_rank", "?")
 
-                print(f"  [{i+1}/{len(riders)}] #{pcs_rank} {pcs_slug}...", end=" ", flush=True)
+            print(f"  [{i+1}/{len(riders)}] #{pcs_rank} {pcs_slug}...", end=" ", flush=True)
 
-                context = await browser.new_context(
-                    user_agent=(
-                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/120.0.0.0 Safari/537.36"
-                    )
-                )
-                page = await context.new_page()
+            context = await browser.new_context()
+            page = await context.new_page()
 
-                try:
-                    result = await enrich_single_rider(supabase, page, rider_id, pcs_slug)
-                    if result["status"] == "ok":
-                        print("OK")
-                        ok += 1
-                    else:
-                        print(f"STILL FAILED: {result.get('error', '?')}")
-                        still_failed.append({"slug": pcs_slug, "error": result.get("error", "?")})
-                finally:
-                    await context.close()
+            try:
+                result = await enrich_single_rider(supabase, page, rider_id, pcs_slug)
+                if result["status"] == "ok":
+                    print("OK")
+                    ok += 1
+                else:
+                    print(f"STILL FAILED: {result.get('error', '?')}")
+                    still_failed.append({"slug": pcs_slug, "error": result.get("error", "?")})
+            finally:
+                await context.close()
 
-                if i < len(riders) - 1:
-                    print(f"    (waiting {BATCH_PAUSE_SECONDS}s...)")
-                    await asyncio.sleep(BATCH_PAUSE_SECONDS)
-        finally:
-            await browser.close()
+            if i < len(riders) - 1:
+                print(f"    (waiting {BATCH_PAUSE_SECONDS}s...)")
+                await asyncio.sleep(BATCH_PAUSE_SECONDS)
 
     print()
     print(json.dumps({

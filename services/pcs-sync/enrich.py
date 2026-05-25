@@ -419,7 +419,7 @@ async def enrich_riders(
     Fetches riders from DB ordered by pcs_rank, then visits each rider's
     individual PCS page in batches of 5 with 1-minute pauses.
     """
-    from playwright.async_api import async_playwright
+    from browser_session import BrowserSession
 
     if supabase is None:
         supabase = get_supabase()
@@ -443,50 +443,38 @@ async def enrich_riders(
     results = []
     errors = []
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+    async with BrowserSession() as browser:
+        for batch_idx in range(0, total, BATCH_SIZE):
+            batch = riders[batch_idx : batch_idx + BATCH_SIZE]
+            batch_num = batch_idx // BATCH_SIZE + 1
+            total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
 
-        try:
-            for batch_idx in range(0, total, BATCH_SIZE):
-                batch = riders[batch_idx : batch_idx + BATCH_SIZE]
-                batch_num = batch_idx // BATCH_SIZE + 1
-                total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
+            print(f"\n  --- Batch {batch_num}/{total_batches} ---")
 
-                print(f"\n  --- Batch {batch_num}/{total_batches} ---")
+            for rider in batch:
+                rider_id = rider["id"]
+                pcs_slug = rider["pcs_slug"]
+                pcs_rank = rider.get("pcs_rank", "?")
 
-                for rider in batch:
-                    rider_id = rider["id"]
-                    pcs_slug = rider["pcs_slug"]
-                    pcs_rank = rider.get("pcs_rank", "?")
+                print(f"    #{pcs_rank} {pcs_slug}...", end=" ", flush=True)
 
-                    print(f"    #{pcs_rank} {pcs_slug}...", end=" ", flush=True)
+                context = await browser.new_context()
+                page = await context.new_page()
 
-                    context = await browser.new_context(
-                        user_agent=(
-                            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                            "AppleWebKit/537.36 (KHTML, like Gecko) "
-                            "Chrome/120.0.0.0 Safari/537.36"
-                        )
-                    )
-                    page = await context.new_page()
+                try:
+                    result = await enrich_single_rider(supabase, page, rider_id, pcs_slug)
+                    results.append(result)
+                    if result["status"] == "ok":
+                        print("OK")
+                    else:
+                        print(f"ERROR: {result.get('error', '?')}")
+                        errors.append(result)
+                finally:
+                    await context.close()
 
-                    try:
-                        result = await enrich_single_rider(supabase, page, rider_id, pcs_slug)
-                        results.append(result)
-                        if result["status"] == "ok":
-                            print("OK")
-                        else:
-                            print(f"ERROR: {result.get('error', '?')}")
-                            errors.append(result)
-                    finally:
-                        await context.close()
-
-                if batch_idx + BATCH_SIZE < total:
-                    print(f"\n  Pausing {BATCH_PAUSE_SECONDS}s before next batch...")
-                    await asyncio.sleep(BATCH_PAUSE_SECONDS)
-
-        finally:
-            await browser.close()
+            if batch_idx + BATCH_SIZE < total:
+                print(f"\n  Pausing {BATCH_PAUSE_SECONDS}s before next batch...")
+                await asyncio.sleep(BATCH_PAUSE_SECONDS)
 
     enriched = sum(1 for r in results if r["status"] == "ok")
     return {
@@ -506,7 +494,7 @@ async def enrich_missing_riders(
 
     Same flow as enrich_riders() but filters to riders that need a retry.
     """
-    from playwright.async_api import async_playwright
+    from browser_session import BrowserSession
 
     if supabase is None:
         supabase = get_supabase()
@@ -535,50 +523,38 @@ async def enrich_missing_riders(
     results = []
     errors = []
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+    async with BrowserSession() as browser:
+        for batch_idx in range(0, total, BATCH_SIZE):
+            batch = riders[batch_idx : batch_idx + BATCH_SIZE]
+            batch_num = batch_idx // BATCH_SIZE + 1
+            total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
 
-        try:
-            for batch_idx in range(0, total, BATCH_SIZE):
-                batch = riders[batch_idx : batch_idx + BATCH_SIZE]
-                batch_num = batch_idx // BATCH_SIZE + 1
-                total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
+            print(f"\n  --- Batch {batch_num}/{total_batches} ---")
 
-                print(f"\n  --- Batch {batch_num}/{total_batches} ---")
+            for rider in batch:
+                rider_id = rider["id"]
+                pcs_slug = rider["pcs_slug"]
+                pcs_rank = rider.get("pcs_rank", "?")
 
-                for rider in batch:
-                    rider_id = rider["id"]
-                    pcs_slug = rider["pcs_slug"]
-                    pcs_rank = rider.get("pcs_rank", "?")
+                print(f"    #{pcs_rank} {pcs_slug}...", end=" ", flush=True)
 
-                    print(f"    #{pcs_rank} {pcs_slug}...", end=" ", flush=True)
+                context = await browser.new_context()
+                page = await context.new_page()
 
-                    context = await browser.new_context(
-                        user_agent=(
-                            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                            "AppleWebKit/537.36 (KHTML, like Gecko) "
-                            "Chrome/120.0.0.0 Safari/537.36"
-                        )
-                    )
-                    page = await context.new_page()
+                try:
+                    result = await enrich_single_rider(supabase, page, rider_id, pcs_slug)
+                    results.append(result)
+                    if result["status"] == "ok":
+                        print("OK")
+                    else:
+                        print(f"ERROR: {result.get('error', '?')}")
+                        errors.append(result)
+                finally:
+                    await context.close()
 
-                    try:
-                        result = await enrich_single_rider(supabase, page, rider_id, pcs_slug)
-                        results.append(result)
-                        if result["status"] == "ok":
-                            print("OK")
-                        else:
-                            print(f"ERROR: {result.get('error', '?')}")
-                            errors.append(result)
-                    finally:
-                        await context.close()
-
-                if batch_idx + BATCH_SIZE < total:
-                    print(f"\n  Pausing {BATCH_PAUSE_SECONDS}s before next batch...")
-                    await asyncio.sleep(BATCH_PAUSE_SECONDS)
-
-        finally:
-            await browser.close()
+            if batch_idx + BATCH_SIZE < total:
+                print(f"\n  Pausing {BATCH_PAUSE_SECONDS}s before next batch...")
+                await asyncio.sleep(BATCH_PAUSE_SECONDS)
 
     enriched = sum(1 for r in results if r["status"] == "ok")
     return {
