@@ -16,3 +16,23 @@ export async function setSignupIntentCookie(intent: SignupIntent): Promise<void>
     path: "/",
   });
 }
+
+export async function readSignupIntentCookie(): Promise<SignupIntent | null> {
+  const c = await cookies();
+  const raw = c.get("signup_intent")?.value;
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed?.kind === "create" || parsed?.kind === "join") {
+      return parsed as SignupIntent;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearSignupIntentCookie(): Promise<void> {
+  const c = await cookies();
+  c.delete("signup_intent");
+}

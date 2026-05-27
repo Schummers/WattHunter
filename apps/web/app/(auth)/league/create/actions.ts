@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { createClient } from "@/lib/supabase/server";
 import { getLevelByNumber } from "@/lib/levels";
+import { generateInviteCode } from "@/lib/league-creation";
 
 // ---------------------------------------------------------------------------
 // createLeague — for already-authenticated users
@@ -13,15 +14,6 @@ const createLeagueSchema = z.object({
   name: z.string().min(2, "League name must be at least 2 characters.").max(50),
   starting_level: z.coerce.number().int().min(1).max(8).default(1),
 });
-
-function generateInviteCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
-}
 
 export async function createLeague(
   _prevState: { error: string } | null,
