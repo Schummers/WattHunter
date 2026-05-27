@@ -85,6 +85,7 @@ export default function CreateLeaguePage() {
               required
               minLength={2}
               maxLength={50}
+              autoComplete="off"
             />
           </FormField>
           <FormField label="Your team name" htmlFor="team_name">
@@ -97,6 +98,7 @@ export default function CreateLeaguePage() {
               required
               minLength={2}
               maxLength={30}
+              autoComplete="off"
             />
           </FormField>
           <FormField label="Email" htmlFor="email">
@@ -108,6 +110,7 @@ export default function CreateLeaguePage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
             />
           </FormField>
 
@@ -134,6 +137,7 @@ export default function CreateLeaguePage() {
               placeholder="At least 6 characters"
               required
               minLength={6}
+              autoComplete="new-password"
             />
           </FormField>
           <FormField label="Confirm password" htmlFor="confirm_password">
@@ -143,6 +147,7 @@ export default function CreateLeaguePage() {
               type="password"
               required
               minLength={6}
+              autoComplete="new-password"
             />
           </FormField>
 
