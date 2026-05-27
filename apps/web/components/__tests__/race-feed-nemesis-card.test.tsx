@@ -7,6 +7,7 @@ import type { NemesisData } from "@/lib/race-feed-types";
 const winData: NemesisData = {
   activationId: "act-1",
   raceSlug: "race/giro-d-italia/2026/stage-2",
+  nemesisType: "gc",
   attackerTeamName: "Mon équipe",
   attackerRiderShortName: "T. Pogacar",
   targetTeamName: "Team Astrid",
