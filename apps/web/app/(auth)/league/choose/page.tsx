@@ -15,10 +15,10 @@ export default function ChooseLeaguePage() {
           height={48}
         />
         <h1 className="text-[length:var(--type-page-title)] font-semibold text-[var(--text-high)]">
-          WattHunter
+          Get Started
         </h1>
         <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-          Create a new league or join an existing one.
+          Create a new league with friends, or join one with an invite code.
         </p>
       </div>
 
@@ -57,6 +57,13 @@ export default function ChooseLeaguePage() {
           </div>
         </Link>
       </div>
+
+      <p className="mt-4 text-center text-[length:var(--type-caption)] text-[var(--text-mid)]">
+        Already have an account?{" "}
+        <Link href="/login" className="text-[var(--accent-default)] underline">
+          Log in
+        </Link>
+      </p>
     </div>
   );
 }
