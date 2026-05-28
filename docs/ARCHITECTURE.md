@@ -41,12 +41,16 @@ watthunter/
 │   │   ├── (legal)/             # Pages légales
 │   │   │   ├── privacy/         # Politique de confidentialité
 │   │   │   └── terms/           # Conditions d'utilisation
+│   │   ├── (lobby)/             # Interface setup pour les ligues en attente (sans sidebar)
+│   │   │   └── lobby/[leagueId]/
+│   │   │       ├── page.tsx            # Redirects vers /league/[id] si ligue active ; sinon UI lobby
+│   │   │       ├── layout.tsx          # Auth guard minimal (pas de sidebar)
+│   │   │       └── actions.ts          # setStartingLevel(leagueId, level) → supabase.rpc("set_starting_level", …)
 │   │   ├── (game)/              # Routes avec sidebar + topbar (desktop) ou bottom-nav (mobile)
 │   │   │   └── league/[leagueId]/
-│   │   │       ├── page.tsx            # Home / Lobby
+│   │   │       ├── page.tsx            # Server redirect vers /lobby/[id] si status pending ; sinon Race Feed
 │   │   │       ├── layout.tsx          # Auth guard + responsive shell
 │   │   │       ├── league-shell.tsx    # Sidebar + TopBar + Detail Rail layout
-│   │   │       ├── lobby-view.tsx      # Lien d'invitation + code + liste membres
 │   │   │       ├── home-feed.tsx       # Feed activite ligue
 │   │   │       ├── levels/             # Page niveaux (timeline 8 niveaux WT)
 │   │   │       ├── ranking/            # Classement ligue
@@ -275,6 +279,7 @@ watthunter/
 | Groupe | Layout | Usage |
 |--------|--------|-------|
 | `(auth)` | Centrer plein ecran, pas de sidebar | Login, signup, onboarding, create/join league |
+| `(lobby)` | Minimal (pas de sidebar), auth guard | Interface setup ligues pending (3 onglets : Lobby, Level & Pool, Rules) |
 | `(game)` | Sidebar + TopBar (desktop) ou BottomNav (mobile) | Toutes les pages de jeu |
 
 ### Protection des routes
@@ -314,6 +319,12 @@ Email confirmation Supabase **desactivee** (Dashboard → Auth → Email → "Co
 - `apps/web/app/(auth)/league/create/actions.ts` — exporte `createLeague` (legacy, user auth requise) et `signupAndCreateLeague` (combined signup pour visiteurs).
 - `apps/web/app/(auth)/league/join/actions.ts` — exporte `signupAndJoinLeague` (remplace l'ancien `joinLeague`). RPC `join_league_by_code(p_code, p_team_name)` etendu pour accepter le nom d'equipe (migration `20260527000000`).
 - Helper partage : `apps/web/lib/league-creation.ts` exporte `generateInviteCode()`.
+- `apps/web/app/(lobby)/lobby/[leagueId]/actions.ts` — exporte `setStartingLevel(leagueId, level)` → `supabase.rpc("set_starting_level", …)`.
+
+### RPCs lobby (Chantier D — migration `20260528000001` et `20260528000002`)
+
+- `launch_first_auction(p_league_id uuid) → jsonb` — SECURITY DEFINER. Commissioner uniquement. Insere 3 auctions (Round 1 `open`, Rounds 2-3 `scheduled`) avec dates auto-planifiees Europe/Paris, passe la ligue en `active`. Migration `20260528000001`. Remplace l'ancien calcul de dates cote TS.
+- `set_starting_level(p_league_id uuid, p_level integer) → jsonb` — SECURITY DEFINER. Commissioner uniquement, ligues pending seulement, level 1..8. Migration `20260528000002`.
 
 ### Cookie helper
 
@@ -597,6 +608,7 @@ $$;
 - [x] Status page (purchasing power + clickable team rows)
 - [x] GT Rescue (DNF refund/replace window, auto-release on refund claim)
 - [x] Achievements (systeme d'achievements equipe)
+- [x] Lobby redesign (Chantier D) — route group `(lobby)/lobby/[leagueId]` dedie aux ligues pending, 3 tabs (Lobby / Level & Pool / Rules), `launch_first_auction` RPC, `set_starting_level` RPC
 - [x] Race Feed (cards Home : past race, remontada, nemesis, rest day, GT goals)
 - [x] Palmares (profil rider avec onglets Monuments / dynamiques + league rank)
 - [x] Design System v3.1 (navigation tokens)
