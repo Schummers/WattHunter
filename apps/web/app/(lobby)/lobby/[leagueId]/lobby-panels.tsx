@@ -9,6 +9,7 @@ import { LaunchButton } from "./_components/launch-button";
 import { LevelSelector } from "./_components/level-selector";
 import { LevelStatsCards } from "./_components/level-stats-cards";
 import { PlayerList } from "./_components/player-list";
+import { RiderPoolList } from "./_components/rider-pool-list";
 
 export interface LobbyLeague {
   id: string;
@@ -47,7 +48,7 @@ export function LobbyPanels({
   memberCount,
   recommendedLevel,
   isCommissioner,
-  riders: _riders,
+  riders,
 }: LobbyPanelsProps) {
   const [selectedLevel, setSelectedLevel] = useState<number>(league.starting_level);
 
@@ -84,6 +85,11 @@ export function LobbyPanels({
           onSelect={setSelectedLevel}
         />
         <LevelStatsCards level={selectedLevel} />
+        <RiderPoolList
+          leagueId={league.id}
+          level={selectedLevel}
+          riders={riders}
+        />
       </TabsContent>
 
       <TabsContent value="rules" className="space-y-6 pt-2">
