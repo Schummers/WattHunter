@@ -5,7 +5,6 @@ import { GT_FULL_NAME, type GtPhaseId } from "@/lib/gt-phases";
 import {
   DEMO_LEAGUE_SLUG,
   DEMO_LEAGUE_ID,
-  DEMO_VISITOR_TEAM_ID,
 } from "@/lib/demo-constants";
 
 export default async function AuctionHistoryPage({
@@ -235,7 +234,6 @@ export default async function AuctionHistoryPage({
 async function renderDemoAuctionHistory() {
   const supabase = await createClient();
   const leagueId = DEMO_LEAGUE_ID;
-  const teamId = DEMO_VISITOR_TEAM_ID;
 
   const { data: rounds } = await supabase
     .from("auctions")
