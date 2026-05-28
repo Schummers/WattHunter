@@ -7,6 +7,7 @@ import { GameLoopExplainer } from "./_components/game-loop-explainer";
 import { InviteSection } from "./_components/invite-section";
 import { LaunchButton } from "./_components/launch-button";
 import { LevelSelector } from "./_components/level-selector";
+import { LevelStatsCards } from "./_components/level-stats-cards";
 import { PlayerList } from "./_components/player-list";
 
 export interface LobbyLeague {
@@ -82,6 +83,7 @@ export function LobbyPanels({
           isCommissioner={isCommissioner}
           onSelect={setSelectedLevel}
         />
+        <LevelStatsCards level={selectedLevel} />
       </TabsContent>
 
       <TabsContent value="rules" className="space-y-6 pt-2">
