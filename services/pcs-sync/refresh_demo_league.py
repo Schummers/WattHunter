@@ -194,7 +194,6 @@ def insert_demo_data(
                 "user_id": DEMO_USER_IDS[idx],
                 "league_id": DEMO_LEAGUE_ID,
                 "name": DEMO_TEAM_NAMES[idx],
-                "short_name": DEMO_TEAM_NAMES[idx][:3].upper(),
             }
         )
     if new_teams:
@@ -212,18 +211,20 @@ def insert_demo_data(
     new_members: list[dict[str, Any]] = []
     for m in src_members:
         if m["team_id"] in team_id_mapping and m["user_id"] in user_id_mapping:
-            new_members.append(
-                {
-                    **m,
-                    "league_id": DEMO_LEAGUE_ID,
-                    "team_id": team_id_mapping[m["team_id"]],
-                    "user_id": user_id_mapping[m["user_id"]],
-                }
-            )
+            rewritten = {
+                **m,
+                "league_id": DEMO_LEAGUE_ID,
+                "team_id": team_id_mapping[m["team_id"]],
+                "user_id": user_id_mapping[m["user_id"]],
+            }
+            rewritten.pop("id", None)  # let DB generate (avoids PK collision with source)
+            new_members.append(rewritten)
     if new_members:
         client.table("league_members").insert(new_members).execute()
 
-    # 3. auctions (keep original UUIDs — non-PII).
+    # 3. auctions — let DB regenerate IDs (avoids PK collision; FKs to auctions
+    # from contracts/auction_bids/draft_bids/round_validations are remapped below
+    # via auction_id_mapping in the league-scoped helper).
     src_auctions = (
         client.table("auctions")
         .select("*")
@@ -232,15 +233,25 @@ def insert_demo_data(
         .data
         or []
     )
+    auction_id_mapping: dict[str, str] = {}
     for a in src_auctions:
-        client.table("auctions").insert({**a, "league_id": DEMO_LEAGUE_ID}).execute()
+        rewritten = {**a, "league_id": DEMO_LEAGUE_ID}
+        src_auction_id = rewritten.pop("id")
+        res = client.table("auctions").insert(rewritten).execute()
+        new_id = res.data[0]["id"] if res.data else src_auction_id
+        auction_id_mapping[src_auction_id] = new_id
 
     # 4. league-scoped helpers.
-    _replicate_league_scoped(client, "contracts", source_league_id, team_id_mapping)
-    _replicate_league_scoped(client, "draft_bids", source_league_id, team_id_mapping)
-    _replicate_league_scoped(client, "gt_emergency_bids", source_league_id, team_id_mapping)
+    _replicate_league_scoped(client, "contracts", source_league_id, team_id_mapping, auction_id_mapping)
+    _replicate_league_scoped(client, "draft_bids", source_league_id, team_id_mapping, auction_id_mapping)
+    _replicate_league_scoped(client, "gt_emergency_bids", source_league_id, team_id_mapping, auction_id_mapping)
 
     # 5. team-scoped helpers.
+    # Note: gt_squad / gt_role_assignments / gt_tactic_activations skipped — their
+    # triggers (cap-of-8, cutoff-time, role-uniqueness) block bulk-replay of historical
+    # rows. The demo home page (`renderDemoHome`) already sets tacticContext=null and
+    # dnfRiders=[] for v1. If a future task wants GT data in demo, do per-row insert
+    # with conflict handling.
     for table in (
         "auction_bids",
         "treasury_log",
@@ -252,11 +263,8 @@ def insert_demo_data(
         "sponsor_bonuses",
         "sponsor_goal_completions",
         "round_validations",
-        "gt_squad",
-        "gt_role_assignments",
-        "gt_tactic_activations",
     ):
-        _replicate_team_scoped(client, table, team_id_mapping)
+        _replicate_team_scoped(client, table, team_id_mapping, auction_id_mapping)
 
     # 6. Update public.users display_name for the 8 ghost rows.
     for i, uid in enumerate(DEMO_USER_IDS):
@@ -279,6 +287,7 @@ def _replicate_league_scoped(
     table: str,
     source_league_id: str,
     team_id_mapping: dict[str, str],
+    auction_id_mapping: dict[str, str],
 ) -> None:
     rows = (
         client.table(table)
@@ -296,6 +305,10 @@ def _replicate_league_scoped(
         rewritten = {**r, "league_id": DEMO_LEAGUE_ID}
         if team_id:
             rewritten["team_id"] = team_id_mapping[team_id]
+        # Remap auction_id if present so contracts/bids point to the new demo auctions.
+        if rewritten.get("auction_id") in auction_id_mapping:
+            rewritten["auction_id"] = auction_id_mapping[rewritten["auction_id"]]
+        rewritten.pop("id", None)  # let DB regenerate
         new_rows.append(rewritten)
     if new_rows:
         client.table(table).insert(new_rows).execute()
@@ -305,6 +318,7 @@ def _replicate_team_scoped(
     client: Client,
     table: str,
     team_id_mapping: dict[str, str],
+    auction_id_mapping: dict[str, str],
 ) -> None:
     rows = (
         client.table(table)
@@ -314,7 +328,13 @@ def _replicate_team_scoped(
         .data
         or []
     )
-    new_rows = [{**r, "team_id": team_id_mapping[r["team_id"]]} for r in rows]
+    new_rows = []
+    for r in rows:
+        rewritten = {**r, "team_id": team_id_mapping[r["team_id"]]}
+        if rewritten.get("auction_id") in auction_id_mapping:
+            rewritten["auction_id"] = auction_id_mapping[rewritten["auction_id"]]
+        rewritten.pop("id", None)
+        new_rows.append(rewritten)
     if new_rows:
         client.table(table).insert(new_rows).execute()
 
