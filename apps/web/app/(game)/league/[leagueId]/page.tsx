@@ -4,6 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { RaceFeed } from "@/components/race-feed";
 import { getRaceFeedData } from "@/lib/get-race-feed-data";
 import type { TacticContextForFeed } from "@/lib/race-feed-types";
+import {
+  DEMO_LEAGUE_SLUG,
+  DEMO_LEAGUE_ID,
+  DEMO_VISITOR_TEAM_ID,
+} from "@/lib/demo-constants";
 
 
 export default async function LeagueDashboardPage({
@@ -12,6 +17,11 @@ export default async function LeagueDashboardPage({
   params: Promise<{ leagueId: string }>;
 }) {
   const { leagueId } = await params;
+
+  if (leagueId === DEMO_LEAGUE_SLUG) {
+    return await renderDemoHome();
+  }
+
   const supabase = await createClient();
 
   const {
@@ -287,5 +297,45 @@ export default async function LeagueDashboardPage({
       )}
       <RaceFeed leagueId={leagueId} payload={raceFeedPayload} tacticContext={tacticContext} dnfRiders={dnfRiders} />
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Demo path — anonymous visitor, no auth required
+// ---------------------------------------------------------------------------
+// TODO(demo): apply "use cache" + cacheTag("demo-league") + cacheLife({ revalidate: 3600 })
+// once Cache Components (experimental.useCache) is enabled project-wide in next.config.ts.
+// For v1 the fetch is cheap enough without caching (demo league is small and PostgREST
+// connection pooling amortises the queries).
+//
+// Tactic context and DNF cards are intentionally omitted here:
+//   - Tactic decisions are per-player and meaningless for a read-only demo visitor.
+//   - DNF rescue cards depend on the live GT calendar which fluctuates during the season.
+//   - The Race Feed (past stages, sponsor income, XP breakdown) is rich enough on its own.
+async function renderDemoHome() {
+  const supabase = await createClient();
+
+  const { data: league } = await supabase
+    .from("leagues")
+    .select("id, name")
+    .eq("id", DEMO_LEAGUE_ID)
+    .maybeSingle();
+
+  if (!league) {
+    return <p className="text-[var(--text-mid)]">Demo unavailable.</p>;
+  }
+
+  const raceFeedPayload = await getRaceFeedData(supabase, {
+    leagueId: DEMO_LEAGUE_ID,
+    myTeamId: DEMO_VISITOR_TEAM_ID,
+  });
+
+  return (
+    <RaceFeed
+      leagueId={DEMO_LEAGUE_SLUG}
+      payload={raceFeedPayload}
+      tacticContext={null}
+      dnfRiders={[]}
+    />
   );
 }
