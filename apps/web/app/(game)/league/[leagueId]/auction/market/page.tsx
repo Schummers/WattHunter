@@ -4,6 +4,11 @@ import { MarketClient } from "./market-client";
 import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
 import { getNextAuctionDate, formatAuctionDate, getCurrentPhase } from "@/lib/phases";
 import { buildCoUnlockChecker } from "@/lib/co-unlock";
+import {
+  DEMO_LEAGUE_SLUG,
+  DEMO_LEAGUE_ID,
+  DEMO_VISITOR_TEAM_ID,
+} from "@/lib/demo-constants";
 
 export default async function MarketPage({
   params,
@@ -11,6 +16,9 @@ export default async function MarketPage({
   params: Promise<{ leagueId: string }>;
 }) {
   const { leagueId } = await params;
+
+  if (leagueId === DEMO_LEAGUE_SLUG) return await renderDemoAuctionMarket();
+
   const supabase = await createClient();
   const user = await getUser();
 
@@ -194,6 +202,155 @@ export default async function MarketPage({
       maxSlots={getMaxSlots(level)}
       currentSlots={ownTeamSlots}
       treasury={team?.treasury ?? 0}
+      sponsorIncome={sponsorIncome}
+      activeSalaries={activeSalaries}
+      phaseConfirmed={phaseConfirmed}
+      draftBids={draftBidMap}
+      giroRiderIds={giroRiderIds}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Demo path — anonymous visitor, no auth required
+// ---------------------------------------------------------------------------
+async function renderDemoAuctionMarket() {
+  const supabase = await createClient();
+  const teamId = DEMO_VISITOR_TEAM_ID;
+  const leagueId = DEMO_LEAGUE_ID;
+
+  const { data: teamRow } = await supabase
+    .from("teams")
+    .select("id, level, cumulative_xp, treasury, phase_confirmed_id")
+    .eq("id", teamId)
+    .single();
+
+  const level = teamRow?.level ?? 1;
+  const minRank = getLevelByNumber(level).poolMin;
+  const checkLock = await buildCoUnlockChecker(leagueId);
+  const phaseConfirmedId = (teamRow as { phase_confirmed_id?: number | null })?.phase_confirmed_id ?? null;
+  const phaseConfirmed = phaseConfirmedId === getCurrentPhase().id;
+
+  const [
+    { data: riders },
+    { data: leagueTeams },
+    { data: giroStartlist },
+  ] = await Promise.all([
+    supabase
+      .from("riders")
+      .select(
+        "id, full_name, nationality, real_team, pcs_rank, pcs_rank_prev, photo_url, specialty, pcs_points_1yr, birthdate"
+      )
+      .gte("pcs_rank", minRank)
+      .lte("pcs_rank", 600)
+      .order("pcs_rank", { ascending: true })
+      .limit(600),
+    supabase.from("teams").select("id").eq("league_id", leagueId),
+    supabase
+      .from("race_startlists")
+      .select("rider_id")
+      .eq("race_slug", "race/giro-d-italia/2026"),
+  ]);
+
+  const leagueTeamIds = (leagueTeams ?? []).map((t) => t.id);
+
+  const { data: leagueContracts } = await supabase
+    .from("contracts")
+    .select("rider_id, team_id, locked_salary")
+    .in("team_id", leagueTeamIds)
+    .eq("status", "active");
+
+  const ownedRiderIds = new Set((leagueContracts ?? []).map((c) => c.rider_id));
+  const ownTeamContracts = (leagueContracts ?? []).filter((c) => c.team_id === teamId);
+  const ownTeamSlots = ownTeamContracts.length;
+  const activeSalaries = ownTeamContracts.reduce((sum, c) => sum + (c.locked_salary ?? 0), 0);
+
+  const availableRiders = (riders ?? [])
+    .filter((r) => !ownedRiderIds.has(r.id))
+    .map((r) => {
+      const status = checkLock(r.pcs_rank ?? null);
+      return {
+        ...r,
+        pcs_rank_diff:
+          r.pcs_rank != null && r.pcs_rank_prev != null ? r.pcs_rank_prev - r.pcs_rank : null,
+        isLocked: !status.isUnlocked,
+        lockMinLevel: status.minLevel,
+        lockPlayersAtLevel: status.playersAtOrAboveLevel,
+        lockPlayersRequired: 2,
+      };
+    });
+
+  const [
+    { data: activeRound },
+    { data: scheduledRoundData },
+    { count: closedCount },
+  ] = await Promise.all([
+    supabase
+      .from("auctions")
+      .select("id, name, opens_at, closes_at")
+      .eq("league_id", leagueId)
+      .eq("status", "open")
+      .order("opens_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("auctions")
+      .select("id, name, opens_at")
+      .eq("league_id", leagueId)
+      .eq("status", "scheduled")
+      .order("opens_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("auctions")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", leagueId)
+      .eq("status", "closed"),
+  ]);
+
+  let nextRound: { id: string; name: string; opens_at: string } | null = null;
+  let nextAuctionLabel: string | null = null;
+  if (!activeRound) {
+    nextRound = scheduledRoundData;
+    if (!nextRound) {
+      if (closedCount && closedCount > 0) {
+        const next = getNextAuctionDate();
+        if (next) {
+          nextAuctionLabel = `Next round · ${formatAuctionDate(next.date)}`;
+        }
+      }
+    }
+  }
+
+  const [{ data: draftBids }, { data: sponsorData }] = await Promise.all([
+    supabase.from("draft_bids").select("rider_id, amount").eq("team_id", teamId),
+    supabase
+      .from("team_sponsors")
+      .select("sponsors(monthly_budget)")
+      .eq("team_id", teamId)
+      .maybeSingle(),
+  ]);
+
+  const draftBidMap = (draftBids ?? []).map((d) => ({ riderId: d.rider_id, amount: d.amount }));
+
+  let sponsorIncome = 0;
+  if (sponsorData?.sponsors) {
+    const sp = Array.isArray(sponsorData.sponsors) ? sponsorData.sponsors[0] : sponsorData.sponsors;
+    sponsorIncome = (sp as { monthly_budget: number }).monthly_budget ?? 0;
+  }
+
+  const giroRiderIds = (giroStartlist ?? []).map((s) => s.rider_id);
+
+  return (
+    <MarketClient
+      leagueId={DEMO_LEAGUE_SLUG}
+      riders={availableRiders}
+      activeRound={activeRound}
+      nextRound={nextRound}
+      nextAuctionLabel={nextAuctionLabel}
+      maxSlots={getMaxSlots(level)}
+      currentSlots={ownTeamSlots}
+      treasury={teamRow?.treasury ?? 0}
       sponsorIncome={sponsorIncome}
       activeSalaries={activeSalaries}
       phaseConfirmed={phaseConfirmed}
