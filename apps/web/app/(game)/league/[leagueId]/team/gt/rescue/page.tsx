@@ -9,6 +9,7 @@ import {
 } from "@/lib/gt-phases"
 import { getLevelByNumber } from "@/lib/levels"
 import { GtRescueMarket } from "@/components/gt-rescue-market"
+import { DEMO_LEAGUE_SLUG } from "@/lib/demo-constants"
 
 export default async function GtRescuePage({
   params,
@@ -16,6 +17,9 @@ export default async function GtRescuePage({
   params: Promise<{ leagueId: string }>
 }) {
   const { leagueId } = await params
+
+  if (leagueId === DEMO_LEAGUE_SLUG) return renderDemoTeamGtRescue()
+
   const supabase = await createClient()
 
   const {
@@ -132,5 +136,18 @@ export default async function GtRescuePage({
           : null
       }
     />
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Demo path — anonymous visitor, no auth required
+// ---------------------------------------------------------------------------
+function renderDemoTeamGtRescue() {
+  return (
+    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+      <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+        Demo league has no Grand Tour data yet.
+      </p>
+    </div>
   )
 }
