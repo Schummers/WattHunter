@@ -48,6 +48,7 @@ function fluentQuery(result: { data: unknown; error: unknown | null }) {
   q.upsert = vi.fn().mockResolvedValue(result);
   q.eq = vi.fn().mockReturnValue(q);
   q.single = vi.fn().mockResolvedValue(result);
+  q.maybeSingle = vi.fn().mockResolvedValue(result);
   return q;
 }
 
