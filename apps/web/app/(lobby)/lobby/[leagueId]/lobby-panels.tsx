@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AuctionExplainer } from "./_components/auction-explainer";
+import { GameLoopExplainer } from "./_components/game-loop-explainer";
 import { InviteSection } from "./_components/invite-section";
 import { LaunchButton } from "./_components/launch-button";
+import { LevelSelector } from "./_components/level-selector";
 import { PlayerList } from "./_components/player-list";
 
 export interface LobbyLeague {
@@ -44,11 +46,9 @@ export function LobbyPanels({
   memberCount,
   recommendedLevel,
   isCommissioner,
-  riders,
+  riders: _riders,
 }: LobbyPanelsProps) {
   const [selectedLevel, setSelectedLevel] = useState<number>(league.starting_level);
-
-  void setSelectedLevel;
 
   return (
     <Tabs defaultValue="lobby" className="gap-4">
@@ -75,11 +75,13 @@ export function LobbyPanels({
       </TabsContent>
 
       <TabsContent value="pool" className="space-y-6 pt-2">
-        {/* Task 7-10 populate this panel */}
-        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-          Level {selectedLevel} (recommended: {recommendedLevel}) · {riders.length} riders
-          in pool
-        </p>
+        <GameLoopExplainer />
+        <LevelSelector
+          selected={selectedLevel}
+          recommended={recommendedLevel}
+          isCommissioner={isCommissioner}
+          onSelect={setSelectedLevel}
+        />
       </TabsContent>
 
       <TabsContent value="rules" className="space-y-6 pt-2">
