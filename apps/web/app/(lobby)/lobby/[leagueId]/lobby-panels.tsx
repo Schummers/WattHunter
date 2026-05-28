@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { AuctionExplainer } from "./_components/auction-explainer";
 import { InviteSection } from "./_components/invite-section";
 import { PlayerList } from "./_components/player-list";
 
@@ -65,6 +66,7 @@ export function LobbyPanels({
           maxPlayers={league.max_players}
           commissionerId={league.commissioner_id}
         />
+        <AuctionExplainer leagueId={league.id} />
       </TabsContent>
 
       <TabsContent value="pool" className="space-y-6 pt-2">
