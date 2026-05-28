@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
+import { getDefaultStartingLevel } from "@/lib/levels";
 import { LobbyPanels } from "./lobby-panels";
 
 export default async function LobbyPage({
@@ -17,7 +18,6 @@ export default async function LobbyPage({
   const [
     { data: league },
     { data: rawMembers },
-    { count: memberCount },
     { data: riders },
   ] = await Promise.all([
     supabase
@@ -28,10 +28,6 @@ export default async function LobbyPage({
     supabase
       .from("league_members")
       .select("user_id, users(display_name, avatar_url), teams:team_id(name)")
-      .eq("league_id", leagueId),
-    supabase
-      .from("league_members")
-      .select("id", { count: "exact", head: true })
       .eq("league_id", leagueId),
     supabase
       .from("riders")
@@ -60,6 +56,8 @@ export default async function LobbyPage({
       : (m.teams as { name: string } | null) ?? null,
   }));
 
+  const recommendedLevel = getDefaultStartingLevel();
+
   return (
     <LobbyPanels
       league={{
@@ -71,7 +69,8 @@ export default async function LobbyPage({
         starting_level: league.starting_level,
       }}
       members={members}
-      memberCount={memberCount ?? 0}
+      memberCount={rawMembers?.length ?? 0}
+      recommendedLevel={recommendedLevel}
       isCommissioner={isCommissioner}
       riders={(riders ?? []).map((r) => ({
         id: r.id as string,

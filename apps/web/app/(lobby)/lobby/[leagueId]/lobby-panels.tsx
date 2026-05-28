@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { getDefaultStartingLevel } from "@/lib/levels";
 
 export interface LobbyLeague {
   id: string;
@@ -30,6 +29,7 @@ export interface LobbyPanelsProps {
   league: LobbyLeague;
   members: LobbyMember[];
   memberCount: number;
+  recommendedLevel: number;
   isCommissioner: boolean;
   riders: LobbyRider[];
 }
@@ -38,10 +38,10 @@ export function LobbyPanels({
   league,
   members,
   memberCount,
+  recommendedLevel,
   isCommissioner,
   riders,
 }: LobbyPanelsProps) {
-  const recommendedLevel = getDefaultStartingLevel();
   const [selectedLevel, setSelectedLevel] = useState<number>(league.starting_level);
 
   void members;
