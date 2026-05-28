@@ -3,20 +3,35 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { signupAndCreateLeague } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form-field";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
-import { setSignupIntentCookie } from "@/app/auth/callback/oauth-intent";
+import { setSignupIntentCookie, clearSignupIntentCookie } from "@/app/auth/callback/oauth-intent";
 
 export default function CreateLeaguePage() {
+  return (
+    <Suspense fallback={null}>
+      <CreateLeagueForm />
+    </Suspense>
+  );
+}
+
+function CreateLeagueForm() {
+  const searchParams = useSearchParams();
+  const oauthError = searchParams.get("error");
+
   const [step, setStep] = useState<1 | 2>(1);
   const [leagueName, setLeagueName] = useState("");
   const [teamName, setTeamName] = useState("");
   const [email, setEmail] = useState("");
-  const [step1Error, setStep1Error] = useState<string | null>(null);
+  const [step1Error, setStep1Error] = useState<string | null>(
+    oauthError === "create_failed" ? "League creation failed after sign-in. Please try again." : null
+  );
   const [state, formAction, pending] = useActionState(signupAndCreateLeague, null);
 
   function handleNext(e: React.FormEvent) {
@@ -48,10 +63,14 @@ export default function CreateLeaguePage() {
       team_name: teamName.trim(),
     });
     const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback?intent=create` },
     });
+    if (error) {
+      await clearSignupIntentCookie();
+      setStep1Error(error.message);
+    }
   }
 
   return (

@@ -10,7 +10,14 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form-field";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
-import { setSignupIntentCookie } from "@/app/auth/callback/oauth-intent";
+import { setSignupIntentCookie, clearSignupIntentCookie } from "@/app/auth/callback/oauth-intent";
+
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  not_found: "Invalid code. Check with your Race Director.",
+  full: "This league is full.",
+  ended: "This league has ended.",
+  unknown: "Failed to join league. Please try again.",
+};
 
 export default function JoinLeaguePage() {
   return (
@@ -23,11 +30,14 @@ export default function JoinLeaguePage() {
 function JoinLeagueForm() {
   const searchParams = useSearchParams();
   const prefilledCode = searchParams.get("code")?.toUpperCase() ?? "";
+  const oauthError = searchParams.get("error");
 
   const [step, setStep] = useState<1 | 2>(1);
   const [code, setCode] = useState(prefilledCode);
   const [teamName, setTeamName] = useState("");
-  const [step1Error, setStep1Error] = useState<string | null>(null);
+  const [step1Error, setStep1Error] = useState<string | null>(
+    oauthError ? (OAUTH_ERROR_MESSAGES[oauthError] ?? OAUTH_ERROR_MESSAGES.unknown) : null
+  );
   const [state, formAction, pending] = useActionState(signupAndJoinLeague, null);
 
   useEffect(() => {
@@ -62,10 +72,14 @@ function JoinLeagueForm() {
       team_name: teamName.trim(),
     });
     const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback?intent=join` },
     });
+    if (error) {
+      await clearSignupIntentCookie();
+      setStep1Error(error.message);
+    }
   }
 
   return (
