@@ -14,10 +14,14 @@ function pyConst(source: string, name: string): string[] {
   const re = new RegExp(`${name}:\\s*list\\[str\\]\\s*=\\s*\\[(.*?)\\]`, "s");
   const m = re.exec(source);
   if (!m) throw new Error(`Could not extract ${name} from python source`);
-  return m[1]
+  const items = m[1]
     .split(",")
-    .map((s) => s.trim().replace(/^"|"$/g, ""))
+    .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
     .filter(Boolean);
+  if (items.length === 0) {
+    throw new Error(`Parsed ${name} as an empty array — quote style likely changed`);
+  }
+  return items;
 }
 
 function pyScalar(source: string, name: string, kind: "str" | "int"): string {

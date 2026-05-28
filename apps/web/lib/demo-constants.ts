@@ -37,6 +37,12 @@ export const DEMO_TEAM_NAMES = [
 export const DEMO_VISITOR_TEAM_INDEX = 1 as const;
 export const DEMO_VISITOR_TEAM_ID = DEMO_TEAM_IDS[DEMO_VISITOR_TEAM_INDEX];
 
-export function isDemoLeagueId(leagueId: string): boolean {
-  return leagueId === DEMO_LEAGUE_SLUG || leagueId === DEMO_LEAGUE_ID;
+/**
+ * Returns true when the input refers to the demo league.
+ * Accepts either the URL slug (`"demo"`, used in route params) or the
+ * DB UUID (`DEMO_LEAGUE_ID`, used as a foreign-key value). Callers don't
+ * have to know which form they hold.
+ */
+export function isDemoLeague(leagueIdOrSlug: string): boolean {
+  return leagueIdOrSlug === DEMO_LEAGUE_SLUG || leagueIdOrSlug === DEMO_LEAGUE_ID;
 }
