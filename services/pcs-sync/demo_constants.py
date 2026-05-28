@@ -44,7 +44,7 @@ DEMO_VISITOR_TEAM_INDEX: int = 1
 DEMO_VISITOR_TEAM_ID: str = DEMO_TEAM_IDS[DEMO_VISITOR_TEAM_INDEX]
 
 
-def as_dict() -> dict:
+def as_dict() -> dict[str, object]:
     return {
         "DEMO_LEAGUE_SLUG": DEMO_LEAGUE_SLUG,
         "DEMO_LEAGUE_ID": DEMO_LEAGUE_ID,
