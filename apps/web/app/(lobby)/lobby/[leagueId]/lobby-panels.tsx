@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { InviteSection } from "./_components/invite-section";
+import { PlayerList } from "./_components/player-list";
 
 export interface LobbyLeague {
   id: string;
@@ -45,8 +46,6 @@ export function LobbyPanels({
 }: LobbyPanelsProps) {
   const [selectedLevel, setSelectedLevel] = useState<number>(league.starting_level);
 
-  void members;
-  void memberCount;
   void isCommissioner;
   void setSelectedLevel;
 
@@ -60,6 +59,12 @@ export function LobbyPanels({
 
       <TabsContent value="lobby" className="space-y-6 pt-2">
         <InviteSection inviteCode={league.invite_code} />
+        <PlayerList
+          members={members}
+          memberCount={memberCount}
+          maxPlayers={league.max_players}
+          commissionerId={league.commissioner_id}
+        />
       </TabsContent>
 
       <TabsContent value="pool" className="space-y-6 pt-2">
