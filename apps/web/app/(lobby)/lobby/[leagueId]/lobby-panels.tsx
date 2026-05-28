@@ -10,6 +10,7 @@ import { LevelSelector } from "./_components/level-selector";
 import { LevelStatsCards } from "./_components/level-stats-cards";
 import { PlayerList } from "./_components/player-list";
 import { RiderPoolList } from "./_components/rider-pool-list";
+import { RulesTab } from "./_components/rules-tab";
 import { setStartingLevel } from "./actions";
 
 export interface LobbyLeague {
@@ -119,7 +120,7 @@ export function LobbyPanels({
       </TabsContent>
 
       <TabsContent value="rules" className="space-y-6 pt-2">
-        {/* Task 11 populates this panel */}
+        <RulesTab leagueId={league.id} />
       </TabsContent>
     </Tabs>
   );
