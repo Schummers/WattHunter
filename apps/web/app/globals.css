@@ -452,3 +452,22 @@
   0%, 100% { box-shadow: 0 0 6px var(--tier-dynamic); }
   50%       { box-shadow: 0 0 18px var(--tier-dynamic), 0 0 32px var(--tier-dynamic-glow-mid); }
 }
+
+/* Chantier B — demo banner pulse (cyan glow on blocked mutation). */
+@keyframes demo-banner-pulse {
+  0% {
+    box-shadow: 0 0 0 0 transparent;
+    border-color: var(--border-subtle);
+  }
+  30% {
+    box-shadow: 0 0 0 6px color-mix(in oklab, var(--accent-default) 30%, transparent);
+    border-color: var(--accent-default);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    border-color: var(--border-subtle);
+  }
+}
+.demo-pulse {
+  animation: demo-banner-pulse 900ms ease-out;
+}
