@@ -9,6 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DEMO_LEAGUE_SLUG,
+  DEMO_VISITOR_TEAM_ID,
+} from "@/lib/demo-constants";
 
 export default async function AuctionResultsPage({
   params,
@@ -44,7 +48,10 @@ export default async function AuctionResultsPage({
     );
   }
 
-  const myTeamId = teams?.find((t) => t.user_id === user?.id)?.id;
+  // Demo: highlight the visitor's team; auth path: highlight by user_id
+  const myTeamId = leagueId === DEMO_LEAGUE_SLUG
+    ? DEMO_VISITOR_TEAM_ID
+    : teams?.find((t) => t.user_id === user?.id)?.id;
 
   const rounds = [1, 2, 3];
 
