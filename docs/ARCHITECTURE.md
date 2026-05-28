@@ -1,7 +1,7 @@
 # WattHunter — Architecture
 
 > **Document vivant** — Mis a jour a chaque decision d'architecture.
-> Derniere mise a jour : 2026-05-15
+> Derniere mise a jour : 2026-05-28
 
 ---
 
@@ -49,6 +49,7 @@ watthunter/
 │   │   ├── (game)/              # Routes avec sidebar + topbar (desktop) ou bottom-nav (mobile)
 │   │   │   └── league/[leagueId]/
 │   │   │       ├── page.tsx            # Server redirect vers /lobby/[id] si status pending ; sinon Race Feed
+│   │   │       ├── demo-layout.tsx     # Layout fork pour /league/demo (anon, sans auth)
 │   │   │       ├── layout.tsx          # Auth guard + responsive shell
 │   │   │       ├── league-shell.tsx    # Sidebar + TopBar + Detail Rail layout
 │   │   │       ├── home-feed.tsx       # Feed activite ligue
@@ -280,7 +281,7 @@ watthunter/
 |--------|--------|-------|
 | `(auth)` | Centrer plein ecran, pas de sidebar | Login, signup, onboarding, create/join league |
 | `(lobby)` | Minimal (pas de sidebar), auth guard | Interface setup ligues pending (3 onglets : Lobby, Level & Pool, Rules) |
-| `(game)` | Sidebar + TopBar (desktop) ou BottomNav (mobile) | Toutes les pages de jeu |
+| `(game)` | Sidebar + TopBar (desktop) ou BottomNav (mobile) | Toutes les pages de jeu, y compris `/league/demo/*` (anon, layout fork sans auth) |
 
 ### Protection des routes
 
@@ -290,6 +291,7 @@ Le middleware (`lib/supabase/middleware.ts`) protege toutes les routes sauf :
 - `/signup`
 - `/auth/*` (callback)
 - `/join`
+- `/league/demo/*` (visiteur anonyme — demo mode)
 
 ### Smart redirect (`/`)
 
@@ -422,6 +424,46 @@ $$;
 - NEVER exposer la service_role key au browser
 - NEVER muter `treasury_log` directement — utiliser les fonctions helper
 - NEVER liberer un coureur hors de la fenetre d'encheres
+
+---
+
+## Demo mode (Chantier B)
+
+Visiteur anonyme explorant `/league/demo/*` via une copie anonymisee d'une vraie ligue.
+
+### Constants
+- `DEMO_LEAGUE_SLUG = "demo"` (segment URL), `DEMO_LEAGUE_ID` UUID (DB FK).
+- 8 ghost `auth.users` + `public.users` (UUIDs stables, emails `demo-team-N@watthunter.demo`).
+- `DEMO_VISITOR_TEAM_ID = DEMO_TEAM_IDS[1]` — equipe rank-2 par cumulative_xp.
+- Sources de verite : `apps/web/lib/demo-constants.ts` + `services/pcs-sync/demo_constants.py` (parite testee des deux cotes).
+
+### RLS — anon SELECT scope
+Fonction `public.demo_league_id() RETURNS uuid STABLE`. 33 policies `FOR SELECT TO anon` :
+- **Tier A** (direct `league_id`) : `leagues`, `league_members`, `teams`, `auctions`, `contracts`, `draft_bids`, `gt_emergency_bids`, `remontada_boost_triggers`, `remontada_boosts`.
+- **Tier B** (via `EXISTS teams`) : `auction_bids`, `gt_squad`, `gt_role_assignments`, `gt_tactic_activations`, `rider_xp_daily`, `sponsor_bonuses`, `sponsor_goal_completions`, `team_ranking_daily`, `team_sponsors`, `team_strategies`, `team_xp_adjustments`, `treasury_log`, `round_validations`.
+- **Tier C** : `public.users` restreint aux 8 ghost demo accounts (`id IN demo league_members`).
+- **Tier D** (reference publique) : `riders`, `race_results`, `rider_season_rankings`, `race_startlists`, `rider_teams`, `rider_pcs_history`, `gt_daily_classifications`, `gt_rescue_windows`, `sponsors`, `strategies` (`USING (true)`).
+
+### Mutations bloquees
+Le visiteur ne peut rien muter — les RPCs rejettent via `auth.uid() IS NULL`. Cote UI : chaque server-action mutation est wrappee par `useDemoSafeAction` (`apps/web/contexts/demo-context.tsx`) qui fait pulser la banniere cyan au lieu d'appeler la mutation. Banner + bottom CTA dans `apps/web/components/demo/`.
+
+### Refresh
+`python3 services/pcs-sync/refresh_demo_league.py --source-league-id <uuid>` :
+1. Verifie `is_demo = true` sur la cible.
+2. Wipe les donnees demo en ordre FK (children → parents).
+3. Reinsere une copie anonymisee du source league (teams renommees, user_ids re-mappes sur les 8 ghost users).
+4. Visiteur = source team rank-2 → `DEMO_TEAM_IDS[1]`.
+5. POST `${WATTHUNTER_HOST}/api/admin/revalidate-demo` (Bearer `REVALIDATE_SECRET`) → `revalidateTag("demo-league")`. No-op tant que Cache Components n'est pas active.
+
+### Migrations
+- `20260529000001_demo_seed_ghost_users.sql` — `demo_league_id()`, `is_demo`, 8 ghost users, placeholder league.
+- `20260529000002_demo_anon_select_policies.sql` — 33 RLS policies anon.
+- `20260529000003_join_rejects_demo.sql` — `join_league_by_code` refuse une ligue `is_demo = true`.
+
+### Securite
+- Aucune reference a `SUPABASE_SERVICE_ROLE_KEY` sous `apps/web/{app,components,contexts,lib,hooks}` (audit : seul `lib/supabase/admin.ts`, protege par `import "server-only"`).
+- `REVALIDATE_SECRET` provisionne cote Vercel (production + preview) — a valider avant deploy.
+- PII audit : `python3 services/pcs-sync/scripts/audit_demo_pii.py` exit 0.
 
 ---
 
@@ -609,6 +651,7 @@ $$;
 - [x] GT Rescue (DNF refund/replace window, auto-release on refund claim)
 - [x] Achievements (systeme d'achievements equipe)
 - [x] Lobby redesign (Chantier D) — route group `(lobby)/lobby/[leagueId]` dedie aux ligues pending, 3 tabs (Lobby / Level & Pool / Rules), `launch_first_auction` RPC, `set_starting_level` RPC
+- [x] Demo mode (Chantier B) — route `/league/demo`, RLS anon SELECT (33 policies), ghost users, refresh script Python, banner pulse pattern
 - [x] Race Feed (cards Home : past race, remontada, nemesis, rest day, GT goals)
 - [x] Palmares (profil rider avec onglets Monuments / dynamiques + league rank)
 - [x] Design System v3.1 (navigation tokens)
