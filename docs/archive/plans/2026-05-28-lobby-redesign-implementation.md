@@ -25,8 +25,8 @@
 
 | File | Responsibility |
 |---|---|
-| `supabase/migrations/20260528000000_rpc_launch_first_auction.sql` | RPC: compute 3 auto-scheduled rounds + flip league to `active`. Replaces TS-side date logic. |
-| `supabase/migrations/20260528000001_rpc_set_starting_level.sql` | RPC: commissioner updates `leagues.starting_level` (1–8) while league is pending. |
+| `supabase/migrations/20260528000001_rpc_launch_first_auction.sql` | RPC: compute 3 auto-scheduled rounds + flip league to `active`. Replaces TS-side date logic. |
+| `supabase/migrations/20260528000002_rpc_set_starting_level.sql` | RPC: commissioner updates `leagues.starting_level` (1–8) while league is pending. |
 | `apps/web/app/(lobby)/lobby/[leagueId]/layout.tsx` | Lobby chrome: auth gate, email-confirmation banner, max-width container, page header (league name + Pending badge). Server-redirects to `/league/[id]` when status ≠ pending. |
 | `apps/web/app/(lobby)/lobby/[leagueId]/loading.tsx` | Skeleton matching the lobby header. |
 | `apps/web/app/(lobby)/lobby/[leagueId]/page.tsx` | Server component: fetches league + members + member count + rider pool (all riders #1–#600), passes everything to `<LobbyPanels>`. |
@@ -830,7 +830,7 @@ git commit -m "feat(lobby): auction explainer card with Learn more link"
 ## Task 6: Tab 1 — Launch button + `launch_first_auction` RPC
 
 **Files:**
-- Create: `supabase/migrations/20260528000000_rpc_launch_first_auction.sql`
+- Create: `supabase/migrations/20260528000001_rpc_launch_first_auction.sql`
 - Modify: `apps/web/app/(game)/league/[leagueId]/actions.ts`
 - Create: `apps/web/app/(lobby)/lobby/[leagueId]/_components/launch-button.tsx`
 - Create: `apps/web/app/(lobby)/lobby/[leagueId]/_components/__tests__/launch-button.test.tsx`
@@ -838,7 +838,7 @@ git commit -m "feat(lobby): auction explainer card with Learn more link"
 
 - [ ] **Step 1: Author the RPC migration**
 
-Create `supabase/migrations/20260528000000_rpc_launch_first_auction.sql`:
+Create `supabase/migrations/20260528000001_rpc_launch_first_auction.sql`:
 
 ```sql
 -- RPC launch_first_auction: atomic 3-round auction creation with auto-scheduled dates.
@@ -1143,7 +1143,7 @@ Verify on `/lobby/<id>`:
 - [ ] **Step 10: Commit**
 
 ```bash
-git add supabase/migrations/20260528000000_rpc_launch_first_auction.sql \
+git add supabase/migrations/20260528000001_rpc_launch_first_auction.sql \
         apps/web/app/\(game\)/league/\[leagueId\]/actions.ts \
         apps/web/app/\(lobby\)/lobby/\[leagueId\]/_components/launch-button.tsx \
         apps/web/app/\(lobby\)/lobby/\[leagueId\]/_components/__tests__/launch-button.test.tsx \
@@ -1594,14 +1594,14 @@ git commit -m "feat(lobby): rider pool list filtered by selected level"
 ## Task 10: Tab 2 — Persist starting level via `set_starting_level` RPC
 
 **Files:**
-- Create: `supabase/migrations/20260528000001_rpc_set_starting_level.sql`
+- Create: `supabase/migrations/20260528000002_rpc_set_starting_level.sql`
 - Create: `apps/web/app/(lobby)/lobby/[leagueId]/actions.ts`
 - Create: `apps/web/app/(lobby)/lobby/[leagueId]/actions.test.ts`
 - Modify: `apps/web/app/(lobby)/lobby/[leagueId]/lobby-panels.tsx`
 
 - [ ] **Step 1: Author the migration**
 
-Create `supabase/migrations/20260528000001_rpc_set_starting_level.sql`:
+Create `supabase/migrations/20260528000002_rpc_set_starting_level.sql`:
 
 ```sql
 -- RPC set_starting_level: commissioner-only update of leagues.starting_level (1..8).
@@ -1865,7 +1865,7 @@ Non-commissioner: pills disabled (verified in Task 7), no action fires.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add supabase/migrations/20260528000001_rpc_set_starting_level.sql \
+git add supabase/migrations/20260528000002_rpc_set_starting_level.sql \
         apps/web/app/\(lobby\)/lobby/\[leagueId\]/actions.ts \
         apps/web/app/\(lobby\)/lobby/\[leagueId\]/actions.test.ts \
         apps/web/app/\(lobby\)/lobby/\[leagueId\]/lobby-panels.tsx
@@ -2047,8 +2047,8 @@ Add a route entry near the existing `(game)/league/[leagueId]` block:
 Add to the RPCs / Server actions section (search for `## RPCs` or similar):
 
 ```markdown
-- `launch_first_auction(p_league_id uuid) → jsonb` — SECURITY DEFINER. Commissioner-only. Inserts 3 auctions (Round 1 `open`, Rounds 2-3 `scheduled`) with auto-scheduled Europe/Paris dates, flips league to `active`. Migration `20260528000000`. Replaces former TS-side date computation.
-- `set_starting_level(p_league_id uuid, p_level integer) → jsonb` — SECURITY DEFINER. Commissioner-only, pending leagues only, level 1..8. Migration `20260528000001`.
+- `launch_first_auction(p_league_id uuid) → jsonb` — SECURITY DEFINER. Commissioner-only. Inserts 3 auctions (Round 1 `open`, Rounds 2-3 `scheduled`) with auto-scheduled Europe/Paris dates, flips league to `active`. Migration `20260528000001`. Replaces former TS-side date computation.
+- `set_starting_level(p_league_id uuid, p_level integer) → jsonb` — SECURITY DEFINER. Commissioner-only, pending leagues only, level 1..8. Migration `20260528000002`.
 ```
 
 Also update the `(game)/league/[leagueId]/page.tsx` line to mention the redirect:
