@@ -17,7 +17,9 @@ supabase/.temp/
 
 # Python
 services/pcs-sync/__pycache__/
+services/pcs-sync/**/__pycache__/
 services/pcs-sync/*.pyc
+services/pcs-sync/**/*.pyc
 services/pcs-sync/.venv/
 services/pcs-sync/venv/
 services/pcs-sync/.env
