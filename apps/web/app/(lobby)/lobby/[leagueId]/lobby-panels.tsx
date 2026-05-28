@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { InviteSection } from "./_components/invite-section";
 
 export interface LobbyLeague {
   id: string;
@@ -45,6 +46,7 @@ export function LobbyPanels({
   const [selectedLevel, setSelectedLevel] = useState<number>(league.starting_level);
 
   void members;
+  void memberCount;
   void isCommissioner;
   void setSelectedLevel;
 
@@ -57,11 +59,7 @@ export function LobbyPanels({
       </TabsList>
 
       <TabsContent value="lobby" className="space-y-6 pt-2">
-        {/* Task 3-6 populate this panel */}
-        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-          {memberCount}/{league.max_players} players · code{" "}
-          <span className="font-mono text-[var(--text-high)]">{league.invite_code}</span>
-        </p>
+        <InviteSection inviteCode={league.invite_code} />
       </TabsContent>
 
       <TabsContent value="pool" className="space-y-6 pt-2">
