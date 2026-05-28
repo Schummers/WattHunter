@@ -51,6 +51,14 @@ USER_AGENT = (
     "Chrome/120.0.0.0 Safari/537.36"
 )
 
+# SCRAPER_HEADLESS=0 (default) → visible Chromium window (required to bypass Cloudflare)
+# SCRAPER_HEADLESS=1 → headless mode (may be blocked by Cloudflare)
+SCRAPER_HEADLESS = os.getenv("SCRAPER_HEADLESS", "0") == "1"
+
+# SCRAPER_BACKEND=nodriver (default) → uses nodriver for CF bypass
+# SCRAPER_BACKEND=playwright → fallback to Playwright (may be blocked)
+SCRAPER_BACKEND = os.getenv("SCRAPER_BACKEND", "nodriver")
+
 CALENDAR_PATH = os.path.join(os.path.dirname(__file__), "wt_calendar_2026.json")
 
 GT_SLUG_PREFIXES = (
@@ -228,8 +236,8 @@ def find_races_for_today() -> List[Dict]:
 # ---------------------------------------------------------------------------
 
 async def new_browser_page(p):
-    """Launch a headless Chromium browser and return (browser, context, page)."""
-    browser = await p.chromium.launch(headless=True)
+    """Launch a Chromium browser and return (browser, context, page)."""
+    browser = await p.chromium.launch(headless=SCRAPER_HEADLESS)
     context = await browser.new_context(user_agent=USER_AGENT)
     page = await context.new_page()
     return browser, context, page
@@ -549,30 +557,31 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
             print(f"  - {r['name']} ({r['slug']})")
         print()
 
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            try:
-                for i, r in enumerate(today_races):
-                    race_name = r["name"]
-                    r_slug = r["slug"]
-                    r_date = r.get("date", "")
-                    stage_num = r.get("stage_num")  # set for stage races detected by date range
-                    if stage_num:
-                        print(f"\n--- Processing: {race_name} (stage {stage_num}) ---")
-                    else:
-                        print(f"\n--- Processing: {race_name} ---")
-                    slugs = await _import_single_race(
-                        supabase, browser, r_slug, race_name, r_date,
-                        with_ranking=False,  # auto mode skips ranking (use pre-auction)
-                        target_stage=stage_num,
-                    )
-                    all_imported_slugs.extend(slugs)
-                    # Wait between races
-                    if i < len(today_races) - 1:
-                        print("  Waiting 15s before next race...")
-                        await asyncio.sleep(15)
-            finally:
-                await browser.close()
+        from browser_session import NodriverBrowser
+        _session = NodriverBrowser()
+        browser = await _session.start()
+        try:
+            for i, r in enumerate(today_races):
+                race_name = r["name"]
+                r_slug = r["slug"]
+                r_date = r.get("date", "")
+                stage_num = r.get("stage_num")  # set for stage races detected by date range
+                if stage_num:
+                    print(f"\n--- Processing: {race_name} (stage {stage_num}) ---")
+                else:
+                    print(f"\n--- Processing: {race_name} ---")
+                slugs = await _import_single_race(
+                    supabase, browser, r_slug, race_name, r_date,
+                    with_ranking=False,  # auto mode skips ranking (use pre-auction)
+                    target_stage=stage_num,
+                )
+                all_imported_slugs.extend(slugs)
+                # Wait between races
+                if i < len(today_races) - 1:
+                    print("  Waiting 15s before next race...")
+                    await asyncio.sleep(15)
+        finally:
+            await browser.close()
     else:
         if not race_slug:
             print("ERROR: --race is required when not using --auto")
@@ -584,16 +593,17 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
         print(f"Date : {race_date_val or '(not in calendar)'}")
         print()
 
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            try:
-                slugs = await _import_single_race(
-                    supabase, browser, race_slug, race_name, race_date_val,
-                    with_ranking=with_ranking,
-                )
-                all_imported_slugs.extend(slugs)
-            finally:
-                await browser.close()
+        from browser_session import NodriverBrowser
+        _session = NodriverBrowser()
+        browser = await _session.start()
+        try:
+            slugs = await _import_single_race(
+                supabase, browser, race_slug, race_name, race_date_val,
+                with_ranking=with_ranking,
+            )
+            all_imported_slugs.extend(slugs)
+        finally:
+            await browser.close()
 
     # Calculate daily scores with the actual race slugs imported
     print()
@@ -717,7 +727,7 @@ async def run_pre_auction() -> None:
 
     print("--- Updating global PCS ranking (top 600) ---")
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=SCRAPER_HEADLESS)
         try:
             ranking_result = await update_global_ranking(supabase, browser, pages=6)
             print(f"  Updated: {ranking_result['updated']} riders (from {ranking_result['total_in_ranking']} ranked)")
@@ -744,7 +754,7 @@ async def run_detect_dnfs(race_slug: str, stage_number: int) -> None:
     print(f"=== Detect DNFs: {race_slug} (stage {stage_number}) ===")
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=SCRAPER_HEADLESS)
         context = await browser.new_context(user_agent=USER_AGENT)
         try:
             page = await context.new_page()

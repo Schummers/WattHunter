@@ -284,18 +284,11 @@ async def update_global_ranking(supabase: Client, browser, *, pages: int = 6) ->
 
         try:
             if offset == 0:
-                fetch_url = "https://www.procyclingstats.com/rankings/me/individual"
+                rel_url = "rankings/me/individual"
             else:
-                fetch_url = "https://www.procyclingstats.com/rankings.php?p=me&s=individual&offset={}&filter=Filter".format(offset)
+                rel_url = "rankings.php?p=me&s=individual&offset={}&filter=Filter".format(offset)
 
-            await asyncio.sleep(4)
-            await page.goto(fetch_url, wait_until="domcontentloaded")
-            await page.wait_for_timeout(6000)
-
-            html = await page.content()
-            if any(m in html for m in ["Just a moment", "Checking your browser"]):
-                logger.warning("Cloudflare blocked at offset=%d", offset)
-                break
+            html = await fetch_html(page, rel_url, delay=4.0)
 
             ranking = Ranking("rankings/me/individual", html=html, update_html=False)
             ranking_entries = ranking.individual_ranking()

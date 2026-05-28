@@ -1,7 +1,7 @@
 """
 PCS sync logic — wraps procyclingstats and writes to Supabase.
-Uses Playwright to bypass Cloudflare bot-protection on procyclingstats.com.
-Requires residential IP (Cloudflare blocks datacenter IPs like GitHub Actions).
+Uses nodriver (real Chrome) to bypass Cloudflare bot-protection on procyclingstats.com.
+Requires residential IP — Cloudflare blocks datacenter IPs like GitHub Actions.
 """
 from __future__ import annotations
 
@@ -60,15 +60,20 @@ def calculate_monthly_salary(pcs_points_1yr: int) -> int:
     return max(SALARY_FLOOR, int(monthly // 100 * 100))
 
 
-CLOUDFLARE_MARKERS = ["Just a moment", "Checking your browser", "cf-browser-verification"]
+CLOUDFLARE_MARKERS = ["Just a moment", "Checking your browser", "cf-browser-verification",
+                      "Un instant", "Vérification de sécurité"]
 
 
 async def fetch_html(page, url: str, delay: float = 4.0) -> str:
-    """Fetch a page using Playwright to bypass Cloudflare, return HTML."""
+    """Fetch a page via nodriver NodriverPage, return HTML.
+
+    `page` is a NodriverPage (or Playwright page) — navigates to the URL,
+    waits for DOM ready, then returns page.content().
+    """
     await asyncio.sleep(delay)
     full_url = f"https://www.procyclingstats.com/{url}"
     await page.goto(full_url, wait_until="domcontentloaded")
-    # Wait for content to load past Cloudflare challenge
+    # Extra wait for JS-rendered content (same as original Playwright approach)
     await page.wait_for_timeout(5000)
     html = await page.content()
     if any(marker in html for marker in CLOUDFLARE_MARKERS):
