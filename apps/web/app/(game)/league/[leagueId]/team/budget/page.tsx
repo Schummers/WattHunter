@@ -4,6 +4,10 @@ import { getUser } from "@/lib/supabase/get-user";
 import { AUCTION_PHASES, getCurrentPhase, getPhaseRange } from "@/lib/phases";
 import { BudgetClient } from "./budget-client";
 import type { SponsorRow } from "@/lib/sponsors";
+import {
+  DEMO_LEAGUE_SLUG,
+  DEMO_VISITOR_TEAM_ID,
+} from "@/lib/demo-constants";
 
 export default async function BudgetPage({
   params,
@@ -14,6 +18,9 @@ export default async function BudgetPage({
 }) {
   const { leagueId } = await params;
   const sp = await searchParams;
+
+  if (leagueId === DEMO_LEAGUE_SLUG) return await renderDemoTeamBudget(sp.phase);
+
   const supabase = await createClient();
 
   const user = await getUser();
@@ -100,6 +107,92 @@ export default async function BudgetPage({
   return (
     <BudgetClient
       leagueId={leagueId}
+      treasury={team.treasury}
+      level={team.level}
+      sponsorIncome={sponsorIncome}
+      bonusIncome={bonusIncome}
+      phaseSalaries={phaseSalaries}
+      transactions={mappedTransactions}
+      phaseIndex={phaseIndex}
+      currentSponsor={sponsorRow as SponsorRow | null}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Demo path — anonymous visitor, no auth required
+// ---------------------------------------------------------------------------
+async function renderDemoTeamBudget(phaseParam?: string) {
+  const supabase = await createClient();
+  const teamId = DEMO_VISITOR_TEAM_ID;
+
+  const { data: team } = await supabase
+    .from("teams")
+    .select("id, treasury, level, name")
+    .eq("id", teamId)
+    .single();
+
+  if (!team) return <p className="text-[var(--text-mid)]">Demo team not found.</p>;
+
+  const currentPhase = getCurrentPhase();
+  const defaultIndex = AUCTION_PHASES.findIndex((p) => p.id === currentPhase.id);
+  const rawPhase = phaseParam != null ? parseInt(phaseParam, 10) : defaultIndex;
+  const phaseIndex = rawPhase >= 0 && rawPhase < AUCTION_PHASES.length ? rawPhase : (defaultIndex >= 0 ? defaultIndex : 0);
+  const selectedPhase = AUCTION_PHASES[phaseIndex];
+
+  const year = new Date().getFullYear();
+  const { start, end } = getPhaseRange(selectedPhase, year);
+
+  const [
+    { data: teamSponsor },
+    { data: transactions },
+    { data: phaseTotals },
+  ] = await Promise.all([
+    supabase
+      .from("team_sponsors")
+      .select("id, sponsor_id, activated_at, sponsors(*)")
+      .eq("team_id", team.id)
+      .maybeSingle(),
+    supabase
+      .from("treasury_log")
+      .select("*, riders:rider_id(photo_url, full_name)")
+      .eq("team_id", team.id)
+      .gte("created_at", start.toISOString())
+      .lte("created_at", end.toISOString())
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("treasury_log")
+      .select("amount, type")
+      .eq("team_id", team.id)
+      .gte("created_at", start.toISOString())
+      .lte("created_at", end.toISOString()),
+  ]);
+
+  const totals = phaseTotals ?? [];
+  const sponsorIncome = totals.filter((t) => t.type === "sponsor_payment").reduce((sum, t) => sum + t.amount, 0);
+  const bonusIncome = totals.filter((t) => t.type === "sponsor_bonus").reduce((sum, t) => sum + t.amount, 0);
+  const phaseSalaries = totals.filter((t) => t.type === "payday_salary").reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+  const sponsorRow = teamSponsor?.sponsors
+    ? (Array.isArray(teamSponsor.sponsors) ? teamSponsor.sponsors[0] : teamSponsor.sponsors)
+    : null;
+
+  const mappedTransactions = (transactions ?? []).map((t: Record<string, unknown>) => {
+    const rider = t.riders as { photo_url: string | null; full_name: string } | null;
+    return {
+      id: t.id as string,
+      type: t.type as string,
+      amount: t.amount as number,
+      description: t.description as string | null,
+      created_at: t.created_at as string,
+      rider_photo_url: rider?.photo_url ?? null,
+      rider_name: rider?.full_name ?? null,
+    };
+  });
+
+  return (
+    <BudgetClient
+      leagueId={DEMO_LEAGUE_SLUG}
       treasury={team.treasury}
       level={team.level}
       sponsorIncome={sponsorIncome}
