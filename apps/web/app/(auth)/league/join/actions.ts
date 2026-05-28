@@ -50,7 +50,12 @@ export async function signupAndJoinLeague(
     { id: userId, display_name: team_name, avatar_url: null },
     { onConflict: "id" }
   );
-  if (userError) return { error: `User profile error: ${userError.message}` };
+  if (userError) {
+    // Sign out to avoid leaving the visitor authenticated with no profile —
+    // otherwise re-submitting the form would hit "User already registered".
+    await supabase.auth.signOut();
+    return { error: `User profile error: ${userError.message}` };
+  }
 
   // 3. Join via RPC
   const { data: rpcResult, error: rpcError } = await supabase.rpc("join_league_by_code", {
@@ -58,7 +63,10 @@ export async function signupAndJoinLeague(
     p_team_name: team_name,
   });
 
-  if (rpcError) return { error: rpcError.message };
+  if (rpcError) {
+    await supabase.auth.signOut();
+    return { error: rpcError.message };
+  }
 
   // The RPC returns { ok, league_id, team_id, starting_level, ... } on success
   // and { error: '...' } (no 'ok' key) on error paths.
@@ -74,6 +82,7 @@ export async function signupAndJoinLeague(
 
   if (!r || r.error || !r.ok || !r.league_id) {
     const errMsg = r?.error ?? "Failed to join league.";
+    await supabase.auth.signOut();
     if (errMsg.includes("not found")) return { error: "Invalid code. Check with your Race Director." };
     if (errMsg.includes("full")) return { error: "This league is full." };
     if (errMsg.includes("ended")) return { error: "This league has ended." };

@@ -160,6 +160,7 @@ export async function GET(request: Request) {
       const joinErrorUrl = new URL(`${origin}/league/join`);
       joinErrorUrl.searchParams.set("error", errorSlug);
       joinErrorUrl.searchParams.set("code", intent.code);
+      joinErrorUrl.searchParams.set("team_name", intent.team_name);
       const response = NextResponse.redirect(joinErrorUrl.toString());
       for (const { name, value, options } of pendingCookies) {
         response.cookies.set(name, value, options);

@@ -197,6 +197,9 @@ export async function signupAndCreateLeague(
       { onConflict: "id" }
     );
   if (userError) {
+    // Sign out to avoid leaving the visitor authenticated with no profile —
+    // otherwise re-submitting the form would hit "User already registered".
+    await supabase.auth.signOut();
     return { error: `User profile error: ${userError.message}` };
   }
 
@@ -214,6 +217,7 @@ export async function signupAndCreateLeague(
 
   if (result.error || !result.leagueId) {
     console.error("League creation failed:", result.error);
+    await supabase.auth.signOut();
     return { error: result.error ?? "Failed to create league." };
   }
 

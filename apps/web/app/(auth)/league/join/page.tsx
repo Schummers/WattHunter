@@ -30,11 +30,12 @@ export default function JoinLeaguePage() {
 function JoinLeagueForm() {
   const searchParams = useSearchParams();
   const prefilledCode = searchParams.get("code")?.toUpperCase() ?? "";
+  const prefilledTeamName = searchParams.get("team_name") ?? "";
   const oauthError = searchParams.get("error");
 
   const [step, setStep] = useState<1 | 2>(1);
   const [code, setCode] = useState(prefilledCode);
-  const [teamName, setTeamName] = useState("");
+  const [teamName, setTeamName] = useState(prefilledTeamName);
   const [step1Error, setStep1Error] = useState<string | null>(
     oauthError ? (OAUTH_ERROR_MESSAGES[oauthError] ?? OAUTH_ERROR_MESSAGES.unknown) : null
   );
@@ -43,6 +44,10 @@ function JoinLeagueForm() {
   useEffect(() => {
     if (prefilledCode) setCode(prefilledCode);
   }, [prefilledCode]);
+
+  useEffect(() => {
+    if (prefilledTeamName) setTeamName(prefilledTeamName);
+  }, [prefilledTeamName]);
 
   function handleNext(e: React.FormEvent) {
     e.preventDefault();

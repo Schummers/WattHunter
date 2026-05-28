@@ -4,12 +4,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Hoisted mocks — declared before any imports that consume them.
 // ---------------------------------------------------------------------------
 
-const { mockFrom, mockGetUser, mockSignUp, mockSignInWithPassword, mockRedirect } =
+const { mockFrom, mockGetUser, mockSignUp, mockSignInWithPassword, mockSignOut, mockRedirect } =
   vi.hoisted(() => ({
     mockFrom: vi.fn(),
     mockGetUser: vi.fn(),
     mockSignUp: vi.fn(),
     mockSignInWithPassword: vi.fn(),
+    mockSignOut: vi.fn(),
     mockRedirect: vi.fn(),
   }));
 
@@ -20,6 +21,7 @@ vi.mock("@/lib/supabase/server", () => ({
       getUser: mockGetUser,
       signUp: mockSignUp,
       signInWithPassword: mockSignInWithPassword,
+      signOut: mockSignOut,
     },
   })),
 }));
@@ -59,6 +61,7 @@ function fluentQuery(result: { data: unknown; error: unknown | null }) {
 describe("signupAndCreateLeague action", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSignOut.mockResolvedValue({ error: null });
   });
 
   it("rejects when league name is too short", async () => {
@@ -109,6 +112,68 @@ describe("signupAndCreateLeague action", () => {
     );
 
     expect(result).toMatchObject({ error: expect.stringContaining("Email already") });
+  });
+
+  it("signs out when public.users upsert fails after signUp succeeds", async () => {
+    mockSignUp.mockResolvedValue({
+      data: {
+        user: { id: "user-1", email: "new@b.com", user_metadata: {} },
+        session: { access_token: "tok" },
+      },
+      error: null,
+    });
+    const failingUpsert = fluentQuery({ data: null, error: { message: "FK violation" } });
+    mockFrom.mockReturnValueOnce(failingUpsert);
+
+    const result = await signupAndCreateLeague(
+      null,
+      makeFormData({
+        league_name: "Test League",
+        team_name: "MyTeam",
+        email: "new@b.com",
+        password: "secret123",
+        confirm_password: "secret123",
+      })
+    );
+
+    expect(result).toMatchObject({ error: expect.stringContaining("User profile error") });
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockRedirect).not.toHaveBeenCalled();
+  });
+
+  it("signs out when league creation fails after signUp succeeds", async () => {
+    mockSignUp.mockResolvedValue({
+      data: {
+        user: { id: "user-1", email: "new@b.com", user_metadata: {} },
+        session: { access_token: "tok" },
+      },
+      error: null,
+    });
+    const userUpsert = fluentQuery({ data: null, error: null });
+    // Invite-code collision check passes (no collision = .single() returns no row)
+    const inviteCodeCheck = fluentQuery({ data: null, error: { code: "PGRST116" } });
+    // League insert fails — surfaces via createLeagueWithTeam result.error
+    const leagueInsert = fluentQuery({ data: null, error: { message: "leagues insert failed" } });
+
+    mockFrom
+      .mockReturnValueOnce(userUpsert)
+      .mockReturnValueOnce(inviteCodeCheck)
+      .mockReturnValueOnce(leagueInsert);
+
+    const result = await signupAndCreateLeague(
+      null,
+      makeFormData({
+        league_name: "Test League",
+        team_name: "MyTeam",
+        email: "new@b.com",
+        password: "secret123",
+        confirm_password: "secret123",
+      })
+    );
+
+    expect(result).toMatchObject({ error: expect.any(String) });
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockRedirect).not.toHaveBeenCalled();
   });
 
   it("creates account + league + team + sponsor + member on success", async () => {

@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockFrom, mockRpc, mockGetUser, mockSignUp, mockRedirect } = vi.hoisted(() => ({
+const { mockFrom, mockRpc, mockGetUser, mockSignUp, mockSignOut, mockRedirect } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
   mockRpc: vi.fn(),
   mockGetUser: vi.fn(),
   mockSignUp: vi.fn(),
+  mockSignOut: vi.fn(),
   mockRedirect: vi.fn(),
 }));
 
@@ -12,7 +13,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
     from: mockFrom,
     rpc: mockRpc,
-    auth: { getUser: mockGetUser, signUp: mockSignUp },
+    auth: { getUser: mockGetUser, signUp: mockSignUp, signOut: mockSignOut },
   })),
 }));
 
@@ -31,6 +32,7 @@ function makeFormData(fields: Record<string, string>): FormData {
 describe("signupAndJoinLeague action", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSignOut.mockResolvedValue({ error: null });
   });
 
   it("rejects invalid code", async () => {
@@ -82,7 +84,7 @@ describe("signupAndJoinLeague action", () => {
     expect(result).toMatchObject({ error: expect.stringContaining("Email already") });
   });
 
-  it("maps 'League not found' RPC error", async () => {
+  it("maps 'League not found' RPC error and signs out", async () => {
     mockSignUp.mockResolvedValue({
       data: { user: { id: "user-1" }, session: { access_token: "tok" } },
       error: null,
@@ -108,6 +110,32 @@ describe("signupAndJoinLeague action", () => {
     );
 
     expect(result).toMatchObject({ error: expect.stringContaining("Invalid code") });
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it("signs out when public.users upsert fails after signUp succeeds", async () => {
+    mockSignUp.mockResolvedValue({
+      data: { user: { id: "user-1" }, session: { access_token: "tok" } },
+      error: null,
+    });
+    mockFrom.mockReturnValue({
+      upsert: vi.fn().mockResolvedValue({ error: { message: "FK violation" } }),
+    });
+
+    const result = await signupAndJoinLeague(
+      null,
+      makeFormData({
+        code: "ABCDEF",
+        team_name: "MyTeam",
+        email: "a@b.com",
+        password: "secret123",
+        confirm_password: "secret123",
+      })
+    );
+
+    expect(result).toMatchObject({ error: expect.stringContaining("User profile error") });
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 
   it("creates account + joins league + redirects on success", async () => {
