@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { claimDnfRefund } from "@/app/(game)/league/[leagueId]/team/gt/actions";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 import { Button } from "@/components/ui/button";
 
@@ -33,6 +34,7 @@ export function GtDnfCard({
   hasActiveBid,
 }: GtDnfCardProps) {
   const router = useRouter();
+  const claimDnfRefundSafe = useDemoSafeAction(claimDnfRefund);
   const [loading, setLoading] = useState(false);
   const [claimed, setClaimed] = useState(initialClaimed ?? false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +48,8 @@ export function GtDnfCard({
   async function handleRefund() {
     setLoading(true);
     setError(null);
-    const result = await claimDnfRefund(gtSquadId, contractId, leagueId);
+    const result = await claimDnfRefundSafe(gtSquadId, contractId, leagueId);
+    if (result && "blocked" in result) { setLoading(false); return; }
     if ("error" in result) {
       setError(result.error);
       setLoading(false);
@@ -64,7 +67,8 @@ export function GtDnfCard({
     }
     setLoading(true);
     setError(null);
-    const result = await claimDnfRefund(gtSquadId, contractId, leagueId);
+    const result = await claimDnfRefundSafe(gtSquadId, contractId, leagueId);
+    if (result && "blocked" in result) { setLoading(false); return; }
     if ("error" in result) {
       setError(result.error);
       setLoading(false);

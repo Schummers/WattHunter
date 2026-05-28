@@ -6,6 +6,7 @@ import { Search, X, ArrowLeft } from "lucide-react"
 import { RiderCard } from "@/components/rider-card"
 import { StickyBar } from "@/components/sticky-bar"
 import { placeEmergencyBid } from "@/app/(game)/league/[leagueId]/team/gt/rescue/actions"
+import { useDemoSafeAction } from "@/contexts/demo-context"
 import { formatThousands, countryCodeToFlag, calcMinSalary, formatEuro } from "@/lib/format"
 import { getReplaceWindowClosesAt } from "@/lib/gt-stage-schedule"
 
@@ -38,6 +39,7 @@ function formatName(fullName: string): string {
 
 export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existingBid }: Props) {
   const router = useRouter()
+  const placeEmergencyBidSafe = useDemoSafeAction(placeEmergencyBid)
   const [isPending, startTransition] = useTransition()
   const [search, setSearch] = useState("")
   const [selectedRiderId, setSelectedRiderId] = useState<string | null>(null)
@@ -91,7 +93,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
     if (!selectedRiderId || !bidAmount) return
     setError(null)
     startTransition(async () => {
-      const result = await placeEmergencyBid({
+      const result = await placeEmergencyBidSafe({
         riderId: selectedRiderId,
         amount: bidAmount,
         phaseId: gtPhase.phaseId,
@@ -99,6 +101,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
         gtYear: gtPhase.gtYear,
         leagueId,
       })
+      if (result && "blocked" in result) return
       if (result && "error" in result && result.error) {
         setError(result.error)
         return

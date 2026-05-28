@@ -5,6 +5,7 @@ import { AlertTriangle, ArrowLeft, Swords } from "lucide-react";
 import { findTactic } from "@/lib/tactics";
 import type { GtStage } from "@/lib/gt-stages";
 import { placeTactic } from "@/app/(game)/league/[leagueId]/team/gt/tactics/actions";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 import { ModalShell, ModalHeader } from "./tactic-modal-shell";
 import { StageList } from "./tactic-stage-list";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ export function TacticNemesisModal({
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const router = useRouter();
+  const placeTacticSafe = useDemoSafeAction(placeTactic);
 
   const rival = eligibleRivals.find((r) => r.teamId === selectedRival);
 
@@ -51,13 +53,14 @@ export function TacticNemesisModal({
     setErr(null);
     startTransition(async () => {
       try {
-        await placeTactic({
+        const result = await placeTacticSafe({
           teamId, phaseId, year,
           tacticType: tacticId,
           stageSlug: selectedStage,
           nemesisTargetTeamId: selectedRival,
           nemesisTargetRole: isGc ? "gc_leader" : "sprinter",
         });
+        if (result && typeof result === "object" && "blocked" in result) return;
         router.refresh();
         onClose();
       } catch (e: unknown) {

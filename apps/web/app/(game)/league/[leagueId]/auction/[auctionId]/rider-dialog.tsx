@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { countryCodeToFlag } from "@/lib/format";
 import { placeBid, cancelBid } from "./actions";
 import { computeAvailableBudget } from "@/lib/budget";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 
 interface Rider {
   id: string;
@@ -71,6 +72,8 @@ export function RiderDialog({
   );
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
+  const placeBidSafe = useDemoSafeAction(placeBid);
+  const cancelBidSafe = useDemoSafeAction(cancelBid);
 
   if (!rider) return null;
 
@@ -90,12 +93,13 @@ export function RiderDialog({
   function handleSubmit() {
     setError("");
     startTransition(async () => {
-      const result = await placeBid({
+      const result = await placeBidSafe({
         auctionId,
         riderId: rider!.id,
         amount: numAmount,
         round: currentRound,
       });
+      if (result && "blocked" in result) return;
       if (result.error) {
         setError(result.error);
       } else {
@@ -107,7 +111,8 @@ export function RiderDialog({
   function handleCancel() {
     if (!existingBid) return;
     startTransition(async () => {
-      const result = await cancelBid(existingBid.id, auctionId);
+      const result = await cancelBidSafe(existingBid.id, auctionId);
+      if (result && "blocked" in result) return;
       if (result.error) {
         setError(result.error);
       } else {

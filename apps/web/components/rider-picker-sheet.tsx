@@ -11,6 +11,7 @@ import {
   type GtRole,
   type GtPhaseId,
 } from "@/app/(game)/league/[leagueId]/team/gt/actions";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 
 const ROLE_LABEL: Record<GtRole, string> = {
   gc_leader: "GC Leader",
@@ -54,6 +55,10 @@ export function RiderPickerSheet({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const addToSquadSafe = useDemoSafeAction(addToSquad);
+  const swapSlotSafe = useDemoSafeAction(swapSlot);
+  const swapSquadRolesSafe = useDemoSafeAction(swapSquadRoles);
+  const removeFromSquadSafe = useDemoSafeAction(removeFromSquad);
 
   if (!open) return null;
 
@@ -65,11 +70,11 @@ export function RiderPickerSheet({
     start(async () => {
       let result;
       if (mode === "fill") {
-        result = await addToSquad({ teamId, riderId: selectedId, role, phaseId, year });
+        result = await addToSquadSafe({ teamId, riderId: selectedId, role, phaseId, year });
       } else if (currentRiderId) {
         const selectedEntry = availableRiders.find((r) => r.riderId === selectedId);
         if (selectedEntry?.in_squad) {
-          result = await swapSquadRoles({
+          result = await swapSquadRolesSafe({
             teamId,
             riderAId: currentRiderId,
             roleA: role,
@@ -79,12 +84,13 @@ export function RiderPickerSheet({
             year,
           });
         } else {
-          result = await swapSlot({ teamId, oldRiderId: currentRiderId, newRiderId: selectedId, phaseId, year });
+          result = await swapSlotSafe({ teamId, oldRiderId: currentRiderId, newRiderId: selectedId, phaseId, year });
         }
       } else {
         result = { error: "No current rider for swap" } as const;
       }
 
+      if (result && typeof result === "object" && "blocked" in result) return;
       if ("error" in result) {
         setErr(result.error);
       } else {
@@ -98,7 +104,8 @@ export function RiderPickerSheet({
     if (!currentRiderId) return;
     setErr(null);
     start(async () => {
-      const result = await removeFromSquad({ teamId, riderId: currentRiderId, phaseId, year });
+      const result = await removeFromSquadSafe({ teamId, riderId: currentRiderId, phaseId, year });
+      if (result && typeof result === "object" && "blocked" in result) return;
       if ("error" in result) {
         setErr(result.error);
       } else {

@@ -5,6 +5,7 @@ import { FilterChips } from "@/components/filter-chips";
 import { AchievementCard } from "@/components/achievement-card";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { equipAchievement } from "./actions";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 
 const MONUMENT_GROUPS = [
   { label: "Paris-Roubaix",        prefix: "paris-roubaix" },
@@ -36,10 +37,12 @@ export function AchievementsClient({
 }: AchievementsClientProps) {
   const [activeFilter, setActiveFilter] = useState(0);
   const [isPending, startTransition] = useTransition();
+  const equipAchievementSafe = useDemoSafeAction(equipAchievement);
 
   function handleEquip(slug: string) {
     startTransition(async () => {
-      const result = await equipAchievement(leagueId, slug);
+      const result = await equipAchievementSafe(leagueId, slug);
+      if (result && "blocked" in result) return;
       if (result?.error) {
         console.error("Failed to equip achievement:", result.error);
       }
