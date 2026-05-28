@@ -34,10 +34,12 @@ export async function updateSession(request: NextRequest) {
   const publicPaths = ["/login", "/signup", "/auth", "/onboarding", "/forgot-password", "/reset-password", "/privacy", "/terms", "/prototype"];
   // Exact-match for league entry pages to avoid accidentally unlocking sub-routes
   const publicExactPaths = ["/league/create", "/league/join", "/league/choose"];
+  const publicPrefixPaths = ["/league/demo"];
   const isPublic =
     request.nextUrl.pathname === "/" ||
     publicPaths.some((p) => request.nextUrl.pathname.startsWith(p)) ||
-    publicExactPaths.includes(request.nextUrl.pathname);
+    publicExactPaths.includes(request.nextUrl.pathname) ||
+    publicPrefixPaths.some((p) => request.nextUrl.pathname.startsWith(p));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
