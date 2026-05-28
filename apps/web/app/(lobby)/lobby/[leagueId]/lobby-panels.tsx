@@ -109,6 +109,7 @@ export function LobbyPanels({
           selected={selectedLevel}
           recommended={recommendedLevel}
           isCommissioner={isCommissioner}
+          disabled={savingLevel}
           onSelect={handleLevelChange}
         />
         <LevelStatsCards level={selectedLevel} />

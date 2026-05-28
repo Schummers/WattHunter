@@ -51,4 +51,21 @@ describe("LevelSelector", () => {
       screen.getByText("Only the Race Director can change the starting level.")
     ).toBeInTheDocument();
   });
+
+  it("ignores clicks while disabled (saving in flight)", () => {
+    const onSelect = vi.fn();
+    render(
+      <LevelSelector
+        selected={3}
+        recommended={3}
+        isCommissioner
+        disabled
+        onSelect={onSelect}
+      />
+    );
+    const level5 = screen.getByRole("radio", { name: /Level 5/ });
+    expect(level5).toBeDisabled();
+    fireEvent.click(level5);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
 });

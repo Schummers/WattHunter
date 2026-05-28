@@ -6,6 +6,8 @@ export interface LevelSelectorProps {
   selected: number;
   recommended: number;
   isCommissioner: boolean;
+  /** Disable interaction while a previous selection is still being persisted. */
+  disabled?: boolean;
   onSelect: (level: number) => void;
 }
 
@@ -13,8 +15,10 @@ export function LevelSelector({
   selected,
   recommended,
   isCommissioner,
+  disabled = false,
   onSelect,
 }: LevelSelectorProps) {
+  const interactive = isCommissioner && !disabled;
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
@@ -35,14 +39,14 @@ export function LevelSelector({
               role="radio"
               aria-checked={isSelected}
               aria-label={`Level ${lvl.level}${isRecommended ? " (recommended)" : ""}`}
-              disabled={!isCommissioner}
-              onClick={() => isCommissioner && onSelect(lvl.level)}
+              disabled={!interactive}
+              onClick={() => interactive && onSelect(lvl.level)}
               className={[
                 "relative inline-flex h-9 items-center justify-center rounded-[var(--radius-md)] border px-3 font-mono text-[length:var(--type-body)] font-semibold transition-colors",
                 isSelected
                   ? "border-[var(--accent-default)] bg-[var(--badge-bg)] text-[var(--accent-label)]"
                   : "border-[var(--border-default)] text-[var(--text-mid)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-high)]",
-                !isCommissioner && !isSelected ? "opacity-60" : "",
+                !interactive && !isSelected ? "opacity-60" : "",
                 "disabled:cursor-not-allowed",
               ].join(" ")}
             >
