@@ -90,8 +90,9 @@ describe("signupAndJoinLeague action", () => {
     mockFrom.mockReturnValue({
       upsert: vi.fn().mockResolvedValue({ error: null }),
     });
+    // Real RPC returns { error: '...' } without an 'ok' key on error paths
     mockRpc.mockResolvedValue({
-      data: { ok: false, error: "League not found" },
+      data: { error: "League not found" },
       error: null,
     });
 
@@ -114,11 +115,23 @@ describe("signupAndJoinLeague action", () => {
       data: { user: { id: "user-1" }, session: { access_token: "tok" } },
       error: null,
     });
-    mockFrom.mockReturnValue({
-      upsert: vi.fn().mockResolvedValue({ error: null }),
-    });
+
+    const sponsorLookup = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { id: "sponsor-1" }, error: null }),
+    };
+    const teamSponsorInsert = {
+      insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+    };
+
+    mockFrom
+      .mockReturnValueOnce({ upsert: vi.fn().mockResolvedValue({ error: null }) }) // users upsert
+      .mockReturnValueOnce(sponsorLookup)      // sponsors lookup (I1 auto-assign)
+      .mockReturnValueOnce(teamSponsorInsert); // team_sponsors insert
+
     mockRpc.mockResolvedValue({
-      data: { ok: true, league_id: "league-1", late_join: false, team_id: "team-1" },
+      data: { ok: true, league_id: "league-1", late_join: false, already_member: false, team_id: "team-1", starting_level: 1 },
       error: null,
     });
     mockRedirect.mockImplementation(() => {
