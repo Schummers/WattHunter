@@ -509,9 +509,14 @@ export function InviteSection({ inviteCode }: InviteSectionProps) {
       : `/league/join?code=${inviteCode}`;
 
   async function copy(value: string, setter: (v: boolean) => void) {
-    await navigator.clipboard.writeText(value);
-    setter(true);
-    setTimeout(() => setter(false), 2000);
+    try {
+      await navigator.clipboard.writeText(value);
+      setter(true);
+      setTimeout(() => setter(false), 2000);
+    } catch {
+      // Clipboard API unavailable (insecure context or permission denied).
+      // The user can still select-all in the read-only input and copy manually.
+    }
   }
 
   return (
