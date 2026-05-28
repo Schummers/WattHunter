@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { signupAndJoinLeague } from "./actions";
@@ -13,6 +13,14 @@ import { createClient } from "@/lib/supabase/browser";
 import { setSignupIntentCookie } from "@/app/auth/callback/oauth-intent";
 
 export default function JoinLeaguePage() {
+  return (
+    <Suspense fallback={null}>
+      <JoinLeagueForm />
+    </Suspense>
+  );
+}
+
+function JoinLeagueForm() {
   const searchParams = useSearchParams();
   const prefilledCode = searchParams.get("code")?.toUpperCase() ?? "";
 
