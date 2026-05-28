@@ -7,6 +7,8 @@ import { BottomNav } from "@/components/bottom-nav";
 import { EmailConfirmationBanner } from "@/components/email-confirmation-banner";
 import { RailProvider } from "@/contexts/rail-context";
 import { LeagueShell } from "./league-shell";
+import { DemoLeagueLayout } from "./demo-layout";
+import { DEMO_LEAGUE_SLUG } from "@/lib/demo-constants";
 
 export default async function LeagueLayout({
   children,
@@ -16,6 +18,11 @@ export default async function LeagueLayout({
   params: Promise<{ leagueId: string }>;
 }) {
   const { leagueId } = await params;
+
+  if (leagueId === DEMO_LEAGUE_SLUG) {
+    return <DemoLeagueLayout>{children}</DemoLeagueLayout>;
+  }
+
   const supabase = await createClient();
 
   const user = await getUser();
