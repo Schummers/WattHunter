@@ -300,16 +300,36 @@ Sinon → /onboarding
 
 ### Flux supportes
 
-1. **Google OAuth** — Redirection vers Google, callback sur `/auth/callback`
-2. **Email/mot de passe** — Inscription avec nom d'utilisateur + confirmation MDP, connexion directe
+1. **Combined signup** (par defaut depuis 2026-05) — `/league/create` et `/league/join` sont publics. Visiteur cree son compte + sa league/team en un seul flux 2-ecrans :
+   - Ecran 1 : league name / team name / email (ou invite code + team name pour join), boutons "Next" + "Continue with Google".
+   - Ecran 2 : password + confirm password, submit via server action `signupAndCreateLeague` / `signupAndJoinLeague`.
+   - Google OAuth : avant `signInWithOAuth`, depose un cookie `signup_intent` (10 min, httpOnly, sameSite=lax) contenant les donnees du formulaire. Le callback lit ce cookie et termine la creation / le join.
+2. **Google OAuth direct** (login classique) — `/login` → `signInWithOAuth` → `/auth/callback`.
+3. **Email/mot de passe classique** — `/signup` simplifie (email + password seulement, plus de champ username — derive du prefix email).
+
+Email confirmation Supabase **desactivee** (Dashboard → Auth → Email → "Confirm email" = OFF). `auth.signUp()` retourne une session immediatement. Le composant `EmailConfirmationBanner` (monte dans le layout `(game)/league/[leagueId]/layout.tsx`) propose au user de confirmer son email pour recovery, dismissable.
+
+### Server actions
+
+- `apps/web/app/(auth)/league/create/actions.ts` — exporte `createLeague` (legacy, user auth requise) et `signupAndCreateLeague` (combined signup pour visiteurs).
+- `apps/web/app/(auth)/league/join/actions.ts` — exporte `signupAndJoinLeague` (remplace l'ancien `joinLeague`). RPC `join_league_by_code(p_code, p_team_name)` etendu pour accepter le nom d'equipe (migration `20260527000000`).
+- Helper partage : `apps/web/lib/league-creation.ts` exporte `generateInviteCode()`.
+
+### Cookie helper
+
+- `apps/web/app/auth/callback/oauth-intent.ts` — `setSignupIntentCookie / readSignupIntentCookie / clearSignupIntentCookie` + type `SignupIntent`.
 
 ### Callback (`/auth/callback`)
 
-1. Echange le code pour une session (OAuth ou email confirmation)
-2. Verifie si le profil `users` existe
-3. Si non : cree le profil (display_name depuis metadata ou email)
-4. Si `has_onboarded = false` → `/onboarding`
-5. Sinon → `/`
+1. Echange le code pour une session (OAuth ou email confirmation).
+2. Verifie si le profil `users` existe, le cree au besoin.
+3. **Si cookie `signup_intent` present** : termine le flux create/join (insert league + team + sponsor + league_member, ou appelle `join_league_by_code`), efface le cookie, redirect vers `/league/[id]`.
+4. Si `type=recovery` → `/reset-password`.
+5. Sinon : redirect vers `next` (si valide) ou premiere league du user ou `/league/choose`.
+
+### Middleware
+
+`apps/web/lib/supabase/middleware.ts` declare `/league/create`, `/league/join`, `/league/choose` comme routes publiques (en plus de `/login`, `/signup`, `/auth`, etc.).
 
 ---
 
