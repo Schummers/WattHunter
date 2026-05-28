@@ -1779,6 +1779,10 @@ export type Database = {
         Returns: Json
       }
       launch_first_auction: { Args: { p_league_id: string }; Returns: Json }
+      set_starting_level: {
+        Args: { p_league_id: string; p_level: number }
+        Returns: Json
+      }
       leave_league: { Args: { p_league_id: string }; Returns: Json }
       place_bid: {
         Args: {

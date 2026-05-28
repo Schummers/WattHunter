@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AuctionExplainer } from "./_components/auction-explainer";
 import { GameLoopExplainer } from "./_components/game-loop-explainer";
@@ -10,6 +10,7 @@ import { LevelSelector } from "./_components/level-selector";
 import { LevelStatsCards } from "./_components/level-stats-cards";
 import { PlayerList } from "./_components/player-list";
 import { RiderPoolList } from "./_components/rider-pool-list";
+import { setStartingLevel } from "./actions";
 
 export interface LobbyLeague {
   id: string;
@@ -51,6 +52,22 @@ export function LobbyPanels({
   riders,
 }: LobbyPanelsProps) {
   const [selectedLevel, setSelectedLevel] = useState<number>(league.starting_level);
+  const [savingLevel, startSavingLevel] = useTransition();
+  const [levelError, setLevelError] = useState<string | null>(null);
+
+  function handleLevelChange(next: number) {
+    if (!isCommissioner) return;
+    const previous = selectedLevel;
+    setSelectedLevel(next);
+    setLevelError(null);
+    startSavingLevel(async () => {
+      const result = await setStartingLevel(league.id, next);
+      if (!result.ok) {
+        setSelectedLevel(previous);
+        setLevelError(result.error);
+      }
+    });
+  }
 
   return (
     <Tabs defaultValue="lobby" className="gap-4">
@@ -78,11 +95,20 @@ export function LobbyPanels({
 
       <TabsContent value="pool" className="space-y-6 pt-2">
         <GameLoopExplainer />
+        {isCommissioner && levelError ? (
+          <p className="text-[length:var(--type-caption)] text-[var(--status-danger)]">
+            {levelError}
+          </p>
+        ) : isCommissioner && savingLevel ? (
+          <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+            Saving…
+          </p>
+        ) : null}
         <LevelSelector
           selected={selectedLevel}
           recommended={recommendedLevel}
           isCommissioner={isCommissioner}
-          onSelect={setSelectedLevel}
+          onSelect={handleLevelChange}
         />
         <LevelStatsCards level={selectedLevel} />
         <RiderPoolList
