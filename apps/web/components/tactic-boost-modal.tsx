@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { findTactic, type TacticId } from "@/lib/tactics";
 import type { GtStage } from "@/lib/gt-stages";
 import { placeTactic } from "@/app/(game)/league/[leagueId]/team/gt/tactics/actions";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 import { ModalShell, ModalHeader, ModalActions } from "./tactic-modal-shell";
 import { StageList } from "./tactic-stage-list";
 
@@ -33,19 +34,21 @@ export function TacticBoostModal({
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const router = useRouter();
+  const placeTacticSafe = useDemoSafeAction(placeTactic);
 
   const handleSubmit = () => {
     if (!selectedStage) return;
     setErr(null);
     startTransition(async () => {
       try {
-        await placeTactic({
+        const result = await placeTacticSafe({
           teamId,
           phaseId,
           year,
           tacticType: tacticId,
           stageSlug: selectedStage,
         });
+        if (result && typeof result === "object" && "blocked" in result) return;
         router.refresh();
         onClose();
       } catch (e: unknown) {

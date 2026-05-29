@@ -12,6 +12,7 @@ import { formatThousands } from "@/lib/format";
 import { X } from "lucide-react";
 import { removeDraft, updateDraftAmount, validateRound } from "./actions";
 import { releaseRider } from "@/app/(game)/league/[leagueId]/rider/[riderId]/actions";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 import { ReleaseConfirmModal } from "@/components/release-confirm-modal";
 import { computeAvailableBudget } from "@/lib/budget";
 
@@ -111,6 +112,10 @@ export function AuctionsClient({
   stepperRounds,
 }: AuctionsClientProps) {
   const router = useRouter();
+  const removeDraftSafe = useDemoSafeAction(removeDraft);
+  const updateDraftAmountSafe = useDemoSafeAction(updateDraftAmount);
+  const releaseRiderSafe = useDemoSafeAction(releaseRider);
+  const validateRoundSafe = useDemoSafeAction(validateRound);
   const [drafts, setDrafts] = useState<DraftBid[]>(initialDrafts);
   const [releaseConfirm, setReleaseConfirm] = useState<string | null>(null);
   const [releaseError, setReleaseError] = useState<string | null>(null);
@@ -162,8 +167,8 @@ export function AuctionsClient({
     setDrafts((prev) => prev.filter((d) => d.riderId !== riderId));
     setValidateSuccess(false);
     setRoundResolved(false);
-    startTransition(() => {
-      removeDraft({ leagueId, riderId });
+    startTransition(async () => {
+      await removeDraftSafe({ leagueId, riderId });
     });
   }
 
@@ -182,7 +187,8 @@ export function AuctionsClient({
     );
     setValidateSuccess(false);
     setRoundResolved(false);
-    const result = await updateDraftAmount({ leagueId, riderId, amount: newAmount });
+    const result = await updateDraftAmountSafe({ leagueId, riderId, amount: newAmount });
+    if (result && "blocked" in result) { setDrafts(previousDrafts); return; }
     if (result?.error) {
       setDrafts(previousDrafts);
     }
@@ -197,7 +203,8 @@ export function AuctionsClient({
   }
 
   async function handleReleaseConfirm(contractId: string) {
-    const result = await releaseRider(contractId);
+    const result = await releaseRiderSafe(contractId);
+    if (result && "blocked" in result) return;
     if (result.error) {
       const riderEntry = rosterRiders.find((r) => r.contractId === contractId);
       const riderName = riderEntry?.name ?? "This rider";
@@ -215,7 +222,8 @@ export function AuctionsClient({
   async function handleValidate() {
     setValidateError(null);
     setRoundResolved(false);
-    const result = await validateRound({ leagueId });
+    const result = await validateRoundSafe({ leagueId });
+    if (result && "blocked" in result) return;
     if (result?.error) {
       setValidateError(result.error);
     } else {

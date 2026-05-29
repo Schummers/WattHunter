@@ -7,6 +7,7 @@ import { RiderCard } from "@/components/rider-card";
 import { FilterChips } from "@/components/filter-chips";
 import { StickyBar } from "@/components/sticky-bar";
 import { addDraft } from "@/app/(game)/league/[leagueId]/auction/actions";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 import { formatThousands, countryCodeToFlag, calcMinSalary, formatEuro } from "@/lib/format";
 import { computeAvailableBudget } from "@/lib/budget";
 
@@ -138,6 +139,7 @@ export function MarketClient({
   giroRiderIds = [],
 }: MarketClientProps) {
   const router = useRouter();
+  const addDraftSafe = useDemoSafeAction(addDraft);
   const [search, setSearch] = useState("");
   const [activeFilterIndex, setActiveFilterIndex] = useState(0);
 
@@ -290,12 +292,13 @@ export function MarketClient({
 
     const results = await Promise.all(
       pendingBids.map(async ([riderId, amount]) => {
-        const result = await addDraft({ leagueId, riderId, amount });
+        const result = await addDraftSafe({ leagueId, riderId, amount });
         return { riderId, result };
       })
     );
 
     for (const { riderId, result } of results) {
+      if (result && "blocked" in result) { setSaving(false); return; }
       if (result.error) {
         newErrors[riderId] = result.error;
       }

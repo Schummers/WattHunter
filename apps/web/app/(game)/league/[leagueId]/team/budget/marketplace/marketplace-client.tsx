@@ -22,6 +22,7 @@ import {
 } from "@/lib/sponsors";
 import { countryCodeToFlag } from "@/lib/format";
 import { saveSponsor } from "../actions";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 
 interface MarketplaceClientProps {
   leagueId: string;
@@ -185,6 +186,7 @@ export function MarketplaceClient({
   backLabel = "Budget",
 }: MarketplaceClientProps) {
   const router = useRouter();
+  const saveSponsorSafe = useDemoSafeAction(saveSponsor);
   const [isPending, startTransition] = useTransition();
   const [banner, setBanner] = useState<{
     type: "immediate" | "pending";
@@ -221,7 +223,8 @@ export function MarketplaceClient({
       const sponsorName = sponsors.find((s) => s.id === sponsorId)?.name ?? "";
 
       startTransition(async () => {
-        const result = await saveSponsor({ teamId, sponsorId });
+        const result = await saveSponsorSafe({ teamId, sponsorId });
+        if (result && "blocked" in result) { setSelectedId(activeSponsorId); return; }
         if (result.success) {
           setBanner({
             type: result.immediate ? "immediate" : "pending",

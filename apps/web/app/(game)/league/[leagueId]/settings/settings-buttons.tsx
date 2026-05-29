@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Copy, LogOut, Check, DoorOpen } from "lucide-react";
+import { LogOut, Check, DoorOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { leaveLeague } from "./actions";
+import { CopyInput } from "@/components/ui/copy-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function EditableField({
@@ -77,27 +78,19 @@ export function EditableField({
   );
 }
 
-export function CopyInviteCodeButton({ code }: { code: string }) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
+export function InviteCodeField({ inviteCode }: { inviteCode: string }) {
   return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-mid)] hover:border-[var(--border-hover)]"
-    >
-      {copied ? (
-        <Check size={16} className="text-[var(--accent-default)]" />
-      ) : (
-        <Copy size={16} />
-      )}
-    </button>
+    <div className="space-y-1">
+      <label className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
+        Invite code
+      </label>
+      <CopyInput
+        value={inviteCode || "------"}
+        label="Invite code"
+        copyButtonLabel="Copy invite code"
+        mono
+      />
+    </div>
   );
 }
 
@@ -156,23 +149,22 @@ export function LeaveLeagueButton({ leagueId }: { leagueId: string }) {
   );
 }
 
-export function InviteUrlDisplay({ inviteCode }: { inviteCode: string }) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const inviteUrl = `${origin}/league/join?code=${inviteCode}`;
+export function InviteUrlField({ inviteCode }: { inviteCode: string }) {
+  const inviteUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/league/join?code=${inviteCode}`
+      : `/league/join?code=${inviteCode}`;
 
   return (
     <div className="space-y-1">
       <label className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
         Invite URL
       </label>
-      <div className="flex items-center gap-2">
-        <div className="flex h-9 flex-1 items-center rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 overflow-hidden">
-          <span className="text-[length:var(--type-caption)] text-[var(--text-mid)] truncate">
-            {inviteUrl}
-          </span>
-        </div>
-        <CopyInviteCodeButton code={inviteUrl} />
-      </div>
+      <CopyInput
+        value={inviteUrl}
+        label="Invite URL"
+        copyButtonLabel="Copy invite URL"
+      />
     </div>
   );
 }

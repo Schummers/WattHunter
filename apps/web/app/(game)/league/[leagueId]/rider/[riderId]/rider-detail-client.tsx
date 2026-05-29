@@ -9,6 +9,7 @@ import { BackHeader } from "@/components/back-header";
 import { StickyBar } from "@/components/sticky-bar";
 import { addDraft, removeDraft } from "@/app/(game)/league/[leagueId]/auction/actions";
 import { releaseRider } from "./actions";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
 import { Plus, Minus } from "lucide-react";
 import { BID_INCREMENT, snapToIncrement, computeAvailableBudget } from "@/lib/budget";
@@ -128,6 +129,9 @@ export function RiderDetailClient({
   releaseIsBlocked,
 }: RiderDetailClientProps) {
   const router = useRouter();
+  const addDraftSafe = useDemoSafeAction(addDraft);
+  const removeDraftSafe = useDemoSafeAction(removeDraft);
+  const releaseRiderSafe = useDemoSafeAction(releaseRider);
   const [tabIndex, setTabIndex] = useState(0);
   const [bidAmount, setBidAmount] = useState<number | null>(draftAmount ?? null);
   const [bidInputValue, setBidInputValue] = useState(draftAmount != null ? String(draftAmount) : "");
@@ -154,7 +158,8 @@ export function RiderDetailClient({
     if (bidAmount === null) return;
     setSaving(true);
     setError(null);
-    const result = await addDraft({ leagueId, riderId: rider.id, amount: bidAmount });
+    const result = await addDraftSafe({ leagueId, riderId: rider.id, amount: bidAmount });
+    if (result && "blocked" in result) { setSaving(false); return; }
     if (result.error) {
       setError(result.error);
     } else {
@@ -166,7 +171,8 @@ export function RiderDetailClient({
   async function handleRemoveDraft() {
     setSaving(true);
     setError(null);
-    const result = await removeDraft({ leagueId, riderId: rider.id });
+    const result = await removeDraftSafe({ leagueId, riderId: rider.id });
+    if (result && "blocked" in result) { setSaving(false); return; }
     if (result.error) {
       setError(result.error);
     } else {
@@ -184,7 +190,8 @@ export function RiderDetailClient({
   async function handleReleaseConfirm(contractId: string) {
     setSaving(true);
     setReleaseError(null);
-    const result = await releaseRider(contractId);
+    const result = await releaseRiderSafe(contractId);
+    if (result && "blocked" in result) { setSaving(false); return; }
     if (result.error) {
       const errorMsg = result.error === "Cannot release a rider recruited during the current phase"
         ? `${rider.full_name} was recruited this phase and cannot be released yet. You can release them starting next phase.`

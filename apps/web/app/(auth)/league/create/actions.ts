@@ -4,20 +4,16 @@ import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { createClient } from "@/lib/supabase/server";
 import { getLevelByNumber } from "@/lib/levels";
+import { generateInviteCode, createLeagueWithTeam } from "@/lib/league-creation";
+
+// ---------------------------------------------------------------------------
+// createLeague — for already-authenticated users
+// ---------------------------------------------------------------------------
 
 const createLeagueSchema = z.object({
   name: z.string().min(2, "League name must be at least 2 characters.").max(50),
   starting_level: z.coerce.number().int().min(1).max(8).default(1),
 });
-
-function generateInviteCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
-}
 
 export async function createLeague(
   _prevState: { error: string } | null,
@@ -129,4 +125,101 @@ export async function createLeague(
   }
 
   redirect(`/league/${league.id}`);
+}
+
+// ---------------------------------------------------------------------------
+// signupAndCreateLeague — combined sign-up + league creation for new users
+// Combined signup always starts a fresh league at level 1.
+// Use the legacy createLeague for level-customizable creation.
+// ---------------------------------------------------------------------------
+
+const signupAndCreateLeagueSchema = z
+  .object({
+    league_name: z
+      .string()
+      .min(2, "League name must be at least 2 characters.")
+      .max(50),
+    team_name: z
+      .string()
+      .min(2, "Team name must be at least 2 characters.")
+      .max(30),
+    email: z.email("Invalid email address."),
+    password: z.string().min(6, "Password must be at least 6 characters."),
+    confirm_password: z.string(),
+  })
+  .refine((d) => d.password === d.confirm_password, {
+    message: "Passwords do not match.",
+    path: ["confirm_password"],
+  });
+
+export async function signupAndCreateLeague(
+  _prevState: unknown,
+  formData: FormData
+): Promise<{ error: string } | void> {
+  const parsed = signupAndCreateLeagueSchema.safeParse({
+    league_name: formData.get("league_name"),
+    team_name: formData.get("team_name"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+    confirm_password: formData.get("confirm_password"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const { league_name, team_name, email, password } = parsed.data;
+  const supabase = await createClient();
+
+  // 1. Sign up the user
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { display_name: team_name },
+    },
+  });
+
+  if (signUpError) {
+    return { error: signUpError.message };
+  }
+  if (!signUpData.user) {
+    return { error: "Signup failed. Please try again." };
+  }
+
+  const userId = signUpData.user.id;
+
+  // 2. Upsert public.users row (FK constraint for leagues.commissioner_id)
+  const { error: userError } = await supabase
+    .from("users")
+    .upsert(
+      { id: userId, display_name: team_name, avatar_url: null },
+      { onConflict: "id" }
+    );
+  if (userError) {
+    // Sign out to avoid leaving the visitor authenticated with no profile —
+    // otherwise re-submitting the form would hit "User already registered".
+    await supabase.auth.signOut();
+    return { error: `User profile error: ${userError.message}` };
+  }
+
+  // 3. Create league + team + sponsor + member via shared helper
+  const startingLevel = 1;
+  const levelData = getLevelByNumber(startingLevel);
+
+  const result = await createLeagueWithTeam(supabase, {
+    userId,
+    leagueName: league_name,
+    teamName: team_name,
+    startingLevel,
+    cumulativeXp: levelData.xp,
+  });
+
+  if (result.error || !result.leagueId) {
+    console.error("League creation failed:", result.error);
+    await supabase.auth.signOut();
+    return { error: result.error ?? "Failed to create league." };
+  }
+
+  redirect(`/league/${result.leagueId}`);
 }

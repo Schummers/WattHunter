@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { forceResolveRound } from "../actions";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 
 interface Props {
   leagueId: string;
@@ -20,6 +21,7 @@ interface Props {
 
 export function StatusClient({ leagueId, unvalidatedTeams }: Props) {
   const router = useRouter();
+  const forceResolveRoundSafe = useDemoSafeAction(forceResolveRound);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -27,7 +29,8 @@ export function StatusClient({ leagueId, unvalidatedTeams }: Props) {
   function handleConfirm() {
     setError(null);
     startTransition(async () => {
-      const result = await forceResolveRound({ leagueId });
+      const result = await forceResolveRoundSafe({ leagueId });
+      if (result && "blocked" in result) return;
       if ("error" in result && result.error) {
         setError(result.error);
         return;

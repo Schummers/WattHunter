@@ -4,11 +4,11 @@ import { BackHeader } from "@/components/back-header";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import {
-  CopyInviteCodeButton,
   SignOutButton,
   EditableField,
   LeaveLeagueButton,
-  InviteUrlDisplay,
+  InviteUrlField,
+  InviteCodeField,
 } from "./settings-buttons";
 import {
   updateUserName,
@@ -209,22 +209,10 @@ export default async function SettingsPage({
             />
 
             {/* Invite URL */}
-            <InviteUrlDisplay inviteCode={league?.invite_code ?? ""} />
+            <InviteUrlField inviteCode={league?.invite_code ?? ""} />
 
             {/* Invite code */}
-            <div className="space-y-1">
-              <label className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
-                Invite code
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 flex-1 items-center rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3">
-                  <span className="font-mono text-[length:var(--type-body)] text-[var(--text-mid)]">
-                    {league?.invite_code ?? "------"}
-                  </span>
-                </div>
-                <CopyInviteCodeButton code={league?.invite_code ?? ""} />
-              </div>
-            </div>
+            <InviteCodeField inviteCode={league?.invite_code ?? ""} />
 
             {/* Leave league */}
             <LeaveLeagueButton leagueId={leagueId} />

@@ -1,17 +1,77 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useActionState } from "react";
-import { createLeague } from "./actions";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { signupAndCreateLeague } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form-field";
 import { ArrowLeft } from "lucide-react";
-import { LEVELS, getDefaultStartingLevel } from "@/lib/levels";
+import { createClient } from "@/lib/supabase/browser";
+import { setSignupIntentCookie, clearSignupIntentCookie } from "@/app/auth/callback/oauth-intent";
 
 export default function CreateLeaguePage() {
-  const defaultLevel = getDefaultStartingLevel();
-  const [state, formAction, pending] = useActionState(createLeague, null);
+  return (
+    <Suspense fallback={null}>
+      <CreateLeagueForm />
+    </Suspense>
+  );
+}
+
+function CreateLeagueForm() {
+  const searchParams = useSearchParams();
+  const oauthError = searchParams.get("error");
+
+  const [step, setStep] = useState<1 | 2>(1);
+  const [leagueName, setLeagueName] = useState("");
+  const [teamName, setTeamName] = useState("");
+  const [email, setEmail] = useState("");
+  const [step1Error, setStep1Error] = useState<string | null>(
+    oauthError === "create_failed" ? "League creation failed after sign-in. Please try again." : null
+  );
+  const [state, formAction, pending] = useActionState(signupAndCreateLeague, null);
+
+  function handleNext(e: React.FormEvent) {
+    e.preventDefault();
+    if (leagueName.trim().length < 2) {
+      setStep1Error("League name must be at least 2 characters.");
+      return;
+    }
+    if (teamName.trim().length < 2) {
+      setStep1Error("Team name must be at least 2 characters.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setStep1Error("Please enter a valid email address.");
+      return;
+    }
+    setStep1Error(null);
+    setStep(2);
+  }
+
+  async function handleGoogle() {
+    if (leagueName.trim().length < 2 || teamName.trim().length < 2) {
+      setStep1Error("Please fill league name and team name first.");
+      return;
+    }
+    await setSignupIntentCookie({
+      kind: "create",
+      league_name: leagueName.trim(),
+      team_name: teamName.trim(),
+    });
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback?intent=create` },
+    });
+    if (error) {
+      await clearSignupIntentCookie();
+      setStep1Error(error.message);
+    }
+  }
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-8">
@@ -28,50 +88,100 @@ export default function CreateLeaguePage() {
           Create a league
         </h2>
         <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-          Invite your friends with the code generated after creation.
+          {step === 1 ? "Tell us about your league." : "Secure your account."}
         </p>
       </div>
 
-      <form action={formAction} className="flex flex-col gap-4">
-        <FormField label="League name" htmlFor="name">
-          <Input
-            id="name"
-            name="name"
-            placeholder="Ex: The Watt Hunters"
-            required
-            minLength={2}
-            maxLength={50}
-          />
-        </FormField>
+      {step === 1 ? (
+        <form onSubmit={handleNext} className="flex flex-col gap-4">
+          <FormField label="League name" htmlFor="league_name">
+            <Input
+              id="league_name"
+              name="league_name"
+              placeholder="Ex: The Watt Hunters"
+              value={leagueName}
+              onChange={(e) => setLeagueName(e.target.value)}
+              required
+              minLength={2}
+              maxLength={50}
+              autoComplete="off"
+            />
+          </FormField>
+          <FormField label="Your team name" htmlFor="team_name">
+            <Input
+              id="team_name"
+              name="team_name"
+              placeholder="Ex: Les Grimpeurs"
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+              required
+              minLength={2}
+              maxLength={30}
+              autoComplete="off"
+            />
+          </FormField>
+          <FormField label="Email" htmlFor="email">
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+          </FormField>
 
-        <FormField label="Starting level" htmlFor="starting_level">
-          <select
-            id="starting_level"
-            name="starting_level"
-            defaultValue={defaultLevel}
-            className="flex h-9 w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-1 text-[length:var(--type-body)] text-[var(--text-high)] shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent-default)]"
-          >
-            {LEVELS.map((l) => (
-              <option key={l.level} value={l.level}>
-                Level {l.level} — Pool {l.pool}, {l.slots} slots
-                {l.level === defaultLevel ? " (Recommended)" : ""}
-              </option>
-            ))}
-          </select>
-          <p className="text-[length:var(--type-caption)] text-[var(--text-low)] mt-1">
-            We recommend Level {defaultLevel} based on the current racing phase.
-            A higher level gives access to better riders and a bigger budget.
-          </p>
-        </FormField>
+          {step1Error && (
+            <p className="text-[length:var(--type-caption)] text-[var(--status-danger)]">{step1Error}</p>
+          )}
 
-        {state?.error && (
-          <p className="text-[length:var(--type-caption)] text-[var(--status-danger)]">{state.error}</p>
-        )}
+          <Button type="submit" variant="cta">Next</Button>
+          <Button type="button" variant="outline" onClick={handleGoogle}>
+            Continue with Google
+          </Button>
+        </form>
+      ) : (
+        <form action={formAction} className="flex flex-col gap-4">
+          <input type="hidden" name="league_name" value={leagueName} />
+          <input type="hidden" name="team_name" value={teamName} />
+          <input type="hidden" name="email" value={email} />
 
-        <Button type="submit" variant="cta" disabled={pending}>
-          {pending ? "Creating..." : "Create league"}
-        </Button>
-      </form>
+          <FormField label="Password" htmlFor="password">
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="At least 6 characters"
+              required
+              minLength={6}
+              autoComplete="new-password"
+            />
+          </FormField>
+          <FormField label="Confirm password" htmlFor="confirm_password">
+            <Input
+              id="confirm_password"
+              name="confirm_password"
+              type="password"
+              required
+              minLength={6}
+              autoComplete="new-password"
+            />
+          </FormField>
+
+          {state?.error && (
+            <p className="text-[length:var(--type-caption)] text-[var(--status-danger)]">{state.error}</p>
+          )}
+
+          <Button type="submit" variant="cta" disabled={pending}>
+            {pending ? "Creating..." : "Create League and Account"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setStep(1)}>
+            Back
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

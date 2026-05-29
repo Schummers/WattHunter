@@ -362,6 +362,24 @@ export type Database = {
           },
         ]
       }
+      gt_rescue_windows: {
+        Row: {
+          gt_identifier: string
+          gt_year: number
+          replace_closes_at: string
+        }
+        Insert: {
+          gt_identifier: string
+          gt_year: number
+          replace_closes_at: string
+        }
+        Update: {
+          gt_identifier?: string
+          gt_year?: number
+          replace_closes_at?: string
+        }
+        Relationships: []
+      }
       gt_role_assignments: {
         Row: {
           applied_at: string
@@ -1191,6 +1209,73 @@ export type Database = {
           },
         ]
       }
+      sponsor_goal_completions: {
+        Row: {
+          base_reward: number
+          created_at: string
+          final_reward: number
+          goal_index: number
+          goal_label: string
+          id: string
+          multiplier: number
+          race_slug: string
+          rider_id: string | null
+          sponsor_id: string
+          stage_slug: string | null
+          team_id: string
+        }
+        Insert: {
+          base_reward: number
+          created_at?: string
+          final_reward: number
+          goal_index: number
+          goal_label: string
+          id?: string
+          multiplier?: number
+          race_slug: string
+          rider_id?: string | null
+          sponsor_id: string
+          stage_slug?: string | null
+          team_id: string
+        }
+        Update: {
+          base_reward?: number
+          created_at?: string
+          final_reward?: number
+          goal_index?: number
+          goal_label?: string
+          id?: string
+          multiplier?: number
+          race_slug?: string
+          rider_id?: string | null
+          sponsor_id?: string
+          stage_slug?: string | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_goal_completions_rider_id_fkey"
+            columns: ["rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsor_goal_completions_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "sponsors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsor_goal_completions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sponsors: {
         Row: {
           bonus_gc: number
@@ -1621,6 +1706,10 @@ export type Database = {
         }
         Returns: Json
       }
+      credit_sponsor_bonuses: {
+        Args: { p_bonuses: Json; p_team_id: string }
+        Returns: Json
+      }
       grant_xp: {
         Args: {
           p_adjusted_at?: string
@@ -1685,7 +1774,15 @@ export type Database = {
         Returns: Json
       }
       is_league_member: { Args: { p_league_id: string }; Returns: boolean }
-      join_league_by_code: { Args: { p_code: string }; Returns: Json }
+      join_league_by_code: {
+        Args: { p_code: string; p_team_name?: string }
+        Returns: Json
+      }
+      launch_first_auction: { Args: { p_league_id: string }; Returns: Json }
+      set_starting_level: {
+        Args: { p_league_id: string; p_level: number }
+        Returns: Json
+      }
       leave_league: { Args: { p_league_id: string }; Returns: Json }
       place_bid: {
         Args: {

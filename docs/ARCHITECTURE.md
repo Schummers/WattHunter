@@ -1,7 +1,7 @@
 # WattHunter — Architecture
 
 > **Document vivant** — Mis a jour a chaque decision d'architecture.
-> Derniere mise a jour : 2026-05-15
+> Derniere mise a jour : 2026-05-28
 
 ---
 
@@ -41,12 +41,17 @@ watthunter/
 │   │   ├── (legal)/             # Pages légales
 │   │   │   ├── privacy/         # Politique de confidentialité
 │   │   │   └── terms/           # Conditions d'utilisation
+│   │   ├── (lobby)/             # Interface setup pour les ligues en attente (sans sidebar)
+│   │   │   └── lobby/[leagueId]/
+│   │   │       ├── page.tsx            # Redirects vers /league/[id] si ligue active ; sinon UI lobby
+│   │   │       ├── layout.tsx          # Auth guard minimal (pas de sidebar)
+│   │   │       └── actions.ts          # setStartingLevel(leagueId, level) → supabase.rpc("set_starting_level", …)
 │   │   ├── (game)/              # Routes avec sidebar + topbar (desktop) ou bottom-nav (mobile)
 │   │   │   └── league/[leagueId]/
-│   │   │       ├── page.tsx            # Home / Lobby
+│   │   │       ├── page.tsx            # Server redirect vers /lobby/[id] si status pending ; sinon Race Feed
+│   │   │       ├── demo-layout.tsx     # Layout fork pour /league/demo (anon, sans auth)
 │   │   │       ├── layout.tsx          # Auth guard + responsive shell
 │   │   │       ├── league-shell.tsx    # Sidebar + TopBar + Detail Rail layout
-│   │   │       ├── lobby-view.tsx      # Lien d'invitation + code + liste membres
 │   │   │       ├── home-feed.tsx       # Feed activite ligue
 │   │   │       ├── levels/             # Page niveaux (timeline 8 niveaux WT)
 │   │   │       ├── ranking/            # Classement ligue
@@ -275,7 +280,8 @@ watthunter/
 | Groupe | Layout | Usage |
 |--------|--------|-------|
 | `(auth)` | Centrer plein ecran, pas de sidebar | Login, signup, onboarding, create/join league |
-| `(game)` | Sidebar + TopBar (desktop) ou BottomNav (mobile) | Toutes les pages de jeu |
+| `(lobby)` | Minimal (pas de sidebar), auth guard | Interface setup ligues pending (3 onglets : Lobby, Level & Pool, Rules) |
+| `(game)` | Sidebar + TopBar (desktop) ou BottomNav (mobile) | Toutes les pages de jeu, y compris `/league/demo/*` (anon, layout fork sans auth) |
 
 ### Protection des routes
 
@@ -285,6 +291,7 @@ Le middleware (`lib/supabase/middleware.ts`) protege toutes les routes sauf :
 - `/signup`
 - `/auth/*` (callback)
 - `/join`
+- `/league/demo/*` (visiteur anonyme — demo mode)
 
 ### Smart redirect (`/`)
 
@@ -300,16 +307,42 @@ Sinon → /onboarding
 
 ### Flux supportes
 
-1. **Google OAuth** — Redirection vers Google, callback sur `/auth/callback`
-2. **Email/mot de passe** — Inscription avec nom d'utilisateur + confirmation MDP, connexion directe
+1. **Combined signup** (par defaut depuis 2026-05) — `/league/create` et `/league/join` sont publics. Visiteur cree son compte + sa league/team en un seul flux 2-ecrans :
+   - Ecran 1 : league name / team name / email (ou invite code + team name pour join), boutons "Next" + "Continue with Google".
+   - Ecran 2 : password + confirm password, submit via server action `signupAndCreateLeague` / `signupAndJoinLeague`.
+   - Google OAuth : avant `signInWithOAuth`, depose un cookie `signup_intent` (10 min, httpOnly, sameSite=lax) contenant les donnees du formulaire. Le callback lit ce cookie et termine la creation / le join.
+2. **Google OAuth direct** (login classique) — `/login` → `signInWithOAuth` → `/auth/callback`.
+3. **Email/mot de passe classique** — `/signup` simplifie (email + password seulement, plus de champ username — derive du prefix email).
+
+Email confirmation Supabase **desactivee** (Dashboard → Auth → Email → "Confirm email" = OFF). `auth.signUp()` retourne une session immediatement. Le composant `EmailConfirmationBanner` (monte dans le layout `(game)/league/[leagueId]/layout.tsx`) propose au user de confirmer son email pour recovery, dismissable.
+
+### Server actions
+
+- `apps/web/app/(auth)/league/create/actions.ts` — exporte `createLeague` (legacy, user auth requise) et `signupAndCreateLeague` (combined signup pour visiteurs).
+- `apps/web/app/(auth)/league/join/actions.ts` — exporte `signupAndJoinLeague` (remplace l'ancien `joinLeague`). RPC `join_league_by_code(p_code, p_team_name)` etendu pour accepter le nom d'equipe (migration `20260527000000`).
+- Helper partage : `apps/web/lib/league-creation.ts` exporte `generateInviteCode()`.
+- `apps/web/app/(lobby)/lobby/[leagueId]/actions.ts` — exporte `setStartingLevel(leagueId, level)` → `supabase.rpc("set_starting_level", …)`.
+
+### RPCs lobby (Chantier D — migration `20260528000001` et `20260528000002`)
+
+- `launch_first_auction(p_league_id uuid) → jsonb` — SECURITY DEFINER. Commissioner uniquement. Insere 3 auctions (Round 1 `open`, Rounds 2-3 `scheduled`) avec dates auto-planifiees Europe/Paris, passe la ligue en `active`. Migration `20260528000001`. Remplace l'ancien calcul de dates cote TS.
+- `set_starting_level(p_league_id uuid, p_level integer) → jsonb` — SECURITY DEFINER. Commissioner uniquement, ligues pending seulement, level 1..8. Migration `20260528000002`.
+
+### Cookie helper
+
+- `apps/web/app/auth/callback/oauth-intent.ts` — `setSignupIntentCookie / readSignupIntentCookie / clearSignupIntentCookie` + type `SignupIntent`.
 
 ### Callback (`/auth/callback`)
 
-1. Echange le code pour une session (OAuth ou email confirmation)
-2. Verifie si le profil `users` existe
-3. Si non : cree le profil (display_name depuis metadata ou email)
-4. Si `has_onboarded = false` → `/onboarding`
-5. Sinon → `/`
+1. Echange le code pour une session (OAuth ou email confirmation).
+2. Verifie si le profil `users` existe, le cree au besoin.
+3. **Si cookie `signup_intent` present** : termine le flux create/join (insert league + team + sponsor + league_member, ou appelle `join_league_by_code`), efface le cookie, redirect vers `/league/[id]`.
+4. Si `type=recovery` → `/reset-password`.
+5. Sinon : redirect vers `next` (si valide) ou premiere league du user ou `/league/choose`.
+
+### Middleware
+
+`apps/web/lib/supabase/middleware.ts` declare `/league/create`, `/league/join`, `/league/choose` comme routes publiques (en plus de `/login`, `/signup`, `/auth`, etc.).
 
 ---
 
@@ -391,6 +424,46 @@ $$;
 - NEVER exposer la service_role key au browser
 - NEVER muter `treasury_log` directement — utiliser les fonctions helper
 - NEVER liberer un coureur hors de la fenetre d'encheres
+
+---
+
+## Demo mode (Chantier B)
+
+Visiteur anonyme explorant `/league/demo/*` via une copie anonymisee d'une vraie ligue.
+
+### Constants
+- `DEMO_LEAGUE_SLUG = "demo"` (segment URL), `DEMO_LEAGUE_ID` UUID (DB FK).
+- 8 ghost `auth.users` + `public.users` (UUIDs stables, emails `demo-team-N@watthunter.demo`).
+- `DEMO_VISITOR_TEAM_ID = DEMO_TEAM_IDS[1]` — equipe rank-2 par cumulative_xp.
+- Sources de verite : `apps/web/lib/demo-constants.ts` + `services/pcs-sync/demo_constants.py` (parite testee des deux cotes).
+
+### RLS — anon SELECT scope
+Fonction `public.demo_league_id() RETURNS uuid STABLE`. 33 policies `FOR SELECT TO anon` :
+- **Tier A** (direct `league_id`) : `leagues`, `league_members`, `teams`, `auctions`, `contracts`, `draft_bids`, `gt_emergency_bids`, `remontada_boost_triggers`, `remontada_boosts`.
+- **Tier B** (via `EXISTS teams`) : `auction_bids`, `gt_squad`, `gt_role_assignments`, `gt_tactic_activations`, `rider_xp_daily`, `sponsor_bonuses`, `sponsor_goal_completions`, `team_ranking_daily`, `team_sponsors`, `team_strategies`, `team_xp_adjustments`, `treasury_log`, `round_validations`.
+- **Tier C** : `public.users` restreint aux 8 ghost demo accounts (`id IN demo league_members`).
+- **Tier D** (reference publique) : `riders`, `race_results`, `rider_season_rankings`, `race_startlists`, `rider_teams`, `rider_pcs_history`, `gt_daily_classifications`, `gt_rescue_windows`, `sponsors`, `strategies` (`USING (true)`).
+
+### Mutations bloquees
+Le visiteur ne peut rien muter — les RPCs rejettent via `auth.uid() IS NULL`. Cote UI : chaque server-action mutation est wrappee par `useDemoSafeAction` (`apps/web/contexts/demo-context.tsx`) qui fait pulser la banniere cyan au lieu d'appeler la mutation. Banner + bottom CTA dans `apps/web/components/demo/`.
+
+### Refresh
+`python3 services/pcs-sync/refresh_demo_league.py --source-league-id <uuid>` :
+1. Verifie `is_demo = true` sur la cible.
+2. Wipe les donnees demo en ordre FK (children → parents).
+3. Reinsere une copie anonymisee du source league (teams renommees, user_ids re-mappes sur les 8 ghost users).
+4. Visiteur = source team rank-2 → `DEMO_TEAM_IDS[1]`.
+5. POST `${WATTHUNTER_HOST}/api/admin/revalidate-demo` (Bearer `REVALIDATE_SECRET`) → `revalidateTag("demo-league")`. No-op tant que Cache Components n'est pas active.
+
+### Migrations
+- `20260529000001_demo_seed_ghost_users.sql` — `demo_league_id()`, `is_demo`, 8 ghost users, placeholder league.
+- `20260529000002_demo_anon_select_policies.sql` — 33 RLS policies anon.
+- `20260529000003_join_rejects_demo.sql` — `join_league_by_code` refuse une ligue `is_demo = true`.
+
+### Securite
+- Aucune reference a `SUPABASE_SERVICE_ROLE_KEY` sous `apps/web/{app,components,contexts,lib,hooks}` (audit : seul `lib/supabase/admin.ts`, protege par `import "server-only"`).
+- `REVALIDATE_SECRET` provisionne cote Vercel (production + preview) — a valider avant deploy.
+- PII audit : `python3 services/pcs-sync/scripts/audit_demo_pii.py` exit 0.
 
 ---
 
@@ -577,6 +650,8 @@ $$;
 - [x] Status page (purchasing power + clickable team rows)
 - [x] GT Rescue (DNF refund/replace window, auto-release on refund claim)
 - [x] Achievements (systeme d'achievements equipe)
+- [x] Lobby redesign (Chantier D) — route group `(lobby)/lobby/[leagueId]` dedie aux ligues pending, 3 tabs (Lobby / Level & Pool / Rules), `launch_first_auction` RPC, `set_starting_level` RPC
+- [x] Demo mode (Chantier B) — route `/league/demo`, RLS anon SELECT (33 policies), ghost users, refresh script Python, banner pulse pattern
 - [x] Race Feed (cards Home : past race, remontada, nemesis, rest day, GT goals)
 - [x] Palmares (profil rider avec onglets Monuments / dynamiques + league rank)
 - [x] Design System v3.1 (navigation tokens)

@@ -4,8 +4,11 @@ import { getUser } from "@/lib/supabase/get-user";
 import { Sidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/topbar";
 import { BottomNav } from "@/components/bottom-nav";
+import { EmailConfirmationBanner } from "@/components/email-confirmation-banner";
 import { RailProvider } from "@/contexts/rail-context";
 import { LeagueShell } from "./league-shell";
+import { DemoLeagueLayout } from "./demo-layout";
+import { DEMO_LEAGUE_SLUG } from "@/lib/demo-constants";
 
 export default async function LeagueLayout({
   children,
@@ -15,6 +18,11 @@ export default async function LeagueLayout({
   params: Promise<{ leagueId: string }>;
 }) {
   const { leagueId } = await params;
+
+  if (leagueId === DEMO_LEAGUE_SLUG) {
+    return <DemoLeagueLayout>{children}</DemoLeagueLayout>;
+  }
+
   const supabase = await createClient();
 
   const user = await getUser();
@@ -63,7 +71,12 @@ export default async function LeagueLayout({
 
   return (
     <RailProvider>
-      <div className="flex h-[100svh] overflow-hidden">
+      <div className="flex h-[100svh] flex-col overflow-hidden">
+        <EmailConfirmationBanner
+          email={user.email ?? null}
+          isConfirmed={!!user.email_confirmed_at}
+        />
+        <div className="flex flex-1 overflow-hidden">
         <Sidebar
           leagueId={leagueId}
           leagueName={leagueName}
@@ -82,6 +95,7 @@ export default async function LeagueLayout({
           </main>
           <BottomNav leagueId={leagueId} unlockedTabs={unlockedTabs} />
         </LeagueShell>
+        </div>
       </div>
     </RailProvider>
   );

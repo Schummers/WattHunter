@@ -9,3 +9,4 @@ httpx==0.27.0
 nodriver>=0.50
 # Playwright kept as fallback (SCRAPER_BACKEND=playwright). Remove after 2 weeks of clean nodriver runs.
 playwright==1.49.0
+cloudscraper==1.2.71

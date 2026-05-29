@@ -1,0 +1,55 @@
+"""Mirror of apps/web/lib/demo-constants.ts.
+
+Any change MUST be made in both files. Tests assert byte-equality.
+"""
+from __future__ import annotations
+
+DEMO_LEAGUE_SLUG: str = "demo"
+DEMO_LEAGUE_ID: str = "00000000-0000-4000-8000-d3110d3110d3"
+
+DEMO_TEAM_IDS: list[str] = [
+    "00000000-0000-4000-8000-d3110d311001",
+    "00000000-0000-4000-8000-d3110d311002",
+    "00000000-0000-4000-8000-d3110d311003",
+    "00000000-0000-4000-8000-d3110d311004",
+    "00000000-0000-4000-8000-d3110d311005",
+    "00000000-0000-4000-8000-d3110d311006",
+    "00000000-0000-4000-8000-d3110d311007",
+    "00000000-0000-4000-8000-d3110d311008",
+]
+
+DEMO_USER_IDS: list[str] = [
+    "00000000-0000-4000-8000-d3110d310001",
+    "00000000-0000-4000-8000-d3110d310002",
+    "00000000-0000-4000-8000-d3110d310003",
+    "00000000-0000-4000-8000-d3110d310004",
+    "00000000-0000-4000-8000-d3110d310005",
+    "00000000-0000-4000-8000-d3110d310006",
+    "00000000-0000-4000-8000-d3110d310007",
+    "00000000-0000-4000-8000-d3110d310008",
+]
+
+DEMO_TEAM_NAMES: list[str] = [
+    "Flamme Rouge",
+    "Les Grimpeurs",
+    "Cinq Etoiles",
+    "Bidon Vert",
+    "Echappee Belle",
+    "Pave Royal",
+    "Maillot Jaune",
+    "Domestique XI",
+]
+
+DEMO_VISITOR_TEAM_INDEX: int = 1
+DEMO_VISITOR_TEAM_ID: str = DEMO_TEAM_IDS[DEMO_VISITOR_TEAM_INDEX]
+
+
+def as_dict() -> dict[str, object]:
+    return {
+        "DEMO_LEAGUE_SLUG": DEMO_LEAGUE_SLUG,
+        "DEMO_LEAGUE_ID": DEMO_LEAGUE_ID,
+        "DEMO_TEAM_IDS": DEMO_TEAM_IDS,
+        "DEMO_USER_IDS": DEMO_USER_IDS,
+        "DEMO_TEAM_NAMES": DEMO_TEAM_NAMES,
+        "DEMO_VISITOR_TEAM_INDEX": DEMO_VISITOR_TEAM_INDEX,
+    }

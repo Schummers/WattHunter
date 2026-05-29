@@ -11,7 +11,6 @@ import { Mail } from "lucide-react";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -34,11 +33,6 @@ export default function SignupPage() {
     setError("");
     setMessage("");
 
-    if (displayName.trim().length < 2) {
-      setError("Username must be at least 2 characters.");
-      return;
-    }
-
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -46,13 +40,15 @@ export default function SignupPage() {
 
     setLoading(true);
 
+    const defaultDisplayName = email.split("@")[0] ?? "Player";
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
-          full_name: displayName.trim(),
+          display_name: defaultDisplayName,
         },
       },
     });
@@ -97,18 +93,6 @@ export default function SignupPage() {
       </div>
 
       <form onSubmit={handleSignup} className="flex w-full flex-col gap-4">
-        <FormField label="Username" htmlFor="displayName">
-          <Input
-            id="displayName"
-            type="text"
-            placeholder="johndoe"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            required
-            minLength={2}
-            maxLength={30}
-          />
-        </FormField>
         <FormField label="Email" htmlFor="email">
           <Input
             id="email"

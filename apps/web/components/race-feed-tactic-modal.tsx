@@ -7,6 +7,7 @@ import { ModalShell, ModalHeader, ModalActions } from "./tactic-modal-shell";
 import { TacticCard } from "./tactic-card";
 import { TACTICS, type TacticId, type TacticState } from "@/lib/tactics";
 import { placeTactic } from "@/app/(game)/league/[leagueId]/team/gt/tactics/actions";
+import { useDemoSafeAction } from "@/contexts/demo-context";
 import type { TacticContextForFeed, TacticRival } from "@/lib/race-feed-types";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ type Props = {
 export function RaceFeedTacticModal({ stageSlug, stageName, tacticContext, onClose }: Props) {
   const { teamId, phaseId, year, activations, gcRivals, sprintRivals, myGcLeader, mySprinter } = tacticContext;
   const router = useRouter();
+  const placeTacticSafe = useDemoSafeAction(placeTactic);
   const [step, setStep] = useState<Step>("select_tactic");
   const [selectedTactic, setSelectedTactic] = useState<TacticId | null>(null);
   const [selectedRivalId, setSelectedRivalId] = useState<string | null>(null);
@@ -59,7 +61,7 @@ export function RaceFeedTacticModal({ stageSlug, stageName, tacticContext, onClo
     setError(null);
     startTransition(async () => {
       try {
-        await placeTactic({
+        const result = await placeTacticSafe({
           teamId,
           phaseId,
           year,
@@ -67,6 +69,7 @@ export function RaceFeedTacticModal({ stageSlug, stageName, tacticContext, onClo
           stageSlug,
           ...extra,
         });
+        if (result && typeof result === "object" && "blocked" in result) return;
         router.refresh();
         onClose();
       } catch (e) {

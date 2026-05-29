@@ -1,109 +1,112 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { z } from "zod/v4";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-const joinLeagueSchema = z.object({
-  code: z
-    .string()
-    .length(6, "Code must be exactly 6 characters.")
-    .regex(/^[A-Z2-9]+$/, "Invalid code."),
+const schema = z.object({
+  code: z.string().length(6).regex(/^[A-Z2-9]{6}$/, "Invalid code."),
+  team_name: z.string().min(2, "Team name must be at least 2 characters.").max(30),
+  email: z.email("Invalid email address."),
+  password: z.string().min(6, "Password must be at least 6 characters."),
+  confirm_password: z.string(),
+}).refine((d) => d.password === d.confirm_password, {
+  message: "Passwords do not match.",
+  path: ["confirm_password"],
 });
 
-export async function joinLeague(
-  _prevState: { error: string } | null,
+export async function signupAndJoinLeague(
+  _prevState: unknown,
   formData: FormData
-) {
-  const raw = (formData.get("code") as string)?.toUpperCase().trim();
-
-  const parsed = joinLeagueSchema.safeParse({ code: raw });
+): Promise<{ error: string } | void> {
+  const parsed = schema.safeParse({
+    code: (formData.get("code") as string)?.toUpperCase(),
+    team_name: formData.get("team_name"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+    confirm_password: formData.get("confirm_password"),
+  });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { code } = parsed.data;
-
+  const { code, team_name, email, password } = parsed.data;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { error: "Not authenticated." };
+  // 1. Sign up
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { display_name: team_name } },
+  });
+  if (signUpError) return { error: signUpError.message };
+  if (!signUpData.user) return { error: "Signup failed. Please try again." };
+
+  const userId = signUpData.user.id;
+
+  // 2. Upsert user profile
+  const { error: userError } = await supabase.from("users").upsert(
+    { id: userId, display_name: team_name, avatar_url: null },
+    { onConflict: "id" }
+  );
+  if (userError) {
+    // Sign out to avoid leaving the visitor authenticated with no profile —
+    // otherwise re-submitting the form would hit "User already registered".
+    await supabase.auth.signOut();
+    return { error: `User profile error: ${userError.message}` };
   }
 
-  // Ensure public.users row exists before the RPC runs
-  const displayName =
-    user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "Player";
-  await supabase
-    .from("users")
-    .upsert(
-      { id: user.id, display_name: displayName, avatar_url: user.user_metadata?.avatar_url ?? null },
-      { onConflict: "id" }
-    );
-
-  // Atomic lookup + join via SECURITY DEFINER RPC (invite_code never exposed to client)
-  const { data: result, error: rpcError } = await supabase.rpc(
-    "join_league_by_code",
-    { p_code: code }
-  );
+  // 3. Join via RPC
+  const { data: rpcResult, error: rpcError } = await supabase.rpc("join_league_by_code", {
+    p_code: code,
+    p_team_name: team_name,
+  });
 
   if (rpcError) {
-    console.error("join_league_by_code RPC error:", rpcError);
-    return { error: "Failed to join league." };
+    await supabase.auth.signOut();
+    return { error: rpcError.message };
   }
 
-  const rpcResult = result as {
+  // The RPC returns { ok, league_id, team_id, starting_level, ... } on success
+  // and { error: '...' } (no 'ok' key) on error paths.
+  const r = rpcResult as {
     ok?: boolean;
     error?: string;
+    league_id?: string;
     already_member?: boolean;
     late_join?: boolean;
-    can_join_current_phase?: boolean;
-    league_id?: string;
-    team_id?: string;
     starting_level?: number;
-  };
+    team_id?: string;
+  } | null;
 
-  if (rpcResult.error) {
-    // Map RPC error strings to user-facing messages
-    switch (rpcResult.error) {
-      case "League not found":
-        return { error: "Invalid code. Check with your Race Director." };
-      case "League is full":
-        return { error: "This league is full." };
-      case "Already a member of this league":
-        // Handled below via already_member flag; should not reach here
-        break;
-      default:
-        return { error: rpcResult.error };
-    }
+  if (!r || r.error || !r.ok || !r.league_id) {
+    const errMsg = r?.error ?? "Failed to join league.";
+    await supabase.auth.signOut();
+    if (errMsg.includes("not found")) return { error: "Invalid code. Check with your Race Director." };
+    if (errMsg.includes("full")) return { error: "This league is full." };
+    if (errMsg.includes("ended")) return { error: "This league has ended." };
+    return { error: errMsg };
   }
 
-  if (!rpcResult.ok || !rpcResult.league_id || !rpcResult.team_id) {
-    return { error: "Failed to join league." };
-  }
+  const leagueId = r.league_id;
 
-  const leagueId = rpcResult.league_id;
-  const teamId = rpcResult.team_id;
-  const startLevel = rpcResult.starting_level ?? 1;
-
-  // If already a member, skip sponsor assignment and redirect directly
-  if (!rpcResult.already_member && !rpcResult.late_join) {
-    // Auto-assign default sponsor based on starting level (mirrors createLeague logic)
+  // 4. Auto-assign default sponsor for new (non-late, non-returning) joiners
+  if (!r.already_member && !r.late_join && r.team_id) {
+    const startLevel = r.starting_level ?? 1;
     const defaultSlug = startLevel <= 1 ? "lotto" : startLevel === 2 ? "astana" : null;
     if (defaultSlug) {
       const { data: defaultSponsor } = await supabase
         .from("sponsors")
         .select("id")
         .eq("slug", defaultSlug)
-        .single();
-
+        .maybeSingle();
       if (defaultSponsor) {
-        await supabase
-          .from("team_sponsors")
-          .insert({ team_id: teamId, sponsor_id: defaultSponsor.id, activated_at: new Date().toISOString() });
+        await supabase.from("team_sponsors").insert({
+          team_id: r.team_id,
+          sponsor_id: defaultSponsor.id,
+          activated_at: new Date().toISOString(),
+        });
       }
     }
   }
