@@ -118,6 +118,7 @@ export async function getRaceFeedData(
     teamById.set(t.id, t.name);
     teamEquippedSlugById.set(t.id, (t as { equipped_achievement_slug?: string | null }).equipped_achievement_slug ?? null);
   }
+  const leagueTeamIds = Array.from(teamById.keys());
 
   const { data: riderRows = [] } = await supabase
     .from("riders")
@@ -131,28 +132,31 @@ export async function getRaceFeedData(
     .map((r) => r.slug);
 
   const { data: xpRows = [] } =
-    slugsForXp.length === 0
+    slugsForXp.length === 0 || leagueTeamIds.length === 0
       ? { data: [] as any[] }
       : await supabase
           .from("rider_xp_daily")
           .select("race_slug, team_id, rider_id, xp_gained")
-          .in("race_slug", slugsForXp);
+          .in("race_slug", slugsForXp)
+          .in("team_id", leagueTeamIds);
 
   const { data: bonusRows = [] } =
-    slugsForXp.length === 0
+    slugsForXp.length === 0 || leagueTeamIds.length === 0
       ? { data: [] as any[] }
       : await supabase
           .from("sponsor_bonuses")
           .select("race_slug, team_id, rider_id, final_bonus")
-          .in("race_slug", slugsForXp);
+          .in("race_slug", slugsForXp)
+          .in("team_id", leagueTeamIds);
 
   const { data: goalRows = [] } =
-    slugsForXp.length === 0
+    slugsForXp.length === 0 || leagueTeamIds.length === 0
       ? { data: [] as any[] }
       : await (supabase as any)
           .from("sponsor_goal_completions")
           .select("stage_slug, team_id, rider_id, final_reward")
-          .in("stage_slug", slugsForXp);
+          .in("stage_slug", slugsForXp)
+          .in("team_id", leagueTeamIds);
 
   // Aggregate XP + bonus by (race_slug, team_id, rider_id)
   type Agg = { xp: number; bonus: number };
