@@ -14,7 +14,6 @@ const winData: NemesisData = {
   targetRiderShortName: "J. Vingegaard",
   outcome: "attacker_won",
   isMyTeamAttacker: true,
-  nemesisType: "gc",
 };
 
 describe("RaceFeedNemesisCard", () => {
