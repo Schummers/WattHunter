@@ -244,9 +244,14 @@ class BrowserSession:
     async def _launch_nodriver(headless: bool) -> Any:
         import nodriver as uc
 
+        chrome_path = os.environ.get(
+            "CHROME_EXECUTABLE",
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        )
         try:
             return await uc.start(
                 headless=headless,
+                browser_executable_path=chrome_path,
                 browser_args=["--lang=en-US"],
             )
         except FileNotFoundError as exc:
