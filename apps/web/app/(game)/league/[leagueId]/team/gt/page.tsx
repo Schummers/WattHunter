@@ -22,6 +22,7 @@ import {
 } from "./tactics/actions";
 import type { ActivationLite } from "@/components/team-tactics-section";
 import type { IncomingNemesis } from "@/components/nemesis-incoming-banner";
+import { DEMO_LEAGUE_SLUG } from "@/lib/demo-constants";
 
 export default async function GtTeamPage({
   params,
@@ -29,6 +30,9 @@ export default async function GtTeamPage({
   params: Promise<{ leagueId: string }>;
 }) {
   const { leagueId } = await params;
+
+  if (leagueId === DEMO_LEAGUE_SLUG) return renderDemoTeamGt();
+
   const supabase = await createClient();
 
   const {
@@ -122,6 +126,19 @@ export default async function GtTeamPage({
         incomingNemesis={incomings as IncomingNemesis[]}
       />
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Demo path — anonymous visitor, no auth required
+// ---------------------------------------------------------------------------
+function renderDemoTeamGt() {
+  return (
+    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+      <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+        Demo league has no Grand Tour data yet.
+      </p>
+    </div>
   );
 }
 

@@ -5,6 +5,11 @@ import { STRATEGY_TYPES } from "@/lib/strategies";
 import { StrategiesClient } from "./strategies-client";
 import { getCurrentPhase, getNextPhase } from "@/lib/phases";
 import { getOpenAuction } from "@/lib/supabase/get-open-auction";
+import {
+  DEMO_LEAGUE_SLUG,
+  DEMO_LEAGUE_ID,
+  DEMO_VISITOR_TEAM_ID,
+} from "@/lib/demo-constants";
 
 export default async function StrategiesPage({
   params,
@@ -12,6 +17,9 @@ export default async function StrategiesPage({
   params: Promise<{ leagueId: string }>;
 }) {
   const { leagueId } = await params;
+
+  if (leagueId === DEMO_LEAGUE_SLUG) return await renderDemoTeamStrategies();
+
   const supabase = await createClient();
 
   const user = await getUser();
@@ -137,6 +145,125 @@ export default async function StrategiesPage({
         <StrategiesClient
           teamId={teamId}
           leagueId={leagueId}
+          level={level}
+          initialStrategies={initialStrategies}
+          nationalities={nationalities}
+          teams={teams}
+          rosterRiders={rosterRiders}
+          nextPhaseName={nextPhaseName}
+          isInAuctionWindow={isImmediate}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Demo path — anonymous visitor, no auth required
+// ---------------------------------------------------------------------------
+async function renderDemoTeamStrategies() {
+  const supabase = await createClient();
+  const teamId = DEMO_VISITOR_TEAM_ID;
+  const leagueId = DEMO_LEAGUE_ID;
+
+  // Fetch level from teams
+  const { data: teamRow } = await supabase
+    .from("teams")
+    .select("id, level")
+    .eq("id", teamId)
+    .single();
+  const level = teamRow?.level ?? 1;
+
+  const [
+    { data: dbStrategies },
+    { data: teamStrategies },
+    { data: nationalitiesData },
+    { data: teamsData },
+    { data: contracts },
+  ] = await Promise.all([
+    supabase.from("strategies").select("id, slug"),
+    supabase
+      .from("team_strategies")
+      .select("strategy_id, is_active, config, pending_is_active, pending_config")
+      .eq("team_id", teamId),
+    supabase
+      .from("riders")
+      .select("nationality")
+      .not("nationality", "is", null)
+      .order("nationality"),
+    supabase
+      .from("riders")
+      .select("real_team")
+      .not("real_team", "is", null)
+      .order("real_team"),
+    supabase
+      .from("contracts")
+      .select("riders(nationality, real_team, specialty, birthdate)")
+      .eq("team_id", teamId)
+      .eq("status", "active"),
+  ]);
+
+  const strategyIdToSlug: Record<string, string> = {};
+  for (const s of dbStrategies ?? []) {
+    strategyIdToSlug[s.id] = s.slug;
+  }
+
+  const nextPhase = getNextPhase(getCurrentPhase());
+  const nextPhaseName = nextPhase?.label ?? null;
+  const openAuction = await getOpenAuction(supabase, leagueId);
+  const isImmediate = !!openAuction;
+
+  const initialStrategies: Record<string, {
+    isActive: boolean;
+    config: Record<string, string> | null;
+    hasPending?: boolean;
+    pendingIsActive?: boolean;
+    pendingConfig?: Record<string, string> | null;
+  }> = {};
+  for (const st of STRATEGY_TYPES) {
+    initialStrategies[st.slug] = { isActive: false, config: null };
+  }
+  for (const ts of teamStrategies ?? []) {
+    const slug = strategyIdToSlug[ts.strategy_id];
+    if (slug && initialStrategies[slug] !== undefined) {
+      const hasPending = ts.pending_is_active != null;
+      initialStrategies[slug] = {
+        isActive: hasPending ? (ts.pending_is_active ?? ts.is_active) : ts.is_active,
+        config: hasPending
+          ? ((ts.pending_config as Record<string, string> | null) ?? (ts.config as Record<string, string> | null))
+          : (ts.config as Record<string, string> | null),
+        hasPending,
+        pendingIsActive: ts.pending_is_active ?? undefined,
+        pendingConfig: ts.pending_config as Record<string, string> | null ?? undefined,
+      };
+    }
+  }
+
+  const nationalities = [...new Set((nationalitiesData ?? []).map((r) => r.nationality).filter(Boolean))] as string[];
+  const teams = [...new Set((teamsData ?? []).map((r) => r.real_team).filter(Boolean))] as string[];
+
+  const rosterRiders = (contracts ?? []).map((c) => {
+    const r = Array.isArray(c.riders) ? c.riders[0] : c.riders;
+    return {
+      nationality: r?.nationality ?? null,
+      real_team: r?.real_team ?? null,
+      specialty: r?.specialty ?? null,
+      birthdate: (r as { birthdate?: string | null })?.birthdate ?? null,
+    };
+  });
+
+  return (
+    <div className="min-h-screen">
+      <BackHeader label="My Team" />
+
+      <h1 className="px-4 pt-4 text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
+        Team Strategies
+      </h1>
+
+      <div className="px-4 pt-4">
+        <StrategiesClient
+          teamId={teamId}
+          leagueId={DEMO_LEAGUE_SLUG}
           level={level}
           initialStrategies={initialStrategies}
           nationalities={nationalities}

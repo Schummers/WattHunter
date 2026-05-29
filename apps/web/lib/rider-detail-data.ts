@@ -79,6 +79,7 @@ export async function fetchRiderDetailData(
   leagueId: string,
   riderId: string,
   from?: string,
+  visitorTeamId?: string | null,
 ): Promise<RiderDetailData | null> {
   const normalizedFrom = from === "recruts" ? "market" : from;
   let context: RiderContext = (normalizedFrom as RiderContext) ?? "ranking";
@@ -92,9 +93,7 @@ export async function fetchRiderDetailData(
     { data: riderTeams },
     { data: startlists },
     { data: xpDailyRaw },
-    {
-      data: { user },
-    },
+    authResult,
     { data: sponsorBonusesRaw },
   ] = await Promise.all([
     supabase.from("riders").select("*").eq("id", riderId).single(),
@@ -117,12 +116,17 @@ export async function fetchRiderDetailData(
       .select("race_slug, xp_gained, raw_pcs_points, date, team_id")
       .eq("rider_id", riderId)
       .order("date", { ascending: false }),
-    supabase.auth.getUser(),
+    // When visitorTeamId is provided, skip the auth call — we already know the viewer's team
+    visitorTeamId != null
+      ? Promise.resolve({ data: { user: null as null } })
+      : supabase.auth.getUser(),
     supabase
       .from("sponsor_bonuses")
       .select("final_bonus, team_id")
       .eq("rider_id", riderId),
   ]);
+
+  const user = (authResult as { data: { user: unknown } }).data.user as (typeof authResult extends { data: { user: infer U } } ? U : never) | null;
 
   if (!rider) return null;
 
@@ -187,159 +191,186 @@ export async function fetchRiderDetailData(
   let currentRound: number | null = null;
   let budgetInfo: RiderDetailData["budgetInfo"];
 
-  if (user) {
+  // Determine the viewer's team: use visitorTeamId override if provided, otherwise derive from auth
+  if (visitorTeamId != null) {
+    userTeamId = visitorTeamId;
+  } else if (user) {
     const { data: member } = await supabase
       .from("league_members")
       .select("id, team_id")
       .eq("league_id", leagueId)
-      .eq("user_id", user.id)
+      .eq("user_id", (user as { id: string }).id)
       .single();
+    if (member?.team_id) userTeamId = member.team_id;
+  }
 
-    if (member?.team_id) {
-      userTeamId = member.team_id;
-
-      const [{ data: contract }, { data: activeBid }] = await Promise.all([
-        supabase
-          .from("contracts")
-          .select("id, locked_salary, status, phase_recruited_id")
-          .eq("team_id", member.team_id)
-          .eq("rider_id", riderId)
-          .eq("status", "active")
-          .maybeSingle(),
-        supabase
-          .from("auction_bids")
-          .select("id, amount, auction_id")
-          .eq("team_id", member.team_id)
-          .eq("rider_id", riderId)
-          .eq("status", "active")
-          .maybeSingle(),
-      ]);
-
-      if (contract) {
-        if (context !== "market" && context !== "team") context = "team";
-        contractData = {
-          locked_salary: contract.locked_salary,
-          status: contract.status,
-          contractId: contract.id,
-          pcsPoints: rider.pcs_points_1yr ?? undefined,
-          phaseRecruitedId: contract.phase_recruited_id ?? undefined,
-        };
-      }
-
-      if (activeBid) {
-        currentBidId = activeBid.id;
-        currentBidAmount = activeBid.amount;
-        activeAuctionId = activeBid.auction_id;
-      }
-
-      // Draft bids
-      const { data: draftBid } = await supabase
-        .from("draft_bids")
-        .select("amount")
-        .eq("team_id", member.team_id)
+  if (userTeamId) {
+    const [{ data: contract }, { data: activeBid }] = await Promise.all([
+      supabase
+        .from("contracts")
+        .select("id, locked_salary, status, phase_recruited_id")
+        .eq("team_id", userTeamId)
         .eq("rider_id", riderId)
+        .eq("status", "active")
+        .maybeSingle(),
+      supabase
+        .from("auction_bids")
+        .select("id, amount, auction_id")
+        .eq("team_id", userTeamId)
+        .eq("rider_id", riderId)
+        .eq("status", "active")
+        .maybeSingle(),
+    ]);
+
+    if (contract) {
+      if (context !== "market" && context !== "team") context = "team";
+      contractData = {
+        locked_salary: contract.locked_salary,
+        status: contract.status,
+        contractId: contract.id,
+        pcsPoints: rider.pcs_points_1yr ?? undefined,
+        phaseRecruitedId: contract.phase_recruited_id ?? undefined,
+      };
+    }
+
+    if (activeBid) {
+      currentBidId = activeBid.id;
+      currentBidAmount = activeBid.amount;
+      activeAuctionId = activeBid.auction_id;
+    }
+
+    // Draft bids
+    const { data: draftBid } = await supabase
+      .from("draft_bids")
+      .select("amount")
+      .eq("team_id", userTeamId)
+      .eq("rider_id", riderId)
+      .maybeSingle();
+
+    if (draftBid) {
+      draftAmount = draftBid.amount;
+    }
+
+    // Active auction + round info
+    if (!activeAuctionId) {
+      const { data: auction } = await supabase
+        .from("auctions")
+        .select("id, name")
+        .eq("league_id", leagueId)
+        .in("status", ["active", "open"])
         .maybeSingle();
-
-      if (draftBid) {
-        draftAmount = draftBid.amount;
+      if (auction) {
+        activeAuctionId = auction.id;
+        const m = auction.name.match(/(\d+)/);
+        currentRound = m ? parseInt(m[1], 10) : null;
       }
-
-      // Active auction + round info
-      if (!activeAuctionId) {
-        const { data: auction } = await supabase
-          .from("auctions")
-          .select("id, name")
-          .eq("league_id", leagueId)
-          .in("status", ["active", "open"])
-          .maybeSingle();
-        if (auction) {
-          activeAuctionId = auction.id;
-          const m = auction.name.match(/(\d+)/);
-          currentRound = m ? parseInt(m[1], 10) : null;
-        }
-      } else {
-        const { data: auction } = await supabase
-          .from("auctions")
-          .select("name")
-          .eq("id", activeAuctionId)
-          .maybeSingle();
-        if (auction) {
-          const m = auction.name.match(/(\d+)/);
-          currentRound = m ? parseInt(m[1], 10) : null;
-        }
+    } else {
+      const { data: auction } = await supabase
+        .from("auctions")
+        .select("name")
+        .eq("id", activeAuctionId)
+        .maybeSingle();
+      if (auction) {
+        const m = auction.name.match(/(\d+)/);
+        currentRound = m ? parseInt(m[1], 10) : null;
       }
+    }
 
-      // Budget info for market context
-      if (context === "market") {
+    // Budget info for market context
+    // When visitorTeamId is provided (demo), use it directly; otherwise look up via league_members
+    if (context === "market") {
+      let budgetTeamId: string | null = userTeamId;
+      let budgetLevel = 1;
+      let budgetTreasury = 0;
+      let budgetPhaseConfirmedId: number | null = null;
+
+      if (visitorTeamId != null) {
+        // Demo path: fetch team directly
+        const { data: budgetTeamRow } = await supabase
+          .from("teams")
+          .select("level, treasury, phase_confirmed_id")
+          .eq("id", visitorTeamId)
+          .single();
+        if (budgetTeamRow) {
+          budgetLevel = budgetTeamRow.level ?? 1;
+          budgetTreasury = budgetTeamRow.treasury ?? 0;
+          budgetPhaseConfirmedId = (budgetTeamRow as { phase_confirmed_id?: number | null }).phase_confirmed_id ?? null;
+        }
+      } else if (user) {
         const { data: memberForBudget } = await supabase
           .from("league_members")
           .select("team_id, teams:team_id(level, treasury, phase_confirmed_id)")
           .eq("league_id", leagueId)
-          .eq("user_id", user.id)
+          .eq("user_id", (user as { id: string }).id)
           .single();
 
         if (memberForBudget?.team_id) {
+          budgetTeamId = memberForBudget.team_id;
           const budgetTeam = Array.isArray(memberForBudget.teams)
             ? memberForBudget.teams[0]
             : memberForBudget.teams;
-          const level = budgetTeam?.level ?? 1;
-          const maxSlots = getMaxSlots(level);
-
-          const [
-            { data: contracts },
-            { data: draftBids },
-            { data: sponsorData },
-          ] = await Promise.all([
-            supabase
-              .from("contracts")
-              .select("id, locked_salary")
-              .eq("team_id", memberForBudget.team_id)
-              .eq("status", "active"),
-            supabase
-              .from("draft_bids")
-              .select("amount")
-              .eq("team_id", memberForBudget.team_id),
-            supabase
-              .from("team_sponsors")
-              .select("sponsors(monthly_budget)")
-              .eq("team_id", memberForBudget.team_id)
-              .maybeSingle(),
-          ]);
-
-          const currentSlots = (contracts ?? []).length;
-          const activeSalaries = (contracts ?? []).reduce(
-            (sum, c) => sum + (c.locked_salary ?? 0),
-            0,
-          );
-          const totalDraftBidsAmount = (draftBids ?? []).reduce(
-            (sum, b) => sum + (b.amount ?? 0),
-            0,
-          );
-          const draftBidsCount = (draftBids ?? []).length;
-
-          let sponsorIncome = 0;
-          if (sponsorData?.sponsors) {
-            const sp = Array.isArray(sponsorData.sponsors)
-              ? sponsorData.sponsors[0]
-              : sponsorData.sponsors;
-            sponsorIncome =
-              (sp as { monthly_budget: number }).monthly_budget ?? 0;
-          }
-
-          const phaseConfirmedId =
-            (budgetTeam as { phase_confirmed_id?: number | null })
-              ?.phase_confirmed_id ?? null;
-          budgetInfo = {
-            currentSlots,
-            maxSlots,
-            treasury: budgetTeam?.treasury ?? 0,
-            sponsorIncome,
-            activeSalaries,
-            totalDraftBidsAmount,
-            draftBidsCount,
-            phaseConfirmed: phaseConfirmedId === getCurrentPhase().id,
-          };
+          budgetLevel = budgetTeam?.level ?? 1;
+          budgetTreasury = budgetTeam?.treasury ?? 0;
+          budgetPhaseConfirmedId = (budgetTeam as { phase_confirmed_id?: number | null })?.phase_confirmed_id ?? null;
+        } else {
+          budgetTeamId = null;
         }
+      }
+
+      if (budgetTeamId) {
+        const maxSlots = getMaxSlots(budgetLevel);
+
+        const [
+          { data: contracts },
+          { data: draftBids },
+          { data: sponsorData },
+        ] = await Promise.all([
+          supabase
+            .from("contracts")
+            .select("id, locked_salary")
+            .eq("team_id", budgetTeamId)
+            .eq("status", "active"),
+          supabase
+            .from("draft_bids")
+            .select("amount")
+            .eq("team_id", budgetTeamId),
+          supabase
+            .from("team_sponsors")
+            .select("sponsors(monthly_budget)")
+            .eq("team_id", budgetTeamId)
+            .maybeSingle(),
+        ]);
+
+        const currentSlots = (contracts ?? []).length;
+        const activeSalaries = (contracts ?? []).reduce(
+          (sum, c) => sum + (c.locked_salary ?? 0),
+          0,
+        );
+        const totalDraftBidsAmount = (draftBids ?? []).reduce(
+          (sum, b) => sum + (b.amount ?? 0),
+          0,
+        );
+        const draftBidsCount = (draftBids ?? []).length;
+
+        let sponsorIncome = 0;
+        if (sponsorData?.sponsors) {
+          const sp = Array.isArray(sponsorData.sponsors)
+            ? sponsorData.sponsors[0]
+            : sponsorData.sponsors;
+          sponsorIncome =
+            (sp as { monthly_budget: number }).monthly_budget ?? 0;
+        }
+
+        budgetInfo = {
+          currentSlots,
+          maxSlots,
+          treasury: budgetTreasury,
+          sponsorIncome,
+          activeSalaries,
+          totalDraftBidsAmount,
+          draftBidsCount,
+          phaseConfirmed: budgetPhaseConfirmedId === getCurrentPhase().id,
+        };
       }
     }
   }

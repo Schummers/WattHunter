@@ -2,6 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { BackHeader } from "@/components/back-header";
 import { LevelsTimeline } from "./levels-timeline";
 import { getProgressPct, getNextLevel } from "@/lib/levels";
+import {
+  DEMO_LEAGUE_SLUG,
+  DEMO_VISITOR_TEAM_ID,
+} from "@/lib/demo-constants";
 
 export default async function LevelsPage({
   params,
@@ -9,6 +13,9 @@ export default async function LevelsPage({
   params: Promise<{ leagueId: string }>;
 }) {
   const { leagueId } = await params;
+
+  if (leagueId === DEMO_LEAGUE_SLUG) return await renderDemoLevels();
+
   const supabase = await createClient();
 
   const {
@@ -37,6 +44,43 @@ export default async function LevelsPage({
     : null;
   const currentXp = team?.cumulative_xp ?? 0;
   const currentLevel = team?.level ?? 1;
+  const progressPct = getProgressPct(currentXp, currentLevel);
+  const nextLevel = getNextLevel(currentLevel);
+
+  return (
+    <div className="min-h-screen">
+      <BackHeader label="Back" />
+
+      <div className="px-4 pt-4 space-y-6">
+        <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
+          Team Progression
+        </h1>
+
+        <LevelsTimeline
+          currentLevel={currentLevel}
+          currentXp={currentXp}
+          progressPct={progressPct}
+          nextLevelXp={nextLevel?.xp ?? currentXp}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Demo path — anonymous visitor, no auth required
+// ---------------------------------------------------------------------------
+async function renderDemoLevels() {
+  const supabase = await createClient();
+
+  const { data: teamRow } = await supabase
+    .from("teams")
+    .select("level, cumulative_xp")
+    .eq("id", DEMO_VISITOR_TEAM_ID)
+    .single();
+
+  const currentXp = teamRow?.cumulative_xp ?? 0;
+  const currentLevel = teamRow?.level ?? 1;
   const progressPct = getProgressPct(currentXp, currentLevel);
   const nextLevel = getNextLevel(currentLevel);
 

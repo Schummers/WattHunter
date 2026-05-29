@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { RoundsClient } from "./rounds-client";
+import { DEMO_LEAGUE_SLUG } from "@/lib/demo-constants";
 
 function splitDateTime(iso: string | null): { date: string; time: string } {
   if (!iso) return { date: "", time: "" };
@@ -21,6 +22,9 @@ export default async function EditRoundDatesPage({
   params: Promise<{ leagueId: string }>;
 }) {
   const { leagueId } = await params;
+
+  if (leagueId === DEMO_LEAGUE_SLUG) return renderDemoAuctionRounds();
+
   const supabase = await createClient();
   const user = await getUser();
 
@@ -59,5 +63,18 @@ export default async function EditRoundDatesPage({
       initialRounds={initialRounds}
       isCreating={isCreating}
     />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Demo path — anonymous visitor, no auth required
+// ---------------------------------------------------------------------------
+function renderDemoAuctionRounds() {
+  return (
+    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+      <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+        This page is for league commissioners.
+      </p>
+    </div>
   );
 }

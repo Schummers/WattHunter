@@ -9,6 +9,10 @@ import { MovementTag } from "@/components/movement-tag";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatThousands, countryCodeToFlag } from "@/lib/format";
 import { resolvePhotoUrl } from "@/lib/photo-url";
+import {
+  DEMO_LEAGUE_SLUG,
+  DEMO_LEAGUE_ID,
+} from "@/lib/demo-constants";
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -23,6 +27,9 @@ export default async function TeamDetailPage({
 }) {
   const { leagueId, teamId } = await params;
   const { from } = await searchParams;
+
+  if (leagueId === DEMO_LEAGUE_SLUG) return await renderDemoTeamRanking(teamId, from);
+
   const supabase = await createClient();
 
   const user = await getUser();
@@ -320,4 +327,271 @@ function ordinalSuffix(n: number): string {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return s[(v - 20) % 10] || s[v] || s[0];
+}
+
+// ---------------------------------------------------------------------------
+// Demo path — anonymous visitor, no auth required
+// ---------------------------------------------------------------------------
+async function renderDemoTeamRanking(teamId: string, from?: string) {
+  const supabase = await createClient();
+
+  const { data: team } = await supabase
+    .from("teams")
+    .select("id, name, cumulative_xp, level, league_id")
+    .eq("id", teamId)
+    .single();
+
+  if (!team || team.league_id !== DEMO_LEAGUE_ID) {
+    return (
+      <div className="px-4 py-8">
+        <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">Team not found.</p>
+      </div>
+    );
+  }
+
+  const [{ data: ownerMember }, { count: higherCount }] = await Promise.all([
+    supabase
+      .from("league_members")
+      .select("user_id, users(display_name)")
+      .eq("team_id", teamId)
+      .eq("league_id", DEMO_LEAGUE_ID)
+      .maybeSingle(),
+    supabase
+      .from("teams")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", DEMO_LEAGUE_ID)
+      .gt("cumulative_xp", team.cumulative_xp),
+  ]);
+
+  const ownerUser = ownerMember
+    ? (Array.isArray(ownerMember.users) ? ownerMember.users[0] : ownerMember.users)
+    : null;
+  const ownerDisplayName = (ownerUser as { display_name?: string })?.display_name ?? "Unknown";
+  const rankPosition = (higherCount ?? 0) + 1;
+
+  const { data: contractsRaw } = await supabase
+    .from("contracts")
+    .select("id, rider_id, status, riders:rider_id(id, full_name, nationality, photo_url, pcs_rank)")
+    .eq("team_id", teamId)
+    .in("status", ["active", "released"]);
+
+  const contracts = contractsRaw ?? [];
+  const activeContracts = contracts.filter((c) => c.status === "active");
+  const formerContracts = contracts.filter((c) => c.status === "released");
+  const allRiderIds = contracts.map((c) => c.rider_id);
+
+  const [{ data: teamXpRaw }, { data: leagueTeamsRaw }] = await Promise.all([
+    supabase
+      .from("rider_xp_daily")
+      .select("rider_id, xp_gained, race_slug")
+      .eq("team_id", teamId),
+    supabase
+      .from("teams")
+      .select("id")
+      .eq("league_id", DEMO_LEAGUE_ID),
+  ]);
+
+  const riderXpTotal: Record<string, number> = {};
+  for (const r of teamXpRaw ?? []) {
+    riderXpTotal[r.rider_id] = (riderXpTotal[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
+  }
+
+  const leagueTeamIds = (leagueTeamsRaw ?? []).map((t) => t.id);
+
+  const [{ data: leagueContractsRaw }, { data: leagueXpRaw }] = await Promise.all([
+    supabase
+      .from("contracts")
+      .select("rider_id, status, released_at")
+      .in("team_id", leagueTeamIds.length > 0 ? leagueTeamIds : ["__none__"])
+      .in("status", ["active", "released"]),
+    supabase
+      .from("rider_xp_daily")
+      .select("rider_id, xp_gained, race_slug")
+      .in("team_id", leagueTeamIds.length > 0 ? leagueTeamIds : ["__none__"]),
+  ]);
+
+  const leagueContractByRider = new Map<string, { rider_id: string; status: string; released_at?: string | null }>();
+  for (const c of leagueContractsRaw ?? []) {
+    const existing = leagueContractByRider.get(c.rider_id);
+    if (!existing) {
+      leagueContractByRider.set(c.rider_id, c);
+    } else if (c.status === "active" && existing.status !== "active") {
+      leagueContractByRider.set(c.rider_id, c);
+    } else if (c.status === "released" && existing.status === "released") {
+      const cTime = c.released_at ?? "";
+      const eTime = existing.released_at ?? "";
+      if (cTime > eTime) leagueContractByRider.set(c.rider_id, c);
+    }
+  }
+  const leagueRiderIds = [...leagueContractByRider.keys()];
+
+  const leagueRiderXp: Record<string, number> = {};
+  for (const r of leagueXpRaw ?? []) {
+    leagueRiderXp[r.rider_id] = (leagueRiderXp[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
+  }
+
+  const sortedLeagueRiders = leagueRiderIds
+    .map((id) => ({ id, xp: leagueRiderXp[id] ?? 0 }))
+    .sort((a, b) => b.xp - a.xp);
+
+  const riderGameRank: Record<string, number> = {};
+  sortedLeagueRiders.forEach((r, i) => { riderGameRank[r.id] = i + 1; });
+
+  const allRaceSlugs = [...new Set((teamXpRaw ?? []).map((x) => x.race_slug).filter(Boolean))];
+  const { data: latestRaceMeta } = allRaceSlugs.length > 0
+    ? await supabase
+        .from("race_results")
+        .select("race_slug, race_date")
+        .in("race_slug", allRaceSlugs)
+        .order("race_date", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+
+  const riderMovement: Record<string, number> = {};
+  if (latestRaceMeta) {
+    const latestXp: Record<string, number> = {};
+    for (const r of leagueXpRaw ?? []) {
+      if (r.race_slug === latestRaceMeta.race_slug) {
+        latestXp[r.rider_id] = (latestXp[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
+      }
+    }
+    const prevSorted = leagueRiderIds
+      .map((id) => ({ id, xp: (leagueRiderXp[id] ?? 0) - (latestXp[id] ?? 0) }))
+      .sort((a, b) => b.xp - a.xp);
+    const prevRankMap: Record<string, number> = {};
+    prevSorted.forEach((r, i) => { prevRankMap[r.id] = i + 1; });
+    for (const id of allRiderIds) {
+      const cur = riderGameRank[id] ?? 0;
+      const prev = prevRankMap[id] ?? cur;
+      riderMovement[id] = prev - cur;
+    }
+  }
+
+  function renderRiderRow(
+    contract: typeof contracts[number],
+    options: { isFormer?: boolean } = {},
+  ) {
+    const rider = Array.isArray(contract.riders) ? contract.riders[0] : contract.riders;
+    const r = rider as { id: string; full_name: string; nationality: string | null; photo_url: string | null; pcs_rank: number | null };
+    const xp = riderXpTotal[contract.rider_id] ?? 0;
+    const rank = riderGameRank[contract.rider_id];
+    const movement = riderMovement[contract.rider_id] ?? 0;
+
+    return (
+      <Link
+        key={contract.id}
+        href={`/league/${DEMO_LEAGUE_SLUG}/rider/${r.id}?from=ranking`}
+        className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-surface-hover)] ${
+          options.isFormer ? "opacity-50" : ""
+        }`}
+      >
+        <Avatar className={`size-9 shrink-0 ${options.isFormer ? "border border-dashed border-[var(--border-default)]" : ""}`}>
+          {r.photo_url && (
+            <AvatarImage
+              src={resolvePhotoUrl(r.photo_url)}
+              alt={r.full_name}
+              referrerPolicy="no-referrer"
+            />
+          )}
+          <AvatarFallback className="bg-[var(--bg-surface)] border border-[var(--border-default)] text-[length:var(--type-micro)] text-[var(--text-mid)]">
+            {getInitials(r.full_name)}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] truncate">
+              {r.full_name}
+            </span>
+            {r.nationality && (
+              <span className="shrink-0 text-[length:var(--type-caption)]">
+                {countryCodeToFlag(r.nationality)}
+              </span>
+            )}
+            {!options.isFormer && <MovementTag movement={movement} />}
+          </div>
+          {rank && (
+            <span className="font-mono text-[length:var(--type-caption)] text-[var(--text-low)]">
+              #{rank} in game
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-baseline gap-1 shrink-0">
+          <span className="font-mono text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)]">
+            {formatThousands(xp)}
+          </span>
+          <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">
+            XP
+          </span>
+        </div>
+
+        <ChevronRight size={16} className="shrink-0 text-[var(--text-ghost)]" />
+      </Link>
+    );
+  }
+
+  return (
+    <div className="space-y-6 pb-24">
+      <BackHeader label={from === "league" ? "League" : from === "status" ? "Round Status" : "Ranking"} />
+
+      <div className="px-4 space-y-1">
+        <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
+          {team.name}
+        </h1>
+        <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+          Managed by @{ownerDisplayName}
+        </p>
+      </div>
+
+      <div className="flex gap-2 px-4">
+        <MetricBox value={formatThousands(team.cumulative_xp)} label="Season XP" highlight />
+        <MetricBox value={`${rankPosition}${ordinalSuffix(rankPosition)}`} label="Ranking" />
+        <MetricBox value={team.level} label="Level" />
+      </div>
+
+      <div>
+        <div className="flex items-baseline justify-between px-4 pb-2">
+          <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+            Active Roster
+          </span>
+          <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)]">
+            <span className="font-mono tabular-nums">{activeContracts.length}</span> rider{activeContracts.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+
+        <div className="divide-y divide-[var(--border-subtle)]">
+          {activeContracts.map((c) => renderRiderRow(c))}
+        </div>
+
+        {activeContracts.length === 0 && (
+          <p className="px-4 text-[length:var(--type-body)] text-[var(--text-mid)]">
+            No active riders.
+          </p>
+        )}
+      </div>
+
+      {formerContracts.length > 0 && (
+        <>
+          <div className="h-1.5 bg-[var(--bg-subtle)]" />
+
+          <div>
+            <div className="flex items-baseline justify-between px-4 pb-2">
+              <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+                Former Riders
+              </span>
+              <span className="text-[length:var(--type-caption)] text-[var(--text-ghost)]">
+                <span className="font-mono tabular-nums">{formerContracts.length}</span> rider{formerContracts.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            <div className="divide-y divide-[var(--border-subtle)]">
+              {formerContracts.map((c) => renderRiderRow(c, { isFormer: true }))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }

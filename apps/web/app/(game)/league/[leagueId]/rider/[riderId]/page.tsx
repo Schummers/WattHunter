@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { RiderDetailClient } from "./rider-detail-client";
 import { fetchRiderDetailData } from "@/lib/rider-detail-data";
+import {
+  DEMO_LEAGUE_SLUG,
+  DEMO_LEAGUE_ID,
+  DEMO_VISITOR_TEAM_ID,
+} from "@/lib/demo-constants";
 
 export default async function RiderDetailPage({
   params,
@@ -11,6 +16,34 @@ export default async function RiderDetailPage({
 }) {
   const { leagueId, riderId } = await params;
   const { from } = await searchParams;
+
+  if (leagueId === DEMO_LEAGUE_SLUG) {
+    const supabase = await createClient();
+    const data = await fetchRiderDetailData(
+      supabase,
+      DEMO_LEAGUE_ID,
+      riderId,
+      from,
+      DEMO_VISITOR_TEAM_ID,
+    );
+    if (!data) {
+      return (
+        <div className="px-4 py-8">
+          <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
+            Rider not found.
+          </p>
+        </div>
+      );
+    }
+    return (
+      <RiderDetailClient
+        leagueId={DEMO_LEAGUE_SLUG}
+        {...data}
+        currentBidId={data.currentBidId ?? undefined}
+      />
+    );
+  }
+
   const supabase = await createClient();
 
   const data = await fetchRiderDetailData(supabase, leagueId, riderId, from);
