@@ -57,24 +57,36 @@ Ce CLAUDE.md ne duplique PAS ces fichiers (counts, listes de fichiers, historiqu
 ## Sync PCS (données coureurs)
 Pipelines de scraping procyclingstats.com lancés manuellement via CLI.
 - **Exécution locale uniquement** (IP résidentielle requise — Cloudflare bloque les IPs datacenter)
-- Nécessite Python 3.9+, Playwright Chromium, fichier `.env` dans `services/pcs-sync/`
+- **Backend par défaut : nodriver** (depuis 2026-05-24, migration de Playwright). Playwright reste en fallback via `SCRAPER_BACKEND=playwright`. Shim : `services/pcs-sync/browser_session.py`.
+- **Venv Python 3.12 obligatoire** (nodriver requiert >=3.10) : `services/pcs-sync/.venv/`. Toujours invoquer `.venv/bin/python`, jamais `python3` (système = 3.9 = nodriver incompat).
+- Fichier `.env` dans `services/pcs-sync/` (Supabase URL + service role key).
 
 ### Commandes principales
 ```bash
 cd services/pcs-sync
 
+# (Setup one-shot — déjà fait) :
+# /opt/homebrew/bin/python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/python -m playwright install chromium
+
 # Init riders (1x/an) : sync top 600 PCS + season rankings 3 ans
-python3 run_pipeline.py init-riders
+.venv/bin/python run_pipeline.py init-riders
 
 # Post-race : résultats + ranking + scoring
-python3 run_pipeline.py post-race --race "race/paris-nice/2026/stage-3"
+.venv/bin/python run_pipeline.py post-race --race "race/paris-nice/2026/stage-3"
 
 # Startlists : programme prévisionnel
-python3 run_pipeline.py startlists --race "race/paris-nice/2026"
+.venv/bin/python run_pipeline.py startlists --race "race/paris-nice/2026"
 
 # Enrichissement coureurs (1x/an, ~1h/100 riders) : photo, bio, spécialité, teams
-python3 run_pipeline.py enrich-riders [--start N --end M]
+.venv/bin/python run_pipeline.py enrich-riders [--start N --end M]
 ```
+
+### Variables d'environnement scraper
+- `SCRAPER_BACKEND` : `nodriver` (default) | `playwright` (rollback)
+- `SCRAPER_HEADLESS` : `0` (default — fenêtre visible) | `1` (tente headless, auto-fallback en visible si CF bloque)
+- `PCS_CF_RESOLVE_TIMEOUT_S` : timeout warm-up Cloudflare (default 30s)
+
+**Pourquoi visible par défaut** : Cloudflare flag les browsers headless même avec nodriver dans ce setup (IP/fingerprint). Une fenêtre Chromium s'ouvre 5-10s au début de chaque session (warm-up sur page rider neutre type `tadej-pogacar`), puis les fetches suivants passent via les cookies `cf_clearance`.
 
 Autres scripts (auxiliaires, voir `run_pipeline.py --help` et `services/pcs-sync/`) : `resolve_gt_rescue`, `resolve_now`, `retry_failed`, `dnf_detection`, `sponsor_bonus`, `goal_evaluator`, `remontada`, `tactics`, `validation`, `backfill_traceability`.
 

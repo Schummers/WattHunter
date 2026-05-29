@@ -1,7 +1,7 @@
 """
 PCS sync logic — wraps procyclingstats and writes to Supabase.
-Uses nodriver (real Chrome) to bypass Cloudflare bot-protection on procyclingstats.com.
-Requires residential IP — Cloudflare blocks datacenter IPs like GitHub Actions.
+Uses Playwright to bypass Cloudflare bot-protection on procyclingstats.com.
+Requires residential IP (Cloudflare blocks datacenter IPs like GitHub Actions).
 """
 from __future__ import annotations
 
@@ -60,24 +60,52 @@ def calculate_monthly_salary(pcs_points_1yr: int) -> int:
     return max(SALARY_FLOOR, int(monthly // 100 * 100))
 
 
-CLOUDFLARE_MARKERS = ["Just a moment", "Checking your browser", "cf-browser-verification",
-                      "Un instant", "Vérification de sécurité"]
+CLOUDFLARE_MARKERS = [
+    "Just a moment",          # EN
+    "Checking your browser",  # EN
+    "cf-browser-verification",
+    "Un instant",             # FR
+    "Un momento",             # ES / IT
+    "Einen Moment",           # DE
+    "Ein Moment",             # DE (variant)
+    "Een ogenblik",           # NL
+]
+
+# Max seconds to wait for a Cloudflare interstitial to self-resolve.
+CF_RESOLVE_TIMEOUT_S = float(os.getenv("PCS_CF_RESOLVE_TIMEOUT_S", "30"))
+CF_POLL_INTERVAL_S = 2.0
+
+
+def _is_cf_challenge(html: str) -> bool:
+    return any(marker in html for marker in CLOUDFLARE_MARKERS)
 
 
 async def fetch_html(page, url: str, delay: float = 4.0) -> str:
-    """Fetch a page via nodriver NodriverPage, return HTML.
+    """Fetch a page and bypass Cloudflare, return HTML.
 
-    `page` is a NodriverPage (or Playwright page) — navigates to the URL,
-    waits for DOM ready, then returns page.content().
+    After navigating, polls the page content every ``CF_POLL_INTERVAL_S``
+    seconds until the Cloudflare interstitial disappears (or
+    ``CF_RESOLVE_TIMEOUT_S`` is reached). nodriver resolves the JS challenge
+    automatically; we just need to wait for it.
     """
     await asyncio.sleep(delay)
     full_url = f"https://www.procyclingstats.com/{url}"
     await page.goto(full_url, wait_until="domcontentloaded")
-    # Extra wait for JS-rendered content (same as original Playwright approach)
-    await page.wait_for_timeout(5000)
+    # Initial wait — gives the page (or CF challenge JS) time to start.
+    await page.wait_for_timeout(2000)
+
+    elapsed = 0.0
     html = await page.content()
-    if any(marker in html for marker in CLOUDFLARE_MARKERS):
-        raise RuntimeError(f"Cloudflare blocked request to {full_url}")
+    while _is_cf_challenge(html) and elapsed < CF_RESOLVE_TIMEOUT_S:
+        await asyncio.sleep(CF_POLL_INTERVAL_S)
+        elapsed += CF_POLL_INTERVAL_S
+        html = await page.content()
+
+    if _is_cf_challenge(html):
+        raise RuntimeError(
+            f"Cloudflare blocked request to {full_url} "
+            f"(challenge unresolved after {elapsed:.0f}s)"
+        )
     return html
 
 
@@ -91,7 +119,7 @@ async def sync_top500(supabase: Optional[Client] = None, pages: int = 6) -> dict
     Uses fresh browser context per page to avoid Cloudflare.
     Page 1 uses clean URL; pages 2+ use rankings.php with offset & filter params.
     """
-    from playwright.async_api import async_playwright
+    from browser_session import BrowserSession
     from procyclingstats import Ranking
 
     if supabase is None:
@@ -99,18 +127,10 @@ async def sync_top500(supabase: Optional[Client] = None, pages: int = 6) -> dict
 
     results = []
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-
+    async with BrowserSession() as browser:
         for page_idx in range(pages):
             offset = page_idx * 100
-            context = await browser.new_context(
-                user_agent=(
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-                )
-            )
+            context = await browser.new_context()
             page = await context.new_page()
 
             try:
@@ -127,7 +147,7 @@ async def sync_top500(supabase: Optional[Client] = None, pages: int = 6) -> dict
                 await page.wait_for_timeout(6000)
 
                 html = await page.content()
-                if any(m in html for m in ["Just a moment", "Checking your browser"]):
+                if _is_cf_challenge(html):
                     logger.warning("Cloudflare blocked at offset=%d", offset)
                     break
 
@@ -185,8 +205,6 @@ async def sync_top500(supabase: Optional[Client] = None, pages: int = 6) -> dict
                 pause = 15
                 print("    Waiting {}s before next page...".format(pause))
                 await asyncio.sleep(pause)
-
-        await browser.close()
 
     total_synced = sum(r["synced"] for r in results)
     total_errors = sum(len(r["errors"]) for r in results)

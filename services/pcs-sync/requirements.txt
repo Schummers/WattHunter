@@ -4,5 +4,9 @@ procyclingstats==0.2.8
 supabase==2.7.4
 python-dotenv==1.0.1
 httpx==0.27.0
+# Scraper backend (Cloudflare bypass)
+# nodriver is the default. AGPL-3.0 — OK because pcs-sync is internal/private and not distributed.
+nodriver>=0.50
+# Playwright kept as fallback (SCRAPER_BACKEND=playwright). Remove after 2 weeks of clean nodriver runs.
 playwright==1.49.0
 cloudscraper==1.2.71
