@@ -23,6 +23,13 @@ export function formatThousands(amount: number): string {
   return amount.toLocaleString("fr-FR");
 }
 
+/** Format XP: max 1 decimal, trailing zeros stripped. e.g. 63.7099 → "63.7", 83.0 → "83".
+ *  Guards against IEEE-754 accumulation artefacts from summing fractional xp_gained. */
+export function formatXp(xp: number): string {
+  const rounded = Math.round(xp * 10) / 10;
+  return rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(1);
+}
+
 /** Format date as "Sat, Mar 8" — consistent across all browsers/locales. */
 export function formatShortDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;

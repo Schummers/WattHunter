@@ -9,6 +9,7 @@ import { useDemoSafeAction } from "@/contexts/demo-context";
 import { ModalShell, ModalHeader } from "./tactic-modal-shell";
 import { StageList } from "./tactic-stage-list";
 import { cn } from "@/lib/utils";
+import { formatXp } from "@/lib/format";
 
 export interface EligibleRival {
   teamId: string;
@@ -128,7 +129,7 @@ export function TacticNemesisModal({
               </div>
               <div className="flex flex-col items-end">
                 <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
-                  {myLeader.xp}
+                  {formatXp(myLeader.xp)}
                 </span>
                 <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
                   GT XP
@@ -281,7 +282,7 @@ function RivalRow({
       </div>
       <div className="flex flex-col items-end">
         <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
-          {rival.xp}
+          {formatXp(rival.xp)}
         </span>
         <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
           GT XP

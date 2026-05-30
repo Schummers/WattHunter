@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { MovementTag } from "@/components/movement-tag";
 import { RiderLockBadge } from "@/components/rider-lock-badge";
 import { resolvePhotoUrl } from "@/lib/photo-url";
+import { formatXp } from "@/lib/format";
 
 interface RiderCardProps {
   rider: {
@@ -187,7 +188,7 @@ export function RiderCard({
       ) : xp != null ? (
         <div className="flex flex-col items-end shrink-0">
           <span className="text-[length:var(--type-stat-small)] font-bold font-mono tabular-nums text-[var(--text-high)]">
-            {xp.toLocaleString()}
+            {formatXp(xp)}
           </span>
           <span className="text-[length:var(--type-micro)] font-semibold text-[var(--text-low)]">XP</span>
         </div>
