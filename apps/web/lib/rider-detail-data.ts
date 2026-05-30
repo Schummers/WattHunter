@@ -111,19 +111,25 @@ export async function fetchRiderDetailData(
       .select("race_slug, race_name, race_date")
       .eq("rider_id", riderId)
       .order("race_date", { ascending: true }),
+    // Scope XP rows to teams in the current league (inner join on teams.league_id).
+    // A rider can be owned by teams across multiple leagues (incl. the demo league);
+    // without this filter every league's rows surface, duplicating each stage.
     supabase
       .from("rider_xp_daily")
-      .select("race_slug, xp_gained, raw_pcs_points, date, team_id")
+      .select("race_slug, xp_gained, raw_pcs_points, date, team_id, teams!inner(league_id)")
       .eq("rider_id", riderId)
+      .eq("teams.league_id", leagueId)
       .order("date", { ascending: false }),
     // When visitorTeamId is provided, skip the auth call — we already know the viewer's team
     visitorTeamId != null
       ? Promise.resolve({ data: { user: null as null } })
       : supabase.auth.getUser(),
+    // Same league scoping as rider_xp_daily, so totalBonus isn't inflated by other leagues.
     supabase
       .from("sponsor_bonuses")
-      .select("final_bonus, team_id")
-      .eq("rider_id", riderId),
+      .select("final_bonus, team_id, teams!inner(league_id)")
+      .eq("rider_id", riderId)
+      .eq("teams.league_id", leagueId),
   ]);
 
   const user = (authResult as { data: { user: unknown } }).data.user as (typeof authResult extends { data: { user: infer U } } ? U : never) | null;
