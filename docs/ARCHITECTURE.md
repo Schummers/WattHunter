@@ -164,6 +164,8 @@ watthunter/
 │   ├── sync.py                  # Playwright + procyclingstats parser (top 600)
 │   ├── sync_race.py             # Sync resultats de course post-race
 │   ├── enrich.py                # Enrichissement profil coureur (Pipeline E)
+│   ├── photo_storage.py         # Download photo PCS + upload bucket Supabase rider-photos
+│   ├── backfill_photos.py       # One-shot : self-host photos top 300 (cmd backfill-photos)
 │   ├── auction.py               # Resolution 3-round sealed-bid
 │   ├── scoring.py               # XP quotidien
 │   ├── sponsor_bonus.py         # Calcul bonus sponsors sur resultats de course

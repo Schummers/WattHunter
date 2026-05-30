@@ -515,7 +515,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
                 enrich_page = await ctx.new_page()
                 try:
                     result = await enrich_single_rider(
-                        supabase, enrich_page, nr["id"], nr["pcs_slug"]
+                        supabase, enrich_page, nr["id"], nr["pcs_slug"], nr.get("pcs_rank")
                     )
                     print(f"  Enriched: {nr['pcs_slug']} — {result}")
                 except Exception as exc:
@@ -763,6 +763,22 @@ async def run_resolve_gt_rescue(phase_id: int, league_id: str) -> None:
         print(f"Errors: {result['errors']}")
 
 
+async def run_backfill_photos() -> None:
+    """One-shot: self-host top-150 rider photos in Supabase Storage (PCS blocks hotlinks)."""
+    from sync import get_supabase
+    from backfill_photos import backfill_rider_photos
+
+    supabase = get_supabase()
+    print("=== Backfill rider photos (top 150 → Supabase Storage) ===")
+    print()
+    result = await backfill_rider_photos(supabase)
+    print()
+    print(f"Uploaded: {result.get('uploaded', 0)} / {result.get('total', 0)}")
+    if result.get("failed"):
+        print(f"Failed ({len(result['failed'])}): {', '.join(result['failed'])}")
+    print("Done — backfill-photos complete.")
+
+
 async def run_evaluate_goals(race_slug: str) -> None:
     """Evaluate GT sponsor goals (one-time bonuses) for a Grand Tour."""
     from sync import get_supabase
@@ -871,6 +887,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pre-auction — update global ranking + monthly finance.",
     )
 
+    # backfill-photos
+    subparsers.add_parser(
+        "backfill-photos",
+        help="One-shot — self-host top-150 rider photos in Supabase Storage (PCS blocks hotlinks).",
+    )
+
     # detect-dnfs
     detect_dnfs_p = subparsers.add_parser(
         "detect-dnfs",
@@ -950,6 +972,8 @@ async def main() -> None:
         await run_enrich_riders(args.start, args.end, retry_missing=args.retry_missing)
     elif args.command == "pre-auction":
         await run_pre_auction()
+    elif args.command == "backfill-photos":
+        await run_backfill_photos()
     elif args.command == "evaluate-goals":
         await run_evaluate_goals(args.race)
     elif args.command == "detect-dnfs":

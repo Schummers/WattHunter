@@ -1,15 +1,16 @@
 /**
  * Resolve a rider photo URL.
  *
- * The PCS scraper stores rider photos as relative paths like
- * `images/riders/vg/em/ben-tulett-2026-n2-n3.jpg`. We prefix them with
- * the procyclingstats.com origin so they can be loaded by `next/image`
- * (which rejects paths without a leading slash or absolute URL).
+ * Rider photos are self-hosted in Supabase Storage (`riders.photo_url` holds a full
+ * Supabase CDN URL) because procyclingstats.com now blocks direct image hotlinks via
+ * Cloudflare. Most consumers render a plain `<img>` (Radix `AvatarImage`), so the value
+ * must be an absolute URL.
  *
- * Already-absolute URLs are returned unchanged.
+ * Absolute (http/https) URLs are returned unchanged. Anything else (legacy relative PCS
+ * paths, which no longer load) resolves to `undefined` so the avatar falls back to initials.
  */
 export function resolvePhotoUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
   if (url.startsWith("http")) return url;
-  return `https://www.procyclingstats.com/${url}`;
+  return undefined;
 }
