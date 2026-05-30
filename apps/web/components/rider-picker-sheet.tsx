@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { resolvePhotoUrl } from "@/lib/photo-url";
 import {
   addToSquad,
   swapSlot,
@@ -164,9 +165,9 @@ export function RiderPickerSheet({
                     }`}
                   >
                     <Avatar className="h-9 w-9">
-                      {r.rider.photo_url && (
+                      {resolvePhotoUrl(r.rider.photo_url) && (
                         <AvatarImage
-                          src={r.rider.photo_url}
+                          src={resolvePhotoUrl(r.rider.photo_url)}
                           alt={r.rider.full_name}
                           referrerPolicy="no-referrer"
                         />

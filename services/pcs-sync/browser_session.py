@@ -86,6 +86,10 @@ class _NodriverPage:
     async def content(self) -> str:
         return await self._tab.get_content()
 
+    async def evaluate(self, expression: str, await_promise: bool = False) -> Any:
+        """Run JS in the tab and return its value (used to fetch images same-origin)."""
+        return await self._tab.evaluate(expression, await_promise=await_promise)
+
     async def close(self) -> None:
         try:
             await self._tab.close()

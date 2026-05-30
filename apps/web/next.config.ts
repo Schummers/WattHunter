@@ -4,9 +4,10 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
+        // Rider photos are self-hosted in Supabase Storage (PCS blocks direct hotlinks).
         protocol: "https",
-        hostname: "www.procyclingstats.com",
-        pathname: "/images/**",
+        hostname: "uuvshpykvpnhpeondqjt.supabase.co",
+        pathname: "/storage/v1/object/public/rider-photos/**",
       },
     ],
   },

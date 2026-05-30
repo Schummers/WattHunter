@@ -18,6 +18,7 @@ from selectolax.parser import HTMLParser
 from supabase import Client
 
 from sync import fetch_html, get_supabase, CLOUDFLARE_MARKERS
+from photo_storage import self_host_photo, TOP_PHOTO_RANK
 
 logger = logging.getLogger(__name__)
 
@@ -248,8 +249,15 @@ async def enrich_single_rider(
     page,
     rider_id: str,
     pcs_slug: str,
+    pcs_rank: Optional[int] = None,
 ) -> Dict[str, Any]:
-    """Fetch a single rider's PCS page and upsert enriched data."""
+    """Fetch a single rider's PCS page and upsert enriched data.
+
+    For top riders (``pcs_rank <= TOP_PHOTO_RANK``) the PCS photo is downloaded via the
+    warmed-up tab and self-hosted in Supabase Storage (PCS now blocks direct image
+    hotlinks). Riders outside that threshold get ``photo_url = NULL`` (fallback initials).
+    When ``pcs_rank`` is unknown, the photo is left un-self-hosted (NULL).
+    """
     from procyclingstats import Rider
 
     try:
@@ -290,9 +298,19 @@ async def enrich_single_rider(
 
         parsed = parse_rider_data(raw, specialty_points, teams, season_points)
 
+        # Self-host the photo for top riders only (PCS blocks direct hotlinks).
+        # The tab is currently on the rider's PCS page, so the in-page fetch is
+        # same-origin and carries the cf_clearance cookie. Others -> NULL (fallback).
+        if pcs_rank is not None and pcs_rank <= TOP_PHOTO_RANK:
+            photo_url_final = await self_host_photo(
+                supabase, page, pcs_slug, parsed["photo_url"]
+            )
+        else:
+            photo_url_final = None
+
         # 1. Update riders table with bio + specialty
         update_data = {
-            "photo_url": parsed["photo_url"],
+            "photo_url": photo_url_final,
             "birthdate": parsed["birthdate"],
             "birth_place": parsed["birth_place"],
             "height_cm": parsed["height_cm"],
@@ -454,15 +472,15 @@ async def enrich_riders(
             for rider in batch:
                 rider_id = rider["id"]
                 pcs_slug = rider["pcs_slug"]
-                pcs_rank = rider.get("pcs_rank", "?")
+                pcs_rank = rider.get("pcs_rank")
 
-                print(f"    #{pcs_rank} {pcs_slug}...", end=" ", flush=True)
+                print(f"    #{pcs_rank if pcs_rank is not None else '?'} {pcs_slug}...", end=" ", flush=True)
 
                 context = await browser.new_context()
                 page = await context.new_page()
 
                 try:
-                    result = await enrich_single_rider(supabase, page, rider_id, pcs_slug)
+                    result = await enrich_single_rider(supabase, page, rider_id, pcs_slug, pcs_rank)
                     results.append(result)
                     if result["status"] == "ok":
                         print("OK")
@@ -534,15 +552,15 @@ async def enrich_missing_riders(
             for rider in batch:
                 rider_id = rider["id"]
                 pcs_slug = rider["pcs_slug"]
-                pcs_rank = rider.get("pcs_rank", "?")
+                pcs_rank = rider.get("pcs_rank")
 
-                print(f"    #{pcs_rank} {pcs_slug}...", end=" ", flush=True)
+                print(f"    #{pcs_rank if pcs_rank is not None else '?'} {pcs_slug}...", end=" ", flush=True)
 
                 context = await browser.new_context()
                 page = await context.new_page()
 
                 try:
-                    result = await enrich_single_rider(supabase, page, rider_id, pcs_slug)
+                    result = await enrich_single_rider(supabase, page, rider_id, pcs_slug, pcs_rank)
                     results.append(result)
                     if result["status"] == "ok":
                         print("OK")

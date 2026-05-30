@@ -79,7 +79,13 @@ cd services/pcs-sync
 
 # Enrichissement coureurs (1x/an, ~1h/100 riders) : photo, bio, spécialité, teams
 .venv/bin/python run_pipeline.py enrich-riders [--start N --end M]
+
+# Backfill photos (one-shot) : self-host les photos du top 300 dans Supabase Storage
+# (PCS bloque le hotlink direct via Cloudflare). Idempotent, re-lançable.
+.venv/bin/python run_pipeline.py backfill-photos
 ```
+
+**Photos coureurs self-hostées** : `riders.photo_url` du top 300 (`pcs_rank <= 300`, constante `TOP_PHOTO_RANK`) pointe vers le bucket public Supabase `rider-photos` (pas vers PCS — Cloudflare 403 sur tout `<img>` direct). Rangs 301-600 = `photo_url NULL` → fallback initiales. Le scraper télécharge l'image via un `fetch` in-page same-origin depuis l'onglet nodriver (cookie `cf_clearance`). Helper : `services/pcs-sync/photo_storage.py`. Front : `apps/web/lib/photo-url.ts` (URL absolue → telle quelle, sinon `undefined`).
 
 ### Variables d'environnement scraper
 - `SCRAPER_BACKEND` : `nodriver` (default) | `playwright` (rollback)

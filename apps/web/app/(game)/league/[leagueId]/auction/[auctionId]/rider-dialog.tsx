@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { countryCodeToFlag } from "@/lib/format";
+import { resolvePhotoUrl } from "@/lib/photo-url";
 import { placeBid, cancelBid } from "./actions";
 import { computeAvailableBudget } from "@/lib/budget";
 import { useDemoSafeAction } from "@/contexts/demo-context";
@@ -145,11 +146,12 @@ export function RiderDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-4">
-            {rider.photo_url ? (
+            {resolvePhotoUrl(rider.photo_url) ? (
               <img
-                src={rider.photo_url}
+                src={resolvePhotoUrl(rider.photo_url)}
                 alt={rider.full_name}
                 className="size-16 rounded-md object-cover"
+                referrerPolicy="no-referrer"
               />
             ) : (
               <div className="flex size-16 items-center justify-center rounded-md bg-[var(--bg-subtle)] text-[length:var(--type-caption)] text-[var(--text-mid)]">
