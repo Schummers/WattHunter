@@ -8,7 +8,7 @@ import { ConfigCards } from "@/components/config-cards";
 import { BudgetSummary } from "@/components/budget-summary";
 import { DraftBidCard } from "@/components/draft-bid-card";
 import { RiderCard } from "@/components/rider-card";
-import { formatThousands } from "@/lib/format";
+import { formatThousands, formatXp } from "@/lib/format";
 import { X } from "lucide-react";
 import { removeDraft, updateDraftAmount, validateRound } from "./actions";
 import { releaseRider } from "@/app/(game)/league/[leagueId]/rider/[riderId]/actions";
@@ -312,7 +312,7 @@ export function AuctionsClient({
                           {formatThousands(rider.lockedSalary)} €
                         </span>
                         <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-                          +<span className="font-mono tabular-nums">{rider.xp}</span> XP
+                          +<span className="font-mono tabular-nums">{formatXp(rider.xp)}</span> XP
                         </span>
                       </div>
                       {(isRound1 || hasOpenRound) && (

@@ -1,16 +1,11 @@
 import type { TeamRaceResult } from "@/lib/race-feed-types";
+import { formatXp } from "@/lib/format";
 
 function formatBonus(amount: number): string {
   if (amount <= 0) return "";
   const k = amount / 1000;
   const formatted = k % 1 === 0 ? String(Math.round(k)) : k.toFixed(1);
   return formatted + " k€";
-}
-
-function formatXp(xp: number): string {
-  // Max 1 decimal, trailing zeros stripped
-  const rounded = Math.round(xp * 10) / 10;
-  return rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(1);
 }
 
 type Props = {

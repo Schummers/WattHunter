@@ -6,6 +6,7 @@ import Image from "next/image";
 import { claimDnfRefund } from "@/app/(game)/league/[leagueId]/team/gt/actions";
 import { useDemoSafeAction } from "@/contexts/demo-context";
 import { resolvePhotoUrl } from "@/lib/photo-url";
+import { formatXp } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 
 export interface GtDnfCardProps {
@@ -147,7 +148,7 @@ export function GtDnfCard({
             }}
           >
             {gtXp > 0
-              ? `Get a 50% refund — ${gtXp} XP earned will be forfeited`
+              ? `Get a 50% refund — ${formatXp(gtXp)} XP earned will be forfeited`
               : "Get a 50% refund — no GT XP will be lost"}
           </span>
 

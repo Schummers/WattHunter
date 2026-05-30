@@ -10,6 +10,7 @@ import { placeTactic } from "@/app/(game)/league/[leagueId]/team/gt/tactics/acti
 import { useDemoSafeAction } from "@/contexts/demo-context";
 import type { TacticContextForFeed, TacticRival } from "@/lib/race-feed-types";
 import { cn } from "@/lib/utils";
+import { formatXp } from "@/lib/format";
 
 const BOOST_TACTICS = new Set<TacticId>(["unleash", "overdrive", "call_the_bus"]);
 const NEMESIS_TACTICS = new Set<TacticId>(["nemesis_gc", "nemesis_sprint"]);
@@ -201,7 +202,7 @@ export function RaceFeedTacticModal({ stageSlug, stageName, tacticContext, onClo
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
-                      {myLeader.xp}
+                      {formatXp(myLeader.xp)}
                     </span>
                     <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
                       GT XP
@@ -261,7 +262,7 @@ export function RaceFeedTacticModal({ stageSlug, stageName, tacticContext, onClo
                         </div>
                         <div className="flex flex-col items-end">
                           <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
-                            {rival.xp}
+                            {formatXp(rival.xp)}
                           </span>
                           <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
                             GT XP
