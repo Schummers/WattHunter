@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import functools
 import json
 import os
 import re
@@ -70,13 +71,44 @@ def _is_gt_race(slug: str) -> bool:
     return slug.startswith(GT_SLUG_PREFIXES)
 
 
-async def _maybe_import_finals(supabase, browser, parent_slug, race_name, race_date, gc_result, imported_slugs):
-    """After a GT's GC import, import the final Points/KOM/Youth jerseys once the GT is complete.
+@functools.lru_cache(maxsize=1)
+def _stage_race_slug_prefixes() -> tuple[str, ...]:
+    """Mirror of the scoring.py helper — calendar-driven stage-race whitelist."""
+    try:
+        with open(CALENDAR_PATH, encoding="utf-8") as fh:
+            calendar = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return tuple()
+    out: list[str] = []
+    for e in calendar:
+        if e.get("type") != "stage-race":
+            continue
+        s = e.get("slug") or ""
+        if s:
+            out.append(s)
+            out.append(s if s.endswith("/") else s + "/")
+    return tuple(out)
 
-    Completion signal: GC carries PCS points (assigned only after the final stage). GT-only.
+
+def _is_squad_race(slug: str) -> bool:
+    """True for any stage-race slug (GT + 1-week). Use this instead of _is_gt_race
+    when the question is 'should we run squad-aware scoring / finals import here?'."""
+    if not slug:
+        return False
+    if slug.startswith(GT_SLUG_PREFIXES):
+        return True
+    return any(slug == p.rstrip("/") or slug.startswith(p)
+               for p in _stage_race_slug_prefixes())
+
+
+async def _maybe_import_finals(supabase, browser, parent_slug, race_name, race_date, gc_result, imported_slugs):
+    """After a stage-race GC import, import final Points/KOM/Youth jerseys once the race is complete.
+
+    Completion signal: GC carries PCS points (assigned only after the final stage).
+    Used for GTs (Giro/Tour/Vuelta) AND 1-week stage races whose GC carries points (Spec A A9).
     Appends the three final slugs to imported_slugs so scoring picks them up.
     """
-    if not (_is_gt_race(parent_slug) and gc_result.get("has_points")):
+    if not (_is_squad_race(parent_slug) and gc_result.get("has_points")):
         return
     from sync_race import import_final_classifications
 
