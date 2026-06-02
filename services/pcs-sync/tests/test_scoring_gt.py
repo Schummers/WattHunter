@@ -95,15 +95,13 @@ def _base_mocks(
         normalized_classif,
         # 8. gt_tactic_activations (Task 7 — populate-only, no activations yet)
         [],
-        # 9. remontada_boosts (None = no active boost → multiplier defaults to 1.0)
-        None,
-        # 10. rider_xp_daily upsert
+        # 9. rider_xp_daily upsert
         [],
-        # 11. teams select
+        # 10. teams select
         {"id": TEAM_ID, "cumulative_xp": starting_cumulative_xp, "level": 1, "league_id": LEAGUE_ID},
-        # 12. teams update
+        # 11. teams update
         [],
-        # 13. teams (league snapshot)
+        # 12. teams (league snapshot)
         [{"id": TEAM_ID, "cumulative_xp": 150}],
     )
 
@@ -207,7 +205,6 @@ async def test_stage_hunter_no_multiplier_on_gc():
         [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": "stage_hunter", "applied_at": "2026-05-10T09:00:00+02:00"}],
         [],  # gt_daily_classifications
         [],  # gt_tactic_activations (Task 7 — no activations yet)
-        None,  # remontada_boosts
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
         [],
         [{"id": TEAM_ID, "cumulative_xp": 100}],
@@ -394,22 +391,23 @@ async def test_classif_outside_top_n_is_ignored():
 # ---------------------------------------------------------------------------
 
 
-async def test_rider_added_after_cutoff_gets_no_multiplier():
-    """Rider created_at after 11:00 CET on race day → not in squad for scoring."""
+async def test_rider_added_after_cutoff_gets_no_xp():
+    """Rider created_at after 11:00 CET on race day → not in squad → 0 XP on GT stage."""
     import scoring
 
     sb = _base_mocks(
         role="gc_leader",
         squad_created_at=AFTER_CUTOFF,
     )
-    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+    result = await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
 
-    payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 100.0  # no multiplier
+    # Non-squad rider on GT stage earns 0 XP — no upsert, no team update.
+    assert result["teams_processed"] == 0
+    assert sb.upserts.get("rider_xp_daily", []) == []
 
 
-async def test_rider_removed_before_cutoff_gets_no_multiplier():
-    """Rider removed_at before 11:00 CET on race day → excluded from squad."""
+async def test_rider_removed_before_cutoff_gets_no_xp():
+    """Rider removed_at before 11:00 CET on race day → excluded from squad → 0 XP."""
     import scoring
 
     sb = _base_mocks(
@@ -417,10 +415,11 @@ async def test_rider_removed_before_cutoff_gets_no_multiplier():
         squad_created_at=BEFORE_CUTOFF,
         squad_removed_at="2026-05-11T08:00:00+02:00",  # removed 8am CET, before 11am cutoff
     )
-    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+    result = await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
 
-    payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 100.0  # no multiplier
+    # Non-squad rider on GT stage earns 0 XP — no upsert, no team update.
+    assert result["teams_processed"] == 0
+    assert sb.upserts.get("rider_xp_daily", []) == []
 
 
 async def test_role_changed_after_cutoff_uses_previous_role():
@@ -474,8 +473,8 @@ async def test_idempotent_rerun_no_team_xp_delta():
     assert teams_update_xp == 165.0  # unchanged
 
 
-async def test_rider_not_in_squad_no_multiplier():
-    """Even on a GT slug, a rider absent from gt_squad gets no multiplier."""
+async def test_rider_not_in_squad_gets_no_xp():
+    """A contracted rider absent from gt_squad earns 0 XP on a GT stage."""
     import scoring
 
     sb = make_supabase(
@@ -500,17 +499,13 @@ async def test_rider_not_in_squad_no_multiplier():
         [],  # gt_squad empty
         [],  # gt_role_assignments empty
         [],  # gt_daily_classifications empty
-        [],  # gt_tactic_activations (Task 7 — no activations yet)
-        None,  # remontada_boosts (no active boost)
-        [],  # rider_xp_daily upsert
-        {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
-        [],
-        [{"id": TEAM_ID, "cumulative_xp": 100}],
+        [],  # gt_tactic_activations
     )
-    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+    result = await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
 
-    payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 100.0
+    # Non-squad rider on GT stage earns 0 XP — no upsert, no team update.
+    assert result["teams_processed"] == 0
+    assert sb.upserts.get("rider_xp_daily", []) == []
 
 
 async def test_squad_rider_no_stage_points_gets_classif_bonus():
