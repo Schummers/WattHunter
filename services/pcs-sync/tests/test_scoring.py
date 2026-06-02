@@ -149,7 +149,7 @@ def test_xp_formula_with_bonus():
 
 
 def test_compute_level():
-    """compute_level returns correct level for various XP values (8 levels)."""
+    """compute_level returns correct level for various XP values (8 levels, L7=2600 L8=5000)."""
     from scoring import compute_level
 
     assert compute_level(0) == 1
@@ -159,7 +159,12 @@ def test_compute_level():
     assert compute_level(150) == 3
     assert compute_level(349) == 3
     assert compute_level(350) == 4
-    assert compute_level(2400) == 8
+    assert compute_level(600) == 5
+    assert compute_level(1200) == 6
+    assert compute_level(2599) == 6   # below new L7
+    assert compute_level(2600) == 7   # new L7
+    assert compute_level(4999) == 7   # below new L8
+    assert compute_level(5000) == 8   # new L8
     assert compute_level(99999) == 8
 
 

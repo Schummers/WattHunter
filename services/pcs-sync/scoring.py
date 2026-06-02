@@ -31,8 +31,8 @@ from tactics import (
 
 logger = logging.getLogger(__name__)
 
-# Level thresholds — must match apps/web/lib/levels.ts (8 levels)
-LEVEL_THRESHOLDS = [0, 25, 150, 350, 600, 1200, 1800, 2400]
+# Level thresholds — must match apps/web/lib/levels.ts (8 levels). L7/L8 stretched (Spec A A1).
+LEVEL_THRESHOLDS = [0, 25, 150, 350, 600, 1200, 2600, 5000]
 
 
 def _parse_supabase_ts(ts: str) -> datetime:
