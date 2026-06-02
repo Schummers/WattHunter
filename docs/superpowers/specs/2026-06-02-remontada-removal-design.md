@@ -55,12 +55,19 @@ Le périmètre dépasse la liste du handoff d'origine. Footprint complet (hors `
 | `record_overtake(...)` | remontada-spécifique | Supprimer |
 
 `snapshot_league_ranking` (remontada.py l.32) n'est utilisé que par les tests remontada → supprimé avec eux.
-Les 2 helpers à relocaliser ne sont consommés que par `scoring.py` (vérifié par grep) → relocalisation contenue.
-On les **copie verbatim** dans `gt_slug.py` (fonctions pures de parsing de slug, sans dépendance remontada).
+
+**Prémisse corrigée (audit approfondi)** : dans `scoring.py`, `get_gt_identifier`/`get_stage_number`
+n'alimentaient en réalité QUE remontada (le dict `remontada_stage_in_run`, `get_active_multiplier`,
+le bloc overtakes). `_is_gt_slug` utilise `GT_RACE_PREFIXES`, pas ces helpers. Donc **après suppression
+complète, scoring.py ne les consomme plus du tout** et retire leurs imports. On les relocalise quand même
+dans `gt_slug.py` (décision 2026-06-02) : fonctions pures de parsing de slug, testées, **prêtes pour P2**
+(refonte scoring par étape/profil) — on évite de jeter du code testé qui resservira sous peu.
+On les **copie verbatim** (+ leurs regex `_GT_PATTERN`/`_STAGE_PATTERN`) dans `gt_slug.py`.
 
 ### `scoring.py` — détail des retraits
-- Import : remplacer `from remontada import (...)` par `from gt_slug import get_gt_identifier, get_stage_number`.
-- Retirer `remontada_stage_in_run` (l.421-427).
+- Import : **supprimer entièrement** `from remontada import (...)` (les 2 helpers ne sont plus consommés post-removal — voir prémisse corrigée).
+- Retirer `remontada_stage_in_run` (l.417-428).
+- Retirer les assignations `gt_id`/`stage_no` (l.481-482) et `c_gt_id`/`c_stage_no` (l.613-614) devenues inutilisées.
 - Retirer les blocs `get_active_multiplier` (l.548-561 et l.613-624) ; la formule XP perd `* remontada_mult`
   (l.561 → `... * nemesis_modifier`).
 - Retirer les clés `"remontada_mult"` des payloads `rider_xp_daily` (l.577 et l.637) — la colonne est droppée.
