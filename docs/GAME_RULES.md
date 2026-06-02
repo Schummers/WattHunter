@@ -339,7 +339,7 @@ At the start of each phase, the player **confirms** their configuration:
 | Release cooldown | 7 days (no one can bid the rider during this window) |
 | Co-Unlock threshold | max(2, ceil(30% of league teams)) — see §12.2 |
 | Round resolution | Auto on consensus, or manual force-resolve from Status tab |
-| GT Tactics per Grand Tour | 1 of each type (5 total) |
+| GT Tactics per race | Varies by tactic and race kind (see §13 — Tactic usage per race) |
 | Commissioner round dates | Editable at any time before round closes |
 
 - **GT scoring multipliers** (Spec A, 2026-06-02): daily classif matched ×2 (youth ×1.5);
@@ -352,6 +352,12 @@ At the start of each phase, the player **confirms** their configuration:
 - `NEMESIS_GC_PROFILES     = {p3, p4, p5}` (hilly-uphill + mountain — where the GC is decided).
 - Profile source : `stage_profiles` table, seeded by `python run_pipeline.py startlists --race "<slug>"`.
 - Source code : `supabase/migrations/20260603000100_place_tactic_profile_gating.sql`.
+
+### Final secondary classifications scale (Spec A A2/A9)
+- GT      : `[80, 20, 10]` (ranks 1 / 2 / 3 base XP, before role multiplier).
+- 1-week  : `[40, 10, 5]`  (half-scale — shorter race, smaller payout).
+- Multiplier on the matching role (×2 for points→sprinter, kom→climber; ×1.5 for youth→gc_leader); ×1.0 otherwise.
+- Source : `services/pcs-sync/scoring.py:FINAL_SECONDARY_SCALE`.
 
 ---
 
@@ -392,18 +398,33 @@ At the start of each phase, the player **confirms** their configuration:
 
 ### Available Tactics
 
-| Tactic | Effect | Target | Limit |
-|--------|--------|--------|-------|
-| **Unleash** | ×1.5 XP for domestiques | All non-GC riders on roster | 1 per GT |
-| **Overdrive** | ×2.0 XP for stage hunters **in the breakaway** | 1 specific rider | 1 per GT |
-| **Nemesis GC** | PvP duel on GC classification | 1 rival team's GC rider | 1 per GT |
-| **Nemesis Sprint** | PvP duel on sprint classification | 1 rival team's sprinter | 1 per GT |
-| **Call the Bus** | Bench riders contribute XP | All bench riders | 1 per GT |
+| Tactic | Effect | Target |
+|--------|--------|--------|
+| **Unleash** | ×1.5 XP for domestiques | All non-GC riders on roster |
+| **Overdrive** | ×2.0 XP for stage hunters **in the breakaway** | 1 specific rider |
+| **Nemesis GC** | PvP duel on GC classification | 1 rival team's GC rider |
+| **Nemesis Sprint** | PvP duel on sprint classification | 1 rival team's sprinter |
+| **Call the Bus** | Bench riders contribute XP | All bench riders |
+
+Per-race activation budget : see *Tactic usage per race (Spec A A9)* below.
+
+### Tactic usage per race (Spec A A9)
+
+Per `(team, race)`, the max activations of each tactic depend on the race kind:
+
+| Tactic          | GT (Giro/Tour/Vuelta) | 1-week stage race |
+|-----------------|-----------------------|-------------------|
+| Unleash         | 2                     | 1                 |
+| Overdrive       | 2                     | 1                 |
+| Call the Bus    | 3                     | 2                 |
+| Nemesis GC      | 1                     | 1                 |
+| Nemesis Sprint  | 1                     | 1                 |
+
+Enforced by trigger `enforce_tactic_usage_limit` reading `public.tactic_usage_limits`.
 
 ### Placement rules
 
 - Tactics are placed **before a stage starts** (11:00 CET cutoff on the stage day).
-- Each tactic can be used **once per Grand Tour** (5 uses total per player per GT).
 - Nemesis tactics require selecting a rival team and a specific rider as the duel target.
 - Effects apply for the **duration of the selected stage** only.
 
