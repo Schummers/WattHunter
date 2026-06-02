@@ -347,6 +347,12 @@ At the start of each phase, the player **confirms** their configuration:
   threshold 30 km, distance bonus +1 XP / 10 km (no cap, additive); final secondary jersey
   scale 80/20/10 (GT) · 40/10/5 (1-week, P3).
 
+### Tactic gating profiles (Spec A A7)
+- `NEMESIS_SPRINT_PROFILES = {p1, p2, p3}` (flat + hilly — anything but mountain).
+- `NEMESIS_GC_PROFILES     = {p3, p4, p5}` (hilly-uphill + mountain — where the GC is decided).
+- Profile source : `stage_profiles` table, seeded by `python run_pipeline.py startlists --race "<slug>"`.
+- Source code : `supabase/migrations/20260603000100_place_tactic_profile_gating.sql`.
+
 ---
 
 ## 12. Anti-Runaway System
@@ -400,6 +406,12 @@ At the start of each phase, the player **confirms** their configuration:
 - Each tactic can be used **once per Grand Tour** (5 uses total per player per GT).
 - Nemesis tactics require selecting a rival team and a specific rider as the duel target.
 - Effects apply for the **duration of the selected stage** only.
+
+**Profile gating at activation (Spec A A7).** A Nemesis tactic can only be placed on a stage whose profile matches the duel type:
+- Nemesis Sprint → stage profile must be in {p1, p2, p3}.
+- Nemesis GC     → stage profile must be in {p3, p4, p5}.
+
+The profile comes from `stage_profiles` (one row per stage_slug), seeded ahead of the race by `python run_pipeline.py startlists --race "<race_slug>"`. If the stage isn't seeded yet, placement returns "stage profile unknown".
 
 ### Scoring integration
 
