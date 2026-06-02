@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
-import { calcMinSalary } from "@/lib/format";
+import { calcMinSalary, formatMoney } from "@/lib/format";
 import { getCurrentPhase, getPhaseRange } from "@/lib/phases";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LEVELS } from "@/lib/levels";
@@ -19,8 +19,8 @@ const AddDraftSchema = z.object({
   amount: z
     .number()
     .int()
-    .min(5000, "Minimum bid is 5 000 €")
-    .refine((v) => v % 100 === 0, "Amount must be a multiple of 100"),
+    .min(5000, "Minimum bid is €5k")
+    .refine((v) => v % 1000 === 0, "Amount must be a multiple of 1,000"),
 });
 
 const RemoveDraftSchema = z.object({
@@ -34,8 +34,8 @@ const UpdateDraftAmountSchema = z.object({
   amount: z
     .number()
     .int()
-    .min(5000, "Minimum bid is 5 000 €")
-    .refine((v) => v % 100 === 0, "Amount must be a multiple of 100"),
+    .min(5000, "Minimum bid is €5k")
+    .refine((v) => v % 1000 === 0, "Amount must be a multiple of 1,000"),
 });
 
 // ---------------------------------------------------------------------------
@@ -94,7 +94,7 @@ export async function addDraft(input: {
 
   const minSalary = calcMinSalary(rider.pcs_points_1yr ?? 0);
   if (amount < minSalary) {
-    return { error: `Minimum bid for this rider is ${minSalary.toLocaleString("en-GB")} €` };
+    return { error: `Minimum bid for this rider is ${formatMoney(minSalary)}` };
   }
 
   // Verify rider is NOT already in the roster
@@ -196,7 +196,7 @@ export async function updateDraftAmount(input: {
 
   const minSalary = calcMinSalary(rider.pcs_points_1yr ?? 0);
   if (amount < minSalary) {
-    return { error: `Minimum bid for this rider is ${minSalary.toLocaleString("en-GB")} €` };
+    return { error: `Minimum bid for this rider is ${formatMoney(minSalary)}` };
   }
 
   const { error: updateError } = await supabase
