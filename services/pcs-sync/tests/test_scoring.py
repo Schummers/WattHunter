@@ -338,52 +338,127 @@ async def test_upsert_contains_traceability_columns():
 
 
 def test_classif_bonus_matching_role_unchanged():
-    """Role-matched rider earns base × 1.5 — identical to pre-change behaviour."""
+    """Role-matched rider earns base × 2.0 (V2, Spec A A2)."""
     from scoring import _classif_bonus
 
     rows = [{"classification_type": "gc", "rank": 3}]
-    # gc_leader + GC rank 3: (10+1-3) × 1.5 = 12.0
-    assert _classif_bonus(rows, "gc_leader") == 12.0
+    # gc_leader + GC rank 3: (10+1-3) × 2.0 = 16.0
+    assert _classif_bonus(rows, "gc_leader") == 16.0
 
     rows_pts = [{"classification_type": "points", "rank": 1}]
-    # sprinter + Points rank 1: (5+1-1) × 1.5 = 7.5
-    assert _classif_bonus(rows_pts, "sprinter") == 7.5
+    # sprinter + Points rank 1: (5+1-1) × 2.0 = 10.0
+    assert _classif_bonus(rows_pts, "sprinter") == 10.0
 
     rows_kom = [{"classification_type": "kom", "rank": 2}]
-    # climber + KOM rank 2: (3+1-2) × 1.5 = 3.0
-    assert _classif_bonus(rows_kom, "climber") == 3.0
+    # climber + KOM rank 2: (3+1-2) × 2.0 = 4.0
+    assert _classif_bonus(rows_kom, "climber") == 4.0
 
 
-def test_classif_bonus_non_matching_role_earns_base():
-    """Non-matching squad rider (domestique/stage_hunter/tt_specialist) earns base × 1.0."""
+def test_classif_bonus_non_matching_role_earns_zero():
+    """V2: non-matching squad roles (domestique/stage_hunter/tt_specialist) earn 0 (Spec A A2)."""
     from scoring import _classif_bonus
 
     rows = [{"classification_type": "gc", "rank": 3}]
-    # (10+1-3) × 1.0 = 8.0 for all non-matching roles
-    assert _classif_bonus(rows, "domestique") == 8.0
-    assert _classif_bonus(rows, "stage_hunter") == 8.0
-    assert _classif_bonus(rows, "tt_specialist") == 8.0
+    # No match → 0 for all non-matching roles
+    assert _classif_bonus(rows, "domestique") == 0.0
+    assert _classif_bonus(rows, "stage_hunter") == 0.0
+    assert _classif_bonus(rows, "tt_specialist") == 0.0
 
-    # Rank at boundary (top = 10): (10+1-10) × 1.0 = 1.0
-    rows_last = [{"classification_type": "gc", "rank": 10}]
-    assert _classif_bonus(rows_last, "domestique") == 1.0
-
-    # Rank outside top → 0
+    # Rank outside top → 0 (also no match)
     rows_out = [{"classification_type": "gc", "rank": 11}]
     assert _classif_bonus(rows_out, "domestique") == 0.0
 
 
 def test_classif_bonus_multiple_classifs_summed():
-    """Rider in multiple classifications earns sum; role gives 1.5× only on its own classif."""
+    """Rider in multiple classifications earns sum; V2 role gives 2.0× only on its own classif."""
     from scoring import _classif_bonus
 
     rows = [
         {"classification_type": "gc", "rank": 5},     # base = (10+1-5) = 6
         {"classification_type": "points", "rank": 2},  # base = (5+1-2)  = 4
     ]
-    # domestique: 6×1.0 + 4×1.0 = 10.0
-    assert _classif_bonus(rows, "domestique") == 10.0
-    # sprinter: gc=6×1.0 (non-match) + points=4×1.5 (match) = 12.0
-    assert _classif_bonus(rows, "sprinter") == 12.0
-    # gc_leader: gc=6×1.5 (match) + points=4×1.0 (non-match) = 13.0
-    assert _classif_bonus(rows, "gc_leader") == 13.0
+    # domestique: no match → 0.0
+    assert _classif_bonus(rows, "domestique") == 0.0
+    # sprinter: gc=0 (non-match) + points=4×2.0 (match) = 8.0
+    assert _classif_bonus(rows, "sprinter") == 8.0
+    # gc_leader: gc=6×2.0 (match) + points=0 (non-match) = 12.0
+    assert _classif_bonus(rows, "gc_leader") == 12.0
+
+
+# --- Spec A P2 scoring helpers ------------------------------------------------
+
+def test_role_multiplier_gc_final_is_unboosted():
+    """Any role on a /gc slug → ×1.0 (GC final raw PCS points, Spec A A2)."""
+    from scoring import _role_multiplier
+    assert _role_multiplier("gc_leader", "race/giro-d-italia/2026/gc", False) == 1.0
+    assert _role_multiplier("climber",   "race/giro-d-italia/2026/gc", False) == 1.0
+
+
+def test_role_multiplier_gc_leader_and_climber_on_stage():
+    from scoring import _role_multiplier
+    assert _role_multiplier("gc_leader", "race/giro-d-italia/2026/stage-4", False) == 1.5
+    assert _role_multiplier("climber",   "race/giro-d-italia/2026/stage-4", False) == 1.5
+
+
+def test_role_multiplier_tt_specialist_itt_only():
+    from scoring import _role_multiplier
+    s = "race/giro-d-italia/2026/stage-7"
+    assert _role_multiplier("tt_specialist", s, True) == 2.0
+    assert _role_multiplier("tt_specialist", s, False) == 1.0
+
+
+def test_role_multiplier_sprinter_gated_by_profile():
+    """Sprinter ×1.5 only on p1/p2/p3; ×1.0 on p4/p5/unknown (Spec A A4)."""
+    from scoring import _role_multiplier
+    s = "race/giro-d-italia/2026/stage-4"
+    assert _role_multiplier("sprinter", s, False, profile_icon="p1") == 1.5
+    assert _role_multiplier("sprinter", s, False, profile_icon="p3") == 1.5
+    assert _role_multiplier("sprinter", s, False, profile_icon="p4") == 1.0
+    assert _role_multiplier("sprinter", s, False, profile_icon="p5") == 1.0
+    assert _role_multiplier("sprinter", s, False, profile_icon=None) == 1.0
+
+
+def test_role_multiplier_stage_hunter_gated_by_breakaway():
+    """Stage hunter ×1.5 only when in the breakaway (≥30 km), else ×1.0 (Spec A A3)."""
+    from scoring import _role_multiplier
+    s = "race/giro-d-italia/2026/stage-4"
+    assert _role_multiplier("stage_hunter", s, False, breakaway_kms=120.0) == 1.5
+    assert _role_multiplier("stage_hunter", s, False, breakaway_kms=30.0) == 1.5
+    assert _role_multiplier("stage_hunter", s, False, breakaway_kms=29.9) == 1.0
+    assert _role_multiplier("stage_hunter", s, False, breakaway_kms=None) == 1.0
+
+
+def test_breakaway_distance_bonus():
+    """+1 XP per 10 km in the break, no cap; 0 below the 30 km threshold (Spec A A3)."""
+    from scoring import _breakaway_distance_bonus
+    assert _breakaway_distance_bonus(150.0) == 15.0
+    assert _breakaway_distance_bonus(255.0) == 25.0   # no cap; floor
+    assert _breakaway_distance_bonus(30.0) == 3.0
+    assert _breakaway_distance_bonus(29.0) == 0.0      # below threshold → not in break
+    assert _breakaway_distance_bonus(None) == 0.0
+
+
+def test_classif_bonus_v2_role_matched_only():
+    """Only the matching classification earns a bonus; matched daily mult is ×2 (Spec A A2)."""
+    from scoring import _classif_bonus
+    # gc_leader, rank 3 GC: base (10+1-3)=8 × 2.0 = 16
+    assert _classif_bonus([{"classification_type": "gc", "rank": 3}], "gc_leader") == 16.0
+    # sprinter, rank 2 points: base (5+1-2)=4 × 2.0 = 8
+    assert _classif_bonus([{"classification_type": "points", "rank": 2}], "sprinter") == 8.0
+    # climber, rank 1 kom: base (3+1-1)=3 × 2.0 = 6
+    assert _classif_bonus([{"classification_type": "kom", "rank": 1}], "climber") == 6.0
+    # gc_leader, rank 1 youth: base (5+1-1)=5 × 1.5 = 7.5
+    assert _classif_bonus([{"classification_type": "youth", "rank": 1}], "gc_leader") == 7.5
+    # gc_leader also matches youth AND gc together
+    assert _classif_bonus(
+        [{"classification_type": "gc", "rank": 1}, {"classification_type": "youth", "rank": 1}],
+        "gc_leader",
+    ) == 20.0 + 7.5
+    # non-matching roles → 0
+    assert _classif_bonus([{"classification_type": "gc", "rank": 1}], "domestique") == 0.0
+    assert _classif_bonus([{"classification_type": "points", "rank": 1}], "stage_hunter") == 0.0
+    assert _classif_bonus([{"classification_type": "gc", "rank": 1}], "tt_specialist") == 0.0
+    # sprinter in GC (non-matched ctype for sprinter) → 0
+    assert _classif_bonus([{"classification_type": "gc", "rank": 1}], "sprinter") == 0.0
+    # out of top-N → 0
+    assert _classif_bonus([{"classification_type": "gc", "rank": 11}], "gc_leader") == 0.0

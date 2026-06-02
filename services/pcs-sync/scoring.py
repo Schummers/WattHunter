@@ -49,19 +49,15 @@ GT_RACE_PREFIXES = (
     "race/vuelta-a-espana/",
 )
 
-# (scope, multiplier) per role. Scope is one of:
-#   "all"   — applies to every GT result
-#   "itt"   — applies only when race_results.is_itt is True
-#   "stage" — applies to stage slugs only (anything not ending in /gc)
-#   None    — no multiplier
-ROLE_MULTIPLIERS: dict[str, tuple[str | None, float]] = {
-    "gc_leader":     ("all", 1.5),
-    "sprinter":      ("all", 1.5),
-    "climber":       ("all", 1.5),
-    "tt_specialist": ("itt", 2.0),
-    "stage_hunter":  ("stage", 1.5),
-    "domestique":    (None, 1.0),
-}
+# --- Role multipliers (Spec A A2/A3/A4/A5) -------------------------------
+# gc_leader / climber: ×1.5 on any GT stage result; GC final (/gc) → ×1.0 (A2/A5).
+# tt_specialist: ×2.0 on ITT stages only.
+# sprinter: ×1.5 only on flat/hilly stages (profile p1/p2/p3, A4); ×1.0 otherwise.
+# stage_hunter: ×1.5 only when in the breakaway (breakaway_kms ≥ threshold, A3); ×1.0 otherwise.
+# domestique: ×1.0.
+BREAKAWAY_THRESHOLD_KM = 30.0   # A3 — min km in the break to count as "in the breakaway".
+BREAKAWAY_KM_PER_POINT = 10.0   # A3 — +1 additive XP per 10 km in the break (no cap).
+SPRINT_PROFILES = ("p1", "p2", "p3")  # A4 — flat + hilly (everything but mountain p4/p5).
 
 _GT_PHASE_MAP = {
     "giro-d-italia": 4,
@@ -69,29 +65,36 @@ _GT_PHASE_MAP = {
     "vuelta-a-espana": 8,
 }
 
-# Rank-ceiling per classification — bonuses decay linearly from `top` (rank 1) down
-# to 1 (rank = top). Ranks outside the top zero out.
-CLASSIF_TOP = {"gc": 10, "points": 5, "kom": 3}
+# Rank-ceiling per daily classification — bonus decays linearly from `top` (rank 1)
+# down to 1 (rank = top). Ranks outside the top zero out.
+CLASSIF_TOP = {"gc": 10, "points": 5, "kom": 3, "youth": 5}
 
-# Matching a rider's role to a classification doubles the base bonus (×1.5 actually).
-CLASSIF_ROLE_MATCH = {
-    "gc_leader": "gc",
-    "sprinter":  "points",
-    "climber":   "kom",
+# V2 (Spec A A2): only the classification(s) matching the rider's role earn a bonus.
+# Matched daily mult is ×2 for gc/points/kom (was ×1.5); youth matched (gc_leader) is ×1.5.
+CLASSIF_ROLE_MATCH: dict[str, dict[str, float]] = {
+    "gc_leader": {"gc": 2.0, "youth": 1.5},
+    "sprinter":  {"points": 2.0},
+    "climber":   {"kom": 2.0},
 }
 
 
 def _classif_bonus(classif_rows: list[dict], role: str) -> float:
-    """Sum of classification bonuses for all GT squad riders.
+    """Daily classification bonus (Spec A A2, V2 role-matched-only).
 
-    Role-matched riders earn base × 1.5 (gc_leader→GC, sprinter→Points, climber→KOM).
-    All other squad roles earn base × 1.0 for any classification they place in.
-    Riders outside the squad never reach this function (guarded upstream).
+    Only the classification(s) matching the rider's role earn a bonus:
+      gc_leader → gc ×2 (and youth ×1.5), sprinter → points ×2, climber → kom ×2.
+    domestique / stage_hunter / tt_specialist match nothing → 0.
+    Base bonus per classification = (top + 1) - rank, for ranks within the top zone.
     """
-    matched_ctype = CLASSIF_ROLE_MATCH.get(role)  # None for domestique/stage_hunter/tt_specialist
+    matched = CLASSIF_ROLE_MATCH.get(role, {})
+    if not matched:
+        return 0.0
     total = 0.0
     for row in classif_rows or []:
         ctype = row.get("classification_type")
+        mult = matched.get(ctype)
+        if mult is None:
+            continue
         top = CLASSIF_TOP.get(ctype)
         if top is None:
             continue
@@ -105,8 +108,7 @@ def _classif_bonus(classif_rows: list[dict], role: str) -> float:
         if r < 1 or r > top:
             continue
         base = (top + 1) - r
-        rate = 1.5 if ctype == matched_ctype else 1.0
-        total += base * rate
+        total += base * mult
     return total
 
 
@@ -114,21 +116,54 @@ def _is_gt_slug(slug: str) -> bool:
     return slug.startswith(GT_RACE_PREFIXES)
 
 
-def _role_multiplier(role: str, race_slug: str, is_itt: bool) -> float:
-    """Return the PCS multiplier for a rider's role given a race slug."""
+def _norm_profile(profile_icon) -> str | None:
+    """Normalize a PCS profile icon to lowercase p0-p5, or None."""
+    if not profile_icon:
+        return None
+    return str(profile_icon).strip().lower()
+
+
+def _in_breakaway(breakaway_kms) -> bool:
+    """True if the rider spent at least BREAKAWAY_THRESHOLD_KM in the break (Spec A A3)."""
+    try:
+        return breakaway_kms is not None and float(breakaway_kms) >= BREAKAWAY_THRESHOLD_KM
+    except (TypeError, ValueError):
+        return False
+
+
+def _breakaway_distance_bonus(breakaway_kms) -> float:
+    """Additive XP for time in the break: +1 per BREAKAWAY_KM_PER_POINT km, no cap (Spec A A3).
+
+    Awarded only when the rider counts as in the breakaway (≥ threshold).
+    Additive, not role-multiplied (still scaled by nemesis_modifier).
+    """
+    if not _in_breakaway(breakaway_kms):
+        return 0.0
+    return float(breakaway_kms) // BREAKAWAY_KM_PER_POINT
+
+
+def _role_multiplier(
+    role: str,
+    race_slug: str,
+    is_itt: bool,
+    breakaway_kms=None,
+    profile_icon=None,
+) -> float:
+    """Return the PCS role multiplier for a GT result (Spec A A2/A3/A4/A5)."""
     if not role:
         return 1.0
-    scope, mult = ROLE_MULTIPLIERS.get(role, (None, 1.0))
-    if scope is None:
+    # GC final (slug ends /gc): raw PCS points, no role multiplier (A2).
+    if race_slug.endswith("/gc"):
         return 1.0
-    if scope == "all":
-        return mult
-    if scope == "itt":
-        return mult if is_itt else 1.0
-    if scope == "stage":
-        # GC result slugs end with `/gc`; everything else counts as a stage.
-        return mult if not race_slug.endswith("/gc") else 1.0
-    return 1.0
+    if role in ("gc_leader", "climber"):
+        return 1.5
+    if role == "tt_specialist":
+        return 2.0 if is_itt else 1.0
+    if role == "sprinter":
+        return 1.5 if _norm_profile(profile_icon) in SPRINT_PROFILES else 1.0
+    if role == "stage_hunter":
+        return 1.5 if _in_breakaway(breakaway_kms) else 1.0
+    return 1.0  # domestique + unknown
 
 
 def _phase_year_from_slug(slug: str) -> tuple[int, int]:
@@ -224,11 +259,11 @@ async def calculate_daily_scores(
     # Task 1: filter by race_slugs if provided, else fallback to today's date
     if race_slugs:
         history = supabase.table("race_results").select(
-            "rider_id, race_slug, pcs_points, race_date, is_itt"
+            "rider_id, race_slug, pcs_points, race_date, is_itt, breakaway_kms, profile_icon"
         ).in_("race_slug", race_slugs).gt("pcs_points", 0).execute()
     else:
         history = supabase.table("race_results").select(
-            "rider_id, race_slug, pcs_points, race_date, is_itt"
+            "rider_id, race_slug, pcs_points, race_date, is_itt, breakaway_kms, profile_icon"
         ).eq("race_date", today).gt("pcs_points", 0).execute()
 
     if not history.data:
@@ -246,6 +281,8 @@ async def calculate_daily_scores(
             "pcs_points": h["pcs_points"],
             "race_date": h.get("race_date"),
             "is_itt": bool(h.get("is_itt", False)),
+            "breakaway_kms": h.get("breakaway_kms"),
+            "profile_icon": h.get("profile_icon"),
         })
 
     # Build race_slug → race_date mapping for the second pass (classif-only entries).
@@ -437,22 +474,30 @@ async def calculate_daily_scores(
 
                 raw_points = entry["pcs_points"]
                 race_slug = entry["race_slug"]
+                breakaway_kms = entry.get("breakaway_kms")
+                profile_icon = entry.get("profile_icon")
 
                 # === Compute role multiplier (squad only) + classif bonus (all contracted GT riders).
                 in_squad = (team_id, rider_id) in gt_squad_members
                 gt_role_mult = 1.0
                 gt_classif_bonus = 0.0
+                gt_distance_bonus = 0.0
                 role = "domestique"  # default; overridden for squad members with assigned role
                 if _is_gt_slug(race_slug):
                     if not in_squad:
                         continue  # non-squad contracted riders earn 0 XP on GT stages
                     role = gt_roles.get((team_id, rider_id), "domestique")
-                    gt_role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
-                    # All squad riders earn classif bonus; role-matched riders earn ×1.5.
+                    gt_role_mult = _role_multiplier(
+                        role, race_slug, entry.get("is_itt", False),
+                        breakaway_kms, profile_icon,
+                    )
+                    # V2: only role-matched classifications earn a bonus (Spec A A2).
                     gt_classif_bonus = _classif_bonus(
                         classif_by_key.get((race_slug, rider_id), []),
                         role,
                     )
+                    if role == "stage_hunter" and not race_slug.endswith("/gc"):
+                        gt_distance_bonus = _breakaway_distance_bonus(breakaway_kms)
 
                 # === Apply tactic modifiers (no-op when gt_tactics is empty) ===
                 nemesis_modifier = 1.0
@@ -510,7 +555,8 @@ async def calculate_daily_scores(
                 xp = max(
                     0,
                     round(
-                        (raw_points * gt_role_mult * (1 + bonus) + gt_classif_bonus)
+                        (raw_points * gt_role_mult * (1 + bonus)
+                         + gt_classif_bonus + gt_distance_bonus)
                         * nemesis_modifier,
                         2,
                     ),
@@ -529,6 +575,7 @@ async def calculate_daily_scores(
                         "classif_bonus": gt_classif_bonus,
                         "gt_role_mult": gt_role_mult,
                         "gt_classif_bonus": gt_classif_bonus,
+                        "gt_distance_bonus": gt_distance_bonus,
                         "nemesis_modifier": nemesis_modifier,
                         "tactic_applied": tactic_applied,
                         "xp_gained": xp,
@@ -577,6 +624,7 @@ async def calculate_daily_scores(
                         "classif_bonus": c_classif_bonus,
                         "gt_role_mult": 1.0,
                         "gt_classif_bonus": c_classif_bonus,
+                        "gt_distance_bonus": 0.0,
                         "nemesis_modifier": 1.0,
                         "tactic_applied": None,
                         "xp_gained": c_xp,

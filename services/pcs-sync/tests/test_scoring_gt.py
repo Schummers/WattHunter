@@ -1,14 +1,7 @@
 """Tests for GT scoring path — role multipliers + daily classif bonus."""
 from __future__ import annotations
 
-import pytest
-
 from helpers import make_supabase
-
-# Spec A V2 classification scoring (role-matched-only bonuses) is implemented in P2
-# (Refonte Scoring), not in this remontada-removal branch. These forward-looking tests
-# assert that future behavior and stay skipped until P2 lands.
-_P2_CLASSIF_V2 = pytest.mark.skip(reason="V2 classif scoring — implemented in P2 (Refonte Scoring)")
 
 
 TEAM_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"
@@ -34,6 +27,8 @@ def _base_mocks(
     squad_created_at: str = BEFORE_CUTOFF,
     squad_removed_at: str | None = None,
     role_applied_at: str = "2026-05-10T09:00:00+02:00",
+    breakaway_kms: float | None = None,
+    profile_icon: str | None = None,
 ):
     """Build a Supabase mock covering the full GT scoring flow (role multipliers only).
 
@@ -68,6 +63,8 @@ def _base_mocks(
             "pcs_points": pcs_points,
             "race_date": "2026-05-11",
             "is_itt": is_itt,
+            "breakaway_kms": breakaway_kms,
+            "profile_icon": profile_icon,
         }],
         # 2. prev rider_xp_daily (seeds delta calc; empty = first run)
         prev_xp if prev_xp is not None else [],
@@ -130,11 +127,22 @@ async def test_gc_leader_applies_1_5x():
 async def test_sprinter_applies_1_5x():
     import scoring
 
-    sb = _base_mocks(role="sprinter")
+    sb = _base_mocks(role="sprinter", profile_icon="p1")
     await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 150.0
+    assert payload["xp_gained"] == 150.0  # 100 × 1.5 (sprinter on p1 stage)
+
+
+async def test_sprinter_no_multiplier_on_mountain_profile():
+    """Sprinter on a mountain stage (p4/p5) → ×1.0 (Spec A A4)."""
+    import scoring
+
+    sb = _base_mocks(role="sprinter", profile_icon="p4")
+    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    assert payload["xp_gained"] == 100.0
 
 
 async def test_climber_applies_1_5x():
@@ -167,15 +175,31 @@ async def test_tt_specialist_2x_on_itt():
     assert payload["xp_gained"] == 200.0
 
 
-async def test_stage_hunter_1_5x_on_stage():
-    """Stage hunter gets ×1.5 on stage slugs (anything not ending /gc)."""
+async def test_stage_hunter_in_breakaway_gets_1_5x_plus_distance():
+    """Stage hunter in the break (≥30 km): ×1.5 on the result + 1 pt/10 km additive (Spec A A3)."""
     import scoring
 
-    sb = _base_mocks(role="stage_hunter")
+    sb = _base_mocks(role="stage_hunter", breakaway_kms=120.0)
     await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 150.0
+    # 100 × 1.5 + floor(120/10)=12 → 162
+    assert payload["xp_gained"] == 162.0
+    assert payload["gt_role_mult"] == 1.5
+    assert payload["gt_distance_bonus"] == 12.0
+
+
+async def test_stage_hunter_not_in_breakaway_gets_no_multiplier():
+    """Stage hunter outside the break → ×1.0, no distance bonus (Spec A A3)."""
+    import scoring
+
+    sb = _base_mocks(role="stage_hunter", breakaway_kms=None)
+    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    assert payload["xp_gained"] == 100.0
+    assert payload["gt_role_mult"] == 1.0
+    assert payload["gt_distance_bonus"] == 0.0
 
 
 async def test_stage_hunter_no_multiplier_on_gc():
@@ -190,6 +214,8 @@ async def test_stage_hunter_no_multiplier_on_gc():
             "pcs_points": 100,
             "race_date": "2026-05-28",
             "is_itt": False,
+            "breakaway_kms": None,
+            "profile_icon": None,
         }],
         [],
         [{
@@ -219,6 +245,81 @@ async def test_stage_hunter_no_multiplier_on_gc():
 
     payload = sb._last_upsert_payload("rider_xp_daily")
     assert payload["xp_gained"] == 100.0
+
+
+async def test_stage_hunter_breakaway_no_bonus_on_gc():
+    """Stage hunter with breakaway_kms on a /gc slug → ×1.0, no distance bonus (Spec A A2/A5)."""
+    import scoring
+
+    gc_slug = "race/giro-d-italia/2026/gc"
+    sb = make_supabase(
+        [{
+            "rider_id": RIDER_ID,
+            "race_slug": gc_slug,
+            "pcs_points": 100,
+            "race_date": "2026-05-28",
+            "is_itt": False,
+            "breakaway_kms": 120.0,
+            "profile_icon": None,
+        }],
+        [],
+        [{
+            "id": CONTRACT_ID,
+            "team_id": TEAM_ID,
+            "rider_id": RIDER_ID,
+            "purchased_at": "2026-01-01T00:00:00Z",
+            "release_date": None,
+            "released_at": None,
+            "riders": {
+                "specialty": "GC",
+                "nationality": "BE",
+                "real_team": "Soudal",
+                "birthdate": "1998-01-01",
+            },
+        }],
+        [],
+        [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "created_at": BEFORE_CUTOFF, "removed_at": None}],
+        [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": "stage_hunter", "applied_at": "2026-05-10T09:00:00+02:00"}],
+        [],  # gt_daily_classifications
+        [],  # gt_tactic_activations
+        {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
+        [],
+        [{"id": TEAM_ID, "cumulative_xp": 100}],
+    )
+    await scoring.calculate_daily_scores(sb, race_slugs=[gc_slug])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    assert payload["xp_gained"] == 100.0
+    assert payload["gt_distance_bonus"] == 0.0
+    assert payload["gt_role_mult"] == 1.0
+
+
+async def test_gc_leader_no_multiplier_on_gc_final():
+    """GC final (/gc) → ×1.0 even for gc_leader (Spec A A2, no double-boost)."""
+    import scoring
+
+    gc_slug = "race/giro-d-italia/2026/gc"
+    sb = make_supabase(
+        [{"rider_id": RIDER_ID, "race_slug": gc_slug, "pcs_points": 100,
+          "race_date": "2026-05-28", "is_itt": False,
+          "breakaway_kms": None, "profile_icon": None}],
+        [],
+        [{"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+          "purchased_at": "2026-01-01T00:00:00Z", "release_date": None, "released_at": None,
+          "riders": {"specialty": "GC", "nationality": "BE", "real_team": "Soudal", "birthdate": "1998-01-01"}}],
+        [],
+        [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "created_at": BEFORE_CUTOFF, "removed_at": None}],
+        [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": "gc_leader", "applied_at": "2026-05-10T09:00:00+02:00"}],
+        [],
+        [],
+        {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
+        [],
+        [{"id": TEAM_ID, "cumulative_xp": 100}],
+    )
+    await scoring.calculate_daily_scores(sb, race_slugs=[gc_slug])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    assert payload["xp_gained"] == 100.0  # was 150 under the old ×1.5 GC boost
 
 
 async def test_domestique_no_multiplier():
@@ -274,9 +375,9 @@ async def test_non_gt_race_no_multiplier():
 
 
 async def test_gc_leader_gets_gc_classif_bonus_with_match_multiplier():
-    """Rank 3 GC → base bonus (10+1-3)=8, role matches → ×1.5 → 12 classif pts.
+    """Rank 3 GC → base bonus (10+1-3)=8, role matches → ×2.0 → 16 classif pts.
 
-    Total: 100 (pcs) × 1.5 (role) + 12 (classif) = 162.
+    Total: 100 (pcs) × 1.5 (role) + 16 (classif) = 166.
     """
     import scoring
 
@@ -291,30 +392,31 @@ async def test_gc_leader_gets_gc_classif_bonus_with_match_multiplier():
     await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 162.0
+    assert payload["xp_gained"] == 166.0
 
 
 async def test_sprinter_gets_points_classif_bonus_with_match_multiplier():
-    """Sprinter ranked 2 in points → base 4, match ×1.5 → 6 classif pts.
+    """Sprinter ranked 2 in points → base 4, match ×2.0 → 8 classif pts.
 
-    Total: 100 × 1.5 + 6 = 156.
+    Total: 100 × 1.5 (on p1 stage) + 8 = 158.
     """
     import scoring
 
     sb = _base_mocks(
         role="sprinter",
+        profile_icon="p1",
         classif_rows=[{"classification_type": "points", "rank": 2}],
     )
     await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 156.0
+    assert payload["xp_gained"] == 158.0
 
 
 async def test_climber_gets_kom_classif_bonus_with_match_multiplier():
-    """Climber ranked 1 in KOM → base 3, match ×1.5 → 4.5 classif pts.
+    """Climber ranked 1 in KOM → base 3, match ×2.0 → 6 classif pts.
 
-    Total: 100 × 1.5 + 4.5 = 154.5.
+    Total: 100 × 1.5 + 6 = 156.
     """
     import scoring
 
@@ -325,10 +427,9 @@ async def test_climber_gets_kom_classif_bonus_with_match_multiplier():
     await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 154.5
+    assert payload["xp_gained"] == 156.0
 
 
-@_P2_CLASSIF_V2
 async def test_domestique_gets_no_classif_bonus():
     """V2: domestique gets 0 classification bonus regardless of ranking.
 
@@ -347,12 +448,10 @@ async def test_domestique_gets_no_classif_bonus():
     assert payload["xp_gained"] == 100.0
 
 
-@_P2_CLASSIF_V2
 async def test_stage_hunter_gets_no_classif_bonus():
-    """V2: stage_hunter has no matching classification type → 0 bonus.
+    """V2: stage_hunter matches no classification → 0 bonus; outside the break → ×1.0.
 
-    Rank 2 in points → base 4, but stage_hunter doesn't match → 0.
-    Total: 100 × 1.5 (stage mult) + 0 = 150.
+    points rank 2 → no match → 0. Total: 100 × 1.0 + 0 = 100.
     """
     import scoring
 
@@ -363,10 +462,9 @@ async def test_stage_hunter_gets_no_classif_bonus():
     await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 150.0
+    assert payload["xp_gained"] == 100.0
 
 
-@_P2_CLASSIF_V2
 async def test_tt_specialist_gets_no_classif_bonus():
     """V2: tt_specialist has no matching classification type → 0 bonus."""
     import scoring
@@ -393,6 +491,20 @@ async def test_classif_outside_top_n_is_ignored():
 
     payload = sb._last_upsert_payload("rider_xp_daily")
     assert payload["xp_gained"] == 150.0  # just the role multiplier
+
+
+async def test_gc_leader_gets_youth_classif_bonus_1_5x():
+    """gc_leader matches youth at ×1.5: rank 1 youth base (5+1-1)=5 × 1.5 = 7.5."""
+    import scoring
+
+    sb = _base_mocks(
+        role="gc_leader",
+        classif_rows=[{"classification_type": "youth", "rank": 1}],
+    )
+    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    assert payload["xp_gained"] == 157.5  # 100 × 1.5 + 7.5
 
 
 # ---------------------------------------------------------------------------
@@ -464,22 +576,22 @@ async def test_idempotent_rerun_no_team_xp_delta():
     )
     await scoring.calculate_daily_scores(sb1, race_slugs=[GIRO_SLUG])
     first_xp = sb1._last_upsert_payload("rider_xp_daily")["xp_gained"]
-    # 100 × 1.5 (role) + (10+1-1) × 1.5 (gc rank 1 match) = 150 + 15 = 165
-    assert first_xp == 165.0
-    assert sb1.updates["teams"][-1]["cumulative_xp"] == 165.0
+    # 100 × 1.5 (role) + (10+1-1) × 2.0 (gc rank 1 match) = 150 + 20 = 170
+    assert first_xp == 170.0
+    assert sb1.updates["teams"][-1]["cumulative_xp"] == 170.0
 
-    # Second run — prev rider_xp_daily already contains 165 for this team.
+    # Second run — prev rider_xp_daily already contains 170 for this team.
     sb2 = _base_mocks(
         role="gc_leader",
         classif_rows=[{"classification_type": "gc", "rank": 1}],
         prev_xp=[{"team_id": TEAM_ID, "xp_gained": first_xp}],
-        starting_cumulative_xp=165.0,
+        starting_cumulative_xp=170.0,
     )
     await scoring.calculate_daily_scores(sb2, race_slugs=[GIRO_SLUG])
-    # Fresh compute still yields 165 → delta=0 → update writes same 165.
-    assert sb2._last_upsert_payload("rider_xp_daily")["xp_gained"] == 165.0
+    # Fresh compute still yields 170 → delta=0 → update writes same 170.
+    assert sb2._last_upsert_payload("rider_xp_daily")["xp_gained"] == 170.0
     teams_update_xp = sb2.updates["teams"][-1]["cumulative_xp"]
-    assert teams_update_xp == 165.0  # unchanged
+    assert teams_update_xp == 170.0  # unchanged
 
 
 async def test_rider_not_in_squad_gets_no_xp():
@@ -523,7 +635,7 @@ async def test_squad_rider_no_stage_points_gets_classif_bonus():
     A second rider (domestique) scores stage points to prevent early return.
     RIDER_ID has no race_results entry → skipped by main loop → caught by second pass.
 
-    xp = (10+1-3) × 1.5 = 12.0  (gc_leader matches gc)
+    xp = (10+1-3) × 2.0 = 16.0  (gc_leader matches gc, V2 ×2)
     """
     import scoring
 
@@ -562,7 +674,7 @@ async def test_squad_rider_no_stage_points_gets_classif_bonus():
         [],
         # 9. rider_xp_daily upsert (RIDER_ID_2, main loop: 50 × 1.0 = 50)
         [],
-        # 10. rider_xp_daily upsert (RIDER_ID second pass: classif only = 12.0) ← last upsert
+        # 10. rider_xp_daily upsert (RIDER_ID second pass: classif only = 16.0) ← last upsert
         [],
         # 11. teams select
         {"id": TEAM_ID, "cumulative_xp": 0.0, "level": 1, "league_id": LEAGUE_ID},
@@ -577,16 +689,16 @@ async def test_squad_rider_no_stage_points_gets_classif_bonus():
     assert len(payloads) == 2, f"Expected 2 upserts, got {len(payloads)}"
 
     classif_only = next(p for p in payloads if p["rider_id"] == RIDER_ID)
-    assert classif_only["xp_gained"] == 12.0
+    assert classif_only["xp_gained"] == 16.0
     assert classif_only["raw_pcs_points"] == 0
-    assert classif_only["gt_classif_bonus"] == 12.0
+    assert classif_only["gt_classif_bonus"] == 16.0
     assert classif_only["gt_role_mult"] == 1.0
 
 
 async def test_squad_rider_with_stage_points_classif_not_double_counted():
     """GC leader with stage points AND classif rank: bonus counted exactly once.
 
-    100 × 1.5 (role) + 12 (gc rank 3, match ×1.5) = 162.0
+    100 × 1.5 (role) + 16 (gc rank 3, match ×2.0) = 166.0
     The second pass skips this rider (already in processed_in_team).
     """
     import scoring
@@ -599,14 +711,15 @@ async def test_squad_rider_with_stage_points_classif_not_double_counted():
     await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 162.0  # not 174.0 (which would indicate double-count)
+    assert payload["xp_gained"] == 166.0  # not 182.0 (which would indicate double-count)
 
 
 async def test_scoring_persists_traceability_columns():
     """Every scored GT row must populate gt_role_mult, gt_classif_bonus, nemesis_modifier,
-    tactic_applied. When no tactics are active, values must reproduce the pre-tactic result.
+    tactic_applied, gt_distance_bonus. When no tactics are active, values must reproduce
+    the pre-tactic result.
 
-    gc_leader + rank 3 GC: 100 × 1.5 + 12 (classif) = 162, nemesis_modifier=1.0, tactic_applied=None.
+    gc_leader + rank 3 GC: 100 × 1.5 + 16 (classif ×2) = 166, nemesis_modifier=1.0, tactic_applied=None.
     """
     import scoring
 
@@ -619,11 +732,12 @@ async def test_scoring_persists_traceability_columns():
 
     payload = sb._last_upsert_payload("rider_xp_daily")
 
-    # Existing xp invariant: 100 × 1.5 + (10+1-3) × 1.5 = 150 + 12 = 162
-    assert payload["xp_gained"] == 162.0
+    # Existing xp invariant: 100 × 1.5 + (10+1-3) × 2.0 = 150 + 16 = 166
+    assert payload["xp_gained"] == 166.0
 
-    # Traceability columns — new in Task 8
+    # Traceability columns
     assert payload["gt_role_mult"] == 1.5          # gc_leader on non-ITT GT stage
-    assert payload["gt_classif_bonus"] == 12.0     # rank 3 GC with role-match ×1.5
+    assert payload["gt_classif_bonus"] == 16.0     # rank 3 GC with role-match ×2.0
+    assert payload["gt_distance_bonus"] == 0.0     # no breakaway (gc_leader, not stage_hunter)
     assert payload["nemesis_modifier"] == 1.0      # no tactics active
     assert payload["tactic_applied"] is None       # no tactics active
