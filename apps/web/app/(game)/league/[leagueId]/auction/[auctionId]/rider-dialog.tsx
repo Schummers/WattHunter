@@ -10,7 +10,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { countryCodeToFlag } from "@/lib/format";
+import { countryCodeToFlag, formatMoney } from "@/lib/format";
+import { RiderPrice } from "@/components/rider-price";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 import { placeBid, cancelBid } from "./actions";
 import { computeAvailableBudget } from "@/lib/budget";
@@ -88,7 +89,7 @@ export function RiderDialog({
   );
   const isValid =
     numAmount >= rider.monthly_salary &&
-    numAmount % 100 === 0 &&
+    numAmount % 1000 === 0 &&
     budgetAfter >= 0;
 
   function handleSubmit() {
@@ -137,7 +138,7 @@ export function RiderDialog({
     },
     {
       label: "Minimum salary",
-      value: `${rider.monthly_salary.toLocaleString("en-US")} EUR/mo`,
+      value: <RiderPrice amount={rider.monthly_salary} />,
     },
   ];
 
@@ -193,18 +194,18 @@ export function RiderDialog({
           {existingBid && (
             <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
               Current bid:{" "}
-              <span className="font-mono">{existingBid.amount.toLocaleString("en-US")} EUR/mo</span>
+              <span className="font-mono">{formatMoney(existingBid.amount)}/mo</span>
             </p>
           )}
 
           <div className="flex flex-col gap-2">
             <label className="text-[length:var(--type-body)] font-medium text-[var(--text-high)]">
               Monthly salary bid (min.{" "}
-              {rider.monthly_salary.toLocaleString("en-US")} EUR/mo)
+              <RiderPrice amount={rider.monthly_salary} />/mo)
             </label>
             <Input
               type="number"
-              step={100}
+              step={1000}
               min={rider.monthly_salary}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -220,7 +221,7 @@ export function RiderDialog({
             )}
           >
             Available budget after salary commitment:{" "}
-            <span className="font-mono">{budgetAfter.toLocaleString("en-US")} EUR/mo</span>
+            <span className="font-mono">{budgetAfter < 0 ? "−" : ""}{formatMoney(budgetAfter)}/mo</span>
           </p>
 
           {error && <p className="text-[length:var(--type-body)] text-[var(--status-danger)]">{error}</p>}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { RiderTable } from "./rider-table";
 import { RiderDialog } from "./rider-dialog";
 import { Button } from "@/components/ui/button";
+import { formatMoney } from "@/lib/format";
 import { cancelBid } from "./actions";
 
 interface Rider {
@@ -82,7 +83,7 @@ export function AuctionClient({
                     {rider?.real_team}
                   </span>
                   <span className="text-[length:var(--type-body)] font-semibold font-mono text-[var(--accent-default)]">
-                    {bid.amount.toLocaleString("en-US")} EUR
+                    {formatMoney(bid.amount)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

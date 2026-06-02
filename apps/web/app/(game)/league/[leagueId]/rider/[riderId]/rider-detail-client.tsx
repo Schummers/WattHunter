@@ -10,7 +10,8 @@ import { StickyBar } from "@/components/sticky-bar";
 import { addDraft, removeDraft } from "@/app/(game)/league/[leagueId]/auction/actions";
 import { releaseRider } from "./actions";
 import { useDemoSafeAction } from "@/contexts/demo-context";
-import { formatThousands, formatEuro, countryCodeToFlag } from "@/lib/format";
+import { formatThousands, formatMoney, countryCodeToFlag } from "@/lib/format";
+import { RiderPrice } from "@/components/rider-price";
 import { Plus, Minus } from "lucide-react";
 import { BID_INCREMENT, snapToIncrement, computeAvailableBudget } from "@/lib/budget";
 import { resolvePhotoUrl } from "@/lib/photo-url";
@@ -223,13 +224,13 @@ export function RiderDetailClient({
           </div>
           <div className={boxClass}>
             <div className={valueClass}>
-              {totalBonus ? formatThousands(totalBonus) + " €" : "—"}
+              {totalBonus ? formatMoney(totalBonus) : "—"}
             </div>
             <span className={labelClass}>Bonus</span>
           </div>
           <div className={boxClass}>
             <div className={valueClass}>
-              {formatThousands(minSalary)}
+              <RiderPrice amount={minSalary} />
             </div>
             <span className={labelClass}>Min. Salary</span>
           </div>
@@ -248,13 +249,13 @@ export function RiderDetailClient({
           </div>
           <div className={boxClass}>
             <div className={valueClass}>
-              {totalBonus ? formatThousands(totalBonus) + " €" : "—"}
+              {totalBonus ? formatMoney(totalBonus) : "—"}
             </div>
             <span className={labelClass}>Bonus</span>
           </div>
           <div className={boxClass}>
             <div className={valueClass}>
-              {formatThousands(contractData.locked_salary)}
+              {formatMoney(contractData.locked_salary)}
             </div>
             <span className={labelClass}>Paid Salary</span>
           </div>
@@ -273,14 +274,14 @@ export function RiderDetailClient({
         </div>
         <div className={boxClass}>
           <div className={valueClass}>
-            {totalBonus ? formatThousands(totalBonus) + " €" : "—"}
+            {totalBonus ? formatMoney(totalBonus) : "—"}
           </div>
           <span className={labelClass}>Bonus</span>
         </div>
         <div className={boxClass}>
           <div className={valueClass}>
             {ownerInfo?.locked_salary != null
-              ? formatThousands(ownerInfo.locked_salary)
+              ? formatMoney(ownerInfo.locked_salary)
               : "—"}
           </div>
           <span className={labelClass}>Paid Salary</span>
@@ -330,7 +331,10 @@ export function RiderDetailClient({
       + (!isInDraft && !isInRoster && bidInputHasValue ? 1 : 0)
     : null;
 
-  const stickyBudgetLabel = dynamicBudget !== null ? formatEuro(dynamicBudget) : undefined;
+  const stickyBudgetLabel =
+    dynamicBudget !== null
+      ? `${dynamicBudget < 0 ? "−" : ""}${formatMoney(dynamicBudget)}`
+      : undefined;
   const slotLabel = dynamicSlots !== null
     ? `${dynamicSlots}/${budgetInfo!.maxSlots}`
     : undefined;
@@ -457,10 +461,10 @@ export function RiderDetailClient({
                         const parsed = parseInt(raw, 10);
                         if (isNaN(parsed)) { setBidInputError(null); return; }
 
-                        if (parsed % 100 !== 0) {
-                          setBidInputError("Must be a multiple of €100");
+                        if (parsed % 1000 !== 0) {
+                          setBidInputError("Must be a multiple of €1,000");
                         } else if (parsed < minSalary) {
-                          setBidInputError(`Min: €${formatThousands(minSalary)}`);
+                          setBidInputError(`Min: ${formatMoney(minSalary)}`);
                         } else {
                           setBidInputError(null);
                         }
@@ -496,7 +500,7 @@ export function RiderDetailClient({
                   </div>
                   {/* C-001 EXCEPTION: mt-[3px] — valeur définissante sub-token (3px), pas de token --space-* à 3px. Même pattern que py-[3px] dans pill.tsx. */}
                   <span className={`mt-[3px] text-[length:var(--type-micro)] ${bidInputError ? "text-[var(--status-danger)]" : "text-[var(--text-ghost)]"}`}>
-                    {bidInputError ?? <>min <span className="font-mono">{formatThousands(minSalary)}</span> €</>}
+                    {bidInputError ?? <>min <RiderPrice amount={minSalary} /></>}
                   </span>
                 </div>
                 <Button
@@ -635,7 +639,7 @@ export function RiderDetailClient({
             ) : slotLabel ? (
               <span className="font-mono">{slotLabel}</span>
             ) : (
-              <span className="font-mono">{formatThousands(minSalary)} € min</span>
+              <span className="font-mono"><RiderPrice amount={minSalary} /> min</span>
             )}
           </span>
           <button

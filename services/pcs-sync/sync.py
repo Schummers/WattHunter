@@ -54,10 +54,10 @@ def get_supabase() -> Client:
 
 
 def calculate_monthly_salary(pcs_points_1yr: int) -> int:
-    """Salary = pcs_points × 2000 / 12, floored to nearest 100. No upper cap."""
+    """Salary = pcs_points × 2000 / 12, floored to nearest 1000. No upper cap."""
     annual = pcs_points_1yr * 2_000
     monthly = annual / 12
-    return max(SALARY_FLOOR, int(monthly // 100 * 100))
+    return max(SALARY_FLOOR, int(monthly // 1000 * 1000))
 
 
 CLOUDFLARE_MARKERS = [

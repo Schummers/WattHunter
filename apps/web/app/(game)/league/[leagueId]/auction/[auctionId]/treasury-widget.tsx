@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { computeAvailableBudget } from "@/lib/budget";
+import { formatMoney } from "@/lib/format";
 
 interface TreasuryWidgetProps {
   treasury: number;
@@ -29,13 +30,13 @@ export function TreasuryWidget({
       <div className="flex flex-col gap-0.5">
         <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">Treasury</span>
         <span className="text-[length:var(--type-body)] font-semibold font-mono tabular-nums text-[var(--text-high)]">
-          {treasury.toLocaleString("en-US")} EUR
+          {formatMoney(treasury)}
         </span>
       </div>
       <div className="flex flex-col gap-0.5">
         <span className="text-[length:var(--type-caption)] font-medium text-[var(--text-mid)]">Active bids</span>
         <span className="text-[length:var(--type-body)] font-semibold font-mono tabular-nums text-[var(--text-high)]">
-          {activeBidsTotal.toLocaleString("en-US")} EUR
+          {formatMoney(activeBidsTotal)}
         </span>
       </div>
       <div className="flex flex-col gap-0.5">
@@ -46,7 +47,7 @@ export function TreasuryWidget({
             available >= 50_000 ? "text-[var(--success)]" : "text-[var(--status-danger)]"
           )}
         >
-          {available.toLocaleString("en-US")} EUR
+          {formatMoney(available)}
         </span>
       </div>
     </div>
