@@ -2,10 +2,10 @@ export type GtGoalCategory = "gc" | "sprint" | "tt" | "stage_hunter";
 
 export interface GtGoal {
   label: string;
-  reward: number;
+  reward: number; // A (1-week base) value; ×2 applied at eval for GT/Monument
   role: "gc_leader" | "sprinter" | "climber" | "tt_specialist" | "stage_hunter" | null;
   category: GtGoalCategory;
-  tieredWith?: number;
+  tierGroup?: string; // goals sharing a tierGroup → only the highest reward pays (per rider)
 }
 
 export interface GtGoalSet {
@@ -13,67 +13,39 @@ export interface GtGoalSet {
   goals: GtGoal[];
 }
 
-/**
- * GT-specific goals — T4 sponsors only. Display + future evaluation.
- * V1a: display only. V1b adds evaluation + payout.
- * Spec: docs/superpowers/specs/2026-05-03-sponsor-gt-goals-design.md
- */
+const GC_GOALS: GtGoal[] = [
+  { label: "Podium GC", reward: 30_000, role: "gc_leader", category: "gc", tierGroup: "gc_placement" },
+  { label: "Top 5 GC", reward: 20_000, role: "gc_leader", category: "gc", tierGroup: "gc_placement" },
+  { label: "Wear the Race Leader jersey", reward: 15_000, role: "gc_leader", category: "gc" },
+  { label: "Wear the young rider jersey", reward: 10_000, role: "gc_leader", category: "gc" },
+];
+
+const SPRINT_GOALS: GtGoal[] = [
+  { label: "Win the points classification", reward: 30_000, role: "sprinter", category: "sprint" },
+  { label: "Win 2 stages", reward: 20_000, role: "sprinter", category: "sprint", tierGroup: "sprint_stages" },
+  { label: "Win a stage", reward: 10_000, role: "sprinter", category: "sprint", tierGroup: "sprint_stages" },
+  { label: "Wear the points jersey", reward: 10_000, role: "sprinter", category: "sprint" },
+];
+
+const CLM_GOALS: GtGoal[] = [
+  { label: "Win an ITT", reward: 15_000, role: "tt_specialist", category: "tt" },
+  { label: "2 riders in top 10 of an ITT", reward: 10_000, role: null, category: "tt" },
+];
+
+const STAGE_HUNTER_GOALS: GtGoal[] = [
+  { label: "Win the KOM classification", reward: 20_000, role: "climber", category: "stage_hunter" },
+  { label: "Win 2 stages", reward: 20_000, role: "stage_hunter", category: "stage_hunter", tierGroup: "sh_stages" },
+  { label: "Win a stage", reward: 10_000, role: "stage_hunter", category: "stage_hunter", tierGroup: "sh_stages" },
+  { label: "Wear the KOM jersey", reward: 10_000, role: "climber", category: "stage_hunter" },
+];
+
 export const GT_GOALS: GtGoalSet[] = [
-  // T1 — no specific goals
-  { sponsorSlug: "lotto", goals: [] },
-  // T2 — no specific goals
-  { sponsorSlug: "astana", goals: [] },
-  // T3 — no specific goals (deferred)
-  { sponsorSlug: "groupama", goals: [] },
-  { sponsorSlug: "movistar", goals: [] },
-  { sponsorSlug: "alpecin", goals: [] },
-  { sponsorSlug: "unox", goals: [] },
-
-  // T4 — Ineos Grenadiers (GC + TT, nat: GB)
-  { sponsorSlug: "ineos", goals: [
-    { label: "Podium GC final", reward: 150_000, role: "gc_leader", category: "gc", tieredWith: 1 },
-    { label: "Top 5 GC final", reward: 75_000, role: "gc_leader", category: "gc", tieredWith: 0 },
-    { label: "Wear maglia rosa", reward: 50_000, role: "gc_leader", category: "gc" },
-    { label: "Wear maglia bianca", reward: 40_000, role: "gc_leader", category: "gc" },
-    { label: "Win an ITT", reward: 50_000, role: "tt_specialist", category: "tt" },
-    { label: "2 riders in top 10 of an ITT", reward: 25_000, role: null, category: "tt" },
-  ]},
-
-  // T4 — Decathlon AG2R (GC + Sprint, nat: FR)
-  { sponsorSlug: "decathlon", goals: [
-    { label: "Podium GC final", reward: 150_000, role: "gc_leader", category: "gc", tieredWith: 1 },
-    { label: "Top 5 GC final", reward: 75_000, role: "gc_leader", category: "gc", tieredWith: 0 },
-    { label: "Wear maglia rosa", reward: 50_000, role: "gc_leader", category: "gc" },
-    { label: "Wear maglia bianca", reward: 40_000, role: "gc_leader", category: "gc" },
-    { label: "Win a stage", reward: 50_000, role: "sprinter", category: "sprint" },
-    { label: "Wear ciclamino", reward: 40_000, role: "sprinter", category: "sprint" },
-  ]},
-
-  // T4 — Soudal Quick-Step (Sprint + Stage Hunter, nat: BE)
-  { sponsorSlug: "soudal", goals: [
-    { label: "Win points classification", reward: 150_000, role: "sprinter", category: "sprint" },
-    { label: "Win 2 stages", reward: 75_000, role: "sprinter", category: "sprint", tieredWith: 2 },
-    { label: "Win a stage", reward: 50_000, role: "sprinter", category: "sprint", tieredWith: 1 },
-    { label: "Wear ciclamino", reward: 50_000, role: "sprinter", category: "sprint" },
-    { label: "2 different riders win a stage", reward: 75_000, role: null, category: "stage_hunter" },
-    { label: "Win a stage", reward: 60_000, role: "stage_hunter", category: "stage_hunter" },
-  ]},
-
-  // T4 — Lidl-Trek (Sprint + Stage Hunter, nat: US/IT) — identical goals to Soudal
-  { sponsorSlug: "lidl-trek", goals: [
-    { label: "Win points classification", reward: 150_000, role: "sprinter", category: "sprint" },
-    { label: "Win 2 stages", reward: 75_000, role: "sprinter", category: "sprint", tieredWith: 2 },
-    { label: "Win a stage", reward: 50_000, role: "sprinter", category: "sprint", tieredWith: 1 },
-    { label: "Wear ciclamino", reward: 50_000, role: "sprinter", category: "sprint" },
-    { label: "2 different riders win a stage", reward: 75_000, role: null, category: "stage_hunter" },
-    { label: "Win a stage", reward: 60_000, role: "stage_hunter", category: "stage_hunter" },
-  ]},
-
-  // T5 — no specific goals (keep base bonus only)
-  { sponsorSlug: "visma", goals: [] },
-  { sponsorSlug: "redbull-bora", goals: [] },
-  // T6 — no specific goals
-  { sponsorSlug: "uae", goals: [] },
+  { sponsorSlug: "ineos", goals: [...GC_GOALS, ...CLM_GOALS] },
+  { sponsorSlug: "decathlon", goals: [...GC_GOALS, ...SPRINT_GOALS] },
+  { sponsorSlug: "soudal", goals: [...SPRINT_GOALS, ...STAGE_HUNTER_GOALS] },
+  { sponsorSlug: "lidl-trek", goals: [...SPRINT_GOALS, ...STAGE_HUNTER_GOALS] },
+  { sponsorSlug: "visma", goals: [...GC_GOALS, ...SPRINT_GOALS] },
+  { sponsorSlug: "redbull-bora", goals: [...GC_GOALS, ...STAGE_HUNTER_GOALS] },
 ];
 
 export function getGoalsForSponsor(slug: string): GtGoal[] {
