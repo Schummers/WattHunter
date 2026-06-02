@@ -690,6 +690,44 @@ async def test_import_stage_profiles_skips_stage_with_missing_profile():
     assert upserts[0]["race_slug"] == "race/x/2026/stage-1"
 
 
+async def test_import_stage_profiles_rewrites_canonical_pcs_slug_onto_input_slug():
+    """When PCS returns a canonical race URL different from the input slug
+    (e.g. Dauphiné → tour-auvergne-rhone-alpes), the upsert must use the
+    input slug so the front and wt_calendar can look stages up consistently."""
+    import sync_race
+
+    # PCS canonical for Dauphiné 2026 is "tour-auvergne-rhone-alpes".
+    fake_stages = [
+        {"stage_url": "race/tour-auvergne-rhone-alpes/2026/stage-1",
+         "profile_icon": "p2", "date": "06-07"},
+        {"stage_url": "race/tour-auvergne-rhone-alpes/2026/stage-8",
+         "profile_icon": "p5", "date": "06-14"},
+    ]
+
+    mock_race_instance = MagicMock()
+    mock_race_instance.is_one_day_race.return_value = False
+    mock_race_instance.stages.return_value = fake_stages
+    mock_race = MagicMock(return_value=mock_race_instance)
+
+    sb = make_supabase()
+
+    with _patch_fetch_html(), patch("sync_race.Race", mock_race):
+        result = await sync_race.import_stage_profiles(
+            sb, page=MagicMock(),
+            race_slug="race/dauphine/2026",
+            race_name="Critérium du Dauphiné",
+        )
+
+    assert result == {"imported": 2, "skipped": 0, "total_stages": 2}
+    by_slug = {r["race_slug"]: r for r in sb.upserts["stage_profiles"]}
+    # Rows are keyed by the WattHunter slug, NOT the PCS canonical one.
+    assert "race/dauphine/2026/stage-1" in by_slug
+    assert "race/dauphine/2026/stage-8" in by_slug
+    assert "race/tour-auvergne-rhone-alpes/2026/stage-1" not in by_slug
+    assert by_slug["race/dauphine/2026/stage-1"]["profile_icon"] == "p2"
+    assert by_slug["race/dauphine/2026/stage-8"]["profile_icon"] == "p5"
+
+
 async def test_import_stage_profiles_falls_back_when_date_missing():
     """A stage without a `date` field → race_date=None in the payload; profile still imported."""
     import sync_race

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from datetime import date
 from typing import Optional, List, Dict, Any
 
@@ -748,11 +749,25 @@ async def import_stage_profiles(
             skipped += 1
             continue
 
+        # PCS sometimes returns a canonical race URL that differs from the
+        # input slug (e.g. `race/dauphine/2026` → `race/tour-auvergne-rhone-alpes/2026`).
+        # Persist under the input slug so the rest of the codebase (front,
+        # wt_calendar, wt-race-slugs) can look stages up by their canonical
+        # WattHunter slug.
+        normalized_slug = _normalize_stage_slug(stage_url, race_slug)
+        if normalized_slug is None:
+            logger.warning(
+                "Unparseable stage_url %r for race_slug %r — skipping",
+                stage_url, race_slug,
+            )
+            skipped += 1
+            continue
+
         race_date = _stage_date_from_md(stage.get("date"), year)
         try:
             supabase.table("stage_profiles").upsert(
                 {
-                    "race_slug": stage_url,
+                    "race_slug": normalized_slug,
                     "profile_icon": icon,
                     "race_date": race_date,
                 },
@@ -760,7 +775,25 @@ async def import_stage_profiles(
             ).execute()
             imported += 1
         except Exception as exc:
-            logger.error("Failed stage_profiles upsert for %s: %s", stage_url, exc)
+            logger.error("Failed stage_profiles upsert for %s: %s", normalized_slug, exc)
             skipped += 1
 
     return {"imported": imported, "skipped": skipped, "total_stages": len(stages)}
+
+
+_STAGE_SUFFIX_RE = re.compile(r"/(stage-\d+(?:[a-z])?)$")
+
+
+def _normalize_stage_slug(pcs_stage_url: str, input_race_slug: str) -> Optional[str]:
+    """Rewrite a PCS-canonical stage URL (`race/<pcs-name>/<year>/stage-N`)
+    onto the input race slug, so that `stage_profiles.race_slug` matches the
+    slug the rest of the codebase uses (wt_calendar, wt-race-slugs, front).
+
+    Returns the rewritten slug, or None if the PCS URL has no `/stage-N` suffix.
+    Idempotent: when PCS canonical and input slugs are identical, returns
+    the same value as before (no behavior change).
+    """
+    match = _STAGE_SUFFIX_RE.search(pcs_stage_url)
+    if not match:
+        return None
+    return f"{input_race_slug.rstrip('/')}/{match.group(1)}"
