@@ -16,7 +16,7 @@ export default function TeamLayout({
   // Strategies page keeps its own page-level hide (unchanged access from My Team card).
   const hideTabs = pathname.includes("/strategies") || pathname.includes("/rescue");
 
-  const gtLabel = getGTSubTabLabel(); // "Giro Team" / "Tour Team" / "Vuelta Team" / "GT Team"
+  const gtLabel = getGTSubTabLabel(); // "Giro Team" / "Tour Team" / "Vuelta Team" / "Race Team"
 
   return (
     <>

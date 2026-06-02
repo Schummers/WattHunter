@@ -61,13 +61,23 @@ export function getNextGTPhase(date: Date = new Date()): AuctionPhase | null {
 }
 
 /**
- * Sub-tab label for the Team layout:
+ * Sub-tab label for the Team layout.
+ *
+ * Preferred call: `getGTSubTabLabel(date, { override })` — pass the
+ * server-resolved label from `resolveRaceTeamLabel` (e.g. "Paris-Nice Team")
+ * so 1-week races render correctly. The override always wins when provided.
+ *
+ * Legacy call (no override): keeps prior GT-only semantics —
  *   - During a GT phase → `Giro Team` / `Tour Team` / `Vuelta Team`
- *   - Outside           → `GT Team` (inactive placeholder)
+ *   - Outside           → `Race Team` (renamed from `GT Team` per Spec A A9)
  */
-export function getGTSubTabLabel(date: Date = new Date()): string {
+export function getGTSubTabLabel(
+  date: Date = new Date(),
+  opts?: { override?: string | null },
+): string {
+  if (opts?.override) return opts.override;
   const cur = getCurrentGTPhase(date);
-  if (!cur) return "GT Team";
+  if (!cur) return "Race Team";
   return `${GT_SHORT_NAME[cur.id as GtPhaseId]} Team`;
 }
 
