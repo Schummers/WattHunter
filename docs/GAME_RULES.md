@@ -207,6 +207,20 @@ Team XP = sum of XP from all roster riders
 | 7 | Post-Tour | 2,600 | 12 | 3 | #4–600 | Age | T5 · 1M (×2) |
 | 8 | La Vuelta | 5,000 | 12 | 3 | #1–600 | — | T6 UAE · 1.25M |
 
+### In-app scoring documentation (Spec A A8)
+
+A summary of the rules above is rendered to players on the Race Team page via
+the `<ScoringDocCard />` component (`apps/web/components/scoring-doc-card.tsx`).
+It covers:
+
+- Daily multipliers (gc/points/kom ×2 matched, youth ×1.5) — see §7 + A2.
+- Finals (GC ×1.0, Points/KOM ×2, Youth ×1.5; barème 80/20/10 GT · 40/10/5 1-sem) — see A2.
+- Stage Hunter (×1.5 in breakaway ≥30 km + 1pt/10 km additive, ×1.0 elsewhere) — see A3.
+- Sprinter profile gating (×1.5 only on p1/p2/p3) — see A4.
+- Nemesis profile gating (Sprint p1-p3, GC p3-p5) — see A7.
+
+The values are not duplicated in the component — constants stay in §11.
+
 ---
 
 ## 8. Strategies

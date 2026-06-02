@@ -120,6 +120,7 @@ watthunter/
 │   │   ├── tactic-nemesis-modal.tsx   # Modal Nemesis 2-step (rival → stage)
 │   │   ├── tactic-stage-list.tsx      # Stage picker placement tactique
 │   │   ├── team-tactics-section.tsx   # Orchestrator tactiques sur GT Team page
+│   │   ├── scoring-doc-card.tsx       # Encart "How scoring works" sur Race Team (Spec A A8)
 │   │   ├── rail-link.tsx        # Lien de navigation vers detail rail
 │   │   ├── rail-router.tsx      # Routeur du panneau detail rail
 │   │   ├── detail-rail.tsx      # Panneau detail (desktop flex:2, min 380px)
@@ -148,8 +149,9 @@ watthunter/
 │       ├── calendar.ts          # Helpers calendrier WT
 │       ├── co-unlock.ts         # Co-Unlock Rule eligibility checks
 │       ├── gt-goals.ts          # Helpers sponsor GT goals
-│       ├── gt-phases.ts         # Detection phase GT (Giro/Tour/Vuelta)
+│       ├── gt-phases.ts         # Detection phase GT (Giro/Tour/Vuelta) ; `getGTSubTabLabel(date, { override })` — override-aware label pour sub-tab Race Team (Spec A A9)
 │       ├── gt-stages.ts         # Liste stages par GT
+│       ├── race-team-label.ts   # `resolveRaceTeamLabel(supabase, teamId, date?)` — resout le label dynamique du Race Team (GT actif → "Giro Team"/"Tour Team"/… ; hors saison → "Race Team") (Spec A A9)
 │       ├── phases.ts            # Helpers phases WT
 │       ├── photo-url.ts         # Resolution URL photo coureur
 │       ├── rider-detail-data.ts # Fetcher unifie rider detail
