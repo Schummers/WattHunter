@@ -1,7 +1,8 @@
-# Spec A — Levels + Rôles & Scoring (Refonte équilibrage)
+# Spec A — Levels, Rôles, Scoring & Race Team (Refonte équilibrage)
 
-> Statut : **FINAL** (opens résolus 2026-06-02, prêt pour writing-plans) · Partie 1/3 de la refonte équilibrage
+> Statut : **FINAL** (opens résolus + scope élargi A8/A9 le 2026-06-02, prêt pour writing-plans) · Partie 1/3 de la refonte équilibrage
 > Spec B = Underdog · Spec C = Économie Bonus & Sponsors
+> Périmètre : A1-A7 scoring/levels/tactics · A8 doc front · A9 escouade « Race Team » (sélection 1-semaine)
 
 ## Contexte & problème
 
@@ -28,14 +29,14 @@ Spec A = ralentir la progression du leader (levels longs) + corriger les sur-boo
 | L5 | 600 | 600 | — |
 | **L6** | 1200 | **1200** (inchangé) | +600 |
 | **L7** | 1800 | **2600** | +1400 |
-| **L8** | 2400 | **4000** | +1400 |
+| **L8** | 2400 | **5000** | +2400 |
 
-- L1-L5 inchangés. Le gros étirement se fait sur L7 et L8 (+1400 chacun).
+- L1-L5 inchangés. Le gros étirement se fait sur L7 (+1400) et L8 (+2400).
 - **No-regression conservé** : aucune équipe ne perd son level actuel ; on relève seulement la barre du level suivant. (Ex. Leopard à 2559 < 2600 reste L7 car déjà L7 sous l'ancienne courbe.)
-- Cible : L8 atteint **après le Tour** (estimation : leader ~4650 fin Tour → seuil 4000 franchi dans la dernière semaine).
+- Cible : L8 **pas atteint pendant le Tour** (décision 2026-06-02, relevé de 4000 → 5000). Estimation leader ~4650 fin Tour < 5000 → le dernier level se franchit **après le Tour** (Vuelta / fin de saison). Étire encore la progression du leader.
 
 **Fichiers à modifier :**
-- `services/pcs-sync/scoring.py:35` — `LEVEL_THRESHOLDS = [0, 25, 150, 350, 600, 1200, 2600, 4000]`
+- `services/pcs-sync/scoring.py:35` — `LEVEL_THRESHOLDS = [0, 25, 150, 350, 600, 1200, 2600, 5000]`
 - `apps/web/lib/levels.ts` — constante `LEVELS[].xp`
 - Migration SQL — `public.compute_level()` + recompute `UPDATE teams SET level = compute_level(cumulative_xp)` (avec garde no-regression)
 - `docs/GAME_RULES.md §7 / §12.3`
@@ -121,7 +122,7 @@ Le rôle reste ×1.5 (scope "all", sauf sur `/gc` désormais ×1.0 via A2). C'es
 
 Le multiplicateur du bonus de classement quotidien passe à ×2 (rôle qui matche), avec l'exception GC final ×1.0. Voir A2.
 
-### A7 — Réconciliation GT Tactics (PROPOSÉ — à confirmer)
+### A7 — Réconciliation GT Tactics (LOCKED 2026-06-02)
 
 Les tactics **surchargent** (override, ne stackent pas) le `gt_role_mult` sur les résultats d'étape (`tactics.py`).
 Valeurs ACTUELLES : Unleash domestique→1.5 · Overdrive stage_hunter→2.0 · Call the Bus bench→inclus à ×1.0 · Nemesis (attacker_won : attacker 2.0 / target 0.5 ; target_won : attacker 0.75 / target 1.25).
@@ -129,12 +130,55 @@ Valeurs ACTUELLES : Unleash domestique→1.5 · Overdrive stage_hunter→2.0 · 
 Problème : le nouveau stage_hunter est ×1.0 par défaut, ×1.5 en échappée → Overdrive→2.0 sur-récompense un stage_hunter hors échappée. La refonte oriente le jeu vers le stage-hunting → on re-tune les tactics autour.
 
 **Ajustements (LOCKED) :**
-- **Overdrive** : stage_hunter → **×2**, uniquement **si dans l'échappée** (`breakaway_kms ≥ seuil`) ; sinon aucun effet. Bonus distance 1pt/10km toujours additif. (Base échappée ×1.5 → Overdrive ×2 = vrai boost.) → seul changement.
+- **Overdrive** : stage_hunter → **×2**, uniquement **si dans l'échappée** (`breakaway_kms ≥ seuil`) ; sinon aucun effet. Bonus distance 1pt/10km toujours additif. (Base échappée ×1.5 → Overdrive ×2 = vrai boost.)
 - **Unleash** : INCHANGÉ (domestique → ×1.5 sur étape).
 - **Call the Bus** : INCHANGÉ (bench riders inclus à ×1.0).
-- **Nemesis** : INCHANGÉ.
+- **Nemesis — gating par profil d'étape (NOUVEAU, LOCKED 2026-06-02)** : le duel ne peut être **activé** que sur une étape dont le profil correspond au type de duel. Gating à l'**activation** (`place_tactic`), pas au scoring : on ne peut pas cibler un nemesis sur une étape hors-profil.
+  - **Nemesis Sprint** : activable uniquement sur **P1/P2/P3** (plat + vallonné — cohérent avec le gating sprinter A4).
+  - **Nemesis GC** : activable uniquement sur **P3/P4/P5** (vallonné arrivée en côte + montagne — là où le GC se décide ; exclut p2 vallonné arrivée plate).
+  - Résolution du duel (valeurs attacker/target) **inchangée** une fois activé. Le `profile_icon` (capturé via A4) est disponible à l'activation.
 
-Fichiers : `tactics.py` (compute_*_modifier), `scoring.py` (~494-545). `breakaway_kms` (capturé via A3) dispo à la résolution des tactics.
+Fichiers : `tactics.py` (compute_*_modifier), `scoring.py` (~494-545), server action `place_tactic` (validation du profil à l'activation pour Nemesis). `breakaway_kms` (capturé via A3) + `profile_icon` (capturé via A4) dispo à la résolution/activation des tactics.
+
+### A8 — Documentation front du scoring (NOUVEAU, LOCKED 2026-06-02)
+
+Les changements de barème (A2/A3/A4/A7) modifient en profondeur la façon dont les points sont gagnés. Il faut **l'expliquer aux joueurs dans l'app**, pas seulement dans `GAME_RULES.md`.
+
+- **Où** : page « Race team » (ex-« GT team », voir A9) — encart/section pédagogique « Comment marche le scoring ».
+- **Quoi expliquer** :
+  - Multiplicateurs de rôle : classifs quotidiennes gc/points/kom ×2 (rôle matché), youth ×1.5 (gc_leader).
+  - Finals : GC ×1.0 (pas de mult, gros windfall), Points/KOM ×2, Youth ×1.5 ; barème secondaire 2-valeurs 80/20/10 GT · 40/10/5 1-sem.
+  - Stage hunter : ×1.5 en échappée (≥30 km) + 1 pt/10 km additif, ×1.0 sinon.
+  - Sprinter : bonus ×1.5 seulement sur P1/P2/P3.
+  - Nemesis : gating profil (Sprint P1-P3, GC P3-P5).
+- **Contraintes** : **Rule #1 — lire `docs/watthunter-design-system-v3.md` avant tout dev front**. Le design visuel (composant, emplacement exact, copy EN) se décide à l'étape frontend ; ce spec acte uniquement l'**exigence** de documenter le scoring in-app. Textes en **anglais** (Language rule).
+- `docs/GAME_RULES.md §7/§11/§12.3` mis à jour en parallèle (source de vérité des constantes).
+
+### A9 — Escouade « Race team » : sélection pour les courses d'1 semaine (NOUVEAU, LOCKED 2026-06-02)
+
+Étend la sélection d'escouade (aujourd'hui GT-only) aux **courses à étapes d'1 semaine** (Paris-Nice, Tirreno, Dauphiné, etc.). Étend le périmètre de Spec A au-delà du scoring pur (décision utilisateur).
+
+**Mécanique cœur :**
+- Une course à étapes d'1 semaine exige désormais une **escouade sélectionnée**. Les coureurs contractés **non sélectionnés scorent 0** sur cette course (comme en GT). Aujourd'hui ces courses scorent *tous* les contractés `pcs_points > 0` (`scoring.py:483-485`) → on ajoute le gating d'escouade pour ce type de course.
+- **Inchangé** : GT (escouade existante) et **courses d'1 jour** (Monuments/Classics → toujours all-roster, pas d'escouade).
+
+**Escouade (LOCKED) :**
+- **Réutilise la structure `gt_squad`** : **8 slots, mêmes 6 rôles** (gc_leader 1, sprinter 1, climber 1, tt_specialist 1, stage_hunter 2, domestique 2). Coureurs = contrats actifs.
+- **Lifecycle = identique au GT** : cutoff roulant **11:00 CET par étape**, **swaps libres** pendant la course (réutilise `gt_add/remove/swap` généralisés).
+
+**Tactics (LOCKED) :**
+- Les GT Tactics **s'étendent** aux courses à étapes d'1 semaine (cohérence — même généralisation que l'escouade). Mécaniques identiques + gating profil Nemesis (A7).
+- **Usage limit par course d'1 semaine = 1 de chaque tactic** (défaut, ajustable) — réduit depuis les limites GT (Unleash 2 / Overdrive 2 / Call the Bus 3 / Nemesis 1/1) car ~1/3 des étapes.
+
+**Tab rename (LOCKED) :**
+- « GT Team » → **« Race Team »**. `getGTSubTabLabel()` (`apps/web/lib/gt-phases.ts:52-61`) renvoie le nom de la course active (ex. « Paris-Nice Team ») quand une escouade de course est active, sinon « Race Team ». Route `/team/gt` conservée ou renommée `/team/race` (décision frontend).
+
+**Détection du type de course :**
+- `wt_calendar_2026.json` a déjà `"type": "stage-race" | "one-day"`. Une **stage-race NON-GT** (pas de préfixe GT) = course d'1 semaine → exige une escouade. GT détectés par préfixe de slug (existant).
+- Le scoring (`scoring.py`) doit appliquer le gating `if not in_squad: continue` aussi pour ces courses (aujourd'hui réservé aux GT).
+
+**Open technique (writing-plans, pas une décision produit) :**
+- `gt_squad` et `gt_tactic_activations` sont clés sur `phase_id (4/6/8)`. Les courses d'1 semaine ne sont pas des phases → **généraliser** : soit ajouter une colonne identifiant de course (`race_slug`) en relâchant `phase_id`, soit tables parallèles. Reco : généraliser les tables existantes (notion « race campaign » dont les phases GT sont un cas). À trancher au plan d'implémentation.
 
 ## Hors scope (autres specs)
 
@@ -145,15 +189,25 @@ Fichiers : `tactics.py` (compute_*_modifier), `scoring.py` (~494-545). `breakawa
 
 | Changement | Fichiers |
 |---|---|
-| Seuils levels | scoring.py, levels.ts, migration compute_level, GAME_RULES.md |
-| No-mult /gc | scoring.py `_role_multiplier()` |
-| Stage hunter échappée | migration (col `breakaway_kms`), sync_race.py, scoring.py |
-| Classif ×1.5 (si neutralisé) | scoring.py |
+| Seuils levels (L7=2600, L8=5000) | scoring.py:35, levels.ts, migration compute_level, GAME_RULES.md |
+| No-mult /gc + classif ×2 | scoring.py `_role_multiplier()`, `ROLE_CLASSIF_MULT` |
+| Finals secondaires (rang→barème 2-valeurs) Points/KOM/Youth | sync_race.py (import finals), scoring.py (barème 80/20/10 GT · 40/10/5 1-sem) |
+| Youth daily (enum + scrape + score) | migration enum `classification_type`, sync_race.py:~513, scoring.py `CLASSIF_TOP["youth"]=5` |
+| Stage hunter échappée + bonus distance | migration (col `breakaway_kms`), sync_race.py, scoring.py |
+| Sprinter gating profil P1/P2/P3 | migration (col `profile_icon`), sync_race.py, scoring.py |
+| Nemesis gating profil (Sprint P1-P3, GC P3-P5) | tactics.py, scoring.py, `place_tactic` (validation activation) |
+| **A8 — Doc front scoring** | page Race team (composant pédago, design system), GAME_RULES.md |
+| **A9 — Escouade Race team 1-sem** | migration (généraliser `gt_squad`/`gt_tactic_activations` au `race_slug`), scoring.py (gating squad non-GT), RPCs gt_add/remove/swap, gt-phases.ts (label), route `/team/gt` |
 
-## Questions ouvertes (Spec A) — TOUTES RÉSOLUES (2026-06-02)
+## Questions ouvertes (Spec A) — décisions produit résolues (2026-06-02) ; 2 points mineurs en bas
 - ~~Q4 — Classif quotidien ×1.5~~ → RÉSOLU : ×2 (rôle matché), GC final ×1.0, sprint/KOM final ×2 (A2).
 - ~~Q5 — Stage hunter constantes~~ → RÉSOLU : seuil 30 km, 1 pt/10 km, ×2 sur résultat d'étape seulement.
 - ~~Q14 — Sprinter "argent"~~ → RÉSOLU : gating profil P1/P2/P3 sur les goals "Win a stage" + "Win 2 stages" (rôle sprinter) uniquement ; per-result et classements globaux inchangés.
 - ~~Q12 — Rétroactif~~ → RÉSOLU : **forward-only**. Nouvelles règles à partir du Tour ; aucun re-score du Giro (évite la corruption rétroactive — cf. Remontada désactivé — et le re-scrape des données breakaway/profil/youth absentes du Giro). Le GC final du Giro, non encore synchro, est importé sous les nouvelles règles (×1.0) de toute façon.
 - ~~Cap bonus distance échappée~~ → RÉSOLU : **aucun cap** (voir A3). À surveiller en prod.
 - ~~Finals secondaires (Points/KOM/Youth) — barème ?~~ → RÉSOLU : PCS ne donne de points finals Points/KOM/Youth **qu'en GT** (Youth jamais). Donc barème custom **commun** dérivé du rang, 2-valeurs **80/20/10 GT/Monument · 40/10/5 1-semaine**, uniforme pour les trois (voir A2). Pas d'asymétrie. Seul le GC final reste sur points PCS bruts ×1.0.
+- ~~L8 seuil~~ → RÉSOLU : **5000** (relevé de 4000). L8 non atteint pendant le Tour (voir A1).
+- ~~Nemesis gating profil~~ → RÉSOLU : Sprint P1/P2/P3, GC P3/P4/P5, gating à l'activation (voir A7).
+- ~~Escouade courses d'1 semaine~~ → RÉSOLU : A9 (réutilise gt_squad 8 slots/6 rôles, cutoff roulant+swaps, tactics étendues 1-of-each, non-sélectionnés = 0).
+- **A9 — usage limit tactics 1-sem** : défaut posé à **1 de chaque** ; à confirmer/ajuster en revue.
+- **A9 — généralisation tables** (`gt_squad`/`gt_tactic_activations` → `race_slug`) : décision d'implémentation au writing-plans.

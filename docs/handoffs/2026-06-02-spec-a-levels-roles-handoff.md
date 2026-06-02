@@ -4,6 +4,8 @@
 
 ## Statut : DESIGN COMPLET ✅ (prêt pour writing-plans)
 
+> ⚠️ Scope élargi le 2026-06-02 (review utilisateur) : ajout **A8** (doc front du scoring) + **A9** (escouade « Race Team » = sélection d'escouade pour les courses à étapes d'1 semaine, réutilise gt_squad, tactics étendues). L8 relevé à 5000. Nemesis gaté par profil. Voir le spec pour le détail — ce handoff résume l'état d'origine.
+
 ## Décisions lockées (résumé — détail dans le spec)
 
 - **Levels** : L1-L5 inchangés ; **L6=1200, L7=2600, L8=4000**. No-regression. (`scoring.py:35`, `apps/web/lib/levels.ts`, migration `compute_level`.)
