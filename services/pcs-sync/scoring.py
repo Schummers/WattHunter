@@ -15,13 +15,6 @@ import re
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from supabase import Client
-from remontada import (
-    get_gt_identifier,
-    get_stage_number,
-    get_active_multiplier,
-    detect_overtakes,
-    record_overtake,
-)
 from tactics import (
     compute_unleash_modifier,
     compute_overdrive_modifier,
@@ -47,20 +40,6 @@ def _parse_supabase_ts(ts: str) -> datetime:
         base, frac = s.split(".", 1)
         s = base + "." + (frac + "000000")[:6]
     return datetime.fromisoformat(s).replace(tzinfo=_tz.utc)
-
-
-def _latest_snapshot_date_before(supabase: Client, team_ids: list[str], today: str) -> str | None:
-    """Return the most recent date in team_ranking_daily before today, or None if no prior snapshot exists."""
-    resp = (
-        supabase.table("team_ranking_daily")
-        .select("date")
-        .in_("team_id", team_ids)
-        .lt("date", today)
-        .order("date", desc=True)
-        .limit(1)
-        .execute()
-    )
-    return resp.data[0]["date"] if resp.data else None
 
 
 # --- GT mode --------------------------------------------------------------
@@ -226,7 +205,6 @@ async def calculate_daily_scores(
     supabase: Client,
     race_slugs: list[str] | None = None,
     ignore_role_cutoff: bool = False,
-    skip_overtake_detection: bool = False,
 ) -> dict:
     """
     For each contracted rider with pcs_points > 0 in race_results:
@@ -414,19 +392,6 @@ async def calculate_daily_scores(
     # Track all league_ids for snapshot step
     league_ids_seen: set[str] = set()
 
-    # --- Remontada: identify GT stages in this run (used later for overtake attribution) ---
-    # Map: gt_identifier -> max stage number seen in this batch (used as trigger stage).
-    # We use MAX because if two GT stages are scored in one call (unusual), the later one
-    # reflects the cumulative state after this run.
-    remontada_stage_in_run: dict[str, int] = {}
-    for slug in (race_slugs or []):
-        gt_id = get_gt_identifier(slug)
-        stage_no = get_stage_number(slug)
-        if gt_id and stage_no is not None:
-            remontada_stage_in_run[gt_id] = max(
-                remontada_stage_in_run.get(gt_id, 0), stage_no
-            )
-
     # --- Step 4: Calculate XP per team and persist ---
     for team_id, team_clist in team_contracts.items():
         total_xp = 0.0
@@ -478,8 +443,6 @@ async def calculate_daily_scores(
                 gt_role_mult = 1.0
                 gt_classif_bonus = 0.0
                 role = "domestique"  # default; overridden for squad members with assigned role
-                gt_id = get_gt_identifier(race_slug)
-                stage_no = get_stage_number(race_slug)
                 if _is_gt_slug(race_slug):
                     if not in_squad:
                         continue  # non-squad contracted riders earn 0 XP on GT stages
@@ -544,21 +507,11 @@ async def calculate_daily_scores(
                                 nemesis_modifier = min(nemesis_modifier, nem_mod)
                                 tactic_applied = applied
 
-                # Remontada Boost (Mech 1): 2x when active for this team at this GT stage.
-                remontada_mult = 1.0
-                if gt_id and stage_no is not None:
-                    remontada_mult = get_active_multiplier(
-                        supabase,
-                        team_id=team_id,
-                        gt_identifier=gt_id,
-                        stage_number=stage_no,
-                    )
-
                 xp = max(
                     0,
                     round(
                         (raw_points * gt_role_mult * (1 + bonus) + gt_classif_bonus)
-                        * remontada_mult * nemesis_modifier,
+                        * nemesis_modifier,
                         2,
                     ),
                 )
@@ -574,7 +527,6 @@ async def calculate_daily_scores(
                         "strategy_bonus": bonus,
                         "role_mult": gt_role_mult,
                         "classif_bonus": gt_classif_bonus,
-                        "remontada_mult": remontada_mult,
                         "gt_role_mult": gt_role_mult,
                         "gt_classif_bonus": gt_classif_bonus,
                         "nemesis_modifier": nemesis_modifier,
@@ -610,18 +562,7 @@ async def calculate_daily_scores(
                 if c_classif_bonus == 0:
                     continue
 
-                c_gt_id = get_gt_identifier(c_race_slug)
-                c_stage_no = get_stage_number(c_race_slug)
-                c_remontada = 1.0
-                if c_gt_id and c_stage_no is not None:
-                    c_remontada = get_active_multiplier(
-                        supabase,
-                        team_id=team_id,
-                        gt_identifier=c_gt_id,
-                        stage_number=c_stage_no,
-                    )
-
-                c_xp = max(0, round(c_classif_bonus * c_remontada, 2))
+                c_xp = max(0, round(c_classif_bonus, 2))
                 c_date = race_date_by_slug.get(c_race_slug, today)
 
                 try:
@@ -634,7 +575,6 @@ async def calculate_daily_scores(
                         "strategy_bonus": 0.0,
                         "role_mult": 1.0,
                         "classif_bonus": c_classif_bonus,
-                        "remontada_mult": c_remontada,
                         "gt_role_mult": 1.0,
                         "gt_classif_bonus": c_classif_bonus,
                         "nemesis_modifier": 1.0,
@@ -698,7 +638,7 @@ async def calculate_daily_scores(
             logger.error(f"Failed to update team {team_id}: {e}")
             errors.append(str(e))
 
-    # --- Step 5: Snapshot team_ranking_daily + Remontada overtake detection ---
+    # --- Step 5: Snapshot team_ranking_daily ---
     for league_id in league_ids_seen:
         # 5a. Build POST-scoring ranking for this league.
         try:
@@ -708,7 +648,6 @@ async def calculate_daily_scores(
                 "cumulative_xp", desc=True
             ).execute()
             league_rows = league_teams_resp.data or []
-            post_snapshot = [(row["id"], rank) for rank, row in enumerate(league_rows, start=1)]
 
             # 5b. Write the existing daily snapshot (unchanged behavior).
             for rank, row in enumerate(league_rows, start=1):
@@ -718,38 +657,6 @@ async def calculate_daily_scores(
                     "rank": rank,
                     "cumulative_xp": row["cumulative_xp"],
                 }, on_conflict="team_id,date").execute()
-
-            # 5c. Remontada: if this run touched a GT, compare last snapshot to now and trigger.
-            # Skip during retroactive rescores (skip_overtake_detection=True) to avoid phantom triggers.
-            if remontada_stage_in_run and not skip_overtake_detection:
-                team_ids = [r["id"] for r in league_rows]
-                prev_date = _latest_snapshot_date_before(supabase, team_ids, today)
-                pre_rows = []
-                if prev_date:
-                    pre_rows = (
-                        supabase.table("team_ranking_daily")
-                        .select("team_id, rank")
-                        .eq("date", prev_date)
-                        .in_("team_id", team_ids)
-                        .execute()
-                    ).data or []
-                pre_snapshot = sorted(
-                    [(r["team_id"], r["rank"]) for r in pre_rows],
-                    key=lambda x: x[1],
-                )
-
-                if pre_snapshot:  # skip leagues with no prior baseline
-                    overtakes = detect_overtakes(pre_snapshot, post_snapshot)
-                    for gt_id, stage_no in remontada_stage_in_run.items():
-                        for overtaker, overtaken in overtakes:
-                            record_overtake(
-                                supabase,
-                                league_id=league_id,
-                                gt_identifier=gt_id,
-                                overtaker_team_id=overtaker,
-                                overtaken_team_id=overtaken,
-                                triggered_at_stage=stage_no,
-                            )
 
         except Exception as e:
             logger.error(f"Failed to snapshot/detect for league {league_id}: {e}")

@@ -49,7 +49,6 @@ WIPE_ORDER_TEAM_SCOPED = [
     "gt_tactic_activations",
     "gt_role_assignments",
     "gt_squad",
-    "remontada_boosts",
 ]
 
 WIPE_ORDER_LEAGUE_SCOPED = [
@@ -57,7 +56,6 @@ WIPE_ORDER_LEAGUE_SCOPED = [
     "gt_emergency_bids",
     "contracts",
     "auctions",
-    "remontada_boost_triggers",
     "league_members",
     "teams",
 ]

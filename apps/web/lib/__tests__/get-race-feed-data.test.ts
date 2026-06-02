@@ -60,7 +60,6 @@ describe("getRaceFeedData", () => {
       teams: [],
       riders: [],
       gt_tactic_activations: [],
-      remontada_boosts: [],
       auctions: [],
     });
     const result = await getRaceFeedData(supabase, {
@@ -109,7 +108,6 @@ describe("getRaceFeedData", () => {
       ],
       sponsor_bonuses: [],
       gt_tactic_activations: [],
-      remontada_boosts: [],
       auctions: [],
     });
 
@@ -166,7 +164,6 @@ describe("getRaceFeedData", () => {
           resolved_target_rider_id: null,
         },
       ],
-      remontada_boosts: [],
       auctions: [],
     });
 

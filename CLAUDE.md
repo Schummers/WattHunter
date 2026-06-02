@@ -94,7 +94,7 @@ cd services/pcs-sync
 
 **Pourquoi visible par défaut** : Cloudflare flag les browsers headless même avec nodriver dans ce setup (IP/fingerprint). Une fenêtre Chromium s'ouvre 5-10s au début de chaque session (warm-up sur page rider neutre type `tadej-pogacar`), puis les fetches suivants passent via les cookies `cf_clearance`.
 
-Autres scripts (auxiliaires, voir `run_pipeline.py --help` et `services/pcs-sync/`) : `resolve_gt_rescue`, `resolve_now`, `retry_failed`, `dnf_detection`, `sponsor_bonus`, `goal_evaluator`, `remontada`, `tactics`, `validation`, `backfill_traceability`.
+Autres scripts (auxiliaires, voir `run_pipeline.py --help` et `services/pcs-sync/`) : `resolve_gt_rescue`, `resolve_now`, `retry_failed`, `dnf_detection`, `sponsor_bonus`, `goal_evaluator`, `tactics`, `validation`, `backfill_traceability`.
 
 Calendrier WT : `services/pcs-sync/wt_calendar_2026.json`.
 
@@ -125,7 +125,7 @@ Quand une constante change → mettre à jour GAME_RULES.md §11 (et le code). C
 - Incrément = **1 000 €** (multiples de 1 000 ; plus de centaines) — tous les prix coureur s'affichent en format K via `formatMoney` (`apps/web/lib/format.ts`)
 - Release = **gratuit** mais salaire phase non remboursé
 - Finance = **1x par phase WT** (pas mensuel)
-- Remontada Boost **DÉSACTIVÉ** depuis 2026-05-21 (feature-flag, code conservé)
+
 
 ## Rule #4 — Update Living Docs After Every Feature
 Après chaque feature shipped, mettre à jour **dans la même session** :
@@ -139,12 +139,12 @@ Ne PAS sauter cette étape. L'absence de mise à jour est la première cause de 
 ## Features livrées (résumé)
 Détails complets, plans et migrations dans MEMORY.md.
 - **Sponsors v2** — 6 tiers, 13 sponsors, race result bonuses
-- **Anti-Runaway** — Co-Unlock + Level Curve Stretch (Remontada Boost désactivé 2026-05-21)
+- **Anti-Runaway** — Co-Unlock + Level Curve Stretch (Remontada Boost supprimé 2026-06-02)
 - **Grand Tour** — V1a squad builder + V1b sponsor goal evaluation + payout
 - **GT Tactics** — 5 tactiques (Unleash, Overdrive, Nemesis GC/Sprint, Call the Bus)
 - **GT Rescue** — DNF refund/replace window avec auto-release sur refund claim
 - **Achievements** — système d'achievements (voir `app/(game)/.../achievements/`)
-- **Race Feed** — cards Home (past race, remontada, nemesis, rest day, GT goals)
+- **Race Feed** — cards Home (past race, nemesis, rest day, GT goals)
 - **Palmares** — page profil rider avec onglets Monuments / dynamiques + league rank
 
 ## Blockers ouverts (résoudre avant alpha)

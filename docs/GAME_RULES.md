@@ -332,21 +332,11 @@ At the start of each phase, the player **confirms** their configuration:
 > Spec complète : `docs/plans/2026-04-23-anti-runaway-system-design.md`
 > Implémenté sur `main` — 2026-04-24
 
-3 mécanismes toujours actifs (league-wide, pas d'opt-in commissioner) pour limiter les écarts structurels entre le leader et les joueurs hors-podium.
+2 mécanismes toujours actifs (league-wide, pas d'opt-in commissioner) pour limiter les écarts structurels entre le leader et les joueurs hors-podium.
 
-### 12.1 Remontada Boost (Mécanisme 1) — DÉSACTIVÉ 2026-05-21
+> **Note** : un 3e mécanisme anti-rattrapage (boost d'overtake) a existé mais a été supprimé le 2026-06-02. Il est remplacé à terme par Spec B (Underdog system).
 
-> **DISABLED** — mécanique désactivée via feature-flag (`REMONTADA_ENABLED = False`). Trop fragile aux recalculs rétroactifs : tout rescore d'un stage passé peut corrompre l'historique des triggers/boosts, créant des cascades d'overtakes "fantômes" non mérités. Code conservé dans le codebase pour réactivation éventuelle si la mécanique est repensée. Voir `MEMORY.md` pour le contexte de la décision.
-
-- **Scope** : Grand Tours uniquement (Giro, Tour de France, Vuelta).
-- **Éligibilité** : joueurs classés rank 4+ dans la ligue au moment du trigger. Inactif si la ligue a <4 joueurs.
-- **Trigger** : le joueur A dépasse le joueur B dans le classement ligue → boost déclenché pour A.
-- **Contrainte anti-ping-pong** : 1 trigger max par paire ordonnée A→B par GT. Reset au GT suivant.
-- **Reward** : tous les points de A pendant les **3 prochaines stages effectives** sont multipliés par **1.5x**.
-- **Cumul** : si A déclenche un autre overtake pendant son boost, le timer se refresh à 3 stages (pas de stacking — reste 1.5x).
-- **UX** : banner 🔥 "Remontada Boost active" affiché sur la sub-tab GT de la page Team. Indicateur passif 🔥 visible dans le classement ligue.
-
-### 12.2 Co-Unlock Rule (Mécanisme 2)
+### 12.1 Co-Unlock Rule (Mécanisme 1)
 
 - **Règle** : un joueur peut enchérir sur un coureur uniquement si **un nombre dynamique de joueurs de la ligue** ont le niveau requis pour accéder à ce coureur.
 - **Seuil dynamique** : `required = max(2, ceil(0.30 × nb_équipes_ligue))` — 30 % des équipes, plancher 2. Le plancher préserve le gate en petite ligue ; le seuil ne dépasse jamais le nombre d'équipes (pas de lock permanent). Source de vérité TS : `apps/web/lib/co-unlock.ts` `requiredTeamsToUnlock()`. Le RPC `place_bid` réplique la formule en SQL (`GREATEST(2, CEIL(0.30 * team_count))`) — les deux **doivent** rester synchronisés.
@@ -355,7 +345,7 @@ At the start of each phase, the player **confirms** their configuration:
 - **Release exclusif** : si moins de `required` joueurs éligibles restent après un release, le coureur repasse en état "locked" jusqu'à ce que le seuil soit de nouveau atteint.
 - **UX** : coureurs locked visibles uniquement pour les joueurs éligibles, avec icône cadenas et message "Unlock when N more players reach Lv.X".
 
-### 12.3 Level Curve Stretch (Mécanisme 3)
+### 12.2 Level Curve Stretch (Mécanisme 2)
 
 - **Principe** : les seuils XP de Lv.6, Lv.7 et Lv.8 sont relevés pour ralentir la progression end-game.
 - **Nouveaux seuils** : Lv.6 = 1 200 XP | Lv.7 = 2 600 XP | Lv.8 = 5 000 XP (Lv.1–5 inchangés). *(Spec A A1, 2026-06-02 : L7/L8 relevés depuis 1 800 / 2 400.)*
@@ -391,7 +381,7 @@ At the start of each phase, the player **confirms** their configuration:
 
 ### Scoring integration
 
-- Tactic modifiers are applied **after** strategy bonuses, **before** Remontada Boost.
+- Tactic modifiers are applied **after** strategy bonuses.
 - Traceability: `rider_xp_daily` records `role_mult` and `gt_classif_bonus` per scoring event.
 - Nemesis duels are resolved at stage scoring via the internal `resolve_nemesis_for_stage` RPC.
 

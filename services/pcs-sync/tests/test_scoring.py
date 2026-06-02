@@ -330,7 +330,6 @@ async def test_upsert_contains_traceability_columns():
     assert payload["classif_bonus"] == 0.0
     assert payload["raw_pcs_points"] == 20
     assert payload["strategy_bonus"] == 0.0
-    assert payload["remontada_mult"] == 1.0
 
 
 # ---------------------------------------------------------------------------
