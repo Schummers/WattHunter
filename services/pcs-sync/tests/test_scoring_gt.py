@@ -821,3 +821,154 @@ async def test_final_points_jersey_scored_for_sprinter():
     assert points_row["xp_gained"] == 160.0
     assert points_row["gt_classif_bonus"] == 160.0
     assert points_row["raw_pcs_points"] == 0
+
+
+# ---------------------------------------------------------------------------
+# Spec A A9 — 1-week Race Team squad gating + finals-secondary
+# ---------------------------------------------------------------------------
+
+# Note: the plan referenced a `make_supabase_for_gt(contracts=..., race_results=...,
+# gt_squad=..., gt_roles=..., gt_final_classifications=...)` fixture that does not
+# exist in this codebase. Helpers expose `make_supabase(*positional_responses)` which
+# queues responses against successive `.table()` calls. The tests below adapt to that
+# pattern, mirroring `test_rider_not_in_squad_gets_no_xp` (stage scoring) and
+# `test_final_points_jersey_scored_for_sprinter` (finals-secondary).
+
+
+class TestOneWeekSquadGating:
+    """Squad scoring on a 1-week stage-race slug behaves like a GT
+    (gate non-squad riders to 0, classif bonus + finals-secondary one_week)."""
+
+    async def test_one_week_stage_gates_non_squad_riders(self):
+        """A contracted rider NOT in the gt_squad of paris-nice must score 0 on the stage,
+        while an in-squad sprinter on a p2 stage gets the ×1.5 multiplier."""
+        import scoring
+
+        paris_nice_slug = "race/paris-nice/2026/stage-3"
+        rider_in_squad = RIDER_ID
+        rider_not_in_squad = RIDER_ID_2
+
+        sb = make_supabase(
+            # 1. race_results
+            [
+                {"rider_id": rider_in_squad, "race_slug": paris_nice_slug,
+                 "pcs_points": 40, "race_date": "2026-03-10", "is_itt": False,
+                 "breakaway_kms": None, "profile_icon": "p2"},
+                {"rider_id": rider_not_in_squad, "race_slug": paris_nice_slug,
+                 "pcs_points": 30, "race_date": "2026-03-10", "is_itt": False,
+                 "breakaway_kms": None, "profile_icon": "p2"},
+            ],
+            # 2. prev rider_xp_daily
+            [],
+            # 3. contracts — both riders contracted
+            [
+                {"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": rider_in_squad,
+                 "purchased_at": "2026-01-01T00:00:00Z", "release_date": None, "released_at": None,
+                 "riders": {"specialty": "Sprint", "nationality": "BE", "real_team": "x", "birthdate": "1998-01-01"}},
+                {"id": CONTRACT_ID_2, "team_id": TEAM_ID, "rider_id": rider_not_in_squad,
+                 "purchased_at": "2026-01-01T00:00:00Z", "release_date": None, "released_at": None,
+                 "riders": {"specialty": "Sprint", "nationality": "BE", "real_team": "x", "birthdate": "1998-01-01"}},
+            ],
+            # 4. team_strategies
+            [],
+            # 5. gt_squad — only rider_in_squad is in squad
+            [{"team_id": TEAM_ID, "rider_id": rider_in_squad,
+              "created_at": "2026-03-08T00:00:00+02:00", "removed_at": None}],
+            # 6. gt_role_assignments — sprinter role for rider_in_squad
+            [{"team_id": TEAM_ID, "rider_id": rider_in_squad,
+              "role": "sprinter", "applied_at": "2026-03-08T00:00:00+02:00"}],
+            # 7. gt_daily_classifications
+            [],
+            # 8. gt_tactic_activations (no /points slug, so finals prefetch skipped)
+            [],
+            # 9. rider_xp_daily upsert
+            [],
+            # 10. teams select
+            {"id": TEAM_ID, "cumulative_xp": 0.0, "level": 1, "league_id": LEAGUE_ID},
+            # 11. teams update
+            [],
+            # 12. teams snapshot
+            [{"id": TEAM_ID, "cumulative_xp": 60.0}],
+            # 13. team_ranking_daily upsert
+            [],
+        )
+
+        await scoring.calculate_daily_scores(sb, race_slugs=[paris_nice_slug])
+
+        upserts = sb.upserts.get("rider_xp_daily", [])
+        rider_xp = {r["rider_id"]: r["xp_gained"] for r in upserts}
+
+        # In-squad sprinter on p2 → ×1.5 sprinter multiplier on 40 pts = 60.
+        assert rider_xp[rider_in_squad] == 60.0
+        # Out-of-squad rider gated out (continue) → no upsert recorded.
+        assert rider_not_in_squad not in rider_xp
+
+    async def test_one_week_final_secondary_uses_40_10_5_scale(self):
+        """Points/KOM/Youth finals on a 1-week race use [40, 10, 5], not [80, 20, 10].
+
+        Sprinter wins the final Points jersey of paris-nice: 40 (rank 1, one_week scale) × 2 = 80.
+        """
+        import scoring
+
+        points_slug = "race/paris-nice/2026/points"
+        sb = make_supabase(
+            # 1. race_results — RIDER_ID_2 scores a stage point so calculate_daily_scores
+            # doesn't early-return on empty results.
+            [{"rider_id": RIDER_ID_2, "race_slug": "race/paris-nice/2026/stage-7",
+              "pcs_points": 10, "race_date": "2026-03-15", "is_itt": False,
+              "breakaway_kms": None, "profile_icon": "p1"}],
+            # 2. prev rider_xp_daily
+            [],
+            # 3. contracts — both riders contracted, both in squad
+            [
+                {"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+                 "purchased_at": "2026-01-01T00:00:00Z", "release_date": None, "released_at": None,
+                 "riders": {"specialty": "Sprint", "nationality": "BE", "real_team": "x", "birthdate": "1998-01-01"}},
+                {"id": CONTRACT_ID_2, "team_id": TEAM_ID, "rider_id": RIDER_ID_2,
+                 "purchased_at": "2026-01-01T00:00:00Z", "release_date": None, "released_at": None,
+                 "riders": {"specialty": "Sprint", "nationality": "BE", "real_team": "x", "birthdate": "1998-01-01"}},
+            ],
+            # 4. team_strategies
+            [],
+            # 5. gt_squad: both riders
+            [
+                {"team_id": TEAM_ID, "rider_id": RIDER_ID,
+                 "created_at": "2026-03-08T00:00:00+02:00", "removed_at": None},
+                {"team_id": TEAM_ID, "rider_id": RIDER_ID_2,
+                 "created_at": "2026-03-08T00:00:00+02:00", "removed_at": None},
+            ],
+            # 6. gt_role_assignments
+            [
+                {"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": "sprinter",
+                 "applied_at": "2026-03-08T00:00:00+02:00"},
+                {"team_id": TEAM_ID, "rider_id": RIDER_ID_2, "role": "domestique",
+                 "applied_at": "2026-03-08T00:00:00+02:00"},
+            ],
+            # 7. gt_daily_classifications
+            [],
+            # 8. gt_final_classifications (prefetch — RIDER_ID wins the Points jersey)
+            [{"rider_id": RIDER_ID, "race_slug": points_slug, "classification_type": "points",
+              "rank": 1, "race_date": "2026-03-15"}],
+            # 9. gt_tactic_activations
+            [],
+            # 10. rider_xp_daily upsert (RIDER_ID_2 stage point, RIDER_ID points jersey)
+            [],
+            # 11. teams select
+            {"id": TEAM_ID, "cumulative_xp": 0.0, "level": 1, "league_id": LEAGUE_ID},
+            # 12. teams update
+            [],
+            # 13. teams snapshot
+            [{"id": TEAM_ID, "cumulative_xp": 90.0}],
+            # 14. team_ranking_daily upsert
+            [],
+        )
+
+        await scoring.calculate_daily_scores(
+            sb, race_slugs=["race/paris-nice/2026/stage-7", points_slug]
+        )
+
+        upserts = sb.upserts.get("rider_xp_daily", [])
+        points_row = next(p for p in upserts if p["race_slug"] == points_slug)
+        # one_week scale rank 1 = 40 base × 2 (sprinter matched on 'points') = 80.
+        assert points_row["xp_gained"] == 80.0
+        assert points_row["gt_classif_bonus"] == 80.0
