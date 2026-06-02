@@ -1,19 +1,24 @@
 "use client";
 import { Tag } from "@/components/pill";
 import { cn } from "@/lib/utils";
-import type { GtStage } from "@/lib/gt-stages";
+import type { GtStage, StageProfileIcon } from "@/lib/gt-stages";
 
-export function StageList({
-  stages,
-  value,
-  onChange,
-  fillParent,
-}: {
+interface Props {
   stages: GtStage[];
   value: string;
   onChange: (v: string) => void;
   fillParent?: boolean;
-}) {
+  /**
+   * If set, stages whose `profileIcon` is NOT in the set are rendered
+   * disabled and dimmed. Used by Nemesis tactic placement:
+   * Nemesis Sprint → {p1,p2,p3}, Nemesis GC → {p3,p4,p5}.
+   * Stages without a known profile (`profileIcon == null`) are also disabled
+   * when `requiredProfiles` is set — the server-side gate would reject them.
+   */
+  requiredProfiles?: Set<StageProfileIcon>;
+}
+
+export function StageList({ stages, value, onChange, fillParent, requiredProfiles }: Props) {
   return (
     <div
       className={cn(
@@ -26,7 +31,9 @@ export function StageList({
           const isSelected = value === s.slug;
           const isLocked = !!s.hasTacticActive;
           const isCutoffLocked = s.status === "today" && !!s.isTodayCutoffPassed;
-          const isDisabled = isLocked || isCutoffLocked;
+          const isProfileMismatch =
+            !!requiredProfiles && (!s.profileIcon || !requiredProfiles.has(s.profileIcon));
+          const isDisabled = isLocked || isCutoffLocked || isProfileMismatch;
           const isToday = s.status === "today";
           const isFirst = i === 0;
           return (
@@ -65,7 +72,17 @@ export function StageList({
                   {s.date}
                 </span>
               </div>
-              {isToday && !isLocked && !isCutoffLocked && (
+              {s.profileIcon && (
+                <Tag
+                  variant="highlighted"
+                  className="text-[length:var(--type-micro)]"
+                  data-testid={`profile-chip-${s.slug}`}
+                  aria-label={`Profile ${s.profileIcon}`}
+                >
+                  {s.profileIcon}
+                </Tag>
+              )}
+              {isToday && !isLocked && !isCutoffLocked && !isProfileMismatch && (
                 <Tag variant="highlighted" className="text-[length:var(--type-micro)]">
                   Today
                 </Tag>
@@ -78,6 +95,14 @@ export function StageList({
               {isLocked && (
                 <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
                   Tactic set
+                </span>
+              )}
+              {isProfileMismatch && !isLocked && !isCutoffLocked && (
+                <span
+                  className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]"
+                  data-testid={`profile-mismatch-${s.slug}`}
+                >
+                  Wrong profile
                 </span>
               )}
             </button>
