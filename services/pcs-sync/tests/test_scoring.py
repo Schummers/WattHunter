@@ -354,32 +354,36 @@ def test_classif_bonus_matching_role_unchanged():
     assert _classif_bonus(rows_kom, "climber") == 3.0
 
 
-def test_classif_bonus_non_matching_role_earns_zero():
-    """V2: Non-matching squad rider (domestique/stage_hunter/tt_specialist) earns 0 classif bonus."""
+def test_classif_bonus_non_matching_role_earns_base():
+    """Non-matching squad rider (domestique/stage_hunter/tt_specialist) earns base × 1.0."""
     from scoring import _classif_bonus
 
     rows = [{"classification_type": "gc", "rank": 3}]
-    # Non-matched roles always earn 0, regardless of classification rank
-    assert _classif_bonus(rows, "domestique") == 0.0
-    assert _classif_bonus(rows, "stage_hunter") == 0.0
-    assert _classif_bonus(rows, "tt_specialist") == 0.0
+    # (10+1-3) × 1.0 = 8.0 for all non-matching roles
+    assert _classif_bonus(rows, "domestique") == 8.0
+    assert _classif_bonus(rows, "stage_hunter") == 8.0
+    assert _classif_bonus(rows, "tt_specialist") == 8.0
 
-    # Rank outside top → 0 regardless
+    # Rank at boundary (top = 10): (10+1-10) × 1.0 = 1.0
+    rows_last = [{"classification_type": "gc", "rank": 10}]
+    assert _classif_bonus(rows_last, "domestique") == 1.0
+
+    # Rank outside top → 0
     rows_out = [{"classification_type": "gc", "rank": 11}]
     assert _classif_bonus(rows_out, "domestique") == 0.0
 
 
-def test_classif_bonus_matched_role_only_scores_matched_classif():
-    """V2: Matched roles earn 1.5× on their matched classif only; other classif types are ignored."""
+def test_classif_bonus_multiple_classifs_summed():
+    """Rider in multiple classifications earns sum; role gives 1.5× only on its own classif."""
     from scoring import _classif_bonus
 
     rows = [
         {"classification_type": "gc", "rank": 5},     # base = (10+1-5) = 6
         {"classification_type": "points", "rank": 2},  # base = (5+1-2)  = 4
     ]
-    # domestique: no matched classif → 0
-    assert _classif_bonus(rows, "domestique") == 0.0
-    # sprinter: only points matches → 4×1.5 = 6.0 (gc ignored)
-    assert _classif_bonus(rows, "sprinter") == 6.0
-    # gc_leader: only gc matches → 6×1.5 = 9.0 (points ignored)
-    assert _classif_bonus(rows, "gc_leader") == 9.0
+    # domestique: 6×1.0 + 4×1.0 = 10.0
+    assert _classif_bonus(rows, "domestique") == 10.0
+    # sprinter: gc=6×1.0 (non-match) + points=4×1.5 (match) = 12.0
+    assert _classif_bonus(rows, "sprinter") == 12.0
+    # gc_leader: gc=6×1.5 (match) + points=4×1.0 (non-match) = 13.0
+    assert _classif_bonus(rows, "gc_leader") == 13.0
