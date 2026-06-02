@@ -362,6 +362,41 @@ export type Database = {
           },
         ]
       }
+      gt_final_classifications: {
+        Row: {
+          classification_type: string
+          created_at: string
+          race_date: string | null
+          race_slug: string
+          rank: number
+          rider_id: string
+        }
+        Insert: {
+          classification_type: string
+          created_at?: string
+          race_date?: string | null
+          race_slug: string
+          rank: number
+          rider_id: string
+        }
+        Update: {
+          classification_type?: string
+          created_at?: string
+          race_date?: string | null
+          race_slug?: string
+          rank?: number
+          rider_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gt_final_classifications_rider_id_fkey"
+            columns: ["rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gt_rescue_windows: {
         Row: {
           gt_identifier: string
@@ -852,6 +887,7 @@ export type Database = {
           created_at: string
           date: string
           gt_classif_bonus: number
+          gt_distance_bonus: number
           gt_role_mult: number
           id: string
           nemesis_modifier: number
@@ -870,6 +906,7 @@ export type Database = {
           created_at?: string
           date: string
           gt_classif_bonus?: number
+          gt_distance_bonus?: number
           gt_role_mult?: number
           id?: string
           nemesis_modifier?: number
@@ -888,6 +925,7 @@ export type Database = {
           created_at?: string
           date?: string
           gt_classif_bonus?: number
+          gt_distance_bonus?: number
           gt_role_mult?: number
           id?: string
           nemesis_modifier?: number
