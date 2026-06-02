@@ -51,7 +51,32 @@ describe("getMinLevelForRiderRank", () => {
   });
 });
 
-import { computeCoUnlockStatus } from "./co-unlock";
+import { computeCoUnlockStatus, requiredTeamsToUnlock } from "./co-unlock";
+
+describe("requiredTeamsToUnlock", () => {
+  // Dynamic threshold = max(2, ceil(0.30 * teamCount)).
+  it.each([
+    [2, 2],
+    [3, 2],
+    [4, 2],
+    [5, 2],
+    [6, 2],
+    [7, 3],
+    [8, 3],
+    [10, 3],
+    [11, 4],
+    [14, 5],
+    [17, 6],
+    [20, 6],
+  ])("%i teams → %i required", (teamCount, expected) => {
+    expect(requiredTeamsToUnlock(teamCount)).toBe(expected);
+  });
+
+  it("floors at 2 even for tiny leagues", () => {
+    expect(requiredTeamsToUnlock(1)).toBe(2);
+    expect(requiredTeamsToUnlock(0)).toBe(2);
+  });
+});
 
 describe("computeCoUnlockStatus", () => {
   // Pure function: given league team levels and a rider rank, return the lock status.
@@ -63,6 +88,7 @@ describe("computeCoUnlockStatus", () => {
     expect(status).toEqual({
       minLevel: 8,
       playersAtOrAboveLevel: 2,
+      playersRequired: 2,
       playersNeededToUnlock: 0,
       isUnlocked: true,
     });
@@ -76,6 +102,7 @@ describe("computeCoUnlockStatus", () => {
     expect(status).toEqual({
       minLevel: 8,
       playersAtOrAboveLevel: 1,
+      playersRequired: 2,
       playersNeededToUnlock: 1,
       isUnlocked: false,
     });
@@ -106,6 +133,37 @@ describe("computeCoUnlockStatus", () => {
       riderPcsRank: null,
       leagueTeamLevels: [1],
     });
+    expect(status.isUnlocked).toBe(true);
+  });
+
+  it("scales the threshold up in a large league (10 teams → needs 3)", () => {
+    // 10-team league, only 2 teams at Lv.8 → 30% = ceil(3.0) = 3 required.
+    const status = computeCoUnlockStatus({
+      riderPcsRank: 1, // needs Lv.8
+      leagueTeamLevels: [8, 8, 7, 7, 6, 6, 5, 5, 4, 4],
+    });
+    expect(status.playersRequired).toBe(3);
+    expect(status.playersAtOrAboveLevel).toBe(2);
+    expect(status.playersNeededToUnlock).toBe(1);
+    expect(status.isUnlocked).toBe(false);
+  });
+
+  it("unlocks once the dynamic threshold is met in a large league", () => {
+    // 10-team league, 3 teams at Lv.8 → required 3, met.
+    const status = computeCoUnlockStatus({
+      riderPcsRank: 1,
+      leagueTeamLevels: [8, 8, 8, 7, 6, 6, 5, 5, 4, 4],
+    });
+    expect(status.playersRequired).toBe(3);
+    expect(status.isUnlocked).toBe(true);
+  });
+
+  it("reports the dynamic threshold for rank-less riders too", () => {
+    const status = computeCoUnlockStatus({
+      riderPcsRank: null,
+      leagueTeamLevels: [8, 8, 8, 7, 6, 6, 5, 5, 4, 4],
+    });
+    expect(status.playersRequired).toBe(3);
     expect(status.isUnlocked).toBe(true);
   });
 });

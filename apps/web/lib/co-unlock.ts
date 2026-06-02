@@ -26,9 +26,24 @@ export function getMinLevelForRiderRank(pcsRank: number): number {
   return 1; // fallback — rank out of pool entirely, doesn't gate bidding on its own
 }
 
+// Co-unlock threshold scales with league size: 30% of teams, floored at 2.
+// CANONICAL DEFINITION — the place_bid RPC mirrors this formula in SQL
+// (GREATEST(2, CEIL(0.30 * team_count))). Keep both in sync. See GAME_RULES §12.2.
+export const CO_UNLOCK_LEAGUE_FRACTION = 0.3;
+export const CO_UNLOCK_MIN_TEAMS = 2;
+
+/** Number of teams that must reach a rider's required level to unlock bidding. */
+export function requiredTeamsToUnlock(teamCount: number): number {
+  return Math.max(
+    CO_UNLOCK_MIN_TEAMS,
+    Math.ceil(CO_UNLOCK_LEAGUE_FRACTION * teamCount),
+  );
+}
+
 export type CoUnlockStatus = {
   minLevel: number;
   playersAtOrAboveLevel: number;
+  playersRequired: number; // teams needed at minLevel to unlock (dynamic)
   playersNeededToUnlock: number; // how many more need to reach minLevel
   isUnlocked: boolean;
 };
@@ -37,15 +52,17 @@ export type CoUnlockStatus = {
 export function computeCoUnlockStatus(args: {
   riderPcsRank: number | null;
   leagueTeamLevels: number[];
-  playersRequired?: number; // defaults to 2 per spec §4.1
+  playersRequired?: number; // override; defaults to requiredTeamsToUnlock(teamCount)
 }): CoUnlockStatus {
-  const playersRequired = args.playersRequired ?? 2;
+  const playersRequired =
+    args.playersRequired ?? requiredTeamsToUnlock(args.leagueTeamLevels.length);
 
   // No rank → no co-unlock gate. Keep the rider open.
   if (args.riderPcsRank == null) {
     return {
       minLevel: 1,
       playersAtOrAboveLevel: args.leagueTeamLevels.length,
+      playersRequired,
       playersNeededToUnlock: 0,
       isUnlocked: true,
     };
@@ -62,6 +79,7 @@ export function computeCoUnlockStatus(args: {
   return {
     minLevel,
     playersAtOrAboveLevel,
+    playersRequired,
     playersNeededToUnlock,
     isUnlocked: playersAtOrAboveLevel >= playersRequired,
   };

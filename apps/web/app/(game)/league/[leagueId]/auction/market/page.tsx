@@ -113,7 +113,7 @@ export default async function MarketPage({
         isLocked: !status.isUnlocked,
         lockMinLevel: status.minLevel,
         lockPlayersAtLevel: status.playersAtOrAboveLevel,
-        lockPlayersRequired: 2,
+        lockPlayersRequired: status.playersRequired,
       };
     });
 
@@ -276,7 +276,7 @@ async function renderDemoAuctionMarket() {
         isLocked: !status.isUnlocked,
         lockMinLevel: status.minLevel,
         lockPlayersAtLevel: status.playersAtOrAboveLevel,
-        lockPlayersRequired: 2,
+        lockPlayersRequired: status.playersRequired,
       };
     });
 

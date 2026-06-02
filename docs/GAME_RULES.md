@@ -320,6 +320,7 @@ At the start of each phase, the player **confirms** their configuration:
 | Sponsor / strategy Round 2+ | Pending — takes effect at next payday |
 | Release effect | Start of next phase (except bankruptcy: immediate) |
 | Release cooldown | 7 days (no one can bid the rider during this window) |
+| Co-Unlock threshold | max(2, ceil(30% of league teams)) — see §12.2 |
 | Round resolution | Auto on consensus, or manual force-resolve from Status tab |
 | GT Tactics per Grand Tour | 1 of each type (5 total) |
 | Commissioner round dates | Editable at any time before round closes |
@@ -347,10 +348,11 @@ At the start of each phase, the player **confirms** their configuration:
 
 ### 12.2 Co-Unlock Rule (Mécanisme 2)
 
-- **Règle** : un joueur peut enchérir sur un coureur uniquement si **≥2 joueurs de la ligue** ont le niveau requis pour accéder à ce coureur.
+- **Règle** : un joueur peut enchérir sur un coureur uniquement si **un nombre dynamique de joueurs de la ligue** ont le niveau requis pour accéder à ce coureur.
+- **Seuil dynamique** : `required = max(2, ceil(0.30 × nb_équipes_ligue))` — 30 % des équipes, plancher 2. Le plancher préserve le gate en petite ligue ; le seuil ne dépasse jamais le nombre d'équipes (pas de lock permanent). Source de vérité TS : `apps/web/lib/co-unlock.ts` `requiredTeamsToUnlock()`. Le RPC `place_bid` réplique la formule en SQL (`GREATEST(2, CEIL(0.30 * team_count))`) — les deux **doivent** rester synchronisés.
 - **Mapping** (rang PCS → niveau requis) : identique au pool gating (§3).
 - **Grandfathering forward-only** : contrats existants au déploiement conservés. La règle s'applique uniquement aux nouvelles enchères.
-- **Release exclusif** : si le seul joueur éligible release un coureur, celui-ci passe en état "locked" jusqu'à ce qu'un 2e joueur atteigne le niveau.
+- **Release exclusif** : si moins de `required` joueurs éligibles restent après un release, le coureur repasse en état "locked" jusqu'à ce que le seuil soit de nouveau atteint.
 - **UX** : coureurs locked visibles uniquement pour les joueurs éligibles, avec icône cadenas et message "Unlock when N more players reach Lv.X".
 
 ### 12.3 Level Curve Stretch (Mécanisme 3)

@@ -7,7 +7,7 @@ import { Lock } from "lucide-react";
 type Props = {
   minLevel: number;
   playersAtLevel: number;
-  playersRequired?: number; // default 2
+  playersRequired?: number; // dynamic: max(2, 30% of league teams)
 };
 
 export function RiderLockBadge({ minLevel, playersAtLevel, playersRequired = 2 }: Props) {
