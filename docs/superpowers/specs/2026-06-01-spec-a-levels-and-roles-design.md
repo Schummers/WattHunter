@@ -168,7 +168,7 @@ Les changements de barème (A2/A3/A4/A7) modifient en profondeur la façon dont 
 
 **Tactics (LOCKED) :**
 - Les GT Tactics **s'étendent** aux courses à étapes d'1 semaine (cohérence — même généralisation que l'escouade). Mécaniques identiques + gating profil Nemesis (A7).
-- **Usage limit par course d'1 semaine = 1 de chaque tactic** (défaut, ajustable) — réduit depuis les limites GT (Unleash 2 / Overdrive 2 / Call the Bus 3 / Nemesis 1/1) car ~1/3 des étapes.
+- **Usage limit par course d'1 semaine (LOCKED 2026-06-02)** : Unleash **1**, Overdrive **1**, Call the Bus **2**, Nemesis GC **1**, Nemesis Sprint **1**. Réduit depuis les limites GT (2 / 2 / 3 / 1 / 1) car ~1/3 des étapes ; Call the Bus garde une marge cohérente avec sa limite GT plus haute. Le trigger `enforce_tactic_usage_limit` doit lire un barème dépendant du type de course (GT vs 1-sem).
 
 **Tab rename (LOCKED) :**
 - « GT Team » → **« Race Team »**. `getGTSubTabLabel()` (`apps/web/lib/gt-phases.ts:52-61`) renvoie le nom de la course active (ex. « Paris-Nice Team ») quand une escouade de course est active, sinon « Race Team ». Route `/team/gt` conservée ou renommée `/team/race` (décision frontend).
@@ -209,5 +209,5 @@ Les changements de barème (A2/A3/A4/A7) modifient en profondeur la façon dont 
 - ~~L8 seuil~~ → RÉSOLU : **5000** (relevé de 4000). L8 non atteint pendant le Tour (voir A1).
 - ~~Nemesis gating profil~~ → RÉSOLU : Sprint P1/P2/P3, GC P3/P4/P5, gating à l'activation (voir A7).
 - ~~Escouade courses d'1 semaine~~ → RÉSOLU : A9 (réutilise gt_squad 8 slots/6 rôles, cutoff roulant+swaps, tactics étendues 1-of-each, non-sélectionnés = 0).
-- **A9 — usage limit tactics 1-sem** : défaut posé à **1 de chaque** ; à confirmer/ajuster en revue.
-- **A9 — généralisation tables** (`gt_squad`/`gt_tactic_activations` → `race_slug`) : décision d'implémentation au writing-plans.
+- ~~A9 — usage limit tactics 1-sem~~ → RÉSOLU : Unleash 1 / Overdrive 1 / Call the Bus 2 / Nemesis GC 1 / Nemesis Sprint 1 (voir A9).
+- **A9 — généralisation tables** (`gt_squad`/`gt_tactic_activations` → `race_slug`) : seul reste technique, décision d'implémentation au writing-plans.
