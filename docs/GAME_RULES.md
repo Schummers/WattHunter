@@ -172,10 +172,27 @@ At payday, after `treasury += sponsor_budget − salaries`:
 
 ### Daily XP
 
+Outside Grand Tours:
 ```
 Rider XP = daily_PCS_points × (1 + sum of active strategy bonuses)
-Team XP  = sum of XP from all roster riders
 ```
+
+Grand Tour stages (squad riders only — non-squad contracted riders score 0):
+```
+Rider XP = (PCS_points × role_mult × (1 + strategy_bonus)
+            + classif_bonus + breakaway_bonus) × nemesis_modifier
+```
+- **role_mult** (Spec A, 2026-06-02): gc_leader / climber ×1.5; tt_specialist ×2.0 on ITT only;
+  sprinter ×1.5 only on flat/hilly stages (profile p1/p2/p3); stage_hunter ×1.5 only
+  in the breakaway (≥30 km); domestique ×1.0. **GC final → ×1.0 for all roles.**
+- **classif_bonus** (daily gc/points/kom/youth): role-matched only — gc_leader→GC ×2
+  (and Youth ×1.5), sprinter→Points ×2, climber→KOM ×2; all other roles 0.
+- **breakaway_bonus**: stage_hunter only, +1 XP per 10 km in the break (no cap), additive.
+- **Final jerseys**: GC final = raw PCS points ×1.0. Points/KOM/Youth finals = rank scale
+  80/20/10 (GT) · 40/10/5 (1-week, P3) × role mult (Points→sprinter ×2, KOM→climber ×2,
+  Youth→gc_leader ×1.5; ×1.0 otherwise).
+
+Team XP = sum of XP from all roster riders
 
 ### Level progression (8 levels aligned to WT phases)
 
@@ -325,6 +342,11 @@ At the start of each phase, the player **confirms** their configuration:
 | GT Tactics per Grand Tour | 1 of each type (5 total) |
 | Commissioner round dates | Editable at any time before round closes |
 
+- **GT scoring multipliers** (Spec A, 2026-06-02): daily classif matched ×2 (youth ×1.5);
+  GC final ×1.0 for all roles; sprinter gated to profile p1/p2/p3; stage_hunter breakaway
+  threshold 30 km, distance bonus +1 XP / 10 km (no cap, additive); final secondary jersey
+  scale 80/20/10 (GT) · 40/10/5 (1-week, P3).
+
 ---
 
 ## 12. Anti-Runaway System
@@ -367,7 +389,7 @@ At the start of each phase, the player **confirms** their configuration:
 | Tactic | Effect | Target | Limit |
 |--------|--------|--------|-------|
 | **Unleash** | ×1.5 XP for domestiques | All non-GC riders on roster | 1 per GT |
-| **Overdrive** | ×2.0 XP for stage hunters | 1 specific rider | 1 per GT |
+| **Overdrive** | ×2.0 XP for stage hunters **in the breakaway** | 1 specific rider | 1 per GT |
 | **Nemesis GC** | PvP duel on GC classification | 1 rival team's GC rider | 1 per GT |
 | **Nemesis Sprint** | PvP duel on sprint classification | 1 rival team's sprinter | 1 per GT |
 | **Call the Bus** | Bench riders contribute XP | All bench riders | 1 per GT |

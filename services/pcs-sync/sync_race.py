@@ -210,7 +210,7 @@ async def import_gc_results(
 
     if not gc_entries:
         logger.warning("No GC results found for %s", gc_url)
-        return {"race": gc_url, "imported": 0, "skipped": 0, "total_in_race": 0, "errors": []}
+        return {"race": gc_url, "imported": 0, "skipped": 0, "total_in_race": 0, "errors": [], "has_points": False}
 
     # Build lookup map from pcs_slug → rider_id
     riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
@@ -221,6 +221,7 @@ async def import_gc_results(
     imported = 0
     skipped = 0
     errors: List[str] = []
+    has_points = False
 
     for entry in gc_entries:
         rider_url = entry.get("rider_url", "")
@@ -230,6 +231,9 @@ async def import_gc_results(
 
         try:
             rider_id = rider_map[rider_url]
+            pts = int(entry.get("pcs_points") or 0)
+            if pts > 0:
+                has_points = True
 
             row = {
                 "rider_id": rider_id,
@@ -237,7 +241,7 @@ async def import_gc_results(
                 "race_name": f"{race_name} - GC",
                 "stage": "gc",
                 "race_date": race_date or None,
-                "pcs_points": int(entry.get("pcs_points") or 0),
+                "pcs_points": pts,
                 "rank": entry.get("rank"),
                 "is_itt": False,
             }
@@ -260,7 +264,72 @@ async def import_gc_results(
         "skipped": skipped,
         "total_in_race": len(gc_entries),
         "errors": errors,
+        "has_points": has_points,
     }
+
+
+FINAL_SECONDARY_TYPES = ("points", "kom", "youth")
+
+
+async def import_final_classifications(
+    supabase: Client,
+    page,
+    *,
+    race_slug: str,
+    race_name: str,
+    race_date: str,
+) -> Dict[str, int]:
+    """Import final Points/KOM/Youth standings for a completed GT (Spec A A2).
+
+    These jerseys carry no PCS points, so we store the rank into the DEDICATED table
+    gt_final_classifications (NOT race_results — see the storage rationale at the top of
+    Task 4) keyed by race_slug {race_slug}/points|/kom|/youth; scoring's finals pass applies
+    the 2-value rank scale. GT-only — the caller gates on GT completion (GC has points).
+    """
+    counts = {"points": 0, "kom": 0, "youth": 0}
+
+    riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+    rider_map: Dict[str, str] = {
+        r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+    }
+
+    for ctype in FINAL_SECONDARY_TYPES:
+        url = f"{race_slug}/{ctype}"
+        try:
+            html = await fetch_html(page, url)
+            stage = Stage(url, html=html, update_html=False)
+            # Stage.points()/kom()/youth() parse the standings table on the dedicated page.
+            # ⚠️ Verify against live lib during the first real scraping run: confirm
+            # Stage("race/<gt>/2026/points").points() returns final standings with
+            # rider_url + rank on the dedicated jersey page. If a method name differs,
+            # adjust the getattr mapping here. The unit test mocks Stage independently.
+            entries = getattr(stage, ctype)() or []
+        except Exception as exc:
+            logger.warning("Failed to fetch final %s for %s: %s", ctype, url, exc)
+            continue
+
+        for entry in entries:
+            rider_url = entry.get("rider_url", "")
+            rank = entry.get("rank")
+            rid = rider_map.get(rider_url)
+            if not rid or rank is None:
+                continue
+            try:
+                supabase.table("gt_final_classifications").upsert(
+                    {
+                        "race_slug": url,
+                        "classification_type": ctype,
+                        "rider_id": rid,
+                        "rank": int(rank),
+                        "race_date": race_date or None,
+                    },
+                    on_conflict="race_slug,rider_id",
+                ).execute()
+                counts[ctype] += 1
+            except Exception as exc:
+                logger.error("Failed final %s upsert (%s): %s", ctype, rid, exc)
+
+    return counts
 
 
 async def update_global_ranking(supabase: Client, browser, *, pages: int = 6) -> Dict[str, Any]:

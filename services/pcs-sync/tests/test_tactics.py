@@ -30,14 +30,26 @@ def test_unleash_does_not_apply_to_gc_results():
 
 # --- Overdrive ---
 
-def test_overdrive_promotes_stage_hunter_to_2x():
-    mult, applied = compute_overdrive_modifier(role="stage_hunter", race_slug="race/giro/2026/stage-3")
+def test_overdrive_promotes_breakaway_stage_hunter_to_2x():
+    mult, applied = compute_overdrive_modifier(
+        role="stage_hunter", race_slug="race/giro/2026/stage-3", breakaway_kms=120.0
+    )
     assert mult == 2.0
     assert applied == "overdrive"
 
-def test_overdrive_does_not_apply_to_domestiques():
-    mult, applied = compute_overdrive_modifier(role="domestique", race_slug="race/giro/2026/stage-3")
+def test_overdrive_no_effect_when_stage_hunter_not_in_break():
+    mult, applied = compute_overdrive_modifier(
+        role="stage_hunter", race_slug="race/giro/2026/stage-3", breakaway_kms=10.0
+    )
     assert mult is None
+    assert applied is None
+
+def test_overdrive_does_not_apply_to_domestiques():
+    mult, applied = compute_overdrive_modifier(
+        role="domestique", race_slug="race/giro/2026/stage-3", breakaway_kms=120.0
+    )
+    assert mult is None
+    assert applied is None
 
 # --- Call the Bus ---
 

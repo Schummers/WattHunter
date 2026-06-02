@@ -65,6 +65,39 @@ def _is_gt_stage(slug: str) -> bool:
     return slug.startswith(GT_SLUG_PREFIXES) and "/stage-" in slug
 
 
+def _is_gt_race(slug: str) -> bool:
+    """True when the slug is a Grand Tour race (with or without a /stage-N or /gc suffix)."""
+    return slug.startswith(GT_SLUG_PREFIXES)
+
+
+async def _maybe_import_finals(supabase, browser, parent_slug, race_name, race_date, gc_result, imported_slugs):
+    """After a GT's GC import, import the final Points/KOM/Youth jerseys once the GT is complete.
+
+    Completion signal: GC carries PCS points (assigned only after the final stage). GT-only.
+    Appends the three final slugs to imported_slugs so scoring picks them up.
+    """
+    if not (_is_gt_race(parent_slug) and gc_result.get("has_points")):
+        return
+    from sync_race import import_final_classifications
+
+    print("  Waiting 15s before final classifications...")
+    await asyncio.sleep(15)
+    ctx_f = await browser.new_context(user_agent=USER_AGENT)
+    f_page = await ctx_f.new_page()
+    try:
+        fc = await import_final_classifications(
+            supabase, f_page,
+            race_slug=parent_slug, race_name=race_name, race_date=race_date,
+        )
+        print(f"    Final classifs: points={fc['points']} kom={fc['kom']} youth={fc['youth']}")
+        for ct in ("points", "kom", "youth"):
+            imported_slugs.append(f"{parent_slug}/{ct}")
+    except Exception as exc:
+        print(f"    Final classif import failed: {exc}")
+    finally:
+        await ctx_f.close()
+
+
 async def _fetch_gt_classifications(supabase, browser, parent_slug: str, stage_url: str) -> None:
     """Fetch gc/points/kom classifications after a GT stage import, using a fresh context."""
     if not _is_gt_stage(stage_url):
@@ -322,6 +355,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
         print(f"--- Direct GC import: {race_slug} ---")
         ctx_gc = await browser.new_context(user_agent=USER_AGENT)
         gc_page = await ctx_gc.new_page()
+        gc_result = {}
         try:
             gc_result = await import_gc_results(
                 supabase, gc_page,
@@ -334,6 +368,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
         except Exception as exc:
             print(f"  GC import failed: {exc}")
         await ctx_gc.close()
+        await _maybe_import_finals(supabase, browser, parent_slug, race_name, race_date, gc_result, imported_slugs)
         return imported_slugs
 
     # Direct stage import: when slug contains /stage-N, bypass get_stage_urls()
@@ -371,6 +406,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
         await asyncio.sleep(15)
         ctx_gc = await browser.new_context(user_agent=USER_AGENT)
         gc_page = await ctx_gc.new_page()
+        gc_result = {}
         try:
             gc_result = await import_gc_results(
                 supabase, gc_page,
@@ -383,6 +419,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
         except Exception as exc:
             print(f"  GC import failed: {exc}")
         await ctx_gc.close()
+        await _maybe_import_finals(supabase, browser, parent_slug, race_name, race_date, gc_result, imported_slugs)
 
         return imported_slugs
 
@@ -468,6 +505,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
             await asyncio.sleep(15)
             ctx_gc = await browser.new_context(user_agent=USER_AGENT)
             gc_page = await ctx_gc.new_page()
+            gc_result = {}
             try:
                 gc_result = await import_gc_results(
                     supabase, gc_page,
@@ -480,6 +518,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
             except Exception as exc:
                 print(f"  GC import failed: {exc}")
             await ctx_gc.close()
+            await _maybe_import_finals(supabase, browser, race_slug, race_name, race_date, gc_result, imported_slugs)
     else:
         print("--- One-day race — importing result ---")
         ctx = await browser.new_context(user_agent=USER_AGENT)
