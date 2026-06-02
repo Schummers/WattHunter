@@ -7,7 +7,6 @@ import { RaceCardPast } from "./race-card-past";
 import { RaceCardToday } from "./race-card-today";
 import { RaceCardFuture } from "./race-card-future";
 import { RaceFeedNemesisCard } from "./race-feed-nemesis-card";
-import { RaceFeedRemontadaCard } from "./race-feed-remontada-card";
 import { RaceFeedPhaseEndBanner } from "./race-feed-phase-end-banner";
 import { RaceFeedTacticModal } from "./race-feed-tactic-modal";
 import { GtDnfCard, type GtDnfCardProps } from "./gt-dnf-card";
@@ -108,9 +107,6 @@ export function RaceFeed({ leagueId, payload, tacticContext, dnfRiders }: Props)
                 }
                 if (card.type === "nemesis") {
                   return <RaceFeedNemesisCard key={key} data={card.data} />;
-                }
-                if (card.type === "remontada") {
-                  return <RaceFeedRemontadaCard key={key} data={card.data} />;
                 }
                 return null;
               })}

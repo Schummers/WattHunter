@@ -78,7 +78,7 @@ export function getGTBannerText(date: Date = new Date()): string | null {
   return `🏁 ${GT_FULL_NAME[cur.id as GtPhaseId]} in progress — manage your squad →`;
 }
 
-/** Canonical GT identifier per phase (matches remontada_boosts.gt_identifier). */
+/** Canonical GT identifier per phase. */
 export const GT_IDENTIFIER: Record<
   GtPhaseId,
   "giro-d-italia" | "tour-de-france" | "vuelta-a-espana"

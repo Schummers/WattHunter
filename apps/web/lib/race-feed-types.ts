@@ -54,24 +54,12 @@ export type NemesisData = {
   isMyTeamAttacker: boolean;
 };
 
-export type RemontadaData = {
-  boostId: string;
-  teamId: string;
-  teamName: string;
-  isMyTeam: boolean;
-  multiplier: number;
-  stagesRemaining: number;
-  triggeredAt: string;
-  overtakenTeamName: string | null;
-};
-
 export type RaceFeedCard =
   | { type: "past"; race: RaceDataWithBreakdown }
   | { type: "today"; race: RaceDataWithBreakdown }
   | { type: "in_progress"; race: RaceData }
   | { type: "future"; race: RaceData }
   | { type: "nemesis"; data: NemesisData; raceSlug: string }
-  | { type: "remontada"; data: RemontadaData }
   | { type: "rest_day"; date: string; gtName: string };
 
 export type RaceFeedDateGroup = {

@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import {
   getCurrentGTPhase,
   getNextGTPhase,
-  getCurrentGTStage,
   GT_FULL_NAME,
   GT_SHORT_NAME,
   GT_IDENTIFIER,
@@ -11,7 +10,6 @@ import {
 } from "@/lib/gt-phases";
 import { getSquadWithRoles, getAvailableRiders } from "./actions";
 import { GtTeamClient } from "./gt-team-client";
-import { RemontadaBannerSlot } from "./_remontada-banner-slot";
 import type { SponsorRow } from "@/lib/sponsors";
 import { getGtStages } from "@/lib/gt-stages";
 import {
@@ -71,8 +69,6 @@ export default async function GtTeamPage({
   const sponsor = (Array.isArray(teamSponsorRes.data?.sponsors)
     ? teamSponsorRes.data?.sponsors[0]
     : teamSponsorRes.data?.sponsors) as SponsorRow | null | undefined;
-  const currentStage = getCurrentGTStage();
-
   const gtSlug = `race/${GT_IDENTIFIER[phaseId]}/${year}`;
 
   const [activations, stages, gcRivals, sprintRivals, myGc, mySprinter, incomings, goalCompletionsRes] =
@@ -101,13 +97,6 @@ export default async function GtTeamPage({
 
   return (
     <>
-      {currentStage !== null && (
-        <RemontadaBannerSlot
-          teamId={team.id}
-          gtIdentifier={GT_IDENTIFIER[phaseId]}
-          currentStageNumber={currentStage}
-        />
-      )}
       <GtTeamClient
         teamId={team.id}
         phaseId={phaseId}
