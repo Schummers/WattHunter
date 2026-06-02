@@ -1,7 +1,7 @@
-"""GT race-slug parsing helpers (relocated from remontada.py, which is being removed).
+"""GT race-slug parsing helpers (relocated from the removed remontada.py).
 
 Pure functions: extract the Grand Tour identifier and stage number from a PCS race slug.
-Used by scoring.py / P2 scoring refactor."""
+Retained for the upcoming P2 scoring refactor (no current runtime consumer)."""
 from __future__ import annotations
 import re
 from typing import Optional
