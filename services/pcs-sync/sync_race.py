@@ -507,13 +507,13 @@ async def import_daily_classifications(
     race_slug: str,
     stage_url: str,
 ) -> Dict[str, int]:
-    """Fetch gc/points/kom classifications for a single GT stage and upsert.
+    """Fetch gc/points/kom/youth classifications for a single GT stage and upsert.
 
-    Stores top 50 GC, top 20 points, top 10 KOM for safety; scoring reads only
-    the top 10/5/3 respectively. Swallows errors per classification so a single
-    failed fetch does not abort the whole call.
+    Stores top 50 GC, top 20 points, top 10 KOM, top 20 youth for safety;
+    scoring reads only the top 10/5/3 respectively. Swallows errors per
+    classification so a single failed fetch does not abort the whole call.
     """
-    counts = {"gc": 0, "points": 0, "kom": 0}
+    counts = {"gc": 0, "points": 0, "kom": 0, "youth": 0}
     stage_label = stage_url.split("/")[-1]
 
     riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
@@ -528,6 +528,7 @@ async def import_daily_classifications(
         ("gc", lambda: stage.gc()[:50]),
         ("points", lambda: stage.points()[:20]),
         ("kom", lambda: stage.kom()[:10]),
+        ("youth", lambda: stage.youth()[:20]),
     ]
 
     for kind, fetch in fetchers:

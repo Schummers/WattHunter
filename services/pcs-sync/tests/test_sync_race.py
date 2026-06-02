@@ -313,6 +313,7 @@ async def test_import_daily_classifications_upserts_three_types():
     ]
     mock_stage_instance.points.return_value = [{"rider_url": "rider/a", "rank": 3}]
     mock_stage_instance.kom.return_value = [{"rider_url": "rider/b", "rank": 1}]
+    mock_stage_instance.youth.return_value = []
 
     mock_stage = MagicMock(return_value=mock_stage_instance)
 
@@ -356,6 +357,7 @@ async def test_import_daily_classifications_skips_unknown_riders():
     ]
     mock_stage_instance.points.return_value = []
     mock_stage_instance.kom.return_value = []
+    mock_stage_instance.youth.return_value = []
 
     mock_stage = MagicMock(return_value=mock_stage_instance)
 
@@ -381,6 +383,7 @@ async def test_import_daily_classifications_swallows_classif_error():
     mock_stage_instance.gc.side_effect = RuntimeError("boom")
     mock_stage_instance.points.return_value = [{"rider_url": "rider/a", "rank": 1}]
     mock_stage_instance.kom.return_value = []
+    mock_stage_instance.youth.return_value = []
 
     mock_stage = MagicMock(return_value=mock_stage_instance)
 
@@ -453,3 +456,41 @@ async def test_import_race_results_profile_and_breakaway_none_when_unavailable()
     payload = sb._last_upsert_payload("race_results")
     assert payload["breakaway_kms"] is None
     assert payload["profile_icon"] is None
+
+
+# ---------------------------------------------------------------------------
+# 10. import_daily_classifications — youth classification
+# ---------------------------------------------------------------------------
+
+
+async def test_import_daily_classifications_includes_youth():
+    """youth classification is scraped + upserted alongside gc/points/kom."""
+    import sync_race
+
+    mock_stage_instance = MagicMock()
+    mock_stage_instance.gc.return_value = []
+    mock_stage_instance.points.return_value = []
+    mock_stage_instance.kom.return_value = []
+    mock_stage_instance.youth.return_value = [
+        {"rider_url": "rider/young", "rank": 1},
+        {"rider_url": "rider/young2", "rank": 2},
+    ]
+    mock_stage = MagicMock(return_value=mock_stage_instance)
+
+    stage_url = "race/giro-d-italia/2026/stage-4"
+    sb = make_supabase([
+        {"id": "rid-y1", "pcs_slug": "rider/young"},
+        {"id": "rid-y2", "pcs_slug": "rider/young2"},
+    ])
+
+    with _patch_fetch_html(), patch("sync_race.Stage", mock_stage):
+        result = await sync_race.import_daily_classifications(
+            sb, page=MagicMock(),
+            race_slug="race/giro-d-italia/2026", stage_url=stage_url,
+        )
+
+    assert result["youth"] == 2
+    classif_rows = sb.upserts["gt_daily_classifications"]
+    youth_rows = [r for r in classif_rows if r["classification_type"] == "youth"]
+    assert len(youth_rows) == 2
+    assert all(r["race_slug"] == stage_url for r in youth_rows)
