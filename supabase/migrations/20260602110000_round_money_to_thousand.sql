@@ -40,9 +40,9 @@ UPDATE public.sponsors
 SET monthly_budget = monthly_budget / 1000 * 1000
 WHERE monthly_budget % 1000 <> 0;
 
-UPDATE public.sponsors
-SET first_phase_budget = first_phase_budget / 1000 * 1000
-WHERE first_phase_budget IS NOT NULL AND first_phase_budget % 1000 <> 0;
+-- NOTE: sponsors.first_phase_budget was planned but never created on the DB
+-- (see 20260509160000_fix_confirm_phase_setup_first_phase_budget.sql). The
+-- defensive rounding of that column is omitted because the column does not exist.
 
 -- ---- 2. Swap CHECK constraints 100 → 1000 ----
 ALTER TABLE public.draft_bids DROP CONSTRAINT IF EXISTS draft_bids_amount_check;
