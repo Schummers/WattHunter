@@ -9,6 +9,18 @@ Formula context (from rider_xp_daily):
 from __future__ import annotations
 from typing import Optional
 
+# Spec A A3 — mirror of scoring.BREAKAWAY_THRESHOLD_KM.
+# Duplicated here to avoid a circular import (scoring imports from tactics).
+# Both reference Spec A A3 = 30 km; keep them in sync.
+BREAKAWAY_THRESHOLD_KM = 30.0
+
+
+def _in_breakaway(breakaway_kms) -> bool:
+    try:
+        return breakaway_kms is not None and float(breakaway_kms) >= BREAKAWAY_THRESHOLD_KM
+    except (TypeError, ValueError):
+        return False
+
 
 def _is_stage_result(race_slug: str) -> bool:
     """Stage slugs end in /stage-N. GC final ends in /gc."""
@@ -27,12 +39,17 @@ def compute_unleash_modifier(
 
 
 def compute_overdrive_modifier(
-    role: str, race_slug: str
+    role: str, race_slug: str, breakaway_kms=None
 ) -> tuple[Optional[float], Optional[str]]:
-    """Stage Hunters jump from ×1.5 to ×2.0 on stage results."""
+    """Stage Hunters in the breakaway jump to ×2.0 on stage results (Spec A A7).
+
+    No effect for non-stage-hunters, non-stage results, or riders not in the break.
+    """
     if role != "stage_hunter":
         return (None, None)
     if not _is_stage_result(race_slug):
+        return (None, None)
+    if not _in_breakaway(breakaway_kms):
         return (None, None)
     return (2.0, "overdrive")
 

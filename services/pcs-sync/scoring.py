@@ -514,7 +514,9 @@ async def calculate_daily_scores(
                                 gt_role_mult = override
                                 tactic_applied = applied
                         elif t_type == "overdrive":
-                            override, applied = compute_overdrive_modifier(role, race_slug)
+                            override, applied = compute_overdrive_modifier(
+                                role, race_slug, breakaway_kms
+                            )
                             if override is not None:
                                 gt_role_mult = override
                                 tactic_applied = applied
