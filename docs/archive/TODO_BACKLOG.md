@@ -5,6 +5,10 @@
 
 ---
 
+## P1 — Pre-Alpha (à faire)
+
+- [ ] **Chantier A — Landing Page (vidéo de présentation)** — seul des 4 chantiers try-before-signup jamais fait. `app/page.tsx` redirige encore vers `/onboarding`. Périmètre : landing page (container vidéo + 2 CTAs + fade + prefetch) branchée sur `/league/demo`. Outil vidéo (Remotion vs externe) à trancher en brainstorming. **Handoff : `docs/handoffs/2026-05-30-chantier-a-landing-page-handoff.md`**.
+
 ## P1 — Pre-Alpha (done)
 
 - [x] Lobby round config — Race Director configures dates for first 3 rounds before launch

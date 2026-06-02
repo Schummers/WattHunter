@@ -151,7 +151,7 @@ Les changements de barème (A2/A3/A4/A7) modifient en profondeur la façon dont 
   - Stage hunter : ×1.5 en échappée (≥30 km) + 1 pt/10 km additif, ×1.0 sinon.
   - Sprinter : bonus ×1.5 seulement sur P1/P2/P3.
   - Nemesis : gating profil (Sprint P1-P3, GC P3-P5).
-- **Contraintes** : **Rule #1 — lire `docs/watthunter-design-system-v3.md` avant tout dev front**. Le design visuel (composant, emplacement exact, copy EN) se décide à l'étape frontend ; ce spec acte uniquement l'**exigence** de documenter le scoring in-app. Textes en **anglais** (Language rule).
+- **Contraintes** : **Rule #1 — lire `docs/watthunter-design-system-v3.md` avant tout dev front**. Le design visuel (composant, emplacement exact, copy EN) se décide à l'étape frontend ; ce spec acte uniquement l'**exigence** de documenter le scoring in-app. Textes en **anglais** (Language rule). Référence de langage visuel établie pour cette refonte : [`docs/mockups/2026-06-02-ui-mockups.html`](../../mockups/2026-06-02-ui-mockups.html) (cartes, tags, mini-tableaux 2 colonnes).
 - `docs/GAME_RULES.md §7/§11/§12.3` mis à jour en parallèle (source de vérité des constantes).
 
 ### A9 — Escouade « Race team » : sélection pour les courses d'1 semaine (NOUVEAU, LOCKED 2026-06-02)
