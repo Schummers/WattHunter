@@ -494,3 +494,104 @@ async def test_import_daily_classifications_includes_youth():
     youth_rows = [r for r in classif_rows if r["classification_type"] == "youth"]
     assert len(youth_rows) == 2
     assert all(r["race_slug"] == stage_url for r in youth_rows)
+
+
+# ---------------------------------------------------------------------------
+# 11. import_gc_results — has_points flag (Task 4)
+# ---------------------------------------------------------------------------
+
+
+async def test_import_gc_results_reports_has_points():
+    """import_gc_results flags whether the GC carries real PCS points (GT complete signal)."""
+    import sync_race
+
+    gc_entries = [{"rider_url": PCS_SLUG_MATCH, "rank": 1, "pcs_points": 400}]
+    mock_stage_instance = MagicMock()
+    mock_stage_instance.gc.return_value = gc_entries
+    mock_stage = MagicMock(return_value=mock_stage_instance)
+    sb = make_supabase([{"id": RIDER_ID, "pcs_slug": PCS_SLUG_MATCH}], [])
+
+    with _patch_fetch_html(), patch("sync_race.Stage", mock_stage):
+        result = await sync_race.import_gc_results(
+            sb, page=MagicMock(),
+            race_slug="race/giro-d-italia/2026", race_name="Giro", race_date="2026-05-28",
+        )
+    assert result["has_points"] is True
+
+
+async def test_import_gc_results_has_points_false_when_zero():
+    import sync_race
+
+    gc_entries = [{"rider_url": PCS_SLUG_MATCH, "rank": 1, "pcs_points": 0}]
+    mock_stage_instance = MagicMock()
+    mock_stage_instance.gc.return_value = gc_entries
+    mock_stage = MagicMock(return_value=mock_stage_instance)
+    sb = make_supabase([{"id": RIDER_ID, "pcs_slug": PCS_SLUG_MATCH}], [])
+
+    with _patch_fetch_html(), patch("sync_race.Stage", mock_stage):
+        result = await sync_race.import_gc_results(
+            sb, page=MagicMock(),
+            race_slug="race/giro-d-italia/2026", race_name="Giro", race_date="2026-05-15",
+        )
+    assert result["has_points"] is False
+
+
+# ---------------------------------------------------------------------------
+# 12. import_final_classifications (Task 4)
+# ---------------------------------------------------------------------------
+
+
+async def test_import_final_classifications_stores_rank_per_jersey():
+    """Final Points/KOM/Youth standings are upserted into the dedicated gt_final_classifications
+    table (NOT race_results) with the rank + classification_type."""
+    import sync_race
+
+    def _stage_factory(url, html=None, update_html=False):
+        inst = MagicMock()
+        inst.points.return_value = [{"rider_url": PCS_SLUG_MATCH, "rank": 1}]
+        inst.kom.return_value = [{"rider_url": PCS_SLUG_MATCH, "rank": 2}]
+        inst.youth.return_value = [{"rider_url": PCS_SLUG_MATCH, "rank": 3}]
+        return inst
+
+    sb = make_supabase(
+        [{"id": RIDER_ID, "pcs_slug": PCS_SLUG_MATCH}],  # riders lookup
+    )
+
+    with _patch_fetch_html(), patch("sync_race.Stage", side_effect=_stage_factory):
+        counts = await sync_race.import_final_classifications(
+            sb, page=MagicMock(),
+            race_slug="race/giro-d-italia/2026", race_name="Giro", race_date="2026-05-28",
+        )
+
+    assert counts == {"points": 1, "kom": 1, "youth": 1}
+    # MUST land in gt_final_classifications, NOT race_results (no pollution of other consumers).
+    assert "race_results" not in sb.upserts
+    rows = sb.upserts["gt_final_classifications"]
+    by_slug = {r["race_slug"]: r for r in rows}
+    assert by_slug["race/giro-d-italia/2026/points"]["rank"] == 1
+    assert by_slug["race/giro-d-italia/2026/points"]["classification_type"] == "points"
+    assert by_slug["race/giro-d-italia/2026/kom"]["rank"] == 2
+    assert by_slug["race/giro-d-italia/2026/youth"]["rank"] == 3
+
+
+async def test_import_final_classifications_continues_on_jersey_failure():
+    """A fetch failure on one jersey must not abort the others (per-jersey resilience)."""
+    import sync_race
+
+    def _stage_factory(url, html=None, update_html=False):
+        if "/kom" in url:
+            raise RuntimeError("network error")
+        inst = MagicMock()
+        inst.points.return_value = [{"rider_url": PCS_SLUG_MATCH, "rank": 1}]
+        inst.youth.return_value = [{"rider_url": PCS_SLUG_MATCH, "rank": 3}]
+        return inst
+
+    sb = make_supabase([{"id": RIDER_ID, "pcs_slug": PCS_SLUG_MATCH}])
+
+    with _patch_fetch_html(), patch("sync_race.Stage", side_effect=_stage_factory):
+        counts = await sync_race.import_final_classifications(
+            sb, page=MagicMock(),
+            race_slug="race/giro-d-italia/2026", race_name="Giro", race_date="2026-05-28",
+        )
+
+    assert counts == {"points": 1, "kom": 0, "youth": 1}
