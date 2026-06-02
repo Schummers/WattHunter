@@ -333,10 +333,13 @@ async def test_domestique_no_multiplier():
 
 
 async def test_non_gt_race_no_multiplier():
-    """Outside GT phases, roles are irrelevant even if rider is in a squad."""
+    """Outside stage-race slugs (e.g. monuments / one-day races), roles are irrelevant
+    even if the rider is in a squad — Spec A A9 narrowed the gate to stage-races only,
+    so this test now uses a one-day monument slug (Milano-Sanremo) instead of Paris-Nice
+    (which became a 1-week stage-race in P3b)."""
     import scoring
 
-    classics_slug = "race/paris-nice/2026/stage-3"
+    classics_slug = "race/milano-sanremo/2026"
     sb = make_supabase(
         [{
             "rider_id": RIDER_ID,
