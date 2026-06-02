@@ -7,6 +7,10 @@ import {
   DEMO_LEAGUE_ID,
   DEMO_VISITOR_TEAM_ID,
 } from "@/lib/demo-constants";
+import {
+  completedGrandTourYears,
+  GT_FINAL_STAGE,
+} from "@/lib/grand-tour-completion";
 
 // One-day WT races for Classic Man (monuments + other WT one-day classics)
 const ONE_DAY_WT_PATTERNS = [
@@ -160,45 +164,51 @@ export default async function AchievementsPage({
   const giroRiderIds = [...new Set((giroXpRows ?? []).map((r) => r.rider_id))];
 
   if (giroRiderIds.length > 0) {
+    // ── Giro completion gate (shared by Blocks 3 & 4) ─────────────────────
+    // A jersey is only "won" once the race is finished AND fully synced.
+    // Without this gate the *current* jersey holder on the latest synced stage
+    // is wrongly awarded. Both signals are computed globally (across every
+    // rider), not scoped to this team. See lib/grand-tour-completion.ts.
+    const { data: allGiroStages } = await supabase
+      .from("gt_daily_classifications")
+      .select("race_slug, stage")
+      .ilike("race_slug", "race/giro-d-italia/%/stage-%");
+
+    const { data: scoredGiroGc } = await supabase
+      .from("race_results")
+      .select("race_slug")
+      .ilike("race_slug", "race/giro-d-italia/%/gc")
+      .gt("pcs_points", 0);
+
+    const completedYears = completedGrandTourYears(
+      "giro-d-italia",
+      allGiroStages ?? [],
+      scoredGiroGc ?? [],
+    );
+
+    // ── Block 3: Giro GC (final classification, completed years only) ─────
     const { data: giroGcResults } = await supabase
       .from("race_results")
-      .select("rider_id, rank")
+      .select("rider_id, rank, race_slug")
       .ilike("race_slug", "race/giro-d-italia/%/gc")
       .in("rider_id", giroRiderIds)
       .lte("rank", 3);
 
     for (const r of giroGcResults ?? []) {
       if (r.rank == null) continue;
+      const yearMatch = r.race_slug.match(/giro-d-italia\/(\d{4})\//);
+      if (!yearMatch || !completedYears.has(yearMatch[1])) continue;
       if (r.rank === 1) unlockedSlugs.push("giro-gc-victory");
       if (r.rank <= 3)  unlockedSlugs.push("giro-gc-podium");
     }
 
-    // ── Block 4: Giro KOM + Points (gt_daily_classifications, last stage) ──
-    // Find the highest stage number for any Giro in the DB
-    const { data: giroStages } = await supabase
-      .from("gt_daily_classifications")
-      .select("race_slug, stage")
-      .ilike("race_slug", "race/giro-d-italia/%/stage-%")
-      .in("rider_id", giroRiderIds)
-
-    // Group by race year, find max stage per year
-    const maxStageByYear = new Map<string, number>();
-    for (const row of giroStages ?? []) {
-      const m = row.stage?.match(/stage-(\d+)/);
-      if (!m) continue;
-      const n = parseInt(m[1]);
-      const yearMatch = row.race_slug.match(/giro-d-italia\/(\d{4})\//);
-      if (!yearMatch) continue;
-      const key = yearMatch[1];
-      if ((maxStageByYear.get(key) ?? 0) < n) maxStageByYear.set(key, n);
-    }
-
-    for (const [year, maxStage] of maxStageByYear) {
-      const lastSlug = `race/giro-d-italia/${year}/stage-${maxStage}`;
+    // ── Block 4: Giro KOM + Points (final-stage jersey, completed years) ──
+    for (const year of completedYears) {
+      const finalSlug = `race/giro-d-italia/${year}/stage-${GT_FINAL_STAGE}`;
       const { data: jerseyRows } = await supabase
         .from("gt_daily_classifications")
         .select("rider_id, classification_type, rank")
-        .eq("race_slug", lastSlug)
+        .eq("race_slug", finalSlug)
         .in("rider_id", giroRiderIds)
         .eq("rank", 1)
         .in("classification_type", ["kom", "points"]);
