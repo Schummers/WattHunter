@@ -158,9 +158,9 @@ watthunter/
 │       ├── tactics.ts           # 5 GT tactics catalog + helpers
 │       └── env.ts               # Validation env vars (Zod)
 ├── services/pcs-sync/           # Python — sync procyclingstats (local only)
-│   ├── run_pipeline.py          # CLI entry point (5 pipelines: A/B/C/E + bonus)
+│   ├── run_pipeline.py          # CLI entry point (5 pipelines: A/B/C/E + bonus) ; `_maybe_import_finals` — imports finals jerseys après import GC d'un GT complet (Spec A A2)
 │   ├── sync.py                  # Playwright + procyclingstats parser (top 600)
-│   ├── sync_race.py             # Sync resultats de course post-race
+│   ├── sync_race.py             # Sync resultats de course post-race ; `import_gc_results` retourne `has_points` (signal GT complet) ; `import_final_classifications` — importe classements finaux Points/KOM/Youth dans `gt_final_classifications` (Spec A A2)
 │   ├── enrich.py                # Enrichissement profil coureur (Pipeline E)
 │   ├── photo_storage.py         # Download photo PCS + upload bucket Supabase rider-photos
 │   ├── backfill_photos.py       # One-shot : self-host photos top 300 (cmd backfill-photos)
@@ -358,7 +358,7 @@ users ←──── league_members ────→ leagues
        ├── team_strategies → strategies
        ├── team_sponsors → sponsors
        ├── treasury_log                 (types: sponsor_bonus, sponsor_bonus_revert, payday_salary, gt_dnf_refund, gt_goal_bonus, …)
-       ├── rider_xp_daily              (avec role_mult, gt_classif_bonus)
+       ├── rider_xp_daily              (avec role_mult, gt_classif_bonus, gt_distance_bonus NUMERIC(5,1) — stage-hunter breakaway additive bonus, Spec A A3)
        ├── team_xp_adjustments         (audit trail grant_xp admin)
        └── team_ranking_daily          (snapshots quotidiens overtake detection)
 
@@ -378,6 +378,7 @@ users ←──── league_members ────→ leagues
        gt_squad                        (cap 8 coureurs par phase)
        gt_role_assignments             (append-only role history, cutoff 11:00 CET)
        gt_daily_classifications        (cache GC/sprint/KOM/youth par stage — classification_type accepte désormais 'youth' en plus de gc/points/kom)
+       gt_final_classifications        (final Points/KOM/Youth jersey standings — rank-only, Spec A A2 ; dédié scoring uniquement, hors race_results pour éviter pollution sponsor_bonus/goal_evaluator/UI ; migration 20260602130100)
        gt_tactic_activations           (5 tactiques, 1 usage chacune par GT)
        gt_emergency_bids               (DNF replacement bids during GT)
        gt_rescue_windows               (replace window cutoff per (gt_identifier, gt_year))
@@ -393,7 +394,7 @@ Jalons majeurs (par date) :
 - **2026-03** : Race results, rankings, economy beta, level gating, enrich riders, design system v3
 - **2026-04** : 8 levels WT, sponsors rework (race bonuses), phase economy, draft bids, Anti-Runaway (Co-Unlock + Level Curve), code review fixes (12 SECURITY DEFINER RPCs)
 - **2026-05** : Late join, round lifecycle, GT Tactics (5 tactiques), GT Squad V2, auto-resolve consensus, 7-day release cooldown, sponsor GT goals, GT Rescue (DNF window), achievements
-- **2026-06** : `20260602100000_spec_a_level_curve_l7_l8.sql` — L7 1800→2600, L8 2400→5000 ; `20260602100100_race_results_breakaway_profile.sql` — ajout `breakaway_kms`, `profile_icon` sur `race_results` ; `20260602100200_daily_classif_allow_youth.sql` — classification_type accepte 'youth'
+- **2026-06** : `20260602100000_spec_a_level_curve_l7_l8.sql` — L7 1800→2600, L8 2400→5000 ; `20260602100100_race_results_breakaway_profile.sql` — ajout `breakaway_kms`, `profile_icon` sur `race_results` ; `20260602100200_daily_classif_allow_youth.sql` — classification_type accepte 'youth' ; `20260602120000_drop_remontada.sql` — suppression définitive remontada ; `20260602130000_rider_xp_daily_distance_bonus.sql` — ajout `gt_distance_bonus` NUMERIC(5,1) sur `rider_xp_daily` (Spec A A3) ; `20260602130100_gt_final_classifications.sql` — nouvelle table `gt_final_classifications` pour classements finaux Points/KOM/Youth (Spec A A2)
 
 ### RLS — Architecture
 
@@ -480,6 +481,7 @@ Le visiteur ne peut rien muter — les RPCs rejettent via `auth.uid() IS NULL`. 
 
 ### Scoring pipeline (scoring.py)
 - **Steps A–D** : calcul XP quotidien par rider (pts PCS × stratégie bonuses)
+- **Spec A P2 (2026-06-02)** : `_role_multiplier` prend `breakaway_kms`/`profile_icon` ; `_classif_bonus` V2 (matched roles only, ×2/×1.5) ; `_breakaway_distance_bonus` (+1 XP/10 km, additive, stage_hunter uniquement) ; `_final_secondary_bonus` (scale 80/20/10 GT × role mult) ; 3e pass lit `gt_final_classifications` pour les jerseys finaux Points/KOM/Youth.
 
 ### Pool coureurs
 - Top 600 PCS global (12 mois glissants)
@@ -649,6 +651,7 @@ Le visiteur ne peut rien muter — les RPCs rejettent via `auth.uid() IS NULL`. 
 - [x] Race Feed (cards Home : past race, nemesis, rest day, GT goals)
 - [x] Palmares (profil rider avec onglets Monuments / dynamiques + league rank)
 - [x] Design System v3.1 (navigation tokens)
+- [x] Spec A P2 — Scoring Refonte : classif V2 ×2 (youth ×1.5), GC final ×1.0, sprinter profile p1/p2/p3, stage_hunter breakaway 30 km + distance bonus, Overdrive breakaway-gated, final Points/KOM/Youth jerseys via `gt_final_classifications` (scale 80/20/10)
 
 ### A implementer (pre-alpha)
 
