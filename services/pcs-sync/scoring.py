@@ -77,6 +77,40 @@ CLASSIF_ROLE_MATCH: dict[str, dict[str, float]] = {
     "climber":   {"kom": 2.0},
 }
 
+# --- Final secondary classifications (Points / KOM / Youth) — Spec A A2 ----
+# Custom rank-derived 2-value scale (PCS gives no points for these jerseys).
+# GT/Monument vs 1-week stage race; one_week is coded for P3 (Race Team / A9).
+FINAL_SECONDARY_SCALE = {
+    "gt": [80.0, 20.0, 10.0],        # ranks 1 / 2 / 3
+    "one_week": [40.0, 10.0, 5.0],
+}
+# Final secondary classif → (role that matches, multiplier on the scale value).
+FINAL_ROLE_MATCH = {
+    "points": ("sprinter", 2.0),
+    "kom":    ("climber", 2.0),
+    "youth":  ("gc_leader", 1.5),
+}
+
+
+def _final_secondary_bonus(classif_type: str, rank, role: str, mode: str = "gt") -> float:
+    """XP for a final Points/KOM/Youth placement (Spec A A2).
+
+    Base scale value by rank (mode gt vs one_week) × role multiplier when the role matches
+    (points→sprinter ×2, kom→climber ×2, youth→gc_leader ×1.5); ×1.0 otherwise.
+    Ranks beyond the scale length earn 0.
+    """
+    scale = FINAL_SECONDARY_SCALE.get(mode, FINAL_SECONDARY_SCALE["gt"])
+    try:
+        r = int(rank)
+    except (TypeError, ValueError):
+        return 0.0
+    if r < 1 or r > len(scale):
+        return 0.0
+    base = scale[r - 1]
+    matched_role, mult = FINAL_ROLE_MATCH.get(classif_type, (None, 1.0))
+    rate = mult if role == matched_role else 1.0
+    return base * rate
+
 
 def _classif_bonus(classif_rows: list[dict], role: str) -> float:
     """Daily classification bonus (Spec A A2, V2 role-matched-only).
@@ -401,6 +435,22 @@ async def calculate_daily_scores(
                 (row["race_slug"], row["rider_id"]), []
             ).append(row)
 
+    # --- Step 3d: Final secondary classifications (Points/KOM/Youth) for completed GTs.
+    # Read from the DEDICATED gt_final_classifications table (kept out of race_results so it
+    # never pollutes sponsor_bonus / goal_evaluator / UI — see Task 4 storage rationale).
+    # Gated: empty for ordinary stage-slug runs → no .table() call (mock-safe).
+    final_secondary_slugs = [
+        s for s in (race_slugs or [])
+        if _is_gt_slug(s) and s.rsplit("/", 1)[-1] in ("points", "kom", "youth")
+    ]
+    final_by_rider: dict[str, list[dict]] = {}
+    if final_secondary_slugs:
+        fr_resp = supabase.table("gt_final_classifications").select(
+            "rider_id, race_slug, classification_type, rank, race_date"
+        ).in_("race_slug", final_secondary_slugs).execute()
+        for row in (fr_resp.data or []):
+            final_by_rider.setdefault(row["rider_id"], []).append(row)
+
     # === Resolve unresolved Nemesis duels for the stages we're about to score ===
     # Must run BEFORE the tactics prefetch so the per-rider loop sees outcomes.
     if gt_slugs:
@@ -642,6 +692,52 @@ async def calculate_daily_scores(
 
                 total_xp += c_xp
                 processed_in_team.add((c_rider_id, c_race_slug))
+
+        # === Third pass: final secondary classification XP (Points/KOM/Youth) ===
+        # Spec A A2 — rank → 2-value scale × role mult. Squad-gated; GT-only in P2.
+        if final_by_rider:
+            for contract in team_clist:
+                f_rider_id = contract["rider_id"]
+                if (team_id, f_rider_id) not in gt_squad_members:
+                    continue
+                for fr in final_by_rider.get(f_rider_id, []):
+                    f_slug = fr["race_slug"]
+                    if (f_rider_id, f_slug) in processed_in_team:
+                        continue
+                    f_ctype = fr.get("classification_type") or f_slug.rsplit("/", 1)[-1]
+                    f_role = gt_roles.get((team_id, f_rider_id), "domestique")
+                    f_bonus = _final_secondary_bonus(f_ctype, fr.get("rank"), f_role, mode="gt")
+                    if f_bonus == 0:
+                        continue
+                    f_xp = max(0, round(f_bonus, 2))
+                    f_date = fr.get("race_date") or race_date_by_slug.get(f_slug, today)
+                    try:
+                        supabase.table("rider_xp_daily").upsert({
+                            "team_id": team_id,
+                            "rider_id": f_rider_id,
+                            "contract_id": contract["id"],
+                            "date": f_date,
+                            "raw_pcs_points": 0,
+                            "strategy_bonus": 0.0,
+                            "role_mult": 1.0,
+                            "classif_bonus": f_bonus,
+                            "gt_role_mult": 1.0,
+                            "gt_classif_bonus": f_bonus,
+                            "gt_distance_bonus": 0.0,
+                            "nemesis_modifier": 1.0,
+                            "tactic_applied": None,
+                            "xp_gained": f_xp,
+                            "race_slug": f_slug,
+                        }, on_conflict="team_id,rider_id,race_slug").execute()
+                    except Exception as e:
+                        logger.error(
+                            f"final classif upsert failed for rider {f_rider_id} "
+                            f"slug {f_slug}: {e}"
+                        )
+                        errors.append(str(e))
+                        continue
+                    total_xp += f_xp
+                    processed_in_team.add((f_rider_id, f_slug))
 
         if total_xp == 0:
             continue

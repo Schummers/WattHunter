@@ -462,3 +462,30 @@ def test_classif_bonus_v2_role_matched_only():
     assert _classif_bonus([{"classification_type": "gc", "rank": 1}], "sprinter") == 0.0
     # out of top-N → 0
     assert _classif_bonus([{"classification_type": "gc", "rank": 11}], "gc_leader") == 0.0
+
+
+# --- Final secondary jersey helpers (Spec A A2) -------------------------------
+
+def test_final_secondary_bonus_gt_scale_and_role_match():
+    """GT scale 80/20/10 by rank; matched role doubles (×1.5 youth); else ×1.0 (Spec A A2)."""
+    from scoring import _final_secondary_bonus
+    # points, sprinter matches → ×2
+    assert _final_secondary_bonus("points", 1, "sprinter") == 160.0
+    assert _final_secondary_bonus("points", 2, "sprinter") == 40.0
+    assert _final_secondary_bonus("points", 3, "sprinter") == 20.0
+    # kom, climber matches → ×2
+    assert _final_secondary_bonus("kom", 1, "climber") == 160.0
+    # youth, gc_leader matches → ×1.5
+    assert _final_secondary_bonus("youth", 1, "gc_leader") == 120.0
+    # non-matched squad rider → base × 1.0 (still rewarded; Spec A A2 line "×1.0 partout")
+    assert _final_secondary_bonus("points", 1, "domestique") == 80.0
+    assert _final_secondary_bonus("kom", 2, "gc_leader") == 20.0
+    # beyond rank 3 → 0
+    assert _final_secondary_bonus("points", 4, "sprinter") == 0.0
+
+
+def test_final_secondary_bonus_one_week_scale():
+    """1-week scale 40/10/5 (coded for P3; not yet wired into the pipeline)."""
+    from scoring import _final_secondary_bonus
+    assert _final_secondary_bonus("points", 1, "sprinter", mode="one_week") == 80.0  # 40 × 2
+    assert _final_secondary_bonus("kom", 2, "domestique", mode="one_week") == 10.0   # 10 × 1

@@ -741,3 +741,80 @@ async def test_scoring_persists_traceability_columns():
     assert payload["gt_distance_bonus"] == 0.0     # no breakaway (gc_leader, not stage_hunter)
     assert payload["nemesis_modifier"] == 1.0      # no tactics active
     assert payload["tactic_applied"] is None       # no tactics active
+
+
+# ---------------------------------------------------------------------------
+# Final secondary classifications (Task 5 — Spec A A2)
+# ---------------------------------------------------------------------------
+
+
+async def test_final_points_jersey_scored_for_sprinter():
+    """Sprinter wins the final Points jersey of a GT: 80 (rank 1, GT scale) × 2 = 160 XP.
+
+    The finals row carries 0 PCS points (invisible to the main query); a second rider
+    scores a stage point so calculate_daily_scores does not early-return on empty results.
+
+    Mock-ordering: final_secondary_slugs is non-empty (race_slugs includes .../points),
+    so gt_final_classifications prefetch fires at position 8 (after gt_daily_classifications,
+    before gt_tactic_activations).
+    """
+    import scoring
+
+    points_slug = "race/giro-d-italia/2026/points"
+    sb = make_supabase(
+        # 1. race_results (pcs_points>0 query): only RIDER_ID_2 scores a stage point.
+        [{"rider_id": RIDER_ID_2, "race_slug": "race/giro-d-italia/2026/stage-21",
+          "pcs_points": 10, "race_date": "2026-05-31", "is_itt": False,
+          "breakaway_kms": None, "profile_icon": "p1"}],
+        # 2. prev rider_xp_daily
+        [],
+        # 3. contracts
+        [
+            {"id": CONTRACT_ID, "team_id": TEAM_ID, "rider_id": RIDER_ID,
+             "purchased_at": "2026-01-01T00:00:00Z", "release_date": None, "released_at": None,
+             "riders": {"specialty": "Sprint", "nationality": "BE", "real_team": "x", "birthdate": "1998-01-01"}},
+            {"id": CONTRACT_ID_2, "team_id": TEAM_ID, "rider_id": RIDER_ID_2,
+             "purchased_at": "2026-01-01T00:00:00Z", "release_date": None, "released_at": None,
+             "riders": {"specialty": "Sprint", "nationality": "BE", "real_team": "x", "birthdate": "1998-01-01"}},
+        ],
+        # 4. team_strategies
+        [],
+        # 5. gt_squad: both riders in squad
+        [
+            {"team_id": TEAM_ID, "rider_id": RIDER_ID, "created_at": BEFORE_CUTOFF, "removed_at": None},
+            {"team_id": TEAM_ID, "rider_id": RIDER_ID_2, "created_at": BEFORE_CUTOFF, "removed_at": None},
+        ],
+        # 6. gt_role_assignments: RIDER_ID = sprinter
+        [
+            {"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": "sprinter", "applied_at": "2026-05-10T09:00:00+02:00"},
+            {"team_id": TEAM_ID, "rider_id": RIDER_ID_2, "role": "domestique", "applied_at": "2026-05-10T09:00:00+02:00"},
+        ],
+        # 7. gt_daily_classifications
+        [],
+        # 8. final-secondary prefetch (gt_final_classifications in_ final slugs): RIDER_ID rank 1 points
+        [{"rider_id": RIDER_ID, "race_slug": points_slug, "classification_type": "points",
+          "rank": 1, "race_date": "2026-05-31"}],
+        # 9. gt_tactic_activations
+        [],
+        # 10. rider_xp_daily upsert (RIDER_ID_2, main loop: 10 × 1.0 = 10)
+        [],
+        # 11. rider_xp_daily upsert (RIDER_ID, third pass: points jersey = 160)
+        [],
+        # 12. teams select
+        {"id": TEAM_ID, "cumulative_xp": 0.0, "level": 1, "league_id": LEAGUE_ID},
+        # 13. teams update
+        [],
+        # 14. teams select (league ranking snapshot)
+        [{"id": TEAM_ID, "cumulative_xp": 170.0}],
+        # 15. team_ranking_daily upsert
+        [],
+    )
+    await scoring.calculate_daily_scores(
+        sb, race_slugs=["race/giro-d-italia/2026/stage-21", points_slug]
+    )
+
+    payloads = sb.upserts.get("rider_xp_daily", [])
+    points_row = next(p for p in payloads if p["race_slug"] == points_slug)
+    assert points_row["xp_gained"] == 160.0
+    assert points_row["gt_classif_bonus"] == 160.0
+    assert points_row["raw_pcs_points"] == 0
