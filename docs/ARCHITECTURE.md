@@ -371,6 +371,7 @@ users ←──── league_members ────→ leagues
               → rider_teams
               → rider_pcs_history
               → race_startlists
+              → stage_profiles            (race_slug PK, profile_icon p0-p5, race_date ; pre-race source du profil pour le gating Nemesis dans place_tactic — Spec A A7, peuplée par services/pcs-sync/sync_race.py:import_stage_profiles via le pipeline startlists)
 
        sponsor_bonuses                 (paiements bonus par resultat)
 
@@ -394,7 +395,7 @@ Jalons majeurs (par date) :
 - **2026-03** : Race results, rankings, economy beta, level gating, enrich riders, design system v3
 - **2026-04** : 8 levels WT, sponsors rework (race bonuses), phase economy, draft bids, Anti-Runaway (Co-Unlock + Level Curve), code review fixes (12 SECURITY DEFINER RPCs)
 - **2026-05** : Late join, round lifecycle, GT Tactics (5 tactiques), GT Squad V2, auto-resolve consensus, 7-day release cooldown, sponsor GT goals, GT Rescue (DNF window), achievements
-- **2026-06** : `20260602100000_spec_a_level_curve_l7_l8.sql` — L7 1800→2600, L8 2400→5000 ; `20260602100100_race_results_breakaway_profile.sql` — ajout `breakaway_kms`, `profile_icon` sur `race_results` ; `20260602100200_daily_classif_allow_youth.sql` — classification_type accepte 'youth' ; `20260602120000_drop_remontada.sql` — suppression définitive remontada ; `20260602130000_rider_xp_daily_distance_bonus.sql` — ajout `gt_distance_bonus` NUMERIC(5,1) sur `rider_xp_daily` (Spec A A3) ; `20260602130100_gt_final_classifications.sql` — nouvelle table `gt_final_classifications` pour classements finaux Points/KOM/Youth (Spec A A2)
+- **2026-06** : `20260602100000_spec_a_level_curve_l7_l8.sql` — L7 1800→2600, L8 2400→5000 ; `20260602100100_race_results_breakaway_profile.sql` — ajout `breakaway_kms`, `profile_icon` sur `race_results` ; `20260602100200_daily_classif_allow_youth.sql` — classification_type accepte 'youth' ; `20260602120000_drop_remontada.sql` — suppression définitive remontada ; `20260602130000_rider_xp_daily_distance_bonus.sql` — ajout `gt_distance_bonus` NUMERIC(5,1) sur `rider_xp_daily` (Spec A A3) ; `20260602130100_gt_final_classifications.sql` — nouvelle table `gt_final_classifications` pour classements finaux Points/KOM/Youth (Spec A A2) ; `20260603000100_place_tactic_profile_gating.sql` — RPC `place_tactic` v2 (Spec A A7) : Nemesis Sprint requiert profile p1/p2/p3, Nemesis GC requiert p3/p4/p5 (lookup dans `stage_profiles`)
 
 ### RLS — Architecture
 
