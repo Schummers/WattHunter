@@ -688,3 +688,79 @@ async def import_startlist(
         "total_in_startlist": len(startlist_entries),
         "errors": errors,
     }
+
+
+def _stage_year_from_slug(race_slug: str) -> Optional[int]:
+    """Extract the 4-digit year from a race slug like 'race/tour-de-france/2026'."""
+    import re
+    m = re.search(r"/(\d{4})(?:/|$)", race_slug)
+    return int(m.group(1)) if m else None
+
+
+def _stage_date_from_md(md: Optional[str], year: Optional[int]) -> Optional[str]:
+    """Combine a 'MM-DD' string from Race.stages() with the year inferred from the slug.
+
+    Returns an ISO date string ('YYYY-MM-DD') or None on missing/invalid input.
+    """
+    if not md or not year:
+        return None
+    s = str(md).strip()
+    parts = s.split("-")
+    if len(parts) != 2:
+        return None
+    try:
+        mm = int(parts[0])
+        dd = int(parts[1])
+        return f"{year:04d}-{mm:02d}-{dd:02d}"
+    except ValueError:
+        return None
+
+
+async def import_stage_profiles(
+    supabase: Client,
+    page,
+    race_slug: str,
+    race_name: str,
+) -> Dict[str, int]:
+    """Scrape every stage's profile_icon from the race overview page (Race.stages())
+    and upsert one row per stage into stage_profiles.
+
+    One fetch per race — no per-stage scraping. Skips stages with no profile_icon
+    (CHECK constraint forbids NULL). Returns counts.
+    """
+    html = await fetch_html(page, race_slug)
+    race = Race(race_slug, html=html, update_html=False)
+
+    if race.is_one_day_race():
+        return {"imported": 0, "skipped": 0, "total_stages": 0}
+
+    stages = race.stages()
+    year = _stage_year_from_slug(race_slug)
+
+    imported = 0
+    skipped = 0
+
+    for stage in stages:
+        stage_url = stage.get("stage_url") or ""
+        raw_icon = stage.get("profile_icon")
+        icon = str(raw_icon).strip().lower() if raw_icon else ""
+        if not stage_url or not icon:
+            skipped += 1
+            continue
+
+        race_date = _stage_date_from_md(stage.get("date"), year)
+        try:
+            supabase.table("stage_profiles").upsert(
+                {
+                    "race_slug": stage_url,
+                    "profile_icon": icon,
+                    "race_date": race_date,
+                },
+                on_conflict="race_slug",
+            ).execute()
+            imported += 1
+        except Exception as exc:
+            logger.error("Failed stage_profiles upsert for %s: %s", stage_url, exc)
+            skipped += 1
+
+    return {"imported": imported, "skipped": skipped, "total_stages": len(stages)}

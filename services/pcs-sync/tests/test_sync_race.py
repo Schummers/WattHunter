@@ -595,3 +595,124 @@ async def test_import_final_classifications_continues_on_jersey_failure():
         )
 
     assert counts == {"points": 1, "kom": 0, "youth": 1}
+
+
+# ---------------------------------------------------------------------------
+# 12. import_stage_profiles — Spec A P3a
+# ---------------------------------------------------------------------------
+
+
+async def test_import_stage_profiles_upserts_one_row_per_stage():
+    """Race.stages() → one stage_profiles row per stage, profile_icon + date carried through."""
+    import sync_race
+
+    fake_stages = [
+        {"stage_url": "race/tour-de-france/2026/stage-1", "profile_icon": "p1",
+         "date": "07-04", "stage_name": "Stage 1"},
+        {"stage_url": "race/tour-de-france/2026/stage-2", "profile_icon": "p3",
+         "date": "07-05", "stage_name": "Stage 2"},
+        {"stage_url": "race/tour-de-france/2026/stage-3", "profile_icon": "p5",
+         "date": "07-06", "stage_name": "Stage 3"},
+    ]
+
+    mock_race_instance = MagicMock()
+    mock_race_instance.is_one_day_race.return_value = False
+    mock_race_instance.stages.return_value = fake_stages
+    mock_race = MagicMock(return_value=mock_race_instance)
+
+    sb = make_supabase()  # only stage_profiles upserts will happen
+
+    with _patch_fetch_html(), patch("sync_race.Race", mock_race):
+        result = await sync_race.import_stage_profiles(
+            sb, page=MagicMock(),
+            race_slug="race/tour-de-france/2026",
+            race_name="Tour de France",
+        )
+
+    assert result == {"imported": 3, "skipped": 0, "total_stages": 3}
+    upserts = sb.upserts["stage_profiles"]
+    by_slug = {r["race_slug"]: r for r in upserts}
+    assert by_slug["race/tour-de-france/2026/stage-1"]["profile_icon"] == "p1"
+    assert by_slug["race/tour-de-france/2026/stage-1"]["race_date"] == "2026-07-04"
+    assert by_slug["race/tour-de-france/2026/stage-2"]["profile_icon"] == "p3"
+    assert by_slug["race/tour-de-france/2026/stage-3"]["profile_icon"] == "p5"
+
+
+async def test_import_stage_profiles_one_day_race_returns_empty():
+    """One-day races (no stages) → no upserts, total_stages=0."""
+    import sync_race
+
+    mock_race_instance = MagicMock()
+    mock_race_instance.is_one_day_race.return_value = True
+    mock_race_instance.stages.return_value = []
+    mock_race = MagicMock(return_value=mock_race_instance)
+
+    sb = make_supabase()
+
+    with _patch_fetch_html(), patch("sync_race.Race", mock_race):
+        result = await sync_race.import_stage_profiles(
+            sb, page=MagicMock(),
+            race_slug="race/milano-sanremo/2026",
+            race_name="Milano-Sanremo",
+        )
+
+    assert result == {"imported": 0, "skipped": 0, "total_stages": 0}
+    assert "stage_profiles" not in sb.upserts
+
+
+async def test_import_stage_profiles_skips_stage_with_missing_profile():
+    """A stage row with profile_icon=None is skipped (not upserted with NULL — CHECK violation)."""
+    import sync_race
+
+    fake_stages = [
+        {"stage_url": "race/x/2026/stage-1", "profile_icon": "p1", "date": "03-08"},
+        {"stage_url": "race/x/2026/stage-2", "profile_icon": None,  "date": "03-09"},
+        {"stage_url": "race/x/2026/stage-3", "profile_icon": "",    "date": "03-10"},
+    ]
+
+    mock_race_instance = MagicMock()
+    mock_race_instance.is_one_day_race.return_value = False
+    mock_race_instance.stages.return_value = fake_stages
+    mock_race = MagicMock(return_value=mock_race_instance)
+
+    sb = make_supabase()
+
+    with _patch_fetch_html(), patch("sync_race.Race", mock_race):
+        result = await sync_race.import_stage_profiles(
+            sb, page=MagicMock(),
+            race_slug="race/x/2026",
+            race_name="X",
+        )
+
+    assert result == {"imported": 1, "skipped": 2, "total_stages": 3}
+    upserts = sb.upserts["stage_profiles"]
+    assert len(upserts) == 1
+    assert upserts[0]["race_slug"] == "race/x/2026/stage-1"
+
+
+async def test_import_stage_profiles_falls_back_when_date_missing():
+    """A stage without a `date` field → race_date=None in the payload; profile still imported."""
+    import sync_race
+
+    fake_stages = [
+        {"stage_url": "race/x/2026/stage-1", "profile_icon": "p2"},  # no date key
+    ]
+
+    mock_race_instance = MagicMock()
+    mock_race_instance.is_one_day_race.return_value = False
+    mock_race_instance.stages.return_value = fake_stages
+    mock_race = MagicMock(return_value=mock_race_instance)
+
+    sb = make_supabase()
+
+    with _patch_fetch_html(), patch("sync_race.Race", mock_race):
+        result = await sync_race.import_stage_profiles(
+            sb, page=MagicMock(),
+            race_slug="race/x/2026",
+            race_name="X",
+        )
+
+    assert result["imported"] == 1
+    payload = sb._last_upsert_payload("stage_profiles")
+    assert payload["profile_icon"] == "p2"
+    assert payload["race_date"] is None

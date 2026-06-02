@@ -1282,6 +1282,30 @@ export type Database = {
         }
         Relationships: []
       }
+      stage_profiles: {
+        Row: {
+          created_at: string
+          profile_icon: string
+          race_date: string | null
+          race_slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          profile_icon: string
+          race_date?: string | null
+          race_slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          profile_icon?: string
+          race_date?: string | null
+          race_slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       strategies: {
         Row: {
           created_at: string

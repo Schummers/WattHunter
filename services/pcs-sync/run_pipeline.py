@@ -673,10 +673,10 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
 # ---------------------------------------------------------------------------
 
 async def run_startlists(race_slug: str) -> None:
-    """Pre-race pipeline: fetch and import the race startlist."""
+    """Pre-race pipeline: fetch the race startlist + stage profiles (Spec A A7)."""
     from browser_session import BrowserSession
     from sync import get_supabase
-    from sync_race import import_startlist
+    from sync_race import import_startlist, import_stage_profiles
 
     supabase = get_supabase()
     race_name, race_date_val = race_meta(race_slug)
@@ -699,11 +699,21 @@ async def run_startlists(race_slug: str) -> None:
                 race_date=race_date_val,
             )
             print(json.dumps(result, indent=2))
+
+            print()
+            print("--- Importing stage profiles ---")
+            profiles = await import_stage_profiles(
+                supabase,
+                page,
+                race_slug=race_slug,
+                race_name=race_name,
+            )
+            print(json.dumps(profiles, indent=2))
         finally:
             await context.close()
 
     print()
-    print("Done — startlists complete.")
+    print("Done — startlists + stage profiles complete.")
 
 
 # ---------------------------------------------------------------------------
