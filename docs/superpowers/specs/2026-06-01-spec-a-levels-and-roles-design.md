@@ -50,24 +50,24 @@ Le `gt_classif_bonus` (présence dans gc/points/kom) applique un mult quand le r
 |---|---|
 | Classif quotidien gc / points / kom (étapes intermédiaires) | **×2** (avant ×1.5) |
 | Classif quotidien **youth** (NOUVEAU, tracké) — rôle matché = **gc_leader** | **×1.5** |
-| **GC final** — points PCS 400/290/240… (`/gc`) | **×1.0** (aucun mult) |
-| **Points final** — points PCS 80/20/10 | **×2** (sprinter) |
-| **KOM final** — points PCS 80/20/10 | **×2** (climber) |
-| **Youth final** — pas de points PCS → custom 2-valeurs | **×1.5** (gc_leader) |
+| **GC final** — points PCS bruts (400/290/240… en GT) (`/gc`) | **×1.0** (aucun mult) |
+| **Points final** — barème custom 2-valeurs **80/20/10 GT · 40/10/5 1-sem** | **×2** (sprinter) |
+| **KOM final** — barème custom 2-valeurs **80/20/10 GT · 40/10/5 1-sem** | **×2** (climber) |
+| **Youth final** — barème custom 2-valeurs **80/20/10 GT · 40/10/5 1-sem** | **×1.5** (gc_leader) |
 
-**Scoring des classements finaux (vérifié sur données réelles stage-21) :**
-- Points PCS réels au final : GC 400/290/240… · Points 80/20/10 · KOM 80/20/10 · Youth **0** (PCS n'en donne pas → barème custom 80/20/10).
-- Aujourd'hui **seul le GC** est importé/scoré (`import_gc_results`). Il faut désormais **aussi importer/scorer les finals Points, KOM et Youth** (chacun avec ses points × le mult de rôle).
+**Scoring des classements finaux :**
+- **Réalité PCS (vérifié)** : PCS ne distribue de points sur les finals **secondaires** (Points/KOM/Youth) **que pour les grands tours**. En GT : Points 80/20/10 · KOM 80/20/10 · Youth **0** (jamais de points jeune). En **course d'1 semaine** : Points/KOM/Youth = **aucun point PCS**. Le **GC final** a toujours des points PCS (400/290/240… en GT ; barème PCS propre aux 1-sem) → importé tel quel.
+- **Décision (2026-06-02)** : les trois finals secondaires sont scorés via un **barème custom dérivé du rang** (pas des points PCS, qui n'existent qu'en GT), avec un système **2-valeurs** : rangs 1/2/3 → **80/20/10 en GT/Monument**, **40/10/5 en course d'1 semaine**. Uniforme pour Points, KOM et Youth → plus d'asymétrie entre eux. Le GC final reste sur points PCS bruts ×1.0.
+- Aujourd'hui **seul le GC** est importé/scoré (`import_gc_results`). Il faut désormais **aussi importer/scorer les finals Points, KOM et Youth** (rang → barème 2-valeurs × le mult de rôle).
 
 **Youth (meilleur jeune) :**
 - Bonus **quotidien** : top 5, base 5/4/3/2/1, rôle matché `gc_leader` ×1.5 (autres ×1.0).
-- **Final** : barème custom **2-valeurs** (rangs 1/2/3), ×1.5 si gc_leader. PCS ne donne aucun point jeune → barème inventé, aligné sur le système 2-valeurs de Spec C : **80/20/10 en GT/Monument**, **40/10/5 en course d'1 semaine**.
-  - ⚠️ Asymétrie volontaire à tracer : les finals **Points/KOM** utilisent les points PCS **bruts** (80/20/10, non doublés) quel que soit le type de course. Le youth final, lui, suit le doublement 2-valeurs. Donc sur une course **non-GT**, le youth final (40/10/5) vaut la moitié des finals points/kom. C'est un choix produit assumé (décision 2026-06-02), pas un bug.
+- **Final** : barème custom **2-valeurs** dérivé du rang (1/2/3), ×1.5 si gc_leader → **80/20/10 en GT/Monument**, **40/10/5 en course d'1 semaine**. Identique aux finals Points et KOM (mêmes valeurs, même logique rang→barème) — les trois finals secondaires sont traités de façon uniforme. PCS ne donne aucun point jeune nulle part, et aucun point Points/KOM hors GT → d'où le barème custom commun.
 
 **Pré-requis technique :**
 - **Daily (à chaque étape, dans le pipeline post-race)** : ajouter `youth` à l'enum `classification_type` + ajouter `("youth", lambda: stage.youth()[:50])` à la liste de `sync_race.py:import_daily_classifications` (ligne ~513), au même endroit que gc/points/kom. Même HTML d'étape déjà fetché → **aucun fetch supplémentaire**. Le youth est ainsi scrapé ET scoré chaque jour en même temps que les autres (`_fetch_gt_classifications` dans `run_pipeline.py`).
 - `scoring.py` : `CLASSIF_TOP["youth"]=5`, match `youth→gc_leader` (×1.5), traité dans la boucle de bonus de classement quotidien avec gc/points/kom.
-- **Finals** : importer/scorer les classements finaux Points/KOM/Youth (slugs dédiés `/points`,`/kom`,`/youth`, ou table), points × mult (gc ×1.0, points→sprinter ×2, kom→climber ×2, youth→gc_leader ×1.5 sur barème custom 2-valeurs 80/20/10 GT · 40/10/5 1-sem). Aujourd'hui seul `/gc` est importé.
+- **Finals** : importer/scorer les classements finaux Points/KOM/Youth (slugs dédiés `/points`,`/kom`,`/youth`, ou table). **Lire le rang** (pas les points PCS — absents hors GT), puis appliquer le barème custom 2-valeurs (80/20/10 GT/Monument · 40/10/5 1-sem) × mult de rôle : points→sprinter ×2, kom→climber ×2, youth→gc_leader ×1.5. Le **GC final** reste importé via ses points PCS bruts ×1.0 (`import_gc_results` actuel). Aujourd'hui seul `/gc` est importé.
 - Débloque aussi le goal "maillot jeune" de Spec C.
 
 - Raison du ×1.0 sur le GC final : il paie déjà l'énorme windfall (Gall 290→290 XP sans mult, pas 435). Pas de double-boost. Sprint/KOM n'ont pas de windfall → ×2 conservé pour récompenser le spécialiste qui gagne son maillot.
@@ -156,4 +156,4 @@ Fichiers : `tactics.py` (compute_*_modifier), `scoring.py` (~494-545). `breakawa
 - ~~Q14 — Sprinter "argent"~~ → RÉSOLU : gating profil P1/P2/P3 sur les goals "Win a stage" + "Win 2 stages" (rôle sprinter) uniquement ; per-result et classements globaux inchangés.
 - ~~Q12 — Rétroactif~~ → RÉSOLU : **forward-only**. Nouvelles règles à partir du Tour ; aucun re-score du Giro (évite la corruption rétroactive — cf. Remontada désactivé — et le re-scrape des données breakaway/profil/youth absentes du Giro). Le GC final du Giro, non encore synchro, est importé sous les nouvelles règles (×1.0) de toute façon.
 - ~~Cap bonus distance échappée~~ → RÉSOLU : **aucun cap** (voir A3). À surveiller en prod.
-- ~~Youth final — doublement 2-valeurs ?~~ → RÉSOLU : **oui**, barème custom 80/20/10 GT/Monument · 40/10/5 1-semaine, aligné sur Spec C (voir A2). Asymétrie assumée vs Points/KOM (points PCS bruts non doublés).
+- ~~Finals secondaires (Points/KOM/Youth) — barème ?~~ → RÉSOLU : PCS ne donne de points finals Points/KOM/Youth **qu'en GT** (Youth jamais). Donc barème custom **commun** dérivé du rang, 2-valeurs **80/20/10 GT/Monument · 40/10/5 1-semaine**, uniforme pour les trois (voir A2). Pas d'asymétrie. Seul le GC final reste sur points PCS bruts ×1.0.

@@ -24,7 +24,7 @@
 
 ## Doutes / opens mineurs — RÉSOLUS 2026-06-02
 
-1. ~~Youth final doublement~~ → **RÉSOLU : oui**, 80/20/10 GT/Monument · 40/10/5 1-semaine (aligné Spec C). Asymétrie assumée vs Points/KOM bruts.
+1. ~~Finals secondaires (Points/KOM/Youth)~~ → **RÉSOLU** : PCS ne donne de points finals secondaires qu'en GT (Youth jamais). Barème custom **commun** dérivé du rang, 2-valeurs **80/20/10 GT/Monument · 40/10/5 1-semaine**, uniforme pour les trois. GC final reste sur points PCS bruts ×1.0.
 2. ~~Rétroactif Giro~~ → **RÉSOLU : forward-only** (à partir du Tour ; pas de re-score Giro). GC final Giro importé sous nouvelles règles (×1.0).
 3. ~~Cap bonus distance échappée~~ → **RÉSOLU : aucun cap** (à surveiller en prod).
 4. Ordre d'application dans `scoring.py` (tactics avant per-rider loop existe déjà) — point **technique**, à traiter au writing-plans (vérifier interaction breakaway/profil au scoring).
