@@ -8,6 +8,7 @@ import {
   GT_IDENTIFIER,
   type GtPhaseId,
 } from "@/lib/gt-phases";
+import { resolveRaceTeamLabel } from "@/lib/race-team-label";
 import { getSquadWithRoles, getAvailableRiders } from "./actions";
 import { GtTeamClient } from "./gt-team-client";
 import type { SponsorRow } from "@/lib/sponsors";
@@ -21,6 +22,7 @@ import {
 import type { ActivationLite } from "@/components/team-tactics-section";
 import type { IncomingNemesis } from "@/components/nemesis-incoming-banner";
 import { DEMO_LEAGUE_SLUG } from "@/lib/demo-constants";
+import { ScoringDocCard } from "@/components/scoring-doc-card";
 
 export default async function GtTeamPage({
   params,
@@ -55,6 +57,7 @@ export default async function GtTeamPage({
 
   const phaseId = currentGT.id as GtPhaseId;
   const year = new Date().getFullYear();
+  const raceTeamLabel = await resolveRaceTeamLabel(supabase, team.id);
 
   const [squad, availableRiders, teamSponsorRes] = await Promise.all([
     getSquadWithRoles({ teamId: team.id, phaseId, year }),
@@ -97,11 +100,14 @@ export default async function GtTeamPage({
 
   return (
     <>
+      <div className="mb-4">
+        <ScoringDocCard />
+      </div>
       <GtTeamClient
         teamId={team.id}
         phaseId={phaseId}
         year={year}
-        gtFullName={GT_FULL_NAME[phaseId]}
+        gtFullName={raceTeamLabel}
         squad={squad}
         availableRiders={availableRiders}
         sponsor={sponsor ?? null}
@@ -146,6 +152,9 @@ function InactiveView({ next }: { next: ReturnType<typeof getNextGTPhase> }) {
   const days = Math.max(0, Math.ceil((start.getTime() - Date.now()) / 86_400_000));
   const short = GT_SHORT_NAME[next.id as GtPhaseId];
 
+  // NOTE: this preview is GT-only for now. A 1-week race variant
+  // ("NEXT RACE" — Paris-Nice / Dauphiné / Suisse / …) is deferred until the
+  // 1-week race detection lands behind `resolveRaceTeamLabel`.
   return (
     <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center">
       <span className="text-[length:var(--type-label)] uppercase tracking-wide text-[var(--text-low)]">
