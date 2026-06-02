@@ -107,7 +107,7 @@ export default async function GtTeamPage({
         teamId={team.id}
         phaseId={phaseId}
         year={year}
-        gtFullName={raceTeamLabel}
+        raceTeamLabel={raceTeamLabel}
         squad={squad}
         availableRiders={availableRiders}
         sponsor={sponsor ?? null}
