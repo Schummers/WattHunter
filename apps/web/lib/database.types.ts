@@ -420,7 +420,8 @@ export type Database = {
           applied_at: string
           created_at: string
           id: string
-          phase_id: number
+          phase_id: number | null
+          race_slug: string | null
           rider_id: string
           role: string
           team_id: string
@@ -430,7 +431,8 @@ export type Database = {
           applied_at?: string
           created_at?: string
           id?: string
-          phase_id: number
+          phase_id?: number | null
+          race_slug?: string | null
           rider_id: string
           role: string
           team_id: string
@@ -440,7 +442,8 @@ export type Database = {
           applied_at?: string
           created_at?: string
           id?: string
-          phase_id?: number
+          phase_id?: number | null
+          race_slug?: string | null
           rider_id?: string
           role?: string
           team_id?: string
@@ -469,7 +472,8 @@ export type Database = {
           dnf_refund_claimed: boolean
           dnf_stage: number | null
           id: string
-          phase_id: number
+          phase_id: number | null
+          race_slug: string | null
           removed_at: string | null
           rider_id: string
           role: string
@@ -481,7 +485,8 @@ export type Database = {
           dnf_refund_claimed?: boolean
           dnf_stage?: number | null
           id?: string
-          phase_id: number
+          phase_id?: number | null
+          race_slug?: string | null
           removed_at?: string | null
           rider_id: string
           role?: string
@@ -493,7 +498,8 @@ export type Database = {
           dnf_refund_claimed?: boolean
           dnf_stage?: number | null
           id?: string
-          phase_id?: number
+          phase_id?: number | null
+          race_slug?: string | null
           removed_at?: string | null
           rider_id?: string
           role?: string
@@ -524,7 +530,8 @@ export type Database = {
           nemesis_target_role: string | null
           nemesis_target_team_id: string | null
           outcome: string | null
-          phase_id: number
+          phase_id: number | null
+          race_slug: string | null
           resolved_at: string | null
           resolved_attacker_rider_id: string | null
           resolved_target_rider_id: string | null
@@ -539,7 +546,8 @@ export type Database = {
           nemesis_target_role?: string | null
           nemesis_target_team_id?: string | null
           outcome?: string | null
-          phase_id: number
+          phase_id?: number | null
+          race_slug?: string | null
           resolved_at?: string | null
           resolved_attacker_rider_id?: string | null
           resolved_target_rider_id?: string | null
@@ -554,7 +562,8 @@ export type Database = {
           nemesis_target_role?: string | null
           nemesis_target_team_id?: string | null
           outcome?: string | null
-          phase_id?: number
+          phase_id?: number | null
+          race_slug?: string | null
           resolved_at?: string | null
           resolved_attacker_rider_id?: string | null
           resolved_target_rider_id?: string | null
@@ -1336,6 +1345,24 @@ export type Database = {
         }
         Relationships: []
       }
+      tactic_usage_limits: {
+        Row: {
+          max_per_race: number
+          race_kind: string
+          tactic_type: string
+        }
+        Insert: {
+          max_per_race: number
+          race_kind: string
+          tactic_type: string
+        }
+        Update: {
+          max_per_race?: number
+          race_kind?: string
+          tactic_type?: string
+        }
+        Relationships: []
+      }
       team_ranking_daily: {
         Row: {
           cumulative_xp: number
@@ -1681,6 +1708,7 @@ export type Database = {
       gt_add_to_squad: {
         Args: {
           p_phase_id: number
+          p_race_slug?: string
           p_rider_id: string
           p_role: string
           p_team_id: string
@@ -1691,6 +1719,7 @@ export type Database = {
       gt_assign_role: {
         Args: {
           p_phase_id: number
+          p_race_slug?: string
           p_rider_id: string
           p_role: string
           p_team_id: string
@@ -1716,6 +1745,7 @@ export type Database = {
       gt_remove_from_squad: {
         Args: {
           p_phase_id: number
+          p_race_slug?: string
           p_rider_id: string
           p_team_id: string
           p_year: number
@@ -1727,10 +1757,15 @@ export type Database = {
           p_new_rider_id: string
           p_old_rider_id: string
           p_phase_id: number
+          p_race_slug?: string
           p_team_id: string
           p_year: number
         }
         Returns: Json
+      }
+      infer_race_kind: {
+        Args: { p_phase_id: number; p_race_slug: string }
+        Returns: string
       }
       is_league_member: { Args: { p_league_id: string }; Returns: boolean }
       join_league_by_code: {
@@ -1753,6 +1788,7 @@ export type Database = {
           p_nemesis_target_role?: string
           p_nemesis_target_team_id?: string
           p_phase_id: number
+          p_race_slug?: string
           p_stage_slug: string
           p_tactic_type: string
           p_team_id: string

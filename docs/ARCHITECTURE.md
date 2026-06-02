@@ -120,6 +120,7 @@ watthunter/
 │   │   ├── tactic-nemesis-modal.tsx   # Modal Nemesis 2-step (rival → stage)
 │   │   ├── tactic-stage-list.tsx      # Stage picker placement tactique
 │   │   ├── team-tactics-section.tsx   # Orchestrator tactiques sur GT Team page
+│   │   ├── scoring-doc-card.tsx       # Encart "How scoring works" sur Race Team (Spec A A8)
 │   │   ├── rail-link.tsx        # Lien de navigation vers detail rail
 │   │   ├── rail-router.tsx      # Routeur du panneau detail rail
 │   │   ├── detail-rail.tsx      # Panneau detail (desktop flex:2, min 380px)
@@ -148,8 +149,9 @@ watthunter/
 │       ├── calendar.ts          # Helpers calendrier WT
 │       ├── co-unlock.ts         # Co-Unlock Rule eligibility checks
 │       ├── gt-goals.ts          # Helpers sponsor GT goals
-│       ├── gt-phases.ts         # Detection phase GT (Giro/Tour/Vuelta)
+│       ├── gt-phases.ts         # Detection phase GT (Giro/Tour/Vuelta) ; `getGTSubTabLabel(date, { override })` — override-aware label pour sub-tab Race Team (Spec A A9)
 │       ├── gt-stages.ts         # Liste stages par GT
+│       ├── race-team-label.ts   # `resolveRaceTeamLabel(supabase, teamId, date?)` — resout le label dynamique du Race Team (GT actif → "Giro Team"/"Tour Team"/… ; hors saison → "Race Team") (Spec A A9)
 │       ├── phases.ts            # Helpers phases WT
 │       ├── photo-url.ts         # Resolution URL photo coureur
 │       ├── rider-detail-data.ts # Fetcher unifie rider detail
@@ -375,12 +377,13 @@ users ←──── league_members ────→ leagues
 
        sponsor_bonuses                 (paiements bonus par resultat)
 
-       Grand Tour Mode:
-       gt_squad                        (cap 8 coureurs par phase)
-       gt_role_assignments             (append-only role history, cutoff 11:00 CET)
+       Grand Tour Mode + 1-week Race Team (Spec A A9):
+       gt_squad                        (cap 8 coureurs par phase ; +race_slug TEXT nullable — Spec A A9 P3b ; partial unique indexes (team_id, race_slug) par rôle mirror celles sur phase_id ; Giro 2026 legacy → race_slug=NULL, Tour+Vuelta backfillés)
+       gt_role_assignments             (append-only role history, cutoff 11:00 CET ; +race_slug TEXT nullable — Spec A A9 P3b ; idx_gt_role_team_race_slug)
        gt_daily_classifications        (cache GC/sprint/KOM/youth par stage — classification_type accepte désormais 'youth' en plus de gc/points/kom)
        gt_final_classifications        (final Points/KOM/Youth jersey standings — rank-only, Spec A A2 ; dédié scoring uniquement, hors race_results pour éviter pollution sponsor_bonus/goal_evaluator/UI ; migration 20260602130100)
-       gt_tactic_activations           (5 tactiques, 1 usage chacune par GT)
+       gt_tactic_activations           (5 tactiques ; +race_slug TEXT nullable — Spec A A9 P3b ; nouvel unique index idx_gt_tactic_activations_by_slug sur (team_id, race_slug, stage_slug))
+       tactic_usage_limits             (race_kind ∈ {gt, one_week} × 5 tactics, max_per_race — source of truth du trigger enforce_tactic_usage_limit ; Spec A A9 P3b)
        gt_emergency_bids               (DNF replacement bids during GT)
        gt_rescue_windows               (replace window cutoff per (gt_identifier, gt_year))
        sponsor_goal_completions        (one-time sponsor goal payout tracking)
@@ -395,7 +398,7 @@ Jalons majeurs (par date) :
 - **2026-03** : Race results, rankings, economy beta, level gating, enrich riders, design system v3
 - **2026-04** : 8 levels WT, sponsors rework (race bonuses), phase economy, draft bids, Anti-Runaway (Co-Unlock + Level Curve), code review fixes (12 SECURITY DEFINER RPCs)
 - **2026-05** : Late join, round lifecycle, GT Tactics (5 tactiques), GT Squad V2, auto-resolve consensus, 7-day release cooldown, sponsor GT goals, GT Rescue (DNF window), achievements
-- **2026-06** : `20260602100000_spec_a_level_curve_l7_l8.sql` — L7 1800→2600, L8 2400→5000 ; `20260602100100_race_results_breakaway_profile.sql` — ajout `breakaway_kms`, `profile_icon` sur `race_results` ; `20260602100200_daily_classif_allow_youth.sql` — classification_type accepte 'youth' ; `20260602120000_drop_remontada.sql` — suppression définitive remontada ; `20260602130000_rider_xp_daily_distance_bonus.sql` — ajout `gt_distance_bonus` NUMERIC(5,1) sur `rider_xp_daily` (Spec A A3) ; `20260602130100_gt_final_classifications.sql` — nouvelle table `gt_final_classifications` pour classements finaux Points/KOM/Youth (Spec A A2) ; `20260603000100_place_tactic_profile_gating.sql` — RPC `place_tactic` v2 (Spec A A7) : Nemesis Sprint requiert profile p1/p2/p3, Nemesis GC requiert p3/p4/p5 (lookup dans `stage_profiles`)
+- **2026-06** : `20260602100000_spec_a_level_curve_l7_l8.sql` — L7 1800→2600, L8 2400→5000 ; `20260602100100_race_results_breakaway_profile.sql` — ajout `breakaway_kms`, `profile_icon` sur `race_results` ; `20260602100200_daily_classif_allow_youth.sql` — classification_type accepte 'youth' ; `20260602120000_drop_remontada.sql` — suppression définitive remontada ; `20260602130000_rider_xp_daily_distance_bonus.sql` — ajout `gt_distance_bonus` NUMERIC(5,1) sur `rider_xp_daily` (Spec A A3) ; `20260602130100_gt_final_classifications.sql` — nouvelle table `gt_final_classifications` pour classements finaux Points/KOM/Youth (Spec A A2) ; `20260603000100_place_tactic_profile_gating.sql` — RPC `place_tactic` v2 (Spec A A7) : Nemesis Sprint requiert profile p1/p2/p3, Nemesis GC requiert p3/p4/p5 (lookup dans `stage_profiles`) ; **Spec A A9 P3b — Race Team 1-week** : `20260604000000` ajoute `race_slug TEXT` nullable sur `gt_squad` / `gt_role_assignments` / `gt_tactic_activations` (+ partial unique indexes par rôle et `idx_gt_tactic_activations_by_slug`, backfill deterministe Tour+Vuelta, Giro 2026 reste NULL forward-only) ; `20260604000100` crée la table `tactic_usage_limits` + seed 10 rows + trigger `enforce_tactic_usage_limit` ; `20260604000200` ajoute RPC `place_tactic` v3 — 8 args avec `p_race_slug TEXT DEFAULT NULL` trailing, dérive `race_kind` via `infer_race_kind(slug)`, accepte 1-week stage races (`^race/[^/]+/\d{4}/stage-\d+$`), remplace le hard `phase_id IN (4,6,8)` ; le bloc de profile-gating Nemesis P3a est préservé verbatim ; `20260604000300` ajoute RPCs `gt_add_to_squad` / `gt_remove_from_squad` / `gt_swap_slot` / `gt_assign_role` v2 — trailing `p_race_slug text DEFAULT NULL` ; scope race_slug quand fourni, fallback `(phase_id, year)` quand NULL.
 
 ### RLS — Architecture
 
@@ -595,9 +598,9 @@ Le visiteur ne peut rien muter — les RPCs rejettent via `auth.uid() IS NULL`. 
 - **Decision :** Coureur releasé ne peut pas etre re-encheri par personne pendant 7 jours
 - **Raison :** Previent l'exploit buy → check_salary → release → rebid au minimum
 
-### ADR-019 : GT Tactics — 5 tactiques in-race
-- **Decision :** 5 tactiques (Unleash, Overdrive, Nemesis GC, Nemesis Sprint, Call the Bus), 1 usage chacune par GT
-- **Raison :** Profondeur strategique pendant les Grands Tours, differenciation des decisions joueurs au-dela du roster
+### ADR-019 : GT Tactics — 5 tactiques in-race (GT + 1-week)
+- **Decision :** 5 tactiques (Unleash, Overdrive, Nemesis GC, Nemesis Sprint, Call the Bus). Budget d'activations par `(team, race)` paramétrable par `race_kind` via `tactic_usage_limits` — GT = limites historiques (1-3 selon tactique), 1-week = limites réduites (1-2). Spec A A9 P3b (2026-06-02) étend les tactiques aux 1-week stage races (Race Team).
+- **Raison :** Profondeur strategique pendant les Grands Tours **et** les 1-week races, differenciation des decisions joueurs au-dela du roster
 
 ---
 

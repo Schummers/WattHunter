@@ -716,3 +716,49 @@ async def test_import_stage_profiles_falls_back_when_date_missing():
     payload = sb._last_upsert_payload("stage_profiles")
     assert payload["profile_icon"] == "p2"
     assert payload["race_date"] is None
+
+
+# ---------------------------------------------------------------------------
+# Spec A A9 — import_final_classifications works for 1-week races
+# ---------------------------------------------------------------------------
+
+
+async def test_import_final_classifications_one_week_race():
+    """1-week stage-races (Paris-Nice, etc.) have Points/KOM/Youth jerseys too.
+    The importer reads the standings from {slug}/points|kom|youth and upserts
+    into gt_final_classifications with the right scale-agnostic shape."""
+    import sync_race
+
+    rider_id = "11111111-2222-3333-4444-555555555555"
+    pcs_slug = "rider/some-sprinter"
+
+    def _stage_factory(url, html=None, update_html=False):
+        inst = MagicMock()
+        if "/points" in url:
+            inst.points.return_value = [{"rider_url": pcs_slug, "rank": 1}]
+            inst.kom.return_value = []
+            inst.youth.return_value = []
+        else:
+            inst.points.return_value = []
+            inst.kom.return_value = []
+            inst.youth.return_value = []
+        return inst
+
+    sb = make_supabase(
+        [{"id": rider_id, "pcs_slug": pcs_slug}],  # riders lookup
+    )
+
+    with _patch_fetch_html(), patch("sync_race.Stage", side_effect=_stage_factory):
+        result = await sync_race.import_final_classifications(
+            sb, page=MagicMock(),
+            race_slug="race/paris-nice/2026",
+            race_name="Paris-Nice",
+            race_date="2026-03-15",
+        )
+
+    assert result == {"points": 1, "kom": 0, "youth": 0}
+    upserts = sb.upserts["gt_final_classifications"]
+    assert len(upserts) == 1
+    assert upserts[0]["race_slug"] == "race/paris-nice/2026/points"
+    assert upserts[0]["rider_id"] == rider_id
+    assert upserts[0]["rank"] == 1

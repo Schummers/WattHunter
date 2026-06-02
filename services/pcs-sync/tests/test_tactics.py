@@ -117,3 +117,35 @@ def test_nemesis_no_resolution_no_effect():
     assert role_mult is None
     assert nem_mod == 1.0
     assert applied == "nemesis_gc"  # still tracked
+
+
+def test_tactic_usage_limits_seed_values():
+    """The seed migration must populate exactly 10 rows (5 tactics × 2 kinds)
+    with the locked-in numbers (Spec A A9)."""
+    # We assert the EXPECTED values that the migration seeds. If they ever
+    # change in the migration, this test forces a parallel update.
+    expected = {
+        ("gt",       "unleash"):        2,
+        ("gt",       "overdrive"):      2,
+        ("gt",       "call_the_bus"):   3,
+        ("gt",       "nemesis_gc"):     1,
+        ("gt",       "nemesis_sprint"): 1,
+        ("one_week", "unleash"):        1,
+        ("one_week", "overdrive"):      1,
+        ("one_week", "call_the_bus"):   2,
+        ("one_week", "nemesis_gc"):     1,
+        ("one_week", "nemesis_sprint"): 1,
+    }
+
+    # Parse the migration file to extract the INSERT VALUES tuples — keeps the
+    # test self-contained (no DB round-trip).
+    import re
+    from pathlib import Path
+    sql = Path(__file__).resolve().parents[3].joinpath(
+        "supabase/migrations/20260604000100_tactic_usage_limits.sql"
+    ).read_text()
+    seeds = re.findall(
+        r"\(\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*(\d+)\s*\)", sql
+    )
+    seen = {(k, t): int(n) for k, t, n in seeds if k in ("gt", "one_week")}
+    assert seen == expected, f"seed drift: {seen}"
