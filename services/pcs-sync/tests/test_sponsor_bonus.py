@@ -204,31 +204,31 @@ class TestCalculateBonusT1T4:
         assert base == 3000
         assert final == 3000
 
-    def test_grand_tour_gc_multiplier_x1(self):
-        """Grand tour GC → flat multiplier 1.0 (no x2 prestige for T1-T4)."""
+    def test_grand_tour_gc_multiplier_x2(self):
+        """Grand tour GC → ×2 multiplier (Spec C B-value applies to grand_tour result type)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(LOTTO, "grand_tour", 10, "FR", "race/tour-de-france/2026")
         assert base == 3000
-        assert mult == 1.0
-        assert final == 3000
+        assert mult == 2.0
+        assert final == 6000
 
-    def test_monument_multiplier_x1(self):
-        """Monument → flat multiplier 1.0 (no x2 prestige for T1-T4)."""
+    def test_monument_multiplier_x2(self):
+        """Monument → ×2 multiplier (Spec C B-value applies to monuments)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(LOTTO, "monument", 5, "FR", "race/paris-roubaix/2026")
         assert base == 3000
-        assert mult == 1.0
-        assert final == 3000
+        assert mult == 2.0
+        assert final == 6000
 
-    def test_grand_tour_stage_multiplier_x1(self):
-        """Stage in a grand tour slug → flat multiplier 1.0 (no x2 for T1-T4)."""
+    def test_grand_tour_stage_multiplier_x2(self):
+        """Stage in a grand tour slug → ×2 multiplier (Spec C B-value)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(
             LOTTO, "stage", 3, "FR", "race/giro-d-italia/2026/stage-5"
         )
         assert base == 2000
-        assert mult == 1.0
-        assert final == 2000
+        assert mult == 2.0
+        assert final == 4000
 
     def test_stage_non_grand_tour_no_x2(self):
         """Stage in a regular stage race → no ×2 multiplier."""
@@ -240,20 +240,20 @@ class TestCalculateBonusT1T4:
         assert mult == 1.0
         assert final == 2000
 
-    def test_nationality_match_x125(self):
-        """Rider nationality matches sponsor → ×1.25."""
+    def test_nationality_match_x120(self):
+        """Rider nationality matches sponsor → ×1.20 (Spec C changed from 1.25)."""
         from sponsor_bonus import calculate_bonus
         # Alpecin is BE/NL — rider is BE
         base, mult, final = calculate_bonus(ALPECIN, "one_day", 5, "BE", "race/amstel-gold/2026")
         assert base == 10000
-        assert mult == 1.25
-        assert final == 12500
+        assert mult == 1.2
+        assert final == 12000
 
     def test_nationality_compound_match(self):
         """Rider matches one of compound nationality codes."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(ALPECIN, "one_day", 5, "NL", "race/amstel-gold/2026")
-        assert mult == 1.25
+        assert mult == 1.2
 
     def test_nationality_no_match_no_x125(self):
         """Rider nationality doesn't match → no ×1.25."""
@@ -262,13 +262,13 @@ class TestCalculateBonusT1T4:
         assert mult == 1.0
 
     def test_stacked_grand_tour_plus_nationality(self):
-        """Grand tour GC + nationality match → ×1.25 only (no x2 prestige for T1-T4)."""
+        """Grand tour GC + nationality match → ×2.0 × 1.20 = ×2.4 (Spec C)."""
         from sponsor_bonus import calculate_bonus
         # Alpecin BE/NL rider from BE wins Tour de France GC
         base, mult, final = calculate_bonus(ALPECIN, "grand_tour", 3, "BE", "race/tour-de-france/2026")
         assert base == 5000
-        assert mult == 1.25
-        assert final == 6250
+        assert abs(mult - 2.4) < 1e-9
+        assert final == 12000
 
     def test_no_nationality_multiplier_for_t1_t2(self):
         """Lotto (T1) has no nationality → ×1.25 never applies even if rider matches."""
@@ -277,13 +277,14 @@ class TestCalculateBonusT1T4:
         base, mult, final = calculate_bonus(LOTTO, "gc", 1, "BE", "race/paris-nice/2026")
         assert mult == 1.0
 
-    def test_vuelta_stage_multiplier_x1(self):
-        """Stage in vuelta slug → flat ×1.0 multiplier (no x2 for T1-T4)."""
+    def test_vuelta_stage_multiplier_x2(self):
+        """Stage in vuelta slug → ×2 multiplier (Spec C B-value for GT stages)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(
             LOTTO, "stage", 1, "ES", "race/vuelta-a-espana/2026/stage-10"
         )
-        assert mult == 1.0
+        assert mult == 2.0
+        assert final == 4000
 
 
 # ===========================================================================
@@ -291,21 +292,21 @@ class TestCalculateBonusT1T4:
 # ===========================================================================
 
 class TestCalculateBonusT5T6:
-    def test_monument_explicit_amount_visma(self):
-        """T5 Visma monument podium (rank ≤ 3) → explicit 75K (not ×2 of one_day 25K)."""
+    def test_monument_t5_unified_doubled(self):
+        """T5 Visma monument (rank ≤ one_day_threshold=5) → bonus_one_day × 2 = 50K (Spec C unified path)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(VISMA, "monument", 2, "NL", "race/paris-roubaix/2026")
-        assert base == 75000
-        assert mult == 1.0
-        assert final == 75000
+        assert base == 25000
+        assert mult == 2.0
+        assert final == 50000
 
-    def test_grand_tour_explicit_amount_visma(self):
-        """T5 Visma grand tour podium → explicit 75K."""
+    def test_grand_tour_t5_unified_doubled(self):
+        """T5 Visma grand_tour (rank ≤ gc_threshold=5) → bonus_gc × 2 = 50K (Spec C unified path)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(VISMA, "grand_tour", 1, "NL", "race/tour-de-france/2026")
-        assert base == 75000
-        assert mult == 1.0
-        assert final == 75000
+        assert base == 25000
+        assert mult == 2.0
+        assert final == 50000
 
     def test_t5_gc_non_prestige(self):
         """T5 Visma stage race GC top 5 → 25K."""
@@ -619,3 +620,68 @@ async def test_process_race_bonuses_idempotent_on_rerun():
     assert result["errors"] == []
     # CRITICAL: the RPC must NOT have been called (no double-credit)
     sb.rpc.assert_not_called()
+
+
+# ===========================================================================
+# Spec C 2-value barème
+# ===========================================================================
+
+def _t4_sponsor():
+    # Decathlon (tier 4) post-migration values
+    return {
+        "id": "sp-dec", "tier": 4, "nationality": "FR",
+        "bonus_gc": 10000, "gc_threshold": 10,
+        "bonus_stage": 5000, "stage_threshold": 3,
+        "bonus_one_day": 10000, "one_day_threshold": 10,
+        "has_explicit_prestige": False,
+    }
+
+
+def test_t4_stage_one_week_is_A_value():
+    from sponsor_bonus import calculate_bonus
+    base, mult, final = calculate_bonus(
+        _t4_sponsor(), "stage", 2, None, "race/paris-nice/2026/stage-2")
+    assert (base, mult, final) == (5000, 1.0, 5000)
+
+
+def test_t4_stage_grand_tour_is_doubled():
+    from sponsor_bonus import calculate_bonus
+    base, mult, final = calculate_bonus(
+        _t4_sponsor(), "stage", 2, None, "race/giro-d-italia/2026/stage-2")
+    assert (base, mult, final) == (5000, 2.0, 10000)
+
+
+def test_t4_monument_one_day_is_doubled():
+    from sponsor_bonus import calculate_bonus
+    base, mult, final = calculate_bonus(
+        _t4_sponsor(), "monument", 5, None, "race/ronde-van-vlaanderen/2026/result")
+    assert (base, mult, final) == (10000, 2.0, 20000)
+
+
+def test_t4_nationality_is_1_20_not_1_25():
+    from sponsor_bonus import calculate_bonus
+    base, mult, final = calculate_bonus(
+        _t4_sponsor(), "stage", 1, "FR", "race/giro-d-italia/2026/stage-2")
+    assert base == 5000
+    assert abs(mult - 2.4) < 1e-9
+    assert final == 12000
+
+
+def test_t4_threshold_excludes_rank_beyond():
+    from sponsor_bonus import calculate_bonus
+    assert calculate_bonus(_t4_sponsor(), "stage", 4, None,
+                           "race/giro-d-italia/2026/stage-2") == (0, 0.0, 0)
+
+
+def test_t5_has_no_nationality_bonus():
+    from sponsor_bonus import calculate_bonus
+    visma = {
+        "id": "sp-vis", "tier": 5, "nationality": None,
+        "bonus_gc": 10000, "gc_threshold": 10,
+        "bonus_stage": 5000, "stage_threshold": 3,
+        "bonus_one_day": 10000, "one_day_threshold": 10,
+        "has_explicit_prestige": False,
+    }
+    base, mult, final = calculate_bonus(visma, "stage", 1, "NL",
+                                        "race/giro-d-italia/2026/stage-2")
+    assert (base, mult, final) == (5000, 2.0, 10000)
