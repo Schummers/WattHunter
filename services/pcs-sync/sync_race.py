@@ -86,6 +86,18 @@ def _detect_itt(stage) -> bool:
     return s in ("ITT", "TTT")
 
 
+def _stage_profile_icon(stage) -> Optional[str]:
+    """Return the PCS profile icon (p0-p5) for a stage, or None if unavailable."""
+    try:
+        attr = getattr(stage, "profile_icon", None)
+        val = attr() if callable(attr) else attr
+    except Exception:
+        return None
+    if not val:
+        return None
+    return str(val).strip().lower()
+
+
 async def get_stage_urls(page, race_slug: str) -> List[Dict[str, str]]:
     """Return stage URL dicts for a multi-stage race, or [] for one-day races.
 
@@ -119,6 +131,7 @@ async def import_race_results(
 
     html = await fetch_html(page, fetch_url)
     stage = Stage(fetch_url, html=html, update_html=False)
+    profile_icon = _stage_profile_icon(stage)
     results = stage.results()
 
     # Build lookup map from pcs_slug → rider_id
@@ -150,6 +163,8 @@ async def import_race_results(
                     "pcs_points": int(entry.get("pcs_points") or entry.get("points", 0) or 0),
                     "rank": entry.get("rank"),
                     "is_itt": _detect_itt(stage),
+                    "breakaway_kms": entry.get("breakaway_kms"),
+                    "profile_icon": profile_icon,
                 }
             race_class = _classify_race(race_slug)
             if race_class:

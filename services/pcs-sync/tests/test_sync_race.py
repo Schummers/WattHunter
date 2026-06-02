@@ -396,3 +396,60 @@ async def test_import_daily_classifications_swallows_classif_error():
     assert result["gc"] == 0
     assert result["points"] == 1
     assert result["kom"] == 0
+
+
+# ---------------------------------------------------------------------------
+# 9. test_import_race_results_captures_breakaway_and_profile
+# ---------------------------------------------------------------------------
+
+
+async def test_import_race_results_captures_breakaway_and_profile():
+    """Stage results carry breakaway_kms (per rider) + the stage profile_icon into the payload."""
+    import sync_race
+
+    fake_results = [
+        {"rider_url": PCS_SLUG_MATCH, "pcs_points": 50, "rank": 1, "breakaway_kms": 142.0}
+    ]
+    mock_stage_instance = MagicMock()
+    mock_stage_instance.results.return_value = fake_results
+    mock_stage_instance.stage_type.return_value = "Road stage"
+    mock_stage_instance.profile_icon.return_value = "p1"
+    mock_stage = MagicMock(return_value=mock_stage_instance)
+
+    sb = make_supabase([{"id": RIDER_ID, "pcs_slug": PCS_SLUG_MATCH}], [])
+
+    with _patch_fetch_html(), patch("sync_race.Stage", mock_stage):
+        await sync_race.import_race_results(
+            sb, page=MagicMock(),
+            race_slug="race/paris-nice/2026", race_name="Paris-Nice",
+            race_date="2026-03-08", stage_url="race/paris-nice/2026/stage-2",
+        )
+
+    payload = sb._last_upsert_payload("race_results")
+    assert payload["breakaway_kms"] == 142.0
+    assert payload["profile_icon"] == "p1"
+
+
+async def test_import_race_results_profile_and_breakaway_none_when_unavailable():
+    """Missing breakaway_kms key → None; empty profile_icon → None (no crash)."""
+    import sync_race
+
+    fake_results = [{"rider_url": PCS_SLUG_MATCH, "pcs_points": 10, "rank": 8}]
+    mock_stage_instance = MagicMock()
+    mock_stage_instance.results.return_value = fake_results
+    mock_stage_instance.stage_type.return_value = "Road stage"
+    mock_stage_instance.profile_icon.return_value = None
+    mock_stage = MagicMock(return_value=mock_stage_instance)
+
+    sb = make_supabase([{"id": RIDER_ID, "pcs_slug": PCS_SLUG_MATCH}], [])
+
+    with _patch_fetch_html(), patch("sync_race.Stage", mock_stage):
+        await sync_race.import_race_results(
+            sb, page=MagicMock(),
+            race_slug=RACE_SLUG, race_name=RACE_NAME, race_date=RACE_DATE,
+            stage_url=STAGE_URL,
+        )
+
+    payload = sb._last_upsert_payload("race_results")
+    assert payload["breakaway_kms"] is None
+    assert payload["profile_icon"] is None
