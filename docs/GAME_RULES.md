@@ -187,8 +187,8 @@ Team XP  = sum of XP from all roster riders
 | 4 | Giro | 350 | 9 | 2 | #30–600 | — | T4 · 750K (×4) |
 | 5 | Pre-Tour | 600 | 10 | 2 | #20–600 | Teams | T4 · 750K (×4) |
 | 6 | Tour de France | 1,200 | 11 | 2 | #10–600 | — | T5 · 1M (×2) |
-| 7 | Post-Tour | 1,800 | 12 | 3 | #4–600 | Age | T5 · 1M (×2) |
-| 8 | La Vuelta | 2,400 | 12 | 3 | #1–600 | — | T6 UAE · 1.25M |
+| 7 | Post-Tour | 2,600 | 12 | 3 | #4–600 | Age | T5 · 1M (×2) |
+| 8 | La Vuelta | 5,000 | 12 | 3 | #1–600 | — | T6 UAE · 1.25M |
 
 ---
 
@@ -314,7 +314,7 @@ At the start of each phase, the player **confirms** their configuration:
 | Max slots | 6 (Lv.1) → 12 (Lv.7–8) |
 | Max strategies | 1 (Lv.1–2) → 2 (Lv.3–6) → 3 (Lv.7–8) |
 | Rider pool | Top 600 PCS global (rolling 12 months) |
-| XP Level 8 (max) | 2,400 |
+| XP Level 8 (max) | 5,000 |
 | Max players per league | 20 |
 | Sponsor / strategy Round 1 | Immediate effect |
 | Sponsor / strategy Round 2+ | Pending — takes effect at next payday |
@@ -358,7 +358,7 @@ At the start of each phase, the player **confirms** their configuration:
 ### 12.3 Level Curve Stretch (Mécanisme 3)
 
 - **Principe** : les seuils XP de Lv.6, Lv.7 et Lv.8 sont relevés pour ralentir la progression end-game.
-- **Nouveaux seuils** : Lv.6 = 1 200 XP | Lv.7 = 1 800 XP | Lv.8 = 2 400 XP (Lv.1–5 inchangés).
+- **Nouveaux seuils** : Lv.6 = 1 200 XP | Lv.7 = 2 600 XP | Lv.8 = 5 000 XP (Lv.1–5 inchangés). *(Spec A A1, 2026-06-02 : L7/L8 relevés depuis 1 800 / 2 400.)*
 - **Sponsor remapping** : T4 avancé de Lv.5 → Lv.4 ; T5 avancé de Lv.7 → Lv.6 ; T6 reste à Lv.8.
 - **Grandfathering** : aucun joueur ne régresse. Le niveau actuel est conservé ; seule la barre de progression vers le prochain niveau s'ajuste.
 - **Effet** : les joueurs restent clustered aux niveaux 4–6 plus longtemps, réduisant l'asymétrie slots/budget/pool entre leader et laggards.

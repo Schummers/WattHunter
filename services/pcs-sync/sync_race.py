@@ -86,6 +86,18 @@ def _detect_itt(stage) -> bool:
     return s in ("ITT", "TTT")
 
 
+def _stage_profile_icon(stage) -> Optional[str]:
+    """Return the PCS profile icon (p0-p5) for a stage, or None if unavailable."""
+    try:
+        attr = getattr(stage, "profile_icon", None)
+        val = attr() if callable(attr) else attr
+    except Exception:
+        return None
+    if not val:
+        return None
+    return str(val).strip().lower()
+
+
 async def get_stage_urls(page, race_slug: str) -> List[Dict[str, str]]:
     """Return stage URL dicts for a multi-stage race, or [] for one-day races.
 
@@ -119,6 +131,7 @@ async def import_race_results(
 
     html = await fetch_html(page, fetch_url)
     stage = Stage(fetch_url, html=html, update_html=False)
+    profile_icon = _stage_profile_icon(stage)
     results = stage.results()
 
     # Build lookup map from pcs_slug → rider_id
@@ -150,6 +163,8 @@ async def import_race_results(
                     "pcs_points": int(entry.get("pcs_points") or entry.get("points", 0) or 0),
                     "rank": entry.get("rank"),
                     "is_itt": _detect_itt(stage),
+                    "breakaway_kms": entry.get("breakaway_kms"),
+                    "profile_icon": profile_icon,
                 }
             race_class = _classify_race(race_slug)
             if race_class:
@@ -492,13 +507,13 @@ async def import_daily_classifications(
     race_slug: str,
     stage_url: str,
 ) -> Dict[str, int]:
-    """Fetch gc/points/kom classifications for a single GT stage and upsert.
+    """Fetch gc/points/kom/youth classifications for a single GT stage and upsert.
 
-    Stores top 50 GC, top 20 points, top 10 KOM for safety; scoring reads only
-    the top 10/5/3 respectively. Swallows errors per classification so a single
-    failed fetch does not abort the whole call.
+    Stores top 50 GC, top 20 points, top 10 KOM, top 20 youth for safety;
+    scoring reads only the top 10/5/3 respectively. Swallows errors per
+    classification so a single failed fetch does not abort the whole call.
     """
-    counts = {"gc": 0, "points": 0, "kom": 0}
+    counts = {"gc": 0, "points": 0, "kom": 0, "youth": 0}
     stage_label = stage_url.split("/")[-1]
 
     riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
@@ -513,6 +528,7 @@ async def import_daily_classifications(
         ("gc", lambda: stage.gc()[:50]),
         ("points", lambda: stage.points()[:20]),
         ("kom", lambda: stage.kom()[:10]),
+        ("youth", lambda: stage.youth()[:20]),
     ]
 
     for kind, fetch in fetchers:

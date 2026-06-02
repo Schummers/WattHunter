@@ -369,7 +369,7 @@ users ←──── league_members ────→ leagues
               → draft_bids
               → round_validations      (marker validation + audit force-resolve)
 
-       riders → race_results
+       riders → race_results              (cols: breakaway_kms numeric — km en breakaway, NULL si inconnu ; profile_icon text — profil PCS p0-p5, NULL sur résultats GC)
               → rider_season_rankings
               → rider_teams
               → rider_pcs_history
@@ -384,7 +384,7 @@ users ←──── league_members ────→ leagues
        Grand Tour Mode:
        gt_squad                        (cap 8 coureurs par phase)
        gt_role_assignments             (append-only role history, cutoff 11:00 CET)
-       gt_daily_classifications        (cache GC/sprint/KOM par stage)
+       gt_daily_classifications        (cache GC/sprint/KOM/youth par stage — classification_type accepte désormais 'youth' en plus de gc/points/kom)
        gt_tactic_activations           (5 tactiques, 1 usage chacune par GT)
        gt_emergency_bids               (DNF replacement bids during GT)
        gt_rescue_windows               (replace window cutoff per (gt_identifier, gt_year))
@@ -400,6 +400,7 @@ Jalons majeurs (par date) :
 - **2026-03** : Race results, rankings, economy beta, level gating, enrich riders, design system v3
 - **2026-04** : 8 levels WT, sponsors rework (race bonuses), phase economy, draft bids, Anti-Runaway (Remontada + Co-Unlock + Level Curve), code review fixes (12 SECURITY DEFINER RPCs)
 - **2026-05** : Late join, round lifecycle, GT Tactics (5 tactiques), GT Squad V2, auto-resolve consensus, 7-day release cooldown, sponsor GT goals, GT Rescue (DNF window), achievements
+- **2026-06** : `20260602100000_spec_a_level_curve_l7_l8.sql` — L7 1800→2600, L8 2400→5000 ; `20260602100100_race_results_breakaway_profile.sql` — ajout `breakaway_kms`, `profile_icon` sur `race_results` ; `20260602100200_daily_classif_allow_youth.sql` — classification_type accepte 'youth'
 
 ### RLS — Architecture
 
