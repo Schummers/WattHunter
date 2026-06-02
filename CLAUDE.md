@@ -122,7 +122,7 @@ Source unique : **`docs/GAME_RULES.md` §11 — Game Constants**. Ne PAS dupliqu
 Quand une constante change → mettre à jour GAME_RULES.md §11 (et le code). CLAUDE.md ne contient que les "anti-intuitions" ci-dessous (choses que Claude devinerait mal) :
 - Enchère = salaire mensuel **récurrent** (pas un achat unique)
 - Salaire = **pas de plafond** (formule : pts_PCS × 2 000 / 12)
-- Incrément = **100 €** (pas 500, pas 1 000)
+- Incrément = **1 000 €** (multiples de 1 000 ; plus de centaines) — tous les prix coureur s'affichent en format K via `formatMoney` (`apps/web/lib/format.ts`)
 - Release = **gratuit** mais salaire phase non remboursé
 - Finance = **1x par phase WT** (pas mensuel)
 - Remontada Boost **DÉSACTIVÉ** depuis 2026-05-21 (feature-flag, code conservé)

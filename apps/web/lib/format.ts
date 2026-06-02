@@ -13,14 +13,24 @@ export function countryCodeToFlag(code: string): string {
   );
 }
 
-/** Format number with space thousands separator + € symbol. e.g. "155 000 €" */
-export function formatEuro(amount: number): string {
-  return amount.toLocaleString("fr-FR") + " €";
-}
-
 /** Format number with space thousands separator only. e.g. "155 000" */
 export function formatThousands(amount: number): string {
   return amount.toLocaleString("fr-FR");
+}
+
+/**
+ * Unified compact money format with € prefix. Sign-free — callers prepend +/− as needed.
+ * Granularity is the thousand (bids/salaries are multiples of 1000), so "k" reads cleanly.
+ *   52000 → "€52k" · 369000 → "€369k" · 1_250_000 → "€1.25M" · 5000 → "€5k" · 500 → "€500"
+ */
+export function formatMoney(amount: number): string {
+  const abs = Math.abs(amount);
+  if (abs >= 1_000_000) {
+    const str = (abs / 1_000_000).toFixed(2).replace(/\.?0+$/, "");
+    return `€${str}M`;
+  }
+  if (abs >= 1_000) return `€${Math.round(abs / 1000)}k`;
+  return `€${abs}`;
 }
 
 /** Format XP: max 1 decimal, trailing zeros stripped. e.g. 63.7099 → "63.7", 83.0 → "83".
@@ -44,10 +54,10 @@ export function formatShortDate(date: Date | string): string {
 export const SALARY_COEFFICIENT = 2000;
 export const SALARY_FLOOR = 5000;
 
-/** Calculate minimum monthly salary for a rider based on PCS points (floored to nearest 100). */
+/** Calculate minimum monthly salary for a rider based on PCS points (floored to nearest 1000). */
 export function calcMinSalary(pcsPoints: number): number {
   const raw = (pcsPoints * SALARY_COEFFICIENT) / 12;
-  return Math.max(SALARY_FLOOR, Math.floor(raw / 100) * 100);
+  return Math.max(SALARY_FLOOR, Math.floor(raw / 1000) * 1000);
 }
 
 /** Unified round countdown. Returns display text and urgency flag for color styling.

@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { BID_INCREMENT, computeAvailableBudget } from "./budget";
 
 describe("BID_INCREMENT", () => {
-  it("matches the design rule: bids step by 100€", () => {
-    expect(BID_INCREMENT).toBe(100);
+  it("matches the design rule: bids step by 1000€", () => {
+    expect(BID_INCREMENT).toBe(1000);
   });
 });
 

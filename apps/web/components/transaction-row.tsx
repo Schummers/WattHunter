@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { formatEuro } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 
 interface TransactionRowProps {
@@ -104,7 +104,7 @@ export function TransactionRow(props: TransactionRowProps) {
 
       <div className="shrink-0 text-right">
         <div className="font-mono text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] tabular-nums">
-          {prefix}{formatEuro(Math.abs(props.amount))}
+          {prefix}{formatMoney(props.amount)}
         </div>
         <div className="text-[length:var(--type-micro)] text-[var(--text-low)]">
           {formatDate(props.date)}

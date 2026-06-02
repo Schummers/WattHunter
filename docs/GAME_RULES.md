@@ -86,14 +86,14 @@ New teams start at **200,000 EUR**.
 ### 4.4 Salary Formula
 
 ```
-Monthly salary = max(5,000, floor(PCS_points_1yr × 2,000 / 12 / 100) × 100)
-Floor: 5,000 EUR/month | Rounded down to nearest 100 | No cap
+Monthly salary = max(5,000, floor(PCS_points_1yr × 2,000 / 12 / 1,000) × 1,000)
+Floor: 5,000 EUR/month | Rounded down to nearest 1,000 | No cap
 ```
 
 **Examples:**
 - 114 pts PCS (#600) → 228K/yr → **19,000 EUR/month**
-- 400 pts PCS (#100) → 800K/yr → **66,600 EUR/month**
-- 2,216 pts PCS (#5) → 4.4M/yr → **369,300 EUR/month**
+- 400 pts PCS (#100) → 800K/yr → **66,000 EUR/month**
+- 2,216 pts PCS (#5) → 4.4M/yr → **369,000 EUR/month**
 
 > **Note:** The salary determines the **minimum bid at auction**. The actual contract salary is the winning bid (= `locked_salary`).
 
@@ -115,8 +115,8 @@ At payday, after `treasury += sponsor_budget − salaries`:
 |------|-------|
 | Format | Sealed-bid, 3 rounds per phase |
 | Minimum bid | Rider's market salary (formula §4.4) |
-| Minimum increment | 100 EUR |
-| Multiples | Bids must be multiples of 100 EUR |
+| Minimum increment | 1,000 EUR |
+| Multiples | Bids must be multiples of 1,000 EUR |
 | Calendar | 9 phases aligned to the WT, 3 rounds each |
 
 > **Auction = recurring monthly salary:** The winning bid is NOT a one-time purchase price. It becomes the recurring monthly salary (`locked_salary`) deducted at every payday.
@@ -305,12 +305,12 @@ At the start of each phase, the player **confirms** their configuration:
 | Starting treasury | 200,000 EUR |
 | Default sponsor | Lotto T1, 250,000 EUR/phase (fixed) |
 | Auction = monthly salary | Yes — not a one-time purchase |
-| Monthly salary | max(5,000, floor(PCS_pts × 2,000 / 12 / 100) × 100) |
+| Monthly salary | max(5,000, floor(PCS_pts × 2,000 / 12 / 1,000) × 1,000) |
 | Salary floor | 5,000 EUR/month |
 | Release fee | None (phase salary not refunded) |
 | Bankruptcy tolerance | −10,000 EUR |
 | Bankruptcy: releases first | Highest cumulative XP rider |
-| Bid increment | 100 EUR (multiples of 100) |
+| Bid increment | 1,000 EUR (multiples of 1,000) |
 | Max slots | 6 (Lv.1) → 12 (Lv.7–8) |
 | Max strategies | 1 (Lv.1–2) → 2 (Lv.3–6) → 3 (Lv.7–8) |
 | Rider pool | Top 600 PCS global (rolling 12 months) |

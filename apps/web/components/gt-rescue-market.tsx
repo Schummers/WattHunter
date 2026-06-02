@@ -7,7 +7,8 @@ import { RiderCard } from "@/components/rider-card"
 import { StickyBar } from "@/components/sticky-bar"
 import { placeEmergencyBid } from "@/app/(game)/league/[leagueId]/team/gt/rescue/actions"
 import { useDemoSafeAction } from "@/contexts/demo-context"
-import { formatThousands, countryCodeToFlag, calcMinSalary, formatEuro } from "@/lib/format"
+import { formatThousands, countryCodeToFlag, calcMinSalary, formatMoney } from "@/lib/format"
+import { RiderPrice } from "@/components/rider-price"
 import { getReplaceWindowClosesAt } from "@/lib/gt-stage-schedule"
 
 interface Rider {
@@ -135,7 +136,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
             type="text"
             inputMode="numeric"
             min={minSalary}
-            step={100}
+            step={1000}
             placeholder={formatThousands(minSalary)}
             value={isSelected && currentBid > 0 ? formatThousands(currentBid) : ""}
             onChange={(e) => {
@@ -157,7 +158,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
         </div>
         {isSelected && (
           <div className="text-[length:var(--type-micro)] text-[var(--text-low)] mt-px">
-            Min: <span className="font-mono">€{formatThousands(minSalary)}</span>
+            Min: <RiderPrice amount={minSalary} />
           </div>
         )}
         {isSelected && error && (
@@ -234,7 +235,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
           <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
             Your emergency bid of{" "}
             <span className="font-mono tabular-nums text-[var(--text-high)]">
-              {formatEuro(existingBid.amount)}
+              {formatMoney(existingBid.amount)}
             </span>{" "}
             is pending. It will be resolved at the next rest day.
           </p>
@@ -338,7 +339,7 @@ export function GtRescueMarket({ leagueId, team, gtPhase, eligibleRiders, existi
         onSave={handleSubmit}
         saving={isPending}
         slotInfo={`${hasBid ? 1 : 0}/1 bet`}
-        budgetInfo={formatEuro(team.treasury)}
+        budgetInfo={formatMoney(team.treasury)}
         buttonLabel="Place emergency bid"
       />
     </div>

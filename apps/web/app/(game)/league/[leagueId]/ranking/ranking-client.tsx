@@ -8,7 +8,7 @@ import { MovementTag } from "@/components/movement-tag";
 import { AchievementBadge } from "@/components/achievement-badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatThousands, countryCodeToFlag } from "@/lib/format";
+import { formatThousands, formatMoney, countryCodeToFlag } from "@/lib/format";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 import type { AchievementTier } from "@/lib/achievements";
 
@@ -61,11 +61,6 @@ interface RankingClientProps {
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-}
-
-function formatTreasury(amount: number): string {
-  if (amount >= 1000) return `€${Math.round(amount / 1000)}k`;
-  return `€${amount}`;
 }
 
 export function RankingClient({
@@ -225,7 +220,7 @@ export function RankingClient({
                     </span>
                     {isAllRaces && (
                       <span className="font-mono text-[length:var(--type-caption)] text-[var(--text-mid)]">
-                        {formatTreasury(team.treasury)}
+                        {formatMoney(team.treasury)}
                       </span>
                     )}
                   </div>
