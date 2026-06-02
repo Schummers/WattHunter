@@ -46,11 +46,10 @@ def _base_mocks(
       6. gt_role_assignments select
       7. gt_daily_classifications select
       8. gt_tactic_activations select (Task 7 prefetch — populate-only, no scoring effect)
-      9. remontada_boosts (None = no active boost)
-     10. rider_xp_daily upsert
-     11. teams select (per-team update)
-     12. teams update
-     13. teams select (league ranking snapshot)
+      9. rider_xp_daily upsert
+     10. teams select (per-team update)
+     11. teams update
+     12. teams select (league ranking snapshot)
     """
     normalized_classif = []
     for c in (classif_rows or []):
@@ -561,19 +560,15 @@ async def test_squad_rider_no_stage_points_gets_classif_bonus():
         [{"race_slug": GIRO_SLUG, "rider_id": RIDER_ID, "classification_type": "gc", "rank": 3}],
         # 8. gt_tactic_activations
         [],
-        # 9. remontada_boosts (RIDER_ID_2 main loop — no active boost)
-        None,
-        # 10. rider_xp_daily upsert (RIDER_ID_2, main loop: 50 × 1.0 = 50)
+        # 9. rider_xp_daily upsert (RIDER_ID_2, main loop: 50 × 1.0 = 50)
         [],
-        # 11. remontada_boosts (RIDER_ID second pass — no active boost)
-        None,
-        # 12. rider_xp_daily upsert (RIDER_ID second pass: classif only = 12.0) ← last upsert
+        # 10. rider_xp_daily upsert (RIDER_ID second pass: classif only = 12.0) ← last upsert
         [],
-        # 13. teams select
+        # 11. teams select
         {"id": TEAM_ID, "cumulative_xp": 0.0, "level": 1, "league_id": LEAGUE_ID},
-        # 14. teams update
+        # 12. teams update
         [],
-        # 15. teams select (league ranking)
+        # 13. teams select (league ranking)
         [{"id": TEAM_ID, "cumulative_xp": 62.0}],
     )
     await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
