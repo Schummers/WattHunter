@@ -4,7 +4,7 @@ Each helper returns the override values to apply when a given tactic is
 active for a stage. None means "no change from default".
 
 Formula context (from rider_xp_daily):
-  xp = (raw_pcs × gt_role_mult × (1 + strat) + classif) × remontada × nemesis
+  xp = (raw_pcs × gt_role_mult × (1 + strat) + classif) × nemesis
 """
 from __future__ import annotations
 from typing import Optional
