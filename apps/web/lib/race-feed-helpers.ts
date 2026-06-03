@@ -6,8 +6,15 @@ export function detectRaceType(raceSlug: string): RaceType {
   return STAGE_SUFFIX_RE.test(raceSlug) ? "stage" : "classic";
 }
 
+// Children of a parent race that should roll up under that parent for ranking,
+// race-feed grouping, and "Giro/Tour/Vuelta XP totals":
+//   - stage-N           — numbered stages of a multi-stage race
+//   - gc                — final General Classification (Spec A A2)
+//   - points / kom / youth — final secondary jerseys (Spec A A2)
+const PARENT_CHILD_SUFFIX_RE = /^(.+)\/(stage-\d+|gc|points|kom|youth)$/;
+
 export function getParentRaceSlug(raceSlug: string): string | null {
-  const m = raceSlug.match(/^(.+)\/stage-\d+$/);
+  const m = raceSlug.match(PARENT_CHILD_SUFFIX_RE);
   return m ? m[1] : null;
 }
 

@@ -35,6 +35,32 @@ describe("getParentRaceSlug", () => {
   it("returns null for a classic", () => {
     expect(getParentRaceSlug("race/paris-roubaix/2026")).toBeNull();
   });
+
+  it("returns the parent slug for the GC final classification", () => {
+    expect(getParentRaceSlug("race/giro-d-italia/2026/gc")).toBe(
+      "race/giro-d-italia/2026"
+    );
+    expect(getParentRaceSlug("race/tour-de-france/2026/gc")).toBe(
+      "race/tour-de-france/2026"
+    );
+  });
+
+  it("returns the parent slug for GT secondary final jerseys", () => {
+    expect(getParentRaceSlug("race/giro-d-italia/2026/points")).toBe(
+      "race/giro-d-italia/2026"
+    );
+    expect(getParentRaceSlug("race/giro-d-italia/2026/kom")).toBe(
+      "race/giro-d-italia/2026"
+    );
+    expect(getParentRaceSlug("race/giro-d-italia/2026/youth")).toBe(
+      "race/giro-d-italia/2026"
+    );
+  });
+
+  it("ignores unrelated trailing segments", () => {
+    expect(getParentRaceSlug("race/giro-d-italia/2026/teams")).toBeNull();
+    expect(getParentRaceSlug("race/giro-d-italia/2026/stage-abc")).toBeNull();
+  });
 });
 
 describe("getParentRaceLabel", () => {
