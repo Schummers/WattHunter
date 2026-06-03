@@ -373,6 +373,23 @@ At the start of each phase, the player **confirms** their configuration:
 - Multiplier on the matching role (×2 for points→sprinter, kom→climber; ×1.5 for youth→gc_leader); ×1.0 otherwise.
 - Source : `services/pcs-sync/scoring.py:FINAL_SECONDARY_SCALE`.
 
+### Sponsor bonus barème (Spec C, 2026-06-03)
+
+A = base value for 1-week stage races and one-day races. B (Grand Tour / Monument) = A × 2, applied at runtime in `sponsor_bonus.py`.
+
+| Tier | GC (Top N) | Stage (Top N) | One-day (Top N) | Goals |
+|------|-----------|--------------|----------------|-------|
+| T1 | 5k (Top 25) | 2.5k (Top 10) | 5k (Top 25) | no |
+| T2 | 10k (Top 20) | 5k (Top 10) | 10k (Top 20) | no |
+| T3 | 25k (Top 15) | 10k (Top 5) | 20k (Top 15) | no |
+| T4 | 10k (Top 10) | 5k (Top 3) | 10k (Top 10) | yes |
+| T5 | = T4 | = T4 | = T4 | yes |
+| T6 (UAE) | deferred (unchanged) | — | — | — |
+
+- **GT / Monument multiplier :** B = A × 2 computed at runtime (not stored). T6 untouched.
+- **Nationality bonus :** ×1.20 (was ×1.25) for T1–T4 only; none for T5–T6.
+- **Goals (T4+) :** per archetype (GC / Sprint / CLM / Stage-Hunter); 1-week base × 2 for GT; best-of per tierGroup per rider; sprinter stage-win goals gated to flat profiles (p1/p2/p3); Race Leader / youth / KOM jersey goals tracked.
+
 ---
 
 ## 12. Anti-Runaway System

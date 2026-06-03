@@ -123,7 +123,7 @@ UPDATE public.sponsors SET bonus_gc = 30000, bonus_stage = 15000, bonus_one_day 
 - [ ] **Step 3: Validate SQL syntax locally** (do NOT push yet)
 
 Run: `cd /Users/jonathanschummers/Documents/WattHunter && grep -c "UPDATE public.sponsors" supabase/migrations/20260603120000_sponsors_two_value_bareme.sql`
-Expected: `6`
+Expected: `5`
 
 - [ ] **Step 4: Commit**
 
