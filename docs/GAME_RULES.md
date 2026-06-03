@@ -556,6 +556,11 @@ T4 sponsors offer **one-time bonus goals** during Grand Tours, on top of regular
 - Goals follow a "best of two" tiered structure: if a higher-tier goal is completed, the lower-tier payout is replaced (not cumulated).
 - Each goal pays **once per GT** — tracked in `sponsor_goal_completions`.
 
+### Cumul rule: one-time goal vs base race bonus
+
+- **GC placements (top10 base bonus + gc_podium / gc_top5 one-time goal):** **no cumul**. If a rider triggers a one-time GC goal (`gc_podium`, `gc_top5`), the rider's base bonus on the same `/gc` race result is neutralized — only the higher payout (the one-time goal) is credited. Affects: T4 sponsors with GC set (Ineos, Decathlon AG2R via their gc_leader). Decided & applied during the 2026-06-03 Giro cutover.
+- **Stage wins (stage base bonus + sprint_win_stage / sh_win_stage one-time goal):** currently cumulated by the live `process_race_bonuses`. **Will be aligned with the no-cumul rule before the Tour de France 2026** — i.e. when a sprinter/stage_hunter triggers a per-GT one-time win goal, the base bonus on that same stage is dropped. Backlog item, code change in `process_race_bonuses`.
+
 ### Evaluation
 - Goals are evaluated after each stage scoring.
 - Payout is credited to treasury immediately upon goal completion.
