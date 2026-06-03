@@ -22,7 +22,7 @@ def make_chain(data=None, upserts=None, updates=None, inserts=None, table_name=N
     for attr in (
         "select", "eq", "neq", "gt", "gte", "lt", "lte", "in_", "like", "ilike",
         "single", "maybeSingle", "maybe_single",
-        "order", "limit",
+        "order", "limit", "range",
     ):
         getattr(m, attr).return_value = m
 

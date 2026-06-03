@@ -61,23 +61,23 @@ ALPECIN = {
     "grand_tour_threshold": None,
 }
 
-# T5 — Visma ("le pari prestige")
+# T5 — Visma (post-migration values, Spec C unified barème)
 VISMA = {
     "id": "sp-visma",
     "name": "Visma",
     "tier": 5,
     "nationality": None,
-    "has_explicit_prestige": True,
-    "bonus_gc": 25000,
-    "bonus_one_day": 25000,
-    "bonus_stage": 15000,
-    "gc_threshold": 5,
-    "one_day_threshold": 5,
-    "stage_threshold": 1,
-    "bonus_monument": 75000,
-    "bonus_grand_tour": 75000,
-    "monument_threshold": 3,
-    "grand_tour_threshold": 3,
+    "has_explicit_prestige": False,
+    "bonus_gc": 10000,
+    "bonus_one_day": 10000,
+    "bonus_stage": 5000,
+    "gc_threshold": 10,
+    "one_day_threshold": 10,
+    "stage_threshold": 3,
+    "bonus_monument": None,
+    "bonus_grand_tour": None,
+    "monument_threshold": None,
+    "grand_tour_threshold": None,
 }
 
 # T6 — UAE Group
@@ -293,50 +293,57 @@ class TestCalculateBonusT1T4:
 
 class TestCalculateBonusT5T6:
     def test_monument_t5_unified_doubled(self):
-        """T5 Visma monument (rank ≤ one_day_threshold=5) → bonus_one_day × 2 = 50K (Spec C unified path)."""
+        """T5 Visma monument (rank ≤ one_day_threshold=10) → bonus_one_day × 2 = 20K (Spec C unified path)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(VISMA, "monument", 2, "NL", "race/paris-roubaix/2026")
-        assert base == 25000
+        assert base == 10000
         assert mult == 2.0
-        assert final == 50000
+        assert final == 20000
 
     def test_grand_tour_t5_unified_doubled(self):
-        """T5 Visma grand_tour (rank ≤ gc_threshold=5) → bonus_gc × 2 = 50K (Spec C unified path)."""
+        """T5 Visma grand_tour (rank ≤ gc_threshold=10) → bonus_gc × 2 = 20K (Spec C unified path)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(VISMA, "grand_tour", 1, "NL", "race/tour-de-france/2026")
-        assert base == 25000
+        assert base == 10000
         assert mult == 2.0
-        assert final == 50000
+        assert final == 20000
 
     def test_t5_gc_non_prestige(self):
-        """T5 Visma stage race GC top 5 → 25K."""
+        """T5 Visma stage race GC top 10 → 10K."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(VISMA, "gc", 4, "NL", "race/paris-nice/2026")
-        assert base == 25000
-        assert final == 25000
+        assert base == 10000
+        assert final == 10000
 
-    def test_t5_stage_win_threshold_1(self):
-        """T5 stage win (rank=1, threshold=1) → qualifies."""
+    def test_t5_stage_win_threshold_3(self):
+        """T5 stage win (rank=1, threshold=3) → qualifies."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(VISMA, "stage", 1, "NL", "race/paris-nice/2026/stage-3")
-        assert base == 15000
-        assert final == 15000
+        assert base == 5000
+        assert final == 5000
 
-    def test_t5_stage_second_no_bonus(self):
-        """T5 stage 2nd (rank=2 > threshold=1) → no bonus."""
+    def test_t5_stage_rank3_qualifies(self):
+        """T5 stage rank=3 (at boundary of threshold=3) → qualifies."""
         from sponsor_bonus import calculate_bonus
-        base, mult, final = calculate_bonus(VISMA, "stage", 2, "NL", "race/paris-nice/2026/stage-3")
+        base, mult, final = calculate_bonus(VISMA, "stage", 3, "NL", "race/paris-nice/2026/stage-3")
+        assert base == 5000
+        assert final == 5000
+
+    def test_t5_stage_rank4_no_bonus(self):
+        """T5 stage rank=4 (> threshold=3) → no bonus."""
+        from sponsor_bonus import calculate_bonus
+        base, mult, final = calculate_bonus(VISMA, "stage", 4, "NL", "race/paris-nice/2026/stage-3")
         assert (base, mult, final) == (0, 0.0, 0)
 
     def test_t5_grand_tour_stage_x2(self):
-        """T5 stage win in grand tour → ×2 (15K → 30K)."""
+        """T5 stage win in grand tour → ×2 (5K → 10K)."""
         from sponsor_bonus import calculate_bonus
         base, mult, final = calculate_bonus(
             VISMA, "stage", 1, "NL", "race/tour-de-france/2026/stage-3"
         )
-        assert base == 15000
+        assert base == 5000
         assert mult == 2.0
-        assert final == 30000
+        assert final == 10000
 
     def test_t5_no_nationality_multiplier(self):
         """T5 Visma: no nationality multiplier even if rider matches (T5-T6 rule)."""

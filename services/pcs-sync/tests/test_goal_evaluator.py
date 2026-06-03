@@ -14,7 +14,10 @@ from __future__ import annotations
 import sys
 import os
 
+# pcs-sync root (parent of tests/) — needed for all module imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+# tests/ dir — needed for helpers.py
+sys.path.insert(0, os.path.dirname(__file__))
 
 import pytest
 from goal_evaluator import (
@@ -31,6 +34,7 @@ from goal_evaluator import (
     eval_win_2_stages,
     suppress_tier_group_duplicates,
 )
+from helpers import make_supabase
 
 # ---------------------------------------------------------------------------
 # Shared test rider/team IDs (RFC-4122 valid UUIDs — version nibble 4)
@@ -894,3 +898,229 @@ class TestGtRewardMultiplierVsOneWeek:
         mult = gt_reward_multiplier("race/giro-d-italia/2026")
         base_reward = 10_000
         assert int(base_reward * mult) == 20_000
+
+
+# ---------------------------------------------------------------------------
+# E2E idempotency test — evaluate_sponsor_goals must not double-credit
+# ---------------------------------------------------------------------------
+#
+# Approach: full e2e mock (not focused dedup).  helpers.make_chain now supports
+# .range() as a chainable method, so _fetch_all can run under the mock without
+# AttributeError.  The test wires the exact table-call sequence produced by
+# evaluate_sponsor_goals and verifies:
+#   - Run 1: exactly 1 sponsor_goal_completions INSERT and 1 treasury_log INSERT
+#   - Run 2: same mocks but sponsor_goal_completions existing-key SELECT returns
+#            the row written in run 1 → 0 sponsor_goal_completions INSERTs,
+#            0 treasury_log INSERTs (credit skipped)
+#
+# This is the project's #1 historical bug class (duplicate credits, 2026-05-20).
+# ---------------------------------------------------------------------------
+
+# Shared IDs for the e2e test
+_E2E_TEAM_ID     = "cccccccc-cccc-4ccc-cccc-cccccccccc01"
+_E2E_SPONSOR_ID  = "dddddddd-dddd-4ddd-dddd-dddddddddd01"
+_E2E_RIDER_GC    = "eeeeeeee-eeee-4eee-eeee-eeeeeeeeee01"
+_E2E_RACE_SLUG   = "race/paris-nice/2026"
+_E2E_STAGE_SLUG  = "race/paris-nice/2026/stage-1"
+
+# Minimal DB rows for a Decathlon T4 sponsor, one gc_leader rider, GC podium (rank 2).
+# Decathlon is in SPONSOR_GOAL_SETS (_GC_SET + _SPRINT_SET).
+# GC rank 2 triggers gc_podium (30k) + gc_top5 (20k); suppression keeps only gc_podium.
+# No nationality on the sponsor → nationality multiplier stays 1.0.
+# 1-week race → gt_reward_multiplier = 1.0 → final_reward = 30_000.
+
+_E2E_TEAM_SPONSORS = [{
+    "team_id": _E2E_TEAM_ID,
+    "sponsor_id": _E2E_SPONSOR_ID,
+    "sponsors": {
+        "id": _E2E_SPONSOR_ID,
+        "slug": "decathlon",
+        "tier": 4,
+        "nationality": None,
+    },
+}]
+
+_E2E_RACE_RESULTS = [
+    # GC final result
+    {
+        "rider_id": _E2E_RIDER_GC,
+        "race_slug": _E2E_RACE_SLUG,
+        "rank": 2,
+        "stage": "gc",
+        "is_itt": False,
+        "race_date": None,
+        "profile_icon": None,
+    },
+    # Stage 1 result (rank != 1 → no stage win recorded)
+    {
+        "rider_id": _E2E_RIDER_GC,
+        "race_slug": _E2E_STAGE_SLUG,
+        "rank": 5,
+        "stage": "stage-1",
+        "is_itt": False,
+        "race_date": "2026-03-09",
+        "profile_icon": "p2",
+    },
+]
+
+_E2E_SQUAD = [{
+    "team_id": _E2E_TEAM_ID,
+    "rider_id": _E2E_RIDER_GC,
+    "role": "gc_leader",
+    "created_at": "2026-01-01T00:00:00Z",
+    "removed_at": None,
+}]
+
+_E2E_ROLE_ASSIGNMENTS = [{
+    "team_id": _E2E_TEAM_ID,
+    "rider_id": _E2E_RIDER_GC,
+    "role": "gc_leader",
+    "applied_at": "2026-01-01T00:00:00Z",
+}]
+
+_E2E_RIDERS_NAT = [{"id": _E2E_RIDER_GC, "nationality": "FR"}]
+
+
+def _make_run1_supabase():
+    """Supabase mock for run 1: no prior completions → credit fires once."""
+    return make_supabase(
+        # 1. team_sponsors (T4 filter)
+        _E2E_TEAM_SPONSORS,
+        # 2. race_results — _fetch_all (1 page, < 1000 rows)
+        _E2E_RACE_RESULTS,
+        # 3. gt_daily_classifications — _fetch_all (empty → no jersey goals)
+        [],
+        # 4. gt_final_classifications "points" — _fetch_all
+        [],
+        # 5. gt_final_classifications "kom" — _fetch_all
+        [],
+        # 6. gt_final_classifications "youth" — _fetch_all
+        [],
+        # 7. gt_squad — _fetch_all
+        _E2E_SQUAD,
+        # 8. gt_role_assignments — _fetch_all
+        _E2E_ROLE_ASSIGNMENTS,
+        # 9. riders nationality (direct .execute(), no _fetch_all)
+        _E2E_RIDERS_NAT,
+        # 10. sponsor_goal_completions SELECT existing keys — EMPTY on first run
+        [],
+        # 11. sponsor_goal_completions INSERT (the new completion)
+        [],
+        # 12. teams SELECT (treasury lookup)
+        [{"id": _E2E_TEAM_ID, "treasury": 500_000}],
+        # 13. teams UPDATE
+        [],
+        # 14. treasury_log INSERT
+        [],
+    )
+
+
+def _make_run2_supabase():
+    """Supabase mock for run 2: prior completion exists → credit must be skipped."""
+    return make_supabase(
+        # 1. team_sponsors
+        _E2E_TEAM_SPONSORS,
+        # 2. race_results — _fetch_all
+        _E2E_RACE_RESULTS,
+        # 3. gt_daily_classifications — _fetch_all
+        [],
+        # 4. gt_final_classifications "points" — _fetch_all
+        [],
+        # 5. gt_final_classifications "kom" — _fetch_all
+        [],
+        # 6. gt_final_classifications "youth" — _fetch_all
+        [],
+        # 7. gt_squad — _fetch_all
+        _E2E_SQUAD,
+        # 8. gt_role_assignments — _fetch_all
+        _E2E_ROLE_ASSIGNMENTS,
+        # 9. riders nationality
+        _E2E_RIDERS_NAT,
+        # 10. sponsor_goal_completions SELECT — returns the row written in run 1
+        [{
+            "team_id": _E2E_TEAM_ID,
+            "sponsor_id": _E2E_SPONSOR_ID,
+            "goal_key": "gc_podium",
+            "goal_index": 0,
+        }],
+        # No further table calls expected (credit path is skipped)
+    )
+
+
+class TestEvaluateSponsorGoalsE2EIdempotency:
+    """Regression: evaluate_sponsor_goals must not double-credit treasury.
+
+    This is the project's #1 historical bug class (2026-05-20 Giro incident).
+    Full e2e approach: wires the exact table-call sequence and checks write counts.
+    helpers.make_chain supports .range() so _fetch_all works under the mock.
+    """
+
+    def test_run1_credits_treasury_exactly_once(self):
+        """First evaluation: 1 sponsor_goal_completions insert, 1 treasury_log insert."""
+        import asyncio
+        from goal_evaluator import evaluate_sponsor_goals
+
+        sb = _make_run1_supabase()
+        result = asyncio.run(evaluate_sponsor_goals(sb, _E2E_RACE_SLUG))
+
+        assert result["status"] == "completed", f"errors: {result.get('errors')}"
+        assert result["goals_completed"] == 1, (
+            f"Expected 1 completion (gc_podium after tier suppression), got: {result['goals_completed']}"
+        )
+        assert result["errors"] == []
+
+        # Exactly 1 sponsor_goal_completions insert
+        sgc_inserts = sb.inserts.get("sponsor_goal_completions", [])
+        assert len(sgc_inserts) == 1, (
+            f"Expected 1 sponsor_goal_completions insert, got {len(sgc_inserts)}: {sgc_inserts}"
+        )
+        assert sgc_inserts[0]["goal_key"] == "gc_podium"
+        assert sgc_inserts[0]["team_id"] == _E2E_TEAM_ID
+        assert sgc_inserts[0]["final_reward"] == 30_000  # 30k base × 1.0 (1-week) × 1.0
+
+        # Exactly 1 treasury_log insert (type gt_goal_bonus)
+        tlog_inserts = sb.inserts.get("treasury_log", [])
+        assert len(tlog_inserts) == 1, (
+            f"Expected 1 treasury_log insert, got {len(tlog_inserts)}: {tlog_inserts}"
+        )
+        assert tlog_inserts[0]["type"] == "gt_goal_bonus"
+        assert tlog_inserts[0]["amount"] == 30_000
+
+        # Exactly 1 teams update (treasury credited)
+        teams_updates = sb.updates.get("teams", [])
+        assert len(teams_updates) == 1, (
+            f"Expected 1 teams update, got {len(teams_updates)}"
+        )
+        assert teams_updates[0]["treasury"] == 530_000  # 500k + 30k
+
+    def test_run2_skips_credit_entirely(self):
+        """Second evaluation: existing goal_key row → no inserts, no treasury credit."""
+        import asyncio
+        from goal_evaluator import evaluate_sponsor_goals
+
+        sb = _make_run2_supabase()
+        result = asyncio.run(evaluate_sponsor_goals(sb, _E2E_RACE_SLUG))
+
+        assert result["status"] == "completed", f"errors: {result.get('errors')}"
+        assert result["goals_completed"] == 0, (
+            "Run 2 must credit 0 goals (all skipped by idempotency check)"
+        )
+        assert result["errors"] == []
+
+        # CRITICAL: no sponsor_goal_completions insert on second run
+        sgc_inserts = sb.inserts.get("sponsor_goal_completions", [])
+        assert len(sgc_inserts) == 0, (
+            f"DOUBLE-CREDIT BUG: sponsor_goal_completions was inserted {len(sgc_inserts)} time(s) on run 2"
+        )
+
+        # CRITICAL: no treasury_log insert on second run
+        tlog_inserts = sb.inserts.get("treasury_log", [])
+        assert len(tlog_inserts) == 0, (
+            f"DOUBLE-CREDIT BUG: treasury_log was inserted {len(tlog_inserts)} time(s) on run 2"
+        )
+
+        # CRITICAL: no teams update on second run
+        teams_updates = sb.updates.get("teams", [])
+        assert len(teams_updates) == 0, (
+            f"DOUBLE-CREDIT BUG: teams was updated {len(teams_updates)} time(s) on run 2"
+        )
