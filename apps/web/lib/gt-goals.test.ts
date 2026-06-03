@@ -24,4 +24,22 @@ describe("GT_GOALS — Spec C archetype sets", () => {
     const leader = ineos.goals.find((g) => g.label === "Wear the Race Leader jersey");
     expect(leader!.role).toBe("gc_leader");
   });
+
+  it("every goal has a non-empty key", () => {
+    for (const set of GT_GOALS) {
+      for (const goal of set.goals) {
+        expect(goal.key, `${set.sponsorSlug} goal "${goal.label}" missing key`).toBeTruthy();
+        expect(typeof goal.key).toBe("string");
+        expect(goal.key.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("keys are unique within each sponsor's goal set", () => {
+    for (const set of GT_GOALS) {
+      const keys = set.goals.map((g) => g.key);
+      const unique = new Set(keys);
+      expect(unique.size, `${set.sponsorSlug} has duplicate keys: ${keys.join(", ")}`).toBe(keys.length);
+    }
+  });
 });
