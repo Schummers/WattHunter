@@ -1297,6 +1297,7 @@ export type Database = {
           profile_icon: string
           race_date: string | null
           race_slug: string
+          stage_type: string
           updated_at: string
         }
         Insert: {
@@ -1304,6 +1305,7 @@ export type Database = {
           profile_icon: string
           race_date?: string | null
           race_slug: string
+          stage_type?: string
           updated_at?: string
         }
         Update: {
@@ -1311,6 +1313,7 @@ export type Database = {
           profile_icon?: string
           race_date?: string | null
           race_slug?: string
+          stage_type?: string
           updated_at?: string
         }
         Relationships: []

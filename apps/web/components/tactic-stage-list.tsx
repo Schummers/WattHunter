@@ -16,9 +16,23 @@ interface Props {
    * when `requiredProfiles` is set — the server-side gate would reject them.
    */
   requiredProfiles?: Set<StageProfileIcon>;
+  /**
+   * If true, stages whose `stageType` is `"ITT"` or `"TTT"` are disabled and
+   * surface a "Time trial" label. Mirrors the server-side gate in
+   * `place_tactic` v4 which rejects Nemesis Sprint / Nemesis GC / Overdrive
+   * on time trials (no peloton or echappée dynamics).
+   */
+  blockTimeTrials?: boolean;
 }
 
-export function StageList({ stages, value, onChange, fillParent, requiredProfiles }: Props) {
+export function StageList({
+  stages,
+  value,
+  onChange,
+  fillParent,
+  requiredProfiles,
+  blockTimeTrials,
+}: Props) {
   return (
     <div
       className={cn(
@@ -33,7 +47,10 @@ export function StageList({ stages, value, onChange, fillParent, requiredProfile
           const isCutoffLocked = s.status === "today" && !!s.isTodayCutoffPassed;
           const isProfileMismatch =
             !!requiredProfiles && (!s.profileIcon || !requiredProfiles.has(s.profileIcon));
-          const isDisabled = isLocked || isCutoffLocked || isProfileMismatch;
+          const isTimeTrial = s.stageType === "ITT" || s.stageType === "TTT";
+          const isTimeTrialBlocked = !!blockTimeTrials && isTimeTrial;
+          const isDisabled =
+            isLocked || isCutoffLocked || isProfileMismatch || isTimeTrialBlocked;
           const isToday = s.status === "today";
           const isFirst = i === 0;
           return (
@@ -82,7 +99,17 @@ export function StageList({ stages, value, onChange, fillParent, requiredProfile
                   {s.profileIcon}
                 </Tag>
               )}
-              {isToday && !isLocked && !isCutoffLocked && !isProfileMismatch && (
+              {isTimeTrial && (
+                <Tag
+                  variant="highlighted"
+                  className="text-[length:var(--type-micro)]"
+                  data-testid={`tt-badge-${s.slug}`}
+                  aria-label={`${s.stageType} time trial`}
+                >
+                  {s.stageType}
+                </Tag>
+              )}
+              {isToday && !isLocked && !isCutoffLocked && !isProfileMismatch && !isTimeTrialBlocked && (
                 <Tag variant="highlighted" className="text-[length:var(--type-micro)]">
                   Today
                 </Tag>
@@ -103,6 +130,14 @@ export function StageList({ stages, value, onChange, fillParent, requiredProfile
                   data-testid={`profile-mismatch-${s.slug}`}
                 >
                   Wrong profile
+                </span>
+              )}
+              {isTimeTrialBlocked && !isLocked && !isCutoffLocked && !isProfileMismatch && (
+                <span
+                  className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]"
+                  data-testid={`tt-blocked-${s.slug}`}
+                >
+                  Time trial
                 </span>
               )}
             </button>

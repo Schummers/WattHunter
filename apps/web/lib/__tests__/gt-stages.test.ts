@@ -130,6 +130,33 @@ describe("getGtStages — GT mode", () => {
     expect(s17.profileIcon).toBeNull(); // no row → stays null
   });
 
+  it("annotates stageType from stage_profiles (defaults to 'RR' for missing rows)", async () => {
+    vi.setSystemTime(new Date("2026-05-15T08:00:00Z"));
+
+    const mockFrom = vi.fn();
+    installSequence(mockFrom, [
+      { table: "gt_tactic_activations", data: [] },
+      {
+        table: "stage_profiles",
+        data: [
+          { race_slug: "race/giro-d-italia/2026/stage-19", profile_icon: "p4", stage_type: "ITT" },
+          { race_slug: "race/giro-d-italia/2026/stage-20", profile_icon: "p5", stage_type: "RR" },
+        ],
+      },
+    ]);
+
+    const stages = await getGtStages(makeSupabase(mockFrom), {
+      teamId: TEAM_ID,
+      phaseId: 4,
+      year: 2026,
+    });
+
+    expect(stages.find((s) => s.number === 19)?.stageType).toBe("ITT");
+    expect(stages.find((s) => s.number === 20)?.stageType).toBe("RR");
+    // Unseeded stages fall back to 'RR' even when no row matched.
+    expect(stages.find((s) => s.number === 21)?.stageType).toBe("RR");
+  });
+
   it("returns empty when GT phase has no schedule entry", async () => {
     vi.setSystemTime(new Date("2026-07-01T08:00:00Z"));
 
@@ -159,14 +186,14 @@ describe("getGtStages — 1-week mode", () => {
     vi.setSystemTime(new Date("2026-06-05T08:00:00Z")); // 2 days before Dauphiné starts
 
     const dauphineRows = [
-      { race_slug: "race/dauphine/2026/stage-1", race_date: "2026-06-07", profile_icon: "p3" },
-      { race_slug: "race/dauphine/2026/stage-2", race_date: "2026-06-08", profile_icon: "p2" },
-      { race_slug: "race/dauphine/2026/stage-3", race_date: "2026-06-09", profile_icon: "p3" },
-      { race_slug: "race/dauphine/2026/stage-4", race_date: "2026-06-10", profile_icon: "p2" },
-      { race_slug: "race/dauphine/2026/stage-5", race_date: "2026-06-11", profile_icon: "p1" },
-      { race_slug: "race/dauphine/2026/stage-6", race_date: "2026-06-12", profile_icon: "p5" },
-      { race_slug: "race/dauphine/2026/stage-7", race_date: "2026-06-13", profile_icon: "p5" },
-      { race_slug: "race/dauphine/2026/stage-8", race_date: "2026-06-14", profile_icon: "p5" },
+      { race_slug: "race/dauphine/2026/stage-1", race_date: "2026-06-07", profile_icon: "p3", stage_type: "RR" },
+      { race_slug: "race/dauphine/2026/stage-2", race_date: "2026-06-08", profile_icon: "p2", stage_type: "RR" },
+      { race_slug: "race/dauphine/2026/stage-3", race_date: "2026-06-09", profile_icon: "p3", stage_type: "TTT" },
+      { race_slug: "race/dauphine/2026/stage-4", race_date: "2026-06-10", profile_icon: "p2", stage_type: "RR" },
+      { race_slug: "race/dauphine/2026/stage-5", race_date: "2026-06-11", profile_icon: "p1", stage_type: "RR" },
+      { race_slug: "race/dauphine/2026/stage-6", race_date: "2026-06-12", profile_icon: "p5", stage_type: "RR" },
+      { race_slug: "race/dauphine/2026/stage-7", race_date: "2026-06-13", profile_icon: "p5", stage_type: "RR" },
+      { race_slug: "race/dauphine/2026/stage-8", race_date: "2026-06-14", profile_icon: "p5", stage_type: "RR" },
     ];
 
     const mockFrom = vi.fn();
@@ -188,6 +215,9 @@ describe("getGtStages — 1-week mode", () => {
     expect(stages[0].profileIcon).toBe("p3");
     expect(stages[2].profileIcon).toBe("p3");
     expect(stages[7].profileIcon).toBe("p5");
+    // stage_type carries through: stage-3 is the Dauphiné TTT.
+    expect(stages[0].stageType).toBe("RR");
+    expect(stages[2].stageType).toBe("TTT");
     expect(stages.every((s) => s.status === "upcoming")).toBe(true);
   });
 

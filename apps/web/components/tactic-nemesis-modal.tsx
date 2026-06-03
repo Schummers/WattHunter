@@ -264,6 +264,9 @@ export function TacticNemesisModal({
             onChange={setSelectedStage}
             fillParent
             requiredProfiles={requiredProfiles}
+            // Time trials have no peloton — server-side place_tactic v4
+            // rejects both Nemesis Sprint and Nemesis GC on ITT/TTT stages.
+            blockTimeTrials
           />
         </div>
         {err && (

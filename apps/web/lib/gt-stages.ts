@@ -4,6 +4,7 @@ import type { Database } from "@/lib/database.types";
 import { GT_SCHEDULES } from "./gt-stage-schedule";
 
 export type StageProfileIcon = "p0" | "p1" | "p2" | "p3" | "p4" | "p5";
+export type StageType = "RR" | "ITT" | "TTT";
 
 export interface GtStage {
   number: number;
@@ -14,6 +15,13 @@ export interface GtStage {
   isTodayCutoffPassed?: boolean; // true if status==="today" and current time >= 11:00 CET
   /** Pre-race profile from `stage_profiles` (P3a). `null` if not yet seeded. */
   profileIcon?: StageProfileIcon | null;
+  /**
+   * Stage type from `stage_profiles.stage_type`. PCS-derived: `"RR"` (road
+   * race, default), `"ITT"` (individual TT), `"TTT"` (team TT). Defaults to
+   * `"RR"` when missing. Used by the tactic stage list to block Nemesis /
+   * Overdrive on time trials.
+   */
+  stageType?: StageType;
 }
 
 export type GetStagesOpts =
@@ -58,27 +66,34 @@ export async function getGtStages(
     if (s.status === "today") s.isTodayCutoffPassed = cutoffPassed;
   }
 
-  // Annotate profileIcon — single bulk read of stage_profiles.
-  // For 1-week races the profile was already loaded in buildOneWeekStages
-  // (same query source), so skip the second round-trip when no slug is missing.
-  const missing = stages.filter((s) => s.profileIcon == null).map((s) => s.slug);
+  // Annotate profileIcon + stageType — single bulk read of stage_profiles.
+  // For 1-week races both fields were already loaded in buildOneWeekStages
+  // (same query source), so skip the second round-trip when nothing is missing.
+  const missing = stages
+    .filter((s) => s.profileIcon == null || s.stageType == null)
+    .map((s) => s.slug);
   if (missing.length > 0) {
     const { data: profiles } = await supabase
       .from("stage_profiles")
-      .select("race_slug, profile_icon")
+      .select("race_slug, profile_icon, stage_type")
       .in("race_slug", missing);
-    const byslug = new Map<string, StageProfileIcon>();
+    type Row = { profile: StageProfileIcon | null; type: StageType };
+    const byslug = new Map<string, Row>();
     for (const p of profiles ?? []) {
-      const icon = p.profile_icon as StageProfileIcon | null;
-      if (icon) byslug.set(p.race_slug, icon);
+      byslug.set(p.race_slug, {
+        profile: (p.profile_icon as StageProfileIcon | null) ?? null,
+        type: (p.stage_type as StageType | null) ?? "RR",
+      });
     }
     for (const s of stages) {
-      if (s.profileIcon == null) {
-        const found = byslug.get(s.slug);
-        if (found) s.profileIcon = found;
-      }
+      const found = byslug.get(s.slug);
+      if (!found) continue;
+      if (s.profileIcon == null && found.profile) s.profileIcon = found.profile;
+      if (s.stageType == null) s.stageType = found.type;
     }
   }
+  // Anything still without a stageType (e.g. unseeded GT stages) defaults to RR.
+  for (const s of stages) if (s.stageType == null) s.stageType = "RR";
 
   return stages.filter((s) => s.status !== "past");
 }
@@ -103,10 +118,10 @@ async function buildOneWeekStages(
   raceSlug: string,
 ): Promise<GtStage[]> {
   // stage_profiles is the source of truth for 1-week races: it carries
-  // race_date (seeded by the startlists pipeline) and profile_icon.
+  // race_date (seeded by the startlists pipeline), profile_icon, and stage_type.
   const { data } = await supabase
     .from("stage_profiles")
-    .select("race_slug, race_date, profile_icon")
+    .select("race_slug, race_date, profile_icon, stage_type")
     .like("race_slug", `${raceSlug}/stage-%`)
     .order("race_slug", { ascending: true });
 
@@ -120,6 +135,7 @@ async function buildOneWeekStages(
       slug: row.race_slug,
       status: stageStatus(row.race_date),
       profileIcon: (row.profile_icon as StageProfileIcon | null) ?? null,
+      stageType: (row.stage_type as StageType | null) ?? "RR",
     });
   }
   out.sort((a, b) => a.number - b.number);

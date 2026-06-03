@@ -94,4 +94,75 @@ describe("StageList", () => {
     fireEvent.click(btn);
     expect(onChange).toHaveBeenCalledWith(stage.slug);
   });
+
+  it("renders the TT badge for ITT/TTT stages regardless of blockTimeTrials", () => {
+    const onChange = vi.fn();
+    const ttt = makeStage({
+      slug: "race/dauphine/2026/stage-3",
+      stageType: "TTT",
+    });
+    const itt = makeStage({
+      slug: "race/tour-de-france/2026/stage-16",
+      stageType: "ITT",
+    });
+    render(
+      <StageList stages={[ttt, itt]} value="" onChange={onChange} />,
+    );
+    expect(screen.getByTestId(`tt-badge-${ttt.slug}`)).toHaveTextContent("TTT");
+    expect(screen.getByTestId(`tt-badge-${itt.slug}`)).toHaveTextContent("ITT");
+  });
+
+  it("omits the TT badge for RR stages", () => {
+    const onChange = vi.fn();
+    const rr = makeStage({ stageType: "RR" });
+    render(
+      <StageList stages={[rr]} value="" onChange={onChange} />,
+    );
+    expect(screen.queryByTestId(`tt-badge-${rr.slug}`)).not.toBeInTheDocument();
+  });
+
+  it("blockTimeTrials=true disables ITT/TTT stages and surfaces 'Time trial'", () => {
+    const onChange = vi.fn();
+    const stage = makeStage({
+      slug: "race/dauphine/2026/stage-3",
+      stageType: "TTT",
+    });
+    render(
+      <StageList
+        stages={[stage]}
+        value=""
+        onChange={onChange}
+        blockTimeTrials
+      />,
+    );
+    const btn = screen.getByRole("button");
+    expect(btn).toBeDisabled();
+    expect(screen.getByTestId(`tt-blocked-${stage.slug}`)).toHaveTextContent(
+      /time trial/i,
+    );
+    fireEvent.click(btn);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("blockTimeTrials=false keeps ITT/TTT stages enabled (badge still shown)", () => {
+    const onChange = vi.fn();
+    const stage = makeStage({
+      slug: "race/dauphine/2026/stage-3",
+      stageType: "TTT",
+    });
+    render(
+      <StageList
+        stages={[stage]}
+        value=""
+        onChange={onChange}
+        // blockTimeTrials omitted → falsy
+      />,
+    );
+    const btn = screen.getByRole("button");
+    expect(btn).not.toBeDisabled();
+    expect(screen.getByTestId(`tt-badge-${stage.slug}`)).toBeInTheDocument();
+    expect(
+      screen.queryByTestId(`tt-blocked-${stage.slug}`),
+    ).not.toBeInTheDocument();
+  });
 });
