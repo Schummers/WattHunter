@@ -12,11 +12,14 @@
 
 **Project rules:** Rule #2 — schema changes via migration only. Migrations to **prod** (`supabase db push --linked`) require **explicit user confirmation** — never auto-push. Test locally first (`supabase db reset` on Colima). NEVER mutate `teams` protected columns outside SECURITY DEFINER. App text English.
 
-**Dependency note (Spec A P2):** Task 5 edits the role-multiplier computation in `services/pcs-sync/scoring.py`. If Spec A P2 (scoring refonte) lands first, rebase Task 5 onto the new code — the injection point (the per-rider GT role-mult branch around `scoring.py:486`) is stable. `riders.pcs_rank` already exists (no capture needed).
+**Dependencies — all DELIVERED on main (this plan targets the current code):**
+- **Spec A P1** (levels L5=10/L7=2600/L8=5000) + **`riders.pcs_rank`** exist — no capture needed.
+- **Spec A A9 "Race Team"** generalized `gt_squad` to carry `race_slug` (+ nullable `phase_id`, constraint `gt_squad_scope_check`); `gt_add_to_squad`/`gt_assign_role` are now **v2 6-param** (`p_race_slug DEFAULT NULL`, `v_use_slug` branch) in `20260604000300`. Task 3 **recreates those v2 bodies** (adds the underdog role) and makes the cap trigger `race_slug`-aware. 8→10 then extends to 1-week races for free.
+- **Spec A P2** refactored scoring: `_role_multiplier(role, race_slug, is_itt, breakaway_kms, profile_icon)`; squad gating via `_is_squad_race` (GT **+ 1-week**); XP formula has `+ gt_distance_bonus`, no more remontada. Task 5 injects the boost as a **separate factor** (see precision note in Task 5).
+- **Spec C** delivered (B5 Visma/RB goals live there — nothing to do here).
+- **Spec D "prix au millier"** delivered: bids step 1 000 €, `calcMinSalary = floor(raw/1000)×1000`. → **B4 salary rounding is 1 000 € (not 100 €)**; the B2bis UI (`<RiderPrice>`) is unblocked but still out of this backend plan's scope (Task 4 only exposes the role in the squad builder).
 
-**Dependency note (Spec A A9):** Tasks 3 (squad cap + role RPCs) hardcodes `phase_id IN (4,6,8)`. Spec A A9 ("Race Team") generalizes `gt_squad` + `gt_add_to_squad`/`gt_assign_role`/`enforce_gt_squad_cap` from `phase_id` to a `race_slug`-based identifier. Build A9 first, then rebase Task 3 onto the generalized RPCs (key eligibility on the same race identifier A9 chooses). The 8→10 cap then naturally extends to 1-week races too.
-
-**Out of scope — B2bis UI:** The underdog struck-through price display (`<RiderPrice>` component, see spec §B2bis) is cross-cutting UI that depends on **Spec D — prix au millier**, and is NOT covered by this backend plan. This plan's only front change is exposing the role in the squad builder (Task 4). The B4 backend here (eligibility flag + −50% salary) produces the discounted price that `<RiderPrice>` will display.
+**Migration numbering:** the latest existing migration is `20260604000300`; all new migrations below use the **`20260605xxx`** series (verify with `ls supabase/migrations | sort | tail -1` before creating).
 
 ---
 
@@ -24,11 +27,12 @@
 
 | File | Responsibility | Action |
 |---|---|---|
-| `supabase/migrations/20260603000000_underdog_eligibility.sql` | `underdog_eligibility` table, `teams.underdog_eligible`, `recompute_underdog_eligibility` RPC | Create |
-| `supabase/migrations/20260603000100_underdog_role_and_squad_cap.sql` | Relax role CHECKs, dynamic `enforce_gt_squad_cap`, `gt_add_to_squad` + `gt_assign_role` (underdog cap 2 + eligibility gate) | Create |
-| `supabase/migrations/20260603000200_underdog_salary_flag.sql` | `contracts.underdog_discount` + `BEFORE INSERT` flag trigger | Create |
-| `supabase/migrations/20260603000300_underdog_payday_discount.sql` | Recreate `confirm_phase_setup` with the −50% payday discount | Create |
-| `supabase/migrations/_rollback/20260603*.down.sql` | Rollbacks for each migration above | Create (×4) |
+| `supabase/migrations/20260605000000_underdog_eligibility.sql` | `underdog_eligibility` table, `teams.underdog_eligible`, `recompute_underdog_eligibility` RPC | Create |
+| `supabase/migrations/20260605000100_underdog_role_and_squad_cap.sql` | Relax role CHECKs, `race_slug`-aware dynamic `enforce_gt_squad_cap`, recreate **v2** `gt_add_to_squad` + `gt_assign_role` (underdog cap 2 + eligibility gate) | Create |
+| `supabase/migrations/20260605000200_underdog_salary_flag.sql` | `contracts.underdog_discount` + `BEFORE INSERT` flag trigger | Create |
+| `supabase/migrations/20260605000250_rider_xp_daily_underdog_mult.sql` | `rider_xp_daily.underdog_mult NUMERIC(3,2)` audit column | Create |
+| `supabase/migrations/20260605000300_underdog_payday_discount.sql` | Recreate latest `confirm_phase_setup` with the −50% (÷1000) payday discount | Create |
+| `supabase/migrations/_rollback/20260605*.down.sql` | Rollbacks for each migration above | Create (×5) |
 | `services/pcs-sync/underdog.py` | `recompute_eligibility(supabase, phase_id, year)` helper | Create |
 | `services/pcs-sync/tests/test_underdog.py` | Helper + scoring multiplier tests | Create |
 | `services/pcs-sync/run_pipeline.py` | `underdog-eligibility` subcommand | Modify |
@@ -43,12 +47,12 @@
 ## Task 1: Eligibility foundation (table + flag + recompute RPC)
 
 **Files:**
-- Create: `supabase/migrations/20260603000000_underdog_eligibility.sql`
-- Create: `supabase/migrations/_rollback/20260603000000_underdog_eligibility.down.sql`
+- Create: `supabase/migrations/20260605000000_underdog_eligibility.sql`
+- Create: `supabase/migrations/_rollback/20260605000000_underdog_eligibility.down.sql`
 
 - [ ] **Step 1: Write the migration**
 
-Create `supabase/migrations/20260603000000_underdog_eligibility.sql`:
+Create `supabase/migrations/20260605000000_underdog_eligibility.sql`:
 
 ```sql
 -- Spec B (B0) — underdog eligibility foundation.
@@ -129,7 +133,7 @@ GRANT EXECUTE ON FUNCTION public.recompute_underdog_eligibility(int, int) TO ser
 
 - [ ] **Step 2: Write the rollback**
 
-Create `supabase/migrations/_rollback/20260603000000_underdog_eligibility.down.sql`:
+Create `supabase/migrations/_rollback/20260605000000_underdog_eligibility.down.sql`:
 
 ```sql
 DROP FUNCTION IF EXISTS public.recompute_underdog_eligibility(int, int);
@@ -171,7 +175,7 @@ Run (only after confirmation): `supabase db push --linked`
 - [ ] **Step 5: Commit**
 
 ```bash
-git add supabase/migrations/20260603000000_underdog_eligibility.sql supabase/migrations/_rollback/20260603000000_underdog_eligibility.down.sql
+git add supabase/migrations/20260605000000_underdog_eligibility.sql supabase/migrations/_rollback/20260605000000_underdog_eligibility.down.sql
 git commit -m "feat(db): underdog eligibility foundation — flag + snapshot + recompute RPC (Spec B B0)"
 ```
 
@@ -279,19 +283,22 @@ git commit -m "feat(sync): underdog-eligibility recompute command (Spec B B0)"
 ## Task 3: Underdog role + dynamic squad cap (DB)
 
 **Files:**
-- Create: `supabase/migrations/20260603000100_underdog_role_and_squad_cap.sql`
-- Create: `supabase/migrations/_rollback/20260603000100_underdog_role_and_squad_cap.down.sql`
+- Create: `supabase/migrations/20260605000100_underdog_role_and_squad_cap.sql`
+- Create: `supabase/migrations/_rollback/20260605000100_underdog_role_and_squad_cap.down.sql`
 
-**What changes:** (a) relax the role CHECK on `gt_squad` + `gt_role_assignments` to accept `'underdog'`; (b) make `enforce_gt_squad_cap()` read the team's eligibility (cap 10 if eligible, else 8) and respect soft-deletes; (c) recreate `gt_add_to_squad` (dynamic total cap + `underdog` cap 2 + eligibility gate) and `gt_assign_role` (`underdog` cap 2 + eligibility gate).
+**What changes (post-A9):** (a) relax the role CHECK on `gt_squad` + `gt_role_assignments` to accept `'underdog'`; (b) recreate `enforce_gt_squad_cap()` (currently in `20260513000000`) so it (i) counts by the **right scope** — `race_slug` when `NEW.race_slug IS NOT NULL`, else `(phase_id, year)` — fixing the latent 1-week bug, and (ii) caps at **10 if the team is `underdog_eligible`, else 8**; (c) recreate the **v2** `gt_add_to_squad` + `gt_assign_role` (the 6-param `p_race_slug` bodies from `20260604000300`) adding the underdog role.
+
+> **Do NOT paste stale bodies.** The v2 RPCs branch on `v_use_slug := p_race_slug IS NOT NULL` and the total cap now lives only in the trigger (the v2 RPCs no longer check total size). Recreate them by copying the **current** bodies from `supabase/migrations/20260604000300_gt_squad_rpcs_v2_race_slug.sql` and applying the three diffs below verbatim. Read that file first.
 
 - [ ] **Step 1: Write the migration**
 
-Create `supabase/migrations/20260603000100_underdog_role_and_squad_cap.sql`:
+Create `supabase/migrations/20260605000100_underdog_role_and_squad_cap.sql` with three parts:
+
+**Part 1 — relax both role CHECKs** (concrete):
 
 ```sql
--- Spec B (B1/B2/B3) — underdog role + dynamic squad cap.
+-- Spec B (B1/B2/B3) — underdog role + dynamic, race_slug-aware squad cap.
 
--- 1. Allow 'underdog' in both role columns.
 ALTER TABLE public.gt_squad DROP CONSTRAINT IF EXISTS gt_squad_role_check;
 ALTER TABLE public.gt_squad ADD CONSTRAINT gt_squad_role_check
   CHECK (role IN ('gc_leader','sprinter','climber','tt_specialist','stage_hunter','domestique','underdog'));
@@ -299,9 +306,11 @@ ALTER TABLE public.gt_squad ADD CONSTRAINT gt_squad_role_check
 ALTER TABLE public.gt_role_assignments DROP CONSTRAINT IF EXISTS gt_role_assignments_role_check;
 ALTER TABLE public.gt_role_assignments ADD CONSTRAINT gt_role_assignments_role_check
   CHECK (role IN ('gc_leader','sprinter','climber','tt_specialist','stage_hunter','domestique','underdog'));
+```
 
--- 2. Dynamic squad cap trigger: 10 for underdog-eligible teams, else 8.
---    Also fixes a latent bug: count only live (removed_at IS NULL) members.
+**Part 2 — recreate the cap trigger, race_slug-aware + dynamic** (concrete, full body):
+
+```sql
 CREATE OR REPLACE FUNCTION public.enforce_gt_squad_cap()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -313,252 +322,43 @@ DECLARE
   v_cap INT;
 BEGIN
   SELECT CASE WHEN underdog_eligible THEN 10 ELSE 8 END
-    INTO v_cap
-    FROM public.teams WHERE id = NEW.team_id;
+    INTO v_cap FROM public.teams WHERE id = NEW.team_id;
   v_cap := COALESCE(v_cap, 8);
 
-  SELECT COUNT(*) INTO current_size
-  FROM public.gt_squad
-  WHERE team_id = NEW.team_id
-    AND phase_id = NEW.phase_id
-    AND year = NEW.year
-    AND removed_at IS NULL;
+  IF NEW.race_slug IS NOT NULL THEN
+    SELECT COUNT(*) INTO current_size FROM public.gt_squad
+    WHERE team_id = NEW.team_id AND race_slug = NEW.race_slug AND removed_at IS NULL;
+  ELSE
+    SELECT COUNT(*) INTO current_size FROM public.gt_squad
+    WHERE team_id = NEW.team_id AND phase_id = NEW.phase_id AND year = NEW.year
+      AND removed_at IS NULL;
+  END IF;
 
   IF current_size >= v_cap THEN
-    RAISE EXCEPTION 'GT squad already at max (% riders)', v_cap
-      USING ERRCODE = 'check_violation';
+    RAISE EXCEPTION 'Squad already at max (% riders)', v_cap USING ERRCODE = 'check_violation';
   END IF;
   RETURN NEW;
 END;
 $$;
-
--- 3. gt_add_to_squad — dynamic total cap (8/10) + underdog cap 2 + eligibility gate.
-CREATE OR REPLACE FUNCTION public.gt_add_to_squad(
-  p_team_id uuid,
-  p_rider_id uuid,
-  p_role text,
-  p_phase_id int,
-  p_year int
-) RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_user_id uuid := auth.uid();
-  v_team_user_id uuid;
-  v_team_eligible boolean;
-  v_contract_exists boolean;
-  v_already_in_squad boolean;
-  v_role_count int;
-  v_cap int;
-  v_total_cap int;
-  v_squad_total int;
-BEGIN
-  IF v_user_id IS NULL THEN
-    RETURN jsonb_build_object('error', 'Not authenticated');
-  END IF;
-
-  IF p_role NOT IN ('gc_leader','sprinter','climber','tt_specialist','stage_hunter','domestique','underdog') THEN
-    RETURN jsonb_build_object('error', 'Invalid role');
-  END IF;
-
-  IF p_phase_id NOT IN (4, 6, 8) THEN
-    RETURN jsonb_build_object('error', 'Invalid phase_id');
-  END IF;
-
-  SELECT user_id, underdog_eligible INTO v_team_user_id, v_team_eligible
-  FROM public.teams WHERE id = p_team_id FOR UPDATE;
-
-  IF v_team_user_id IS NULL THEN
-    RETURN jsonb_build_object('error', 'Team not found');
-  END IF;
-
-  IF v_team_user_id <> v_user_id THEN
-    RETURN jsonb_build_object('error', 'Not team owner');
-  END IF;
-
-  -- Underdog role is reserved for eligible teams.
-  IF p_role = 'underdog' AND NOT COALESCE(v_team_eligible, false) THEN
-    RETURN jsonb_build_object('error', 'Underdog role is only available to underdog-eligible teams');
-  END IF;
-
-  -- Dynamic total squad cap: 10 for eligible teams, else 8.
-  v_total_cap := CASE WHEN COALESCE(v_team_eligible, false) THEN 10 ELSE 8 END;
-
-  SELECT COUNT(*) INTO v_squad_total
-  FROM public.gt_squad
-  WHERE team_id = p_team_id AND phase_id = p_phase_id AND year = p_year
-    AND removed_at IS NULL;
-
-  IF v_squad_total >= v_total_cap THEN
-    RETURN jsonb_build_object('error', format('GT squad is full (max %s riders)', v_total_cap));
-  END IF;
-
-  SELECT EXISTS (
-    SELECT 1 FROM public.contracts
-    WHERE team_id = p_team_id AND rider_id = p_rider_id AND status = 'active'
-  ) INTO v_contract_exists;
-
-  IF NOT v_contract_exists THEN
-    RETURN jsonb_build_object('error', 'Rider has no active contract with this team');
-  END IF;
-
-  SELECT EXISTS (
-    SELECT 1 FROM public.gt_squad
-    WHERE team_id = p_team_id AND phase_id = p_phase_id AND year = p_year
-      AND rider_id = p_rider_id AND removed_at IS NULL
-  ) INTO v_already_in_squad;
-
-  IF v_already_in_squad THEN
-    RETURN jsonb_build_object('error', 'Rider is already in the squad');
-  END IF;
-
-  v_cap := CASE p_role
-    WHEN 'gc_leader'     THEN 1
-    WHEN 'sprinter'      THEN 1
-    WHEN 'climber'       THEN 1
-    WHEN 'tt_specialist' THEN 1
-    WHEN 'stage_hunter'  THEN 2
-    WHEN 'domestique'    THEN 2
-    WHEN 'underdog'      THEN 2
-  END;
-
-  SELECT COUNT(*) INTO v_role_count
-  FROM public.gt_squad
-  WHERE team_id = p_team_id AND phase_id = p_phase_id AND year = p_year
-    AND role = p_role AND removed_at IS NULL;
-
-  IF v_role_count >= v_cap THEN
-    RETURN jsonb_build_object('error', format('Role %s is at capacity (%s)', p_role, v_cap));
-  END IF;
-
-  INSERT INTO public.gt_squad (team_id, phase_id, year, rider_id, role)
-  VALUES (p_team_id, p_phase_id, p_year, p_rider_id, p_role);
-
-  INSERT INTO public.gt_role_assignments (team_id, phase_id, year, rider_id, role)
-  VALUES (p_team_id, p_phase_id, p_year, p_rider_id, p_role);
-
-  RETURN jsonb_build_object('ok', true);
-END;
-$$;
-
--- 4. gt_assign_role — underdog cap 2 + eligibility gate. Demotion logic unchanged.
-CREATE OR REPLACE FUNCTION public.gt_assign_role(
-  p_team_id uuid,
-  p_rider_id uuid,
-  p_role text,
-  p_phase_id int,
-  p_year int
-) RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_user_id uuid := auth.uid();
-  v_team_user_id uuid;
-  v_team_eligible boolean;
-  v_squad_id uuid;
-  v_cap int;
-  v_demote record;
-  v_domestique_count int;
-BEGIN
-  IF v_user_id IS NULL THEN
-    RETURN jsonb_build_object('error', 'Not authenticated');
-  END IF;
-
-  IF p_role NOT IN ('gc_leader','sprinter','climber','tt_specialist','stage_hunter','domestique','underdog') THEN
-    RETURN jsonb_build_object('error', 'Invalid role');
-  END IF;
-
-  IF p_phase_id NOT IN (4, 6, 8) THEN
-    RETURN jsonb_build_object('error', 'Invalid phase_id');
-  END IF;
-
-  SELECT user_id, underdog_eligible INTO v_team_user_id, v_team_eligible
-  FROM public.teams WHERE id = p_team_id FOR UPDATE;
-
-  IF v_team_user_id IS NULL THEN
-    RETURN jsonb_build_object('error', 'Team not found');
-  END IF;
-
-  IF v_team_user_id <> v_user_id THEN
-    RETURN jsonb_build_object('error', 'Not team owner');
-  END IF;
-
-  IF p_role = 'underdog' AND NOT COALESCE(v_team_eligible, false) THEN
-    RETURN jsonb_build_object('error', 'Underdog role is only available to underdog-eligible teams');
-  END IF;
-
-  SELECT id INTO v_squad_id
-  FROM public.gt_squad
-  WHERE team_id = p_team_id AND phase_id = p_phase_id AND year = p_year
-    AND rider_id = p_rider_id AND removed_at IS NULL;
-
-  IF v_squad_id IS NULL THEN
-    RETURN jsonb_build_object('error', 'Rider not in squad');
-  END IF;
-
-  v_cap := CASE p_role
-    WHEN 'gc_leader'     THEN 1
-    WHEN 'sprinter'      THEN 1
-    WHEN 'climber'       THEN 1
-    WHEN 'tt_specialist' THEN 1
-    WHEN 'stage_hunter'  THEN 2
-    WHEN 'domestique'    THEN 2
-    WHEN 'underdog'      THEN 2
-  END;
-
-  IF (
-    SELECT COUNT(*) FROM public.gt_squad
-    WHERE team_id = p_team_id AND phase_id = p_phase_id AND year = p_year
-      AND role = p_role AND removed_at IS NULL AND rider_id <> p_rider_id
-  ) >= v_cap THEN
-
-    IF p_role <> 'domestique' THEN
-      SELECT COUNT(*) INTO v_domestique_count
-      FROM public.gt_squad
-      WHERE team_id = p_team_id AND phase_id = p_phase_id AND year = p_year
-        AND role = 'domestique' AND removed_at IS NULL AND rider_id <> p_rider_id;
-
-      IF v_domestique_count >= 2 THEN
-        RETURN jsonb_build_object(
-          'error',
-          format(
-            'Role %s is at capacity (%s) and demoting the displaced holder to domestique would exceed its cap (2). Free a domestique slot first.',
-            p_role, v_cap
-          )
-        );
-      END IF;
-    END IF;
-
-    SELECT id, rider_id INTO v_demote
-    FROM public.gt_squad
-    WHERE team_id = p_team_id AND phase_id = p_phase_id AND year = p_year
-      AND role = p_role AND removed_at IS NULL AND rider_id <> p_rider_id
-    ORDER BY created_at ASC
-    LIMIT 1;
-
-    UPDATE public.gt_squad SET role = 'domestique' WHERE id = v_demote.id;
-
-    INSERT INTO public.gt_role_assignments (team_id, phase_id, year, rider_id, role)
-    VALUES (p_team_id, p_phase_id, p_year, v_demote.rider_id, 'domestique');
-  END IF;
-
-  UPDATE public.gt_squad SET role = p_role WHERE id = v_squad_id;
-
-  INSERT INTO public.gt_role_assignments (team_id, phase_id, year, rider_id, role)
-  VALUES (p_team_id, p_phase_id, p_year, p_rider_id, p_role);
-
-  RETURN jsonb_build_object('ok', true);
-END;
-$$;
 ```
+
+**Part 3 — recreate the v2 RPCs from `20260604000300` + apply these 3 diffs to BOTH `gt_add_to_squad` and `gt_assign_role`:**
+
+- *Diff A — role allow-list:* in the `IF p_role NOT IN (...)` guard, add `,'underdog'` to the list.
+- *Diff B — role cap CASE:* add a `WHEN 'underdog' THEN 2` arm to the `v_cap := CASE p_role` block.
+- *Diff C — eligibility gate + read flag:* add `v_team_eligible boolean;` to the DECLARE block; change the team fetch to also select the flag (`SELECT user_id, underdog_eligible INTO v_team_user_id, v_team_eligible FROM public.teams WHERE id = p_team_id FOR UPDATE;`); and, right after the "Not team owner" check, insert:
+
+```sql
+  IF p_role = 'underdog' AND NOT COALESCE(v_team_eligible, false) THEN
+    RETURN jsonb_build_object('error', 'Underdog role is only available to underdog-eligible teams');
+  END IF;
+```
+
+Keep everything else (the `v_use_slug` branch, demotion logic, inserts) **exactly as in the current v2 bodies**. The total-size cap stays in the trigger (Part 2) — do not add a total-size check to the RPCs.
 
 - [ ] **Step 2: Write the rollback**
 
-Create `supabase/migrations/_rollback/20260603000100_underdog_role_and_squad_cap.down.sql`:
+Create `supabase/migrations/_rollback/20260605000100_underdog_role_and_squad_cap.down.sql`:
 
 ```sql
 -- Restore role CHECKs without 'underdog' (will fail if underdog rows exist — clean first).
@@ -573,8 +373,8 @@ ALTER TABLE public.gt_role_assignments DROP CONSTRAINT IF EXISTS gt_role_assignm
 ALTER TABLE public.gt_role_assignments ADD CONSTRAINT gt_role_assignments_role_check
   CHECK (role IN ('gc_leader','sprinter','climber','tt_specialist','stage_hunter','domestique'));
 
--- NOTE: re-apply migration 20260515000000 (gt_add_to_squad / gt_assign_role) and
--- 20260508010200 (enforce_gt_squad_cap) to restore the static-cap function bodies.
+-- NOTE: re-apply 20260604000300 (gt_add_to_squad / gt_assign_role v2) and
+-- 20260513000000 (enforce_gt_squad_cap) to restore the pre-underdog function bodies.
 ```
 
 - [ ] **Step 3: Apply + verify locally**
@@ -588,6 +388,10 @@ Confirm the dynamic cap function compiles and reads eligibility:
 Run: `docker exec -i supabase_db_WattHunter psql -U postgres -d postgres -c "SELECT proname FROM pg_proc WHERE proname IN ('enforce_gt_squad_cap','gt_add_to_squad','gt_assign_role');"`
 Expected: three rows.
 
+Confirm the v2 RPC signatures still carry `p_race_slug` (no regression):
+Run: `docker exec -i supabase_db_WattHunter psql -U postgres -d postgres -c "SELECT pg_get_function_arguments('public.gt_add_to_squad'::regproc);"`
+Expected: includes `p_race_slug text DEFAULT NULL`.
+
 - [ ] **Step 4: Push to remote (REQUIRES USER CONFIRMATION)**
 
 ⚠️ Recreates production RPCs/trigger + relaxes CHECKs. Ask the user first.
@@ -596,8 +400,8 @@ Run (after OK): `supabase db push --linked`
 - [ ] **Step 5: Commit**
 
 ```bash
-git add supabase/migrations/20260603000100_underdog_role_and_squad_cap.sql supabase/migrations/_rollback/20260603000100_underdog_role_and_squad_cap.down.sql
-git commit -m "feat(db): underdog role + dynamic 8/10 squad cap, eligibility-gated (Spec B B1/B3)"
+git add supabase/migrations/20260605000100_underdog_role_and_squad_cap.sql supabase/migrations/_rollback/20260605000100_underdog_role_and_squad_cap.down.sql
+git commit -m "feat(db): underdog role + dynamic 8/10 race_slug-aware squad cap, eligibility-gated (Spec B B1/B3)"
 ```
 
 ---
@@ -661,9 +465,29 @@ git commit -m "feat(web): expose underdog role in GT squad builder (Spec B)"
 
 ## Task 5: Scoring — underdog boost multiplier
 
-**Files:**
-- Modify: `services/pcs-sync/scoring.py:293` (riders select), `:78-152` (add helper), `:486-487` (role branch)
+**Files (post-P2 line numbers — re-grep before editing, they drift):**
+- Create: `supabase/migrations/20260605000250_rider_xp_daily_underdog_mult.sql` (+ rollback) — audit column
+- Modify: `services/pcs-sync/scoring.py` — riders select (~l.388, add `pcs_rank`), `rider_info` dict (~l.550), helper after `_role_multiplier` (~l.246), per-rider role block (~l.588), XP formula (~l.656-664), upsert payload (~l.668-684)
 - Modify: `services/pcs-sync/tests/test_scoring.py` (add multiplier + integration test)
+
+> **Precision decision:** do NOT fold the boost into `gt_role_mult` — that column is `NUMERIC(3,1)` and would truncate `2.72 → 2.7`. Apply the underdog boost as a **separate factor** in the XP formula and store it in a new `rider_xp_daily.underdog_mult NUMERIC(3,2)` column. A rider in the `underdog` role gets `gt_role_mult = 1.0` from `_role_multiplier` (unknown role) and the real boost via `underdog_mult` — so `_role_multiplier` itself is left untouched.
+
+- [ ] **Step 0: Add the audit column migration**
+
+Create `supabase/migrations/20260605000250_rider_xp_daily_underdog_mult.sql`:
+
+```sql
+-- Spec B (B2) — record the underdog rank-based boost separately from gt_role_mult
+-- (which is NUMERIC(3,1) and would truncate 2-decimal boosts).
+ALTER TABLE public.rider_xp_daily
+  ADD COLUMN IF NOT EXISTS underdog_mult NUMERIC(3,2) NOT NULL DEFAULT 1.0;
+```
+
+Rollback `_rollback/20260605000250_rider_xp_daily_underdog_mult.down.sql`:
+
+```sql
+ALTER TABLE public.rider_xp_daily DROP COLUMN IF EXISTS underdog_mult;
+```
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -689,7 +513,7 @@ Expected: FAIL — `ImportError: cannot import name '_underdog_multiplier'`.
 
 - [ ] **Step 3: Add the helper**
 
-In `services/pcs-sync/scoring.py`, immediately after `_role_multiplier` (after line 152), add:
+In `services/pcs-sync/scoring.py`, immediately after `_role_multiplier` (~line 246), add:
 
 ```python
 def _underdog_multiplier(pcs_rank: int | None, race_slug: str) -> float:
@@ -705,34 +529,49 @@ def _underdog_multiplier(pcs_rank: int | None, race_slug: str) -> float:
     return max(1.0, min(4.0, pcs_rank / 100.0))
 ```
 
-- [ ] **Step 4: Pull `pcs_rank` into the riders select**
+- [ ] **Step 4: Pull `pcs_rank` into the riders select + rider_info**
 
-In `services/pcs-sync/scoring.py`, line 293, add `pcs_rank` to the embedded riders select:
-
-```python
-        "riders:rider_id(specialty, nationality, real_team, birthdate, pcs_rank)"
-```
-
-- [ ] **Step 5: Branch on the underdog role in the per-rider loop**
-
-In `services/pcs-sync/scoring.py`, the GT-slug block at lines 486-487 currently reads:
+In `services/pcs-sync/scoring.py`, add `pcs_rank` to the embedded riders select (~l.388):
 
 ```python
-                    role = gt_roles.get((team_id, rider_id), "domestique")
-                    gt_role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
+    "riders:rider_id(specialty, nationality, real_team, birthdate, pcs_rank)"
 ```
 
-Replace those two lines with:
+and to the `rider_info` dict (~l.550): `"pcs_rank": rider_join.get("pcs_rank"),`.
+
+- [ ] **Step 5: Compute the underdog factor + apply it as a separate multiplier**
+
+In `services/pcs-sync/scoring.py`, the per-rider role resolution (~l.588) currently reads (post-P2, 5-arg signature):
 
 ```python
                     role = gt_roles.get((team_id, rider_id), "domestique")
-                    if role == "underdog":
-                        gt_role_mult = _underdog_multiplier(rider_join.get("pcs_rank"), race_slug)
-                    else:
-                        gt_role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
+                    gt_role_mult = _role_multiplier(
+                        role, race_slug, entry.get("is_itt", False),
+                        breakaway_kms, profile_icon,
+                    )
 ```
 
-(`rider_join` is already in scope from line 442. The underdog mult flows through the existing `gt_role_mult` slot, so strategy bonus / classif / tactics / remontada compose unchanged. Underdog riders earn no role-matched classif bonus — `_classif_bonus` has no underdog branch, returning base only — which is intended.)
+Leave that as-is (for `role == "underdog"`, `_role_multiplier` returns `1.0`). Immediately after it, add:
+
+```python
+                    underdog_mult = (
+                        _underdog_multiplier(rider_info.get("pcs_rank"), race_slug)
+                        if role == "underdog" else 1.0
+                    )
+```
+
+Then multiply it into the XP formula (~l.656-664) alongside `nemesis_modifier`:
+
+```python
+                    xp = max(0, round(
+                        (raw_points * gt_role_mult * (1 + bonus)
+                         + gt_classif_bonus + gt_distance_bonus)
+                        * nemesis_modifier * underdog_mult, 2))
+```
+
+And add `"underdog_mult": underdog_mult,` to the `rider_xp_daily.upsert({...})` payload (~l.668-684).
+
+(`underdog_mult` defaults to 1.0 for every non-underdog rider, so all existing scoring is unchanged. Underdog riders earn no role-matched classif bonus — `_classif_bonus` has no underdog branch — which is intended. The `_is_squad_race` gate already covers GT **and** 1-week, so the boost works for both.)
 
 - [ ] **Step 6: Add an integration test for the underdog branch**
 
@@ -758,8 +597,8 @@ Expected: PASS.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add services/pcs-sync/scoring.py services/pcs-sync/tests/test_scoring.py
-git commit -m "feat(scoring): underdog role boost clamp(pcs_rank/100,1,4) on GT stages (Spec B B2)"
+git add supabase/migrations/20260605000250_rider_xp_daily_underdog_mult.sql supabase/migrations/_rollback/20260605000250_rider_xp_daily_underdog_mult.down.sql services/pcs-sync/scoring.py services/pcs-sync/tests/test_scoring.py
+git commit -m "feat(scoring): underdog role boost clamp(pcs_rank/100,1,4) on stages, separate underdog_mult (Spec B B2)"
 ```
 
 ---
@@ -767,12 +606,12 @@ git commit -m "feat(scoring): underdog role boost clamp(pcs_rank/100,1,4) on GT 
 ## Task 6: Salary — flag underdog-recruited contracts
 
 **Files:**
-- Create: `supabase/migrations/20260603000200_underdog_salary_flag.sql`
-- Create: `supabase/migrations/_rollback/20260603000200_underdog_salary_flag.down.sql`
+- Create: `supabase/migrations/20260605000200_underdog_salary_flag.sql`
+- Create: `supabase/migrations/_rollback/20260605000200_underdog_salary_flag.down.sql`
 
 - [ ] **Step 1: Write the migration**
 
-Create `supabase/migrations/20260603000200_underdog_salary_flag.sql`:
+Create `supabase/migrations/20260605000200_underdog_salary_flag.sql`:
 
 ```sql
 -- Spec B (B4) — flag contracts recruited under underdog terms.
@@ -815,7 +654,7 @@ CREATE TRIGGER trg_flag_underdog_contract
 
 - [ ] **Step 2: Write the rollback**
 
-Create `supabase/migrations/_rollback/20260603000200_underdog_salary_flag.down.sql`:
+Create `supabase/migrations/_rollback/20260605000200_underdog_salary_flag.down.sql`:
 
 ```sql
 DROP TRIGGER IF EXISTS trg_flag_underdog_contract ON public.contracts;
@@ -838,7 +677,7 @@ Run (after OK): `supabase db push --linked`
 - [ ] **Step 5: Commit**
 
 ```bash
-git add supabase/migrations/20260603000200_underdog_salary_flag.sql supabase/migrations/_rollback/20260603000200_underdog_salary_flag.down.sql
+git add supabase/migrations/20260605000200_underdog_salary_flag.sql supabase/migrations/_rollback/20260605000200_underdog_salary_flag.down.sql
 git commit -m "feat(db): flag underdog-recruited contracts for salary discount (Spec B B4)"
 ```
 
@@ -847,19 +686,20 @@ git commit -m "feat(db): flag underdog-recruited contracts for salary discount (
 ## Task 7: Salary — apply the reversible −50% at payday
 
 **Files:**
-- Create: `supabase/migrations/20260603000300_underdog_payday_discount.sql`
-- Create: `supabase/migrations/_rollback/20260603000300_underdog_payday_discount.down.sql`
+- Create: `supabase/migrations/20260605000300_underdog_payday_discount.sql`
+- Create: `supabase/migrations/_rollback/20260605000300_underdog_payday_discount.down.sql`
 
-**What changes:** recreate `confirm_phase_setup` (latest body is in `20260518000003`) so the salary loop pays `floor(locked_salary × 0.5 / 100) × 100` for a contract that is `underdog_discount = true` **while the team is currently `underdog_eligible`**, else full `locked_salary`. Reversible: when the team climbs out (`underdog_eligible = false`), the next payday charges full price.
+**What changes:** recreate the **latest** `confirm_phase_setup` (⚠️ verify which migration is newest before copying its body — `grep -rl confirm_phase_setup supabase/migrations | sort | tail -1`; candidates: `20260518000003_confirm_phase_setup_remove_late_joiner.sql` or newer) so the salary loop pays `floor(locked_salary × 0.5 / 1000) × 1000` (1 000 € step per shipped Spec D) for a contract that is `underdog_discount = true` **while the team is currently `underdog_eligible`**, else full `locked_salary`. Reversible: when the team climbs out (`underdog_eligible = false`), the next payday charges full price.
 
 - [ ] **Step 1: Write the migration**
 
-Create `supabase/migrations/20260603000300_underdog_payday_discount.sql`:
+Create `supabase/migrations/20260605000300_underdog_payday_discount.sql`:
 
 ```sql
 -- Spec B (B4) — apply the reversible underdog salary discount at payday.
--- Based on 20260518000003_confirm_phase_setup_remove_late_joiner.sql, with the
--- salary loop modified to halve eligible underdog-recruited salaries.
+-- Base = the LATEST confirm_phase_setup body (verify via grep, see "What changes"),
+-- with the salary loop modified to halve eligible underdog-recruited salaries (÷1000 step).
+-- The body below mirrors the 20260518000003 version; if a newer one exists, re-derive from it.
 
 CREATE OR REPLACE FUNCTION public.confirm_phase_setup(
   p_team_id uuid,
@@ -946,7 +786,7 @@ BEGIN
     WHERE c.team_id = p_team_id AND c.status = 'active'
   LOOP
     IF v_team.underdog_eligible AND v_contract.underdog_discount THEN
-      v_effective_salary := FLOOR(v_contract.locked_salary * 0.5 / 100) * 100;
+      v_effective_salary := FLOOR(v_contract.locked_salary * 0.5 / 1000) * 1000;
       v_desc_suffix := ' [underdog -50%]';
     ELSE
       v_effective_salary := v_contract.locked_salary;
@@ -983,7 +823,7 @@ GRANT EXECUTE ON FUNCTION public.confirm_phase_setup(uuid, int, text, timestampt
 
 - [ ] **Step 2: Write the rollback**
 
-Create `supabase/migrations/_rollback/20260603000300_underdog_payday_discount.down.sql`:
+Create `supabase/migrations/_rollback/20260605000300_underdog_payday_discount.down.sql`:
 
 ```sql
 -- Re-apply 20260518000003_confirm_phase_setup_remove_late_joiner.sql to restore
@@ -1005,7 +845,7 @@ Run (after OK): `supabase db push --linked`
 - [ ] **Step 5: Commit**
 
 ```bash
-git add supabase/migrations/20260603000300_underdog_payday_discount.sql supabase/migrations/_rollback/20260603000300_underdog_payday_discount.down.sql
+git add supabase/migrations/20260605000300_underdog_payday_discount.sql supabase/migrations/_rollback/20260605000300_underdog_payday_discount.down.sql
 git commit -m "feat(db): reversible underdog -50% salary discount at payday (Spec B B4)"
 ```
 
@@ -1027,8 +867,8 @@ In `docs/GAME_RULES.md`, add a new subsection (place it near the GT / level sect
 - **Team eligibility:** `cumulative_xp < 75% of the league leader`, recomputed each phase (`recompute_underdog_eligibility`). Flag: `teams.underdog_eligible`; audit: `underdog_eligibility` snapshot.
 - **Underdog rider:** `pcs_rank > 100`.
 - **Role (cap 2):** assignable only by eligible teams. Stage points ×`clamp(pcs_rank / 100, 1, 4)`. No multiplier on final classifications.
-- **Squad cap:** 8 → 10 for eligible teams (GT only; bounded by roster = level Slots, so L5+ to use all 10). Reverts to 8 next GT on exit.
-- **Salary:** −50% (rounded to 100€) on riders `pcs_rank > 100` **recruited while eligible** (`contracts.underdog_discount`). Applied at payday only while the team stays eligible; full price the phase after climbing out.
+- **Squad cap:** 8 → 10 for eligible teams (GT + 1-week, via the `race_slug`-aware cap trigger; bounded by roster = level Slots, so L5+ to use all 10). Reverts to 8 next race on exit.
+- **Salary:** −50% (rounded to **1 000 €**, per shipped Spec D) on riders `pcs_rank > 100` **recruited while eligible** (`contracts.underdog_discount`). Applied at payday only while the team stays eligible; full price the phase after climbing out.
 ```
 
 - [ ] **Step 2: ARCHITECTURE — record the new schema + RPCs**
@@ -1037,10 +877,11 @@ In `docs/ARCHITECTURE.md`, add:
 - Table `underdog_eligibility(team_id, phase_id, year, is_eligible, leader_xp, team_xp, computed_at)` — per-phase eligibility snapshot.
 - Column `teams.underdog_eligible boolean` — runtime eligibility flag.
 - Column `contracts.underdog_discount boolean` — contract recruited under underdog terms.
+- Column `rider_xp_daily.underdog_mult NUMERIC(3,2)` — recorded underdog boost (separate from `gt_role_mult`).
 - RPC `recompute_underdog_eligibility(phase_id, year)` — recompute flag + snapshot for all leagues.
-- Note that `enforce_gt_squad_cap`, `gt_add_to_squad`, `gt_assign_role`, `confirm_phase_setup` were modified for underdog; role enum now includes `underdog`.
+- Note that `enforce_gt_squad_cap` (now `race_slug`-aware), the v2 `gt_add_to_squad`/`gt_assign_role`, and `confirm_phase_setup` were modified for underdog; role enum now includes `underdog`.
 - Trigger `trg_flag_underdog_contract` on `contracts`.
-- The four migration filenames (`20260603000000`–`20260603000300`) with a one-line purpose each.
+- The five migration filenames (`20260605000000`–`20260605000300`) with a one-line purpose each.
 
 - [ ] **Step 3: Commit**
 
@@ -1066,19 +907,19 @@ Expected: clean / all pass.
 - [ ] **Step 3: Clean migration replay**
 
 Run: `supabase db reset`
-Expected: all migrations apply with no error (the four new ones included), confirming a from-scratch rebuild stays consistent (Rule #2).
+Expected: all migrations apply with no error (the five new `20260605xxx` ones included), confirming a from-scratch rebuild stays consistent (Rule #2).
 
 - [ ] **Step 4: End-to-end eligibility smoke (local)**
 
 With two temp teams (leader 1000 / follower 700) as in Task 1 Step 3, after `recompute_underdog_eligibility(4,2026)`:
 - `follower.underdog_eligible = true`, `leader = false`.
 - A `contracts` INSERT for the follower on a rider with `pcs_rank = 250` sets `underdog_discount = true`; for `pcs_rank = 50` it stays `false`.
-- Insert 9 then 10 `gt_squad` rows for the follower (phase 4) → the 10th succeeds; the 11th raises `GT squad already at max (10 riders)`. For the leader the 9th raises `... (8 riders)`.
+- Insert 9 then 10 `gt_squad` rows for the follower (phase 4) → the 10th succeeds; the 11th raises `Squad already at max (10 riders)`. For the leader the 9th raises `... (8 riders)`. Repeat with `race_slug`-keyed rows (a 1-week race) to confirm the cap counts the right scope.
 Clean up the temp rows afterwards.
 
 - [ ] **Step 5: Confirm prod state (if migrations were pushed)**
 
-If the user authorised the pushes, confirm on remote: the four objects exist, `recompute_underdog_eligibility(<current_phase>, 2026)` was run for the test league (`adaec367…`), and `teams.underdog_eligible` matches the projected standings (e.g. bigdaddy/Muscat eligible vs Klimax/Leopard not).
+If the user authorised the pushes, confirm on remote: the new objects exist, `recompute_underdog_eligibility(<current_phase>, 2026)` was run for the test league (`adaec367…`), and `teams.underdog_eligible` matches the projected standings (e.g. bigdaddy/Muscat eligible vs Klimax/Leopard not).
 
 ---
 
@@ -1086,6 +927,7 @@ If the user authorised the pushes, confirm on remote: the four objects exist, `r
 
 - **Spec coverage:** B0 eligibility → Tasks 1, 2. B1 rider definition → Tasks 3, 5, 6 (rank>100). B2 boost → Task 5. B3 squad cap 8→10 → Task 3. B4 salary −50% reversible → Tasks 6 (flag) + 7 (payday). Front exposure → Task 4. Docs → Task 8. B5 (Visma/RB goals) is explicitly Spec C, not here. No B-section gap.
 - **No placeholders:** every SQL/Python/TS step has concrete code + exact commands + expected output. The two spots that say "match the file's existing harness/idiom" (Task 2 dispatch wiring, Task 5 integration-test setup) reference real, existing in-file patterns rather than inventing new ones, and each ships a concrete unit-level assertion alongside.
-- **Type/name consistency:** `teams.underdog_eligible` (bool) read identically in the cap trigger, both squad RPCs, the contract-flag trigger, and `confirm_phase_setup`. `contracts.underdog_discount` (bool) set in Task 6, read in Task 7. `recompute_underdog_eligibility(int,int)` signature matches the Python `recompute_eligibility` call args `{p_phase_id,p_year}`. Role string `"underdog"` consistent across CHECK constraints, both RPC allow-lists + cap CASE, the TS `ROLES` tuple, the UI `ROLE_ORDER`, and the `scoring.py` branch. `_underdog_multiplier(pcs_rank, race_slug)` signature matches its call site and tests.
-- **Reversibility check:** salary discount keys off the *current* `teams.underdog_eligible` at payday (not frozen into `locked_salary`), so climbing out restores full price next phase — matches spec B4. Squad cap likewise reads the live flag, so it reverts to 8 the next GT.
+- **Type/name consistency:** `teams.underdog_eligible` (bool) read identically in the cap trigger, both v2 squad RPCs, the contract-flag trigger, and `confirm_phase_setup`. `contracts.underdog_discount` (bool) set in Task 6, read in Task 7. `rider_xp_daily.underdog_mult` (NUMERIC(3,2)) added in Task 5 Step 0, written in Step 5. `recompute_underdog_eligibility(int,int)` matches the Python `recompute_eligibility` args `{p_phase_id,p_year}`. Role string `"underdog"` consistent across CHECK constraints, both RPC allow-lists + cap CASE, the TS `ROLES` tuple, the UI `ROLE_ORDER`, and the `scoring.py` branch. `_underdog_multiplier(pcs_rank, race_slug)` matches its call site + tests. The boost is a **separate factor** (`underdog_mult`), NOT folded into `gt_role_mult` (NUMERIC(3,1) truncation avoided).
+- **Reversibility check:** salary discount keys off the *current* `teams.underdog_eligible` at payday (not frozen into `locked_salary`), so climbing out restores full price next phase — matches spec B4. Squad cap likewise reads the live flag, so it reverts to 8 the next race.
+- **Post-A9/P2/Spec D rebase:** migrations are `20260605xxx` (after the latest `20260604000300`); Task 3 targets the v2 race_slug RPCs + race_slug-aware cap trigger; Task 5 uses post-P2 line anchors + separate factor; salary rounding is 1 000 € everywhere (B4 + payday + GAME_RULES) per shipped Spec D.
 ```

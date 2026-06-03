@@ -44,13 +44,13 @@
 
 - **−50 %** sur le salaire récurrent des coureurs **`pcs_rank > 100`**, **recrutés pendant que l'équipe est éligible** (contrats existants exclus).
 - **Flag** : `contracts.underdog_discount boolean`, posé à la création du contrat par un trigger `BEFORE INSERT` (si `teams.underdog_eligible` ET `pcs_rank > 100`). Robuste quelle que soit la voie de création du contrat.
-- **Application** : à la **paie** (`confirm_phase_setup`), pour chaque contrat actif : si `teams.underdog_eligible` (actuel) ET `contracts.underdog_discount` → débit = `floor(locked_salary × 0.5 / 100) × 100` ; sinon `locked_salary` plein.
+- **Application** : à la **paie** (`confirm_phase_setup`), pour chaque contrat actif : si `teams.underdog_eligible` (actuel) ET `contracts.underdog_discount` → débit = `floor(locked_salary × 0.5 / 1000) × 1000` ; sinon `locked_salary` plein.
 - **Réversible** : dès que l'équipe remonte (`underdog_eligible = false`), la paie suivante reprend le plein tarif. Le flag de contrat reste posé (réactivable si l'équipe re-décroche).
-- **Pas de changement à l'enchère** : `place_bid` inchangé. Le plancher d'enchère reste le salaire plein ; la réservation de solvabilité reste pleine (conservateur, sûr). L'avantage réel = le débit récurrent divisé par deux. Arrondi au pas de 100 € (cohérent `floor(.../100)×100`).
+- **Pas de changement à l'enchère** : `place_bid` inchangé. Le plancher d'enchère reste le salaire plein ; la réservation de solvabilité reste pleine (conservateur, sûr). L'avantage réel = le débit récurrent divisé par deux. **Arrondi au pas de 1 000 €** (Spec D « prix au millier » livrée : `calcMinSalary`/`place_bid` au pas de 1 000 — cohérent `floor(.../1000)×1000`).
 
 ## B2bis — Affichage du prix réduit (UI) — VALIDÉ + maquetté 2026-06-02
 
-> Contrepartie visuelle de B4. **Hors périmètre du plan backend Spec B** : c'est de l'UI transverse (composant partagé `<RiderPrice>`) qui dépend de **Spec D — prix au millier**. Tracké ici pour la cohérence ; implémenté dans son propre lot. Le backend B4 (flag `underdog_discount` + éligibilité) **produit** le prix réduit que ce composant affiche.
+> Contrepartie visuelle de B4. **Hors périmètre du plan backend Spec B** : c'est de l'UI transverse (composant partagé `<RiderPrice>`). Sa dépendance **Spec D — prix au millier est LIVRÉE** (`calcMinSalary`/`place_bid` au pas de 1 000) → plus de blocage, implémentable dans son propre lot. Le backend B4 (flag `underdog_discount` + éligibilité) **produit** le prix réduit que ce composant affiche.
 
 **Maquette HTML validée : [`docs/mockups/2026-06-02-ui-mockups.html`](../../mockups/2026-06-02-ui-mockups.html)** — section 2 (prix underdog). *(Le fichier maquette vit dans le checkout main, non committé — à committer pour que le lien résolve post-merge.)*
 
@@ -64,7 +64,7 @@ Principe : montrer le **prix plein barré + le prix réduit** uniquement là où
 
 **Sites concernés (prix d'acquisition / min salaire)** : `auction/[auctionId]/rider-table.tsx` (col. Salary), `rider-dialog.tsx` (Minimum salary + label d'enchère), `rider/[riderId]/rider-detail-client.tsx` (box "Min. Salary"), `components/draft-bid-card.tsx` (helper min), `auction/market/market-client.tsx` (placeholder + helper "Min:"). **Ne PAS toucher** : montants réels déjà payés/engagés.
 
-> **⚠️ Dépendance — Spec D « prix au millier »** : l'affichage en K et le strikethrough propre ne tiennent que si les enchères passent au pas de **1 000 €** (aujourd'hui 100 €). C'est une **constante de jeu** (`docs/GAME_RULES.md §11`) → **spec D dédié requis avant l'implémentation `<RiderPrice>`** (formule salaire arrondie au millier, step/validation d'enchère, migration des montants existants, invariants treasury). Voir l'index de refonte. **Note de cohérence** : B4 fixe l'arrondi de la réduc salaire au pas de 100 € ; si Spec D passe au millier, réaligner B4 sur 1 000 €.
+> **✅ Dépendance Spec D « prix au millier » — LIVRÉE** : les enchères sont déjà au pas de **1 000 €** (`place_bid` migration `20260602110100`, `calcMinSalary = floor(raw/1000)×1000` dans `apps/web/lib/format.ts`). L'affichage en K + strikethrough est donc débloqué. B4 est aligné sur le pas de 1 000 €.
 
 ## B5 — Goals sponsors Visma / Red Bull
 
@@ -72,11 +72,13 @@ Hors périmètre Spec B (couvert par Spec C) : même set de goals que T4 (Ineos/
 
 ## Dépendances
 
-- **Spec A P1** : `riders.pcs_rank` existe déjà — pas de capture à ajouter.
-- **Spec A A9 « Race Team » (dépendance DURE, ordre de build)** : A9 généralise `gt_squad` + les RPCs `gt_add_to_squad`/`gt_assign_role`/`enforce_gt_squad_cap` de `phase_id (4/6/8)` vers un identifiant `race_slug`. Ce sont **exactement les objets que B3 (cap squad + rôle) réécrit**. → Construire **A9 avant** la partie squad de Spec B, puis rebaser B3 sur les RPCs généralisés (clé d'éligibilité sur le même identifiant de course qu'A9 choisit). Le cap 8→10 s'étendra alors naturellement aux courses 1-semaine.
-- **Spec A P2** (scoring refonte) : le boost B2 modifie le calcul de `gt_role_mult` dans `scoring.py`. Si P2 atterrit d'abord, rebaser la Task scoring sur le nouveau code — le point d'injection (role mult des membres de squad GT) reste stable.
-- **Spec C** : pas de dépendance de build. Croisement uniquement en B5 (goals Visma/RB), porté par Spec C.
-- **Spec D « prix au millier »** : prérequis de la §B2bis (UI), pas du backend B1-B5.
+**Toutes les dépendances de Spec B sont LIVRÉES sur main — ce spec cible le code actuel.**
+
+- **Spec A P1** (livré) : `riders.pcs_rank` + levels (L5=10, L7=2600/L8=5000). Pas de capture à ajouter.
+- **Spec A A9 « Race Team »** (✅ livré) : `gt_squad` a `race_slug` + `phase_id` (nullable, constraint `gt_squad_scope_check`) ; RPCs `gt_add_to_squad`/`gt_assign_role` en **v2 6-params** (`p_race_slug DEFAULT NULL`, branche `v_use_slug`) dans `20260604000300`. B3 **cible ces RPCs v2** (ajout du rôle underdog + cap dynamique). Le cap 8→10 s'étend aux courses 1-semaine via la même clé. ⚠️ Le trigger `enforce_gt_squad_cap` (dans `20260513000000`) ne compte que par `phase_id` → à rendre `race_slug`-aware en même temps (corrige un bug 1-sem latent).
+- **Spec A P2** (✅ livré) : `_role_multiplier(role, race_slug, is_itt, breakaway_kms, profile_icon)` + finals + `gt_distance_bonus`. Le boost B2 s'applique comme **facteur séparé** (`underdog_mult`), pas en pliant `gt_role_mult` (colonne `NUMERIC(3,1)`).
+- **Spec C** (✅ livré) : pas de dépendance de build. Croisement uniquement en B5 (goals Visma/RB), déjà porté par Spec C.
+- **Spec D « prix au millier »** (✅ livré) : prérequis de la §B2bis (UI) et de l'arrondi B4 (1 000 €). Plus de blocage.
 
 ## Hors périmètre (non régressions à préserver)
 
