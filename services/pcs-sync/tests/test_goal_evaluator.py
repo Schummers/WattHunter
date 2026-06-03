@@ -156,6 +156,19 @@ class TestSponsorGoalSetsStructure:
         assert "stage_hunter" in cats
         assert "sprint" not in cats
 
+    def test_win_a_stage_is_role_disambiguated_for_dual_sponsors(self):
+        """soudal/lidl-trek carry BOTH sprinter and stage_hunter 'Win a stage' /
+        'Win 2 stages' goals; the keys MUST stay distinct. The goal_key backfill
+        migration relies on this disambiguation (legacy goal_index → role key)."""
+        for slug in ("soudal", "lidl-trek"):
+            keys = {g["key"] for g in SPONSOR_GOAL_SETS[slug]}
+            assert {"sprint_win_stage", "sh_win_stage"} <= keys, slug
+            assert {"sprint_win_2_stages", "sh_win_2_stages"} <= keys, slug
+            # Both share the label "Win a stage" but never the key.
+            win_stage_labels = [g["label"] for g in SPONSOR_GOAL_SETS[slug]
+                                if g["key"] in ("sprint_win_stage", "sh_win_stage")]
+            assert win_stage_labels == ["Win a stage", "Win a stage"], slug
+
 
 # ---------------------------------------------------------------------------
 # Helper: build ctx for final-classification evaluators
@@ -1047,6 +1060,36 @@ def _make_run2_supabase():
     )
 
 
+def _make_run3_supabase():
+    """Supabase mock: a prior completion exists at the SAME goal_index (0) but a
+    DIFFERENT goal_key. Dedup is key-based, so the gc_podium goal must STILL credit.
+
+    This guards the exact #1 fix: the old goal_index-based suppression would have
+    wrongly skipped this; key-based dedup must not. Same call sequence as run 1
+    (credit path runs), only the existing-keys SELECT differs.
+    """
+    return make_supabase(
+        _E2E_TEAM_SPONSORS,
+        _E2E_RACE_RESULTS,
+        [],                       # gt_daily_classifications
+        [], [], [],               # gt_final_classifications points/kom/youth
+        _E2E_SQUAD,
+        _E2E_ROLE_ASSIGNMENTS,
+        _E2E_RIDERS_NAT,
+        # sponsor_goal_completions SELECT: different key at the same legacy index 0
+        [{
+            "team_id": _E2E_TEAM_ID,
+            "sponsor_id": _E2E_SPONSOR_ID,
+            "goal_key": "gc_youth_jersey",
+            "goal_index": 0,
+        }],
+        [],                       # sponsor_goal_completions INSERT
+        [{"id": _E2E_TEAM_ID, "treasury": 500_000}],  # teams SELECT
+        [],                       # teams UPDATE
+        [],                       # treasury_log INSERT
+    )
+
+
 class TestEvaluateSponsorGoalsE2EIdempotency:
     """Regression: evaluate_sponsor_goals must not double-credit treasury.
 
@@ -1124,3 +1167,21 @@ class TestEvaluateSponsorGoalsE2EIdempotency:
         assert len(teams_updates) == 0, (
             f"DOUBLE-CREDIT BUG: teams was updated {len(teams_updates)} time(s) on run 2"
         )
+
+    def test_run3_different_key_same_index_still_credits(self):
+        """A prior completion at the same goal_index but a different goal_key must
+        NOT block a genuinely-earned goal. Dedup is key-based, not index-based."""
+        import asyncio
+        from goal_evaluator import evaluate_sponsor_goals
+
+        sb = _make_run3_supabase()
+        result = asyncio.run(evaluate_sponsor_goals(sb, _E2E_RACE_SLUG))
+
+        assert result["status"] == "completed", f"errors: {result.get('errors')}"
+        assert result["goals_completed"] == 1, (
+            "gc_podium must still credit despite a different-key row at the same index"
+        )
+        sgc_inserts = sb.inserts.get("sponsor_goal_completions", [])
+        assert len(sgc_inserts) == 1 and sgc_inserts[0]["goal_key"] == "gc_podium"
+        tlog_inserts = sb.inserts.get("treasury_log", [])
+        assert len(tlog_inserts) == 1 and tlog_inserts[0]["amount"] == 30_000

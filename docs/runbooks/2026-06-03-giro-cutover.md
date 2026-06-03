@@ -18,8 +18,8 @@ Goal: stage results (incl. stage 21) keep the OLD barème; final classifications
 
 ## Idempotency notes
 - sponsor_bonuses is idempotent on (team_id, rider_id, race_slug, result_type).
-- sponsor_goal_completions is idempotent on (team_id, sponsor_id, goal_key) per race_slug (unique index idx_goal_completions_key).
-- Pre-existing Giro stage/goal completions are NOT re-credited (grandfathered); the goal_key backfill migration keeps even a re-run idempotent.
+- sponsor_goal_completions is idempotent on (team_id, sponsor_id, goal_key) per race_slug (sole unique index `idx_goal_completions_key`; `goal_key` is NOT NULL; the legacy goal_index index `idx_goal_completions_dedup` is dropped so the two can't disagree).
+- Pre-existing Giro stage/goal completions are NOT re-credited (grandfathered): the goal_key migration backfills every legacy row deterministically by `(sponsor, legacy goal_index)` → new key (mirrors GT_GOALS ↔ SPONSOR_GOAL_SETS), so a re-run after cutover is fully idempotent regardless of label.
 
 ## Known limitation
 - 1-week stage-race squad scoping is resolved by phase_id+year (shared with scoring.py), NOT race_slug — a separate fix is required before 1-week sponsor goals pay out correctly (tracked separately).

@@ -42,42 +42,6 @@ FLAT_PROFILES = {"p1", "p2", "p3"}
 # Goal definitions — mirrors apps/web/lib/gt-goals.ts exactly
 # ---------------------------------------------------------------------------
 
-# Legacy dict — kept for backward compat with any callers that import GT_GOALS directly.
-GT_GOALS: dict[str, list[dict]] = {
-    "ineos": [
-        {"label": "Podium GC final", "reward": 150_000, "role": "gc_leader", "tiered_with": 1, "eval": "gc_podium"},
-        {"label": "Top 5 GC final", "reward": 75_000, "role": "gc_leader", "tiered_with": 0, "eval": "gc_top5"},
-        {"label": "Wear maglia rosa", "reward": 50_000, "role": "gc_leader", "eval": "wear_gc_jersey"},
-        {"label": "Wear maglia bianca", "reward": 40_000, "role": "gc_leader", "eval": "wear_youth_jersey"},
-        {"label": "Win an ITT", "reward": 50_000, "role": "tt_specialist", "eval": "win_itt"},
-        {"label": "2 riders in top 10 of an ITT", "reward": 25_000, "role": None, "eval": "two_riders_itt_top10"},
-    ],
-    "decathlon": [
-        {"label": "Podium GC final", "reward": 150_000, "role": "gc_leader", "tiered_with": 1, "eval": "gc_podium"},
-        {"label": "Top 5 GC final", "reward": 75_000, "role": "gc_leader", "tiered_with": 0, "eval": "gc_top5"},
-        {"label": "Wear maglia rosa", "reward": 50_000, "role": "gc_leader", "eval": "wear_gc_jersey"},
-        {"label": "Wear maglia bianca", "reward": 40_000, "role": "gc_leader", "eval": "wear_youth_jersey"},
-        {"label": "Win a stage", "reward": 50_000, "role": "sprinter", "eval": "win_stage"},
-        {"label": "Wear ciclamino", "reward": 40_000, "role": "sprinter", "eval": "wear_points_jersey"},
-    ],
-    "soudal": [
-        {"label": "Win points classification", "reward": 150_000, "role": "sprinter", "eval": "win_points_classification"},
-        {"label": "Win 2 stages", "reward": 75_000, "role": "sprinter", "tiered_with": 2, "eval": "win_2_stages"},
-        {"label": "Win a stage", "reward": 50_000, "role": "sprinter", "tiered_with": 1, "eval": "win_stage"},
-        {"label": "Wear ciclamino", "reward": 50_000, "role": "sprinter", "eval": "wear_points_jersey"},
-        {"label": "2 different riders win a stage", "reward": 75_000, "role": None, "eval": "two_riders_win_stage"},
-        {"label": "Win a stage", "reward": 60_000, "role": "stage_hunter", "eval": "win_stage"},
-    ],
-    "lidl-trek": [
-        {"label": "Win points classification", "reward": 150_000, "role": "sprinter", "eval": "win_points_classification"},
-        {"label": "Win 2 stages", "reward": 75_000, "role": "sprinter", "tiered_with": 2, "eval": "win_2_stages"},
-        {"label": "Win a stage", "reward": 50_000, "role": "sprinter", "tiered_with": 1, "eval": "win_stage"},
-        {"label": "Wear ciclamino", "reward": 50_000, "role": "sprinter", "eval": "wear_points_jersey"},
-        {"label": "2 different riders win a stage", "reward": 75_000, "role": None, "eval": "two_riders_win_stage"},
-        {"label": "Win a stage", "reward": 60_000, "role": "stage_hunter", "eval": "win_stage"},
-    ],
-}
-
 # ---------------------------------------------------------------------------
 # Canonical goal sets — Spec C mirror of apps/web/lib/gt-goals.ts
 #
@@ -496,9 +460,7 @@ async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
         if sponsor.get("tier") != 4:
             continue
         slug = sponsor.get("slug", "")
-        # Accept sponsors that have a SPONSOR_GOAL_SETS entry OR a legacy GT_GOALS entry
-        has_goals = slug in SPONSOR_GOAL_SETS or (slug in GT_GOALS and GT_GOALS[slug])
-        if not has_goals:
+        if slug not in SPONSOR_GOAL_SETS:
             continue
         t4_teams.append({
             "team_id": row["team_id"],
@@ -611,21 +573,15 @@ async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
 
     # --- Pre-fetch existing goal_key completions for this race (new idempotency) ---
     existing_resp = supabase.table("sponsor_goal_completions").select(
-        "team_id, sponsor_id, goal_key, goal_index"
+        "team_id, sponsor_id, goal_key"
     ).eq("race_slug", parent_slug).execute()
 
-    # New-style dedup: (team_id, sponsor_id, goal_key) where goal_key is not None
+    # Idempotency: (team_id, sponsor_id, goal_key). goal_key is NOT NULL post-migration.
     existing_by_key: set[tuple[str, str, str]] = set()
-    # Legacy fallback dedup: (team_id, sponsor_id, goal_index) for rows without goal_key
-    existing_by_index: set[tuple[str, str, int]] = set()
     for e in (existing_resp.data or []):
         gk = e.get("goal_key")
         if gk:
             existing_by_key.add((e["team_id"], e["sponsor_id"], gk))
-        else:
-            gi = e.get("goal_index")
-            if gi is not None:
-                existing_by_index.add((e["team_id"], e["sponsor_id"], gi))
 
     # --- Evaluate each team ---
     for team_info in t4_teams:
@@ -634,9 +590,7 @@ async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
         sponsor_id = team_info["sponsor_id"]
         sponsor_nat = team_info["sponsor_nationality"]
 
-        # Prefer SPONSOR_GOAL_SETS (Spec C) over legacy GT_GOALS
-        use_spec_c = sponsor_slug in SPONSOR_GOAL_SETS
-        goals = SPONSOR_GOAL_SETS[sponsor_slug] if use_spec_c else GT_GOALS.get(sponsor_slug, [])
+        goals = SPONSOR_GOAL_SETS.get(sponsor_slug, [])
 
         # All squad riders for this team (any stage)
         all_squad_riders: set[str] = set()
@@ -652,7 +606,7 @@ async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
         completed: dict[int, dict] = {}
 
         for goal_idx, goal in enumerate(goals):
-            eval_key = goal.get("evaluator") or goal.get("eval")
+            eval_key = goal["evaluator"]
             eval_fn = EVALUATORS.get(eval_key) if eval_key else None
             if not eval_fn:
                 continue
@@ -698,12 +652,10 @@ async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
         # Insert new completions + credit treasury
         for goal_idx, result in completed.items():
             goal = goals[goal_idx]
-            goal_key = goal.get("key")  # None for legacy GT_GOALS entries
+            goal_key = goal["key"]
 
-            # Idempotency check — prefer key-based, fall back to index-based
-            if goal_key and (team_id, sponsor_id, goal_key) in existing_by_key:
-                continue
-            if not goal_key and (team_id, sponsor_id, goal_idx) in existing_by_index:
+            # Idempotency check — already credited for this (team, sponsor, goal_key).
+            if (team_id, sponsor_id, goal_key) in existing_by_key:
                 continue
 
             # Compute reward: base × GT-mult × nationality-mult
@@ -733,9 +685,8 @@ async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
                     "base_reward": reward_after_gt,
                     "multiplier": float(multiplier),
                     "final_reward": final_reward,
+                    "goal_key": goal_key,
                 }
-                if goal_key:
-                    insert_payload["goal_key"] = goal_key
 
                 supabase.table("sponsor_goal_completions").insert(insert_payload).execute()
             except Exception as exc:

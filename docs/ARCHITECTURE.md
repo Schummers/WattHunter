@@ -387,7 +387,7 @@ users ←──── league_members ────→ leagues
        tactic_usage_limits             (race_kind ∈ {gt, one_week} × 5 tactics, max_per_race — source of truth du trigger enforce_tactic_usage_limit ; Spec A A9 P3b)
        gt_emergency_bids               (DNF replacement bids during GT)
        gt_rescue_windows               (replace window cutoff per (gt_identifier, gt_year))
-       sponsor_goal_completions        (one-time sponsor goal payout tracking ; +`goal_key` TEXT column + unique index `idx_goal_completions_key` on (team_id, sponsor_id, goal_key, race_slug) — Spec C idempotency)
+       sponsor_goal_completions        (one-time sponsor goal payout tracking ; `goal_key` TEXT NOT NULL + sole unique index `idx_goal_completions_key` on (team_id, sponsor_id, goal_key, race_slug) — Spec C idempotency ; legacy goal_index index `idx_goal_completions_dedup` dropped)
 ```
 
 ### Migrations
