@@ -74,6 +74,28 @@ def _is_grand_tour_slug(race_slug: str) -> bool:
     return any(gt in race_slug for gt in GRAND_TOUR_SLUGS)
 
 
+def _is_doubled(result_type: str, race_slug: str) -> bool:
+    """B-value (×2) applies for Grand Tour stage/gc results and for monuments."""
+    if result_type == "monument":
+        return True
+    if result_type == "grand_tour":
+        return True
+    if result_type in ("stage", "gc") and _is_grand_tour_slug(race_slug):
+        return True
+    return False
+
+
+def _base_and_threshold(sponsor: dict, result_type: str) -> tuple[Optional[int], Optional[int]]:
+    """Map a result_type to the sponsor's A base amount + rank threshold."""
+    if result_type in ("gc", "grand_tour"):
+        return sponsor.get("bonus_gc"), sponsor.get("gc_threshold")
+    if result_type in ("one_day", "monument"):
+        return sponsor.get("bonus_one_day"), sponsor.get("one_day_threshold")
+    if result_type == "stage":
+        return sponsor.get("bonus_stage"), sponsor.get("stage_threshold")
+    return None, None
+
+
 def calculate_bonus(
     sponsor: dict,
     result_type: str,
@@ -81,53 +103,27 @@ def calculate_bonus(
     rider_nationality: Optional[str],
     race_slug: str,
 ) -> tuple[int, float, int]:
-    """Calculate sponsor bonus for a single race result.
+    """Calculate sponsor bonus for a single race result (Spec C 2-value barème).
 
-    Returns:
-        (base_bonus, multiplier, final_bonus)
-        (0, 0.0, 0) if the rank doesn't qualify.
+    A value from the sponsor row × 2 for Grand Tour/Monument × 1.20 for nationality
+    match (T1-T4 only). T6 keeps the legacy prestige path (deferred rework).
+    Returns (base, multiplier, final); (0, 0.0, 0) if rank doesn't qualify.
     """
-    has_explicit_prestige: bool = sponsor.get("has_explicit_prestige", False)
-
-    if has_explicit_prestige:
+    tier = sponsor.get("tier")
+    if tier == 6:
         return _calculate_bonus_t5_t6(sponsor, result_type, rank, race_slug)
-    else:
-        return _calculate_bonus_t1_t4(sponsor, result_type, rank, rider_nationality, race_slug)
 
-
-def _calculate_bonus_t1_t4(
-    sponsor: dict,
-    result_type: str,
-    rank: int,
-    rider_nationality: Optional[str],
-    race_slug: str,
-) -> tuple[int, float, int]:
-    """Bonus logic for T1-T4 sponsors — flat amounts, no x2 prestige multiplier."""
-    # Determine base amount and threshold
-    if result_type in ("gc", "grand_tour"):
-        base = sponsor["bonus_gc"]
-        threshold = sponsor["gc_threshold"]
-    elif result_type in ("one_day", "monument"):
-        base = sponsor["bonus_one_day"]
-        threshold = sponsor["one_day_threshold"]
-    elif result_type == "stage":
-        base = sponsor["bonus_stage"]
-        threshold = sponsor["stage_threshold"]
-    else:
+    base, threshold = _base_and_threshold(sponsor, result_type)
+    if base is None or threshold is None or rank > threshold:
         return (0, 0.0, 0)
 
-    if rank > threshold:
-        return (0, 0.0, 0)
+    multiplier = 2.0 if _is_doubled(result_type, race_slug) else 1.0
 
-    # Build multiplier
-    multiplier = 1.0
-
-    # ×1.25 for nationality match (T1-T4 only, but only when sponsor has a nationality)
-    sponsor_nat = sponsor.get("nationality")
-    if sponsor_nat and rider_nationality:
-        allowed = expand_sponsor_nationality(sponsor_nat)
-        if rider_nationality in allowed:
-            multiplier *= 1.25
+    if tier is not None and tier <= 4:
+        sponsor_nat = sponsor.get("nationality")
+        if sponsor_nat and rider_nationality:
+            if rider_nationality in expand_sponsor_nationality(sponsor_nat):
+                multiplier *= 1.20
 
     final = int(base * multiplier)
     return (base, multiplier, final)

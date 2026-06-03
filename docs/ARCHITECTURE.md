@@ -172,7 +172,8 @@ watthunter/
 │   ├── validation.py            # Validation donnees PCS
 │   ├── resolve_now.py           # Script resolution manuelle (dev)
 │   ├── resolve_gt_rescue.py     # Resolution DNF rescue (refund/replace)
-│   ├── goal_evaluator.py        # Evaluation sponsor GT goals
+│   ├── goal_evaluator.py        # Evaluation sponsor goals — `evaluate_sponsor_goals(supabase, parent_slug)` (GT + 1-week via `_is_squad_race`); `evaluate_gt_goals` is a backward-compat alias. Goals mirror `apps/web/lib/gt-goals.ts` (`SPONSOR_GOAL_SETS`); idempotency on stable `goal_key`. Points/KOM/Youth final winners read from `gt_final_classifications`.
+│   ├── reconcile_bonuses.py     # Read-only Giro reconciliation — `find_points_double_counts` + `reconcile_team_treasury`; no writes, safe to re-run.
 │   ├── dnf_detection.py         # Detection DNF pendant GT
 │   ├── tactics.py               # Resolution tactiques GT pre-scoring
 │   ├── backfill_traceability.py # Backfill colonnes traceabilite
@@ -386,7 +387,7 @@ users ←──── league_members ────→ leagues
        tactic_usage_limits             (race_kind ∈ {gt, one_week} × 5 tactics, max_per_race — source of truth du trigger enforce_tactic_usage_limit ; Spec A A9 P3b)
        gt_emergency_bids               (DNF replacement bids during GT)
        gt_rescue_windows               (replace window cutoff per (gt_identifier, gt_year))
-       sponsor_goal_completions        (one-time sponsor goal payout tracking)
+       sponsor_goal_completions        (one-time sponsor goal payout tracking ; +`goal_key` TEXT column + unique index `idx_goal_completions_key` on (team_id, sponsor_id, goal_key, race_slug) — Spec C idempotency)
 ```
 
 ### Migrations
