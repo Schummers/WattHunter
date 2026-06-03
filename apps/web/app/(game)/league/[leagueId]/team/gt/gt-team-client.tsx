@@ -84,6 +84,12 @@ const ROLE_ORDER: Array<{
     max: 2,
     desc: "No stage bonus or daily bonus. Base PCS points only.",
   },
+  {
+    role: "underdog",
+    label: "Underdog",
+    max: 2,
+    desc: "Eligible teams only. Stage points ×(PCS rank ÷ 100), capped ×4. No bonus on final classifications.",
+  },
 ];
 
 interface Props {

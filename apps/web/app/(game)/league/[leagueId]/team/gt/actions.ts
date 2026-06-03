@@ -11,6 +11,7 @@ const ROLES = [
   "tt_specialist",
   "stage_hunter",
   "domestique",
+  "underdog",
 ] as const;
 
 export type GtRole = (typeof ROLES)[number];
