@@ -473,7 +473,46 @@ The profile comes from `stage_profiles` (one row per stage_slug), seeded ahead o
 
 ---
 
-## 14. Admin tools
+## 14. Underdog (Spec B)
+
+> Implémenté : 2026-06-05 (branche `claude/dreamy-bassi-e1ab35`)
+> Spec : `docs/superpowers/specs/2026-06-01-spec-b-underdog-design.md`
+
+Mécanisme anti-rattrapage complémentaire au Co-Unlock Rule et au Level Curve Stretch (§12). Il cible les équipes structurellement en retard et leur accorde 3 avantages temporaires, **tous réversibles** dès qu'elles rattrapent le leader.
+
+### Éligibilité
+
+- **Condition** : `cumulative_xp < 75 % de l'XP du leader de la ligue`.
+- **Recalcul** : à chaque phase WT, via le RPC `recompute_underdog_eligibility(phase_id, year)` (pipeline Python `underdog-eligibility`).
+- **Flag temps réel** : `teams.underdog_eligible boolean` (lu par les triggers et le payday).
+- **Audit** : snapshot dans la table `underdog_eligibility` (une ligne par `(team_id, phase_id, year)`).
+
+### Avantage 1 — Rôle Underdog (cap 2)
+
+- Assignable uniquement par les équipes éligibles au sein de leur squad GT ou Race Team.
+- **Boost de scoring** : points de stage × `clamp(pcs_rank / 100, 1.0, 4.0)`.
+  - Ex. : coureur rang 272 → ×2.72 ; rang 432 → ×4.0 (plafond) ; rang 69 → ×1.0 (plancher).
+- **Pas de bonus sur les classements finaux** (GC, Points, KOM, Youth).
+- Coureur éligible au rôle : `pcs_rank > 100`.
+
+### Avantage 2 — Cap squad élargi (8 → 10)
+
+- Pour les équipes éligibles : capacité du squad GT et Race Team portée de **8 à 10 coureurs**.
+- Valide pour les Grands Tours **et** les courses d'une semaine (gating `race_slug`-aware dans le trigger `enforce_gt_squad_cap`).
+- Borné par les slots de roster liés au niveau : L5+ pour utiliser les 10 emplacements (L5 = 10 slots).
+- Revient automatiquement à 8 dès la première course suivant la sortie d'éligibilité.
+
+### Avantage 3 — Remise salariale −50 % (réversible)
+
+- **Condition contrat** : le coureur doit avoir `pcs_rank > 100` **et** l'équipe doit être éligible au moment du recrutement.
+- Le flag `contracts.underdog_discount boolean` est posé à l'INSERT par le trigger `trg_flag_underdog_contract`.
+- **Au payday** : si le flag est `true` **et** l'équipe est encore éligible (`underdog_eligible = true`), le salaire effectif = `floor(locked_salary × 0.5 / 1 000) × 1 000` (arrondi à **1 000 €**, per Spec D).
+- **Réversible** : si l'équipe sort de l'éligibilité, le payday suivant facture le plein tarif (`locked_salary`). Le flag contrat reste `true` mais est ignoré tant que l'équipe n'est plus éligible.
+- La remise est tracée dans `treasury_log` avec le suffixe `[underdog -50%]` dans la description.
+
+---
+
+## 15. Admin tools
 
 ### grant_xp (commissioner / admin)
 
@@ -483,7 +522,7 @@ The profile comes from `stage_profiles` (one row per stage_slug), seeded ahead o
 
 ---
 
-## 15. Late Join (Mid-Season)
+## 16. Late Join (Mid-Season)
 
 A player can join an **active league** (one that has already started auctions).
 
@@ -501,7 +540,7 @@ A player can join an **active league** (one that has already started auctions).
 
 ---
 
-## 16. GT Rescue (DNF Refund/Replace)
+## 17. GT Rescue (DNF Refund/Replace)
 
 During Grand Tours, riders can abandon (DNF). The GT Rescue system gives players options when this happens.
 
@@ -544,7 +583,7 @@ During Grand Tours, riders can abandon (DNF). The GT Rescue system gives players
 
 ---
 
-## 17. Sponsor GT Goals (V1b)
+## 18. Sponsor GT Goals (V1b)
 
 > Applies to **T4 sponsors** (Ineos, Decathlon AG2R, Soudal Quick-Step, Lidl-Trek).
 

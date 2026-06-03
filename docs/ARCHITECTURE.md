@@ -67,7 +67,7 @@ watthunter/
 │   │   │       │   ├── auctions/       # Draft bids + validation des rounds
 │   │   │       │   │   └── rounds/     # Calendrier des rounds (commissioner)
 │   │   │       │   ├── budget/          # Finances equipe (P&L, tresorerie)
-│   │   │       │   └── gt/             # Grand Tour squad builder V2 (cap 8)
+│   │   │       │   └── gt/             # Grand Tour squad builder V2 (cap 8, ou 10 si underdog_eligible — Spec B)
 │   │   │       │       ├── tactics/    # 5 tactiques in-race (Unleash, Overdrive, Nemesis x2, Call the Bus)
 │   │   │       │       └── rescue/     # GT Rescue (DNF refund/replace)
 │   │   │       ├── achievements/       # Systeme d'achievements
@@ -177,6 +177,7 @@ watthunter/
 │   ├── dnf_detection.py         # Detection DNF pendant GT
 │   ├── tactics.py               # Resolution tactiques GT pre-scoring
 │   ├── backfill_traceability.py # Backfill colonnes traceabilite
+│   ├── underdog.py              # Spec B — `recompute_eligibility(supabase, phase_id, year)` → RPC recompute_underdog_eligibility ; cmd `underdog-eligibility --phase N --year Y`
 │   └── retry_failed.py          # Retry erreurs pipeline
 ├── supabase/
 │   ├── migrations/              # Fichiers SQL (schema evolutif)
@@ -376,10 +377,17 @@ users ←──── league_members ────→ leagues
               → race_startlists
               → stage_profiles            (race_slug PK, profile_icon p0-p5, race_date ; pre-race source du profil pour le gating Nemesis dans place_tactic — Spec A A7, peuplée par services/pcs-sync/sync_race.py:import_stage_profiles via le pipeline startlists)
 
+       underdog_eligibility            (team_id, phase_id, year, is_eligible, leader_xp, team_xp, computed_at — snapshot éligibilité Underdog par phase ; PK (team_id, phase_id, year) ; RLS SELECT authenticated own-team)
+
        sponsor_bonuses                 (paiements bonus par resultat)
 
        Grand Tour Mode + 1-week Race Team (Spec A A9):
-       gt_squad                        (cap 8 coureurs par phase ; +race_slug TEXT nullable — Spec A A9 P3b ; partial unique indexes (team_id, race_slug) par rôle mirror celles sur phase_id ; Giro 2026 legacy → race_slug=NULL, Tour+Vuelta backfillés)
+       -- Colonnes Spec B (Underdog) sur tables existantes :
+       -- teams.underdog_eligible boolean (DEFAULT false) — flag runtime lu par triggers + payday
+       -- contracts.underdog_discount boolean (DEFAULT false) — contrat recruté sous conditions Underdog
+       -- rider_xp_daily.underdog_mult NUMERIC(3,2) (DEFAULT 1.0) — boost Underdog séparé de gt_role_mult
+
+       gt_squad                        (cap 8 coureurs par phase ; +race_slug TEXT nullable — Spec A A9 P3b ; partial unique indexes (team_id, race_slug) par rôle mirror celles sur phase_id ; Giro 2026 legacy → race_slug=NULL, Tour+Vuelta backfillés ; cap dynamique 8→10 si underdog_eligible — trigger enforce_gt_squad_cap race_slug-aware)
        gt_role_assignments             (append-only role history, cutoff 11:00 CET ; +race_slug TEXT nullable — Spec A A9 P3b ; idx_gt_role_team_race_slug)
        gt_daily_classifications        (cache GC/sprint/KOM/youth par stage — classification_type accepte désormais 'youth' en plus de gc/points/kom)
        gt_final_classifications        (final Points/KOM/Youth jersey standings — rank-only, Spec A A2 ; dédié scoring uniquement, hors race_results pour éviter pollution sponsor_bonus/goal_evaluator/UI ; migration 20260602130100)
@@ -399,7 +407,7 @@ Jalons majeurs (par date) :
 - **2026-03** : Race results, rankings, economy beta, level gating, enrich riders, design system v3
 - **2026-04** : 8 levels WT, sponsors rework (race bonuses), phase economy, draft bids, Anti-Runaway (Co-Unlock + Level Curve), code review fixes (12 SECURITY DEFINER RPCs)
 - **2026-05** : Late join, round lifecycle, GT Tactics (5 tactiques), GT Squad V2, auto-resolve consensus, 7-day release cooldown, sponsor GT goals, GT Rescue (DNF window), achievements
-- **2026-06** : `20260602100000_spec_a_level_curve_l7_l8.sql` — L7 1800→2600, L8 2400→5000 ; `20260602100100_race_results_breakaway_profile.sql` — ajout `breakaway_kms`, `profile_icon` sur `race_results` ; `20260602100200_daily_classif_allow_youth.sql` — classification_type accepte 'youth' ; `20260602120000_drop_remontada.sql` — suppression définitive remontada ; `20260602130000_rider_xp_daily_distance_bonus.sql` — ajout `gt_distance_bonus` NUMERIC(5,1) sur `rider_xp_daily` (Spec A A3) ; `20260602130100_gt_final_classifications.sql` — nouvelle table `gt_final_classifications` pour classements finaux Points/KOM/Youth (Spec A A2) ; `20260603000100_place_tactic_profile_gating.sql` — RPC `place_tactic` v2 (Spec A A7) : Nemesis Sprint requiert profile p1/p2/p3, Nemesis GC requiert p3/p4/p5 (lookup dans `stage_profiles`) ; **Spec A A9 P3b — Race Team 1-week** : `20260604000000` ajoute `race_slug TEXT` nullable sur `gt_squad` / `gt_role_assignments` / `gt_tactic_activations` (+ partial unique indexes par rôle et `idx_gt_tactic_activations_by_slug`, backfill deterministe Tour+Vuelta, Giro 2026 reste NULL forward-only) ; `20260604000100` crée la table `tactic_usage_limits` + seed 10 rows + trigger `enforce_tactic_usage_limit` ; `20260604000200` ajoute RPC `place_tactic` v3 — 8 args avec `p_race_slug TEXT DEFAULT NULL` trailing, dérive `race_kind` via `infer_race_kind(slug)`, accepte 1-week stage races (`^race/[^/]+/\d{4}/stage-\d+$`), remplace le hard `phase_id IN (4,6,8)` ; le bloc de profile-gating Nemesis P3a est préservé verbatim ; `20260604000300` ajoute RPCs `gt_add_to_squad` / `gt_remove_from_squad` / `gt_swap_slot` / `gt_assign_role` v2 — trailing `p_race_slug text DEFAULT NULL` ; scope race_slug quand fourni, fallback `(phase_id, year)` quand NULL.
+- **2026-06** : `20260602100000_spec_a_level_curve_l7_l8.sql` — L7 1800→2600, L8 2400→5000 ; `20260602100100_race_results_breakaway_profile.sql` — ajout `breakaway_kms`, `profile_icon` sur `race_results` ; `20260602100200_daily_classif_allow_youth.sql` — classification_type accepte 'youth' ; `20260602120000_drop_remontada.sql` — suppression définitive remontada ; `20260602130000_rider_xp_daily_distance_bonus.sql` — ajout `gt_distance_bonus` NUMERIC(5,1) sur `rider_xp_daily` (Spec A A3) ; `20260602130100_gt_final_classifications.sql` — nouvelle table `gt_final_classifications` pour classements finaux Points/KOM/Youth (Spec A A2) ; `20260603000100_place_tactic_profile_gating.sql` — RPC `place_tactic` v2 (Spec A A7) : Nemesis Sprint requiert profile p1/p2/p3, Nemesis GC requiert p3/p4/p5 (lookup dans `stage_profiles`) ; **Spec A A9 P3b — Race Team 1-week** : `20260604000000` ajoute `race_slug TEXT` nullable sur `gt_squad` / `gt_role_assignments` / `gt_tactic_activations` (+ partial unique indexes par rôle et `idx_gt_tactic_activations_by_slug`, backfill deterministe Tour+Vuelta, Giro 2026 reste NULL forward-only) ; `20260604000100` crée la table `tactic_usage_limits` + seed 10 rows + trigger `enforce_tactic_usage_limit` ; `20260604000200` ajoute RPC `place_tactic` v3 — 8 args avec `p_race_slug TEXT DEFAULT NULL` trailing, dérive `race_kind` via `infer_race_kind(slug)`, accepte 1-week stage races (`^race/[^/]+/\d{4}/stage-\d+$`), remplace le hard `phase_id IN (4,6,8)` ; le bloc de profile-gating Nemesis P3a est préservé verbatim ; `20260604000300` ajoute RPCs `gt_add_to_squad` / `gt_remove_from_squad` / `gt_swap_slot` / `gt_assign_role` v2 — trailing `p_race_slug text DEFAULT NULL` ; scope race_slug quand fourni, fallback `(phase_id, year)` quand NULL. **Spec B Underdog (2026-06-05)** : `20260605000000_underdog_eligibility` — table `underdog_eligibility` + colonne `teams.underdog_eligible` + RPC `recompute_underdog_eligibility(phase_id, year)` SECURITY DEFINER ; `20260605000100_underdog_role_and_squad_cap` — relaxation des CHECK sur `gt_squad`/`gt_role_assignments` (ajout `'underdog'`), `enforce_gt_squad_cap` race_slug-aware + cap dynamique 8/10 selon `underdog_eligible`, v2 `gt_add_to_squad`/`gt_assign_role` avec gate éligibilité + cap rôle 2 ; `20260605000200_underdog_salary_flag` — colonne `contracts.underdog_discount` + trigger BEFORE INSERT `trg_flag_underdog_contract` ; `20260605000250_rider_xp_daily_underdog_mult` — colonne `rider_xp_daily.underdog_mult NUMERIC(3,2)` (boost audit séparé de `gt_role_mult`) ; `20260605000300_underdog_payday_discount` — `confirm_phase_setup` v3 avec remise −50 % réversible sur contrats `underdog_discount = true` quand `underdog_eligible = true` (arrondi 1 000 €).
 
 ### RLS — Architecture
 
@@ -510,6 +518,7 @@ Le visiteur ne peut rien muter — les RPCs rejettent via `auth.uid() IS NULL`. 
 - Economie par phase : sponsor income + salaires deduits 1x/phase
 - 6 tiers sponsors (13 sponsors), 4 types de strategies, encheres sealed-bid 3 rounds
 - Anti-Runaway : Co-Unlock Rule + Level Curve Stretch
+- Underdog (Spec B) : éligibilité XP < 75 % du leader → rôle boost + squad 10 + −50 % salaire (réversible)
 - GT Tactics : 5 tactiques in-race (Unleash, Overdrive, Nemesis GC/Sprint, Call the Bus)
 - GT Rescue : DNF refund/replace window pendant les Grands Tours
 
@@ -657,6 +666,7 @@ Le visiteur ne peut rien muter — les RPCs rejettent via `auth.uid() IS NULL`. 
 - [x] Palmares (profil rider avec onglets Monuments / dynamiques + league rank)
 - [x] Design System v3.1 (navigation tokens)
 - [x] Spec A P2 — Scoring Refonte : classif V2 ×2 (youth ×1.5), GC final ×1.0, sprinter profile p1/p2/p3, stage_hunter breakaway 30 km + distance bonus, Overdrive breakaway-gated, final Points/KOM/Youth jerseys via `gt_final_classifications` (scale 80/20/10)
+- [x] Spec B — Underdog : `underdog_eligibility` table + `teams.underdog_eligible` flag + `recompute_underdog_eligibility` RPC ; rôle underdog (cap 2, boost clamp(rank/100,1,4)) ; squad cap dynamique 8→10 race_slug-aware ; `contracts.underdog_discount` + trigger `trg_flag_underdog_contract` ; `rider_xp_daily.underdog_mult` ; `confirm_phase_setup` v3 avec remise −50 % réversible (5 migrations `20260605000000–000300`)
 
 ### A implementer (pre-alpha)
 
