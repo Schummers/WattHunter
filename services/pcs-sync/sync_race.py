@@ -764,12 +764,14 @@ async def import_stage_profiles(
             continue
 
         race_date = _stage_date_from_md(stage.get("date"), year)
+        stage_type = _parse_stage_type(stage.get("stage_name"))
         try:
             supabase.table("stage_profiles").upsert(
                 {
                     "race_slug": normalized_slug,
                     "profile_icon": icon,
                     "race_date": race_date,
+                    "stage_type": stage_type,
                 },
                 on_conflict="race_slug",
             ).execute()
@@ -779,6 +781,24 @@ async def import_stage_profiles(
             skipped += 1
 
     return {"imported": imported, "skipped": skipped, "total_stages": len(stages)}
+
+
+# Matches "(ITT)" or "(TTT)" anywhere in the stage name (PCS includes it in the
+# title for TT stages, e.g. "Stage 16 (ITT) | Évian Les-Bains - Thonon Les-Bains").
+_STAGE_TYPE_RE = re.compile(r"\((I|T)TT\)")
+
+
+def _parse_stage_type(stage_name: Any) -> str:
+    """Return 'ITT', 'TTT' or 'RR' based on the marker PCS embeds in the
+    stage name from `Race.stages()`. Defaults to 'RR' when no marker is found
+    or when `stage_name` is missing — the same default as the column.
+    """
+    if not stage_name:
+        return "RR"
+    match = _STAGE_TYPE_RE.search(str(stage_name))
+    if not match:
+        return "RR"
+    return f"{match.group(1)}TT"
 
 
 _STAGE_SUFFIX_RE = re.compile(r"/(stage-\d+(?:[a-z])?)$")

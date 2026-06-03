@@ -690,6 +690,70 @@ async def test_import_stage_profiles_skips_stage_with_missing_profile():
     assert upserts[0]["race_slug"] == "race/x/2026/stage-1"
 
 
+async def test_import_stage_profiles_detects_itt_ttt_from_stage_name():
+    """The stage name returned by Race.stages() carries the PCS '(ITT)' /
+    '(TTT)' marker for time trials. The importer must parse it into the
+    `stage_type` column so place_tactic v4 can gate Nemesis/Overdrive on TTs.
+    Road stages without a marker default to 'RR'."""
+    import sync_race
+
+    fake_stages = [
+        {"stage_url": "race/tour-de-france/2026/stage-1",
+         "profile_icon": "p3", "date": "07-04",
+         "stage_name": "Stage 1 (TTT) | Barcelona - Barcelona"},
+        {"stage_url": "race/tour-de-france/2026/stage-5",
+         "profile_icon": "p1", "date": "07-08",
+         "stage_name": "Stage 5 | Lannemezan - Pau"},
+        {"stage_url": "race/tour-de-france/2026/stage-16",
+         "profile_icon": "p2", "date": "07-21",
+         "stage_name": "Stage 16 (ITT) | Évian Les-Bains - Thonon Les-Bains"},
+    ]
+
+    mock_race_instance = MagicMock()
+    mock_race_instance.is_one_day_race.return_value = False
+    mock_race_instance.stages.return_value = fake_stages
+    mock_race = MagicMock(return_value=mock_race_instance)
+
+    sb = make_supabase()
+
+    with _patch_fetch_html(), patch("sync_race.Race", mock_race):
+        await sync_race.import_stage_profiles(
+            sb, page=MagicMock(),
+            race_slug="race/tour-de-france/2026",
+            race_name="Tour de France",
+        )
+
+    by_slug = {r["race_slug"]: r for r in sb.upserts["stage_profiles"]}
+    assert by_slug["race/tour-de-france/2026/stage-1"]["stage_type"] == "TTT"
+    assert by_slug["race/tour-de-france/2026/stage-5"]["stage_type"] == "RR"
+    assert by_slug["race/tour-de-france/2026/stage-16"]["stage_type"] == "ITT"
+
+
+async def test_import_stage_profiles_defaults_stage_type_to_rr_when_marker_missing():
+    """Existing test fixtures (and any future stage where PCS omits the marker)
+    must default to 'RR' — never None — because the DB column is NOT NULL."""
+    import sync_race
+
+    fake_stages = [
+        {"stage_url": "race/x/2026/stage-1", "profile_icon": "p2", "date": "03-08"},
+        # No stage_name at all
+    ]
+    mock_race_instance = MagicMock()
+    mock_race_instance.is_one_day_race.return_value = False
+    mock_race_instance.stages.return_value = fake_stages
+    mock_race = MagicMock(return_value=mock_race_instance)
+
+    sb = make_supabase()
+
+    with _patch_fetch_html(), patch("sync_race.Race", mock_race):
+        await sync_race.import_stage_profiles(
+            sb, page=MagicMock(), race_slug="race/x/2026", race_name="X",
+        )
+
+    payload = sb._last_upsert_payload("stage_profiles")
+    assert payload["stage_type"] == "RR"
+
+
 async def test_import_stage_profiles_rewrites_canonical_pcs_slug_onto_input_slug():
     """When PCS returns a canonical race URL different from the input slug
     (e.g. Dauphiné → tour-auvergne-rhone-alpes), the upsert must use the
