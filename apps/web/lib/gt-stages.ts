@@ -16,36 +16,40 @@ export interface GtStage {
   profileIcon?: StageProfileIcon | null;
 }
 
+export type GetStagesOpts =
+  | { teamId: string; phaseId: 4 | 6 | 8; year: number }
+  | { teamId: string; raceSlug: string };
+
 /**
- * Get upcoming stages of a GT phase from the static schedule,
- * annotated with whether the team has already placed a tactic on each
- * and with the pre-race profile_icon from `stage_profiles` (P3a).
+ * Get upcoming stages of a race annotated with the team's tactic activations
+ * and the pre-race profile_icon from `stage_profiles` (Spec A P3a).
+ *
+ * Two modes:
+ *   - **GT** (`phaseId` + `year`): list of stages comes from the static
+ *     `GT_SCHEDULES` table (one entry per stage with a known calendar date).
+ *   - **1-week race** (`raceSlug`, e.g. `"race/dauphine/2026"`): list comes
+ *     from `stage_profiles` rows whose `race_slug` starts with `raceSlug/stage-`.
+ *     1-week races inherit the same status/cutoff/tactic-activation logic.
  */
 export async function getGtStages(
   supabase: SupabaseClient<Database>,
-  opts: { phaseId: 4 | 6 | 8; year: number; teamId: string },
+  opts: GetStagesOpts,
 ): Promise<GtStage[]> {
-  const gtSlug = phaseToGtSlug(opts.phaseId);
-  const scheduleKey = `${gtSlug}/${opts.year}`;
-  const schedule = GT_SCHEDULES[scheduleKey];
+  const stages = await ("raceSlug" in opts
+    ? buildOneWeekStages(supabase, opts.raceSlug)
+    : Promise.resolve(buildGtStages(opts.phaseId, opts.year)));
 
-  if (!schedule) return [];
+  if (stages.length === 0) return [];
 
-  const stages: GtStage[] = schedule.map((entry) => ({
-    number: entry.number,
-    date: entry.date,
-    slug: `race/${gtSlug}/${opts.year}/stage-${entry.number}`,
-    status: stageStatus(entry.date),
-    profileIcon: null,
-  }));
-
-  // Annotate hasTacticActive
-  const { data: tactics } = await supabase
+  // Annotate hasTacticActive — filter set depends on the mode.
+  const activationsQ = supabase
     .from("gt_tactic_activations")
     .select("stage_slug")
-    .eq("team_id", opts.teamId)
-    .eq("phase_id", opts.phaseId)
-    .eq("year", opts.year);
+    .eq("team_id", opts.teamId);
+  const { data: tactics } =
+    "raceSlug" in opts
+      ? await activationsQ.eq("race_slug", opts.raceSlug)
+      : await activationsQ.eq("phase_id", opts.phaseId).eq("year", opts.year);
 
   const activeSlugs = new Set((tactics ?? []).map((t) => t.stage_slug));
   const cutoffPassed = isCutoffPassedCET();
@@ -54,26 +58,72 @@ export async function getGtStages(
     if (s.status === "today") s.isTodayCutoffPassed = cutoffPassed;
   }
 
-  // Annotate profileIcon — single bulk read of stage_profiles (P3a).
-  // Forward-only: stages without a row stay `null` and the UI handles it.
-  const slugs = stages.map((s) => s.slug);
-  if (slugs.length > 0) {
+  // Annotate profileIcon — single bulk read of stage_profiles.
+  // For 1-week races the profile was already loaded in buildOneWeekStages
+  // (same query source), so skip the second round-trip when no slug is missing.
+  const missing = stages.filter((s) => s.profileIcon == null).map((s) => s.slug);
+  if (missing.length > 0) {
     const { data: profiles } = await supabase
       .from("stage_profiles")
       .select("race_slug, profile_icon")
-      .in("race_slug", slugs);
+      .in("race_slug", missing);
     const byslug = new Map<string, StageProfileIcon>();
     for (const p of profiles ?? []) {
       const icon = p.profile_icon as StageProfileIcon | null;
       if (icon) byslug.set(p.race_slug, icon);
     }
     for (const s of stages) {
-      const found = byslug.get(s.slug);
-      if (found) s.profileIcon = found;
+      if (s.profileIcon == null) {
+        const found = byslug.get(s.slug);
+        if (found) s.profileIcon = found;
+      }
     }
   }
 
   return stages.filter((s) => s.status !== "past");
+}
+
+function buildGtStages(phaseId: 4 | 6 | 8, year: number): GtStage[] {
+  const gtSlug = phaseToGtSlug(phaseId);
+  const schedule = GT_SCHEDULES[`${gtSlug}/${year}`];
+  if (!schedule) return [];
+  return schedule.map((entry) => ({
+    number: entry.number,
+    date: entry.date,
+    slug: `race/${gtSlug}/${year}/stage-${entry.number}`,
+    status: stageStatus(entry.date),
+    profileIcon: null,
+  }));
+}
+
+const STAGE_NUM_RE = /\/stage-(\d+)$/;
+
+async function buildOneWeekStages(
+  supabase: SupabaseClient<Database>,
+  raceSlug: string,
+): Promise<GtStage[]> {
+  // stage_profiles is the source of truth for 1-week races: it carries
+  // race_date (seeded by the startlists pipeline) and profile_icon.
+  const { data } = await supabase
+    .from("stage_profiles")
+    .select("race_slug, race_date, profile_icon")
+    .like("race_slug", `${raceSlug}/stage-%`)
+    .order("race_slug", { ascending: true });
+
+  const out: GtStage[] = [];
+  for (const row of data ?? []) {
+    const match = STAGE_NUM_RE.exec(row.race_slug);
+    if (!match || !row.race_date) continue;
+    out.push({
+      number: parseInt(match[1], 10),
+      date: row.race_date,
+      slug: row.race_slug,
+      status: stageStatus(row.race_date),
+      profileIcon: (row.profile_icon as StageProfileIcon | null) ?? null,
+    });
+  }
+  out.sort((a, b) => a.number - b.number);
+  return out;
 }
 
 function phaseToGtSlug(phaseId: 4 | 6 | 8): string {
