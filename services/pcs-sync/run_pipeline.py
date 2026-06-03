@@ -882,6 +882,18 @@ async def run_evaluate_goals(race_slug: str) -> None:
     print("Done.")
 
 
+async def run_underdog_eligibility(phase_id: int, year: int) -> None:
+    """Recompute underdog eligibility for all leagues (Spec B B0)."""
+    from sync import get_supabase
+    from underdog import recompute_eligibility
+
+    supabase = get_supabase()
+    print(f"=== Underdog eligibility: phase {phase_id}, year {year} ===")
+    result = recompute_eligibility(supabase, phase_id=phase_id, year=year)
+    print(f"Underdog eligibility recomputed: {result}")
+    print("Done.")
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -1022,6 +1034,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="League UUID",
     )
 
+    # underdog-eligibility
+    p_ud = subparsers.add_parser(
+        "underdog-eligibility",
+        help="Recompute underdog eligibility for all leagues (Spec B B0).",
+    )
+    p_ud.add_argument(
+        "--phase",
+        type=int,
+        required=True,
+        help="WT phase id (e.g. 4 = Giro)",
+    )
+    p_ud.add_argument(
+        "--year",
+        type=int,
+        required=True,
+        help="Season year (e.g. 2026)",
+    )
+
     return parser
 
 
@@ -1061,6 +1091,8 @@ async def main() -> None:
         await run_detect_dnfs(args.race, args.stage)
     elif args.command == "resolve-gt-rescue":
         await run_resolve_gt_rescue(args.phase, args.league)
+    elif args.command == "underdog-eligibility":
+        await run_underdog_eligibility(args.phase, args.year)
     else:
         parser.print_help()
         sys.exit(1)
