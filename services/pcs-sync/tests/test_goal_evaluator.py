@@ -27,6 +27,9 @@ from goal_evaluator import (
     eval_wear_kom_jersey,
     eval_gc_podium,
     eval_gc_top5,
+    eval_win_stage,
+    eval_win_2_stages,
+    suppress_tier_group_duplicates,
 )
 
 # ---------------------------------------------------------------------------
@@ -512,3 +515,303 @@ class TestGoalKeyIdempotencyIntent:
                 assert len(set(rewards)) > 1, (
                     f"{sponsor} tier_group '{tg}' has identical rewards — tiering won't work: {rewards}"
                 )
+
+
+# ---------------------------------------------------------------------------
+# Helper: build stage-win ctx shapes
+# ---------------------------------------------------------------------------
+
+def _make_stage_win_ctx(
+    role: str,
+    stage_slug: str,
+    winner_id: str,
+    profile: str | None,
+    eligible_riders_by_stage: dict | None = None,
+) -> dict:
+    """Minimal ctx for eval_win_stage and eval_win_2_stages.
+
+    Mirrors the ctx dict built in evaluate_gt_goals:
+      stage_wins: {stage_slug: winner_rider_id}
+      eligible_riders_by_stage: {stage_slug: set(rider_ids)}
+      role: str
+      stage_profiles: {stage_slug: profile_icon}
+    """
+    stage_wins = {stage_slug: winner_id}
+    elig = (
+        eligible_riders_by_stage
+        if eligible_riders_by_stage is not None
+        else {stage_slug: {winner_id}}
+    )
+    stage_profiles = {}
+    if profile is not None:
+        stage_profiles[stage_slug] = profile
+    return {
+        "stage_wins": stage_wins,
+        "eligible_riders_by_stage": elig,
+        "role": role,
+        "stage_profiles": stage_profiles,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Task 9 — Sprinter profile gating (Spec A Q14)
+# ---------------------------------------------------------------------------
+
+class TestSprinterProfileGating:
+    """eval_win_stage: sprinter role is gated to flat profiles (p1/p2/p3)."""
+
+    def test_sprinter_win_stage_gated_to_flat_profile(self):
+        """Sprinter winning a mountain stage (p5) → None."""
+        ctx = _make_stage_win_ctx(
+            role="sprinter",
+            stage_slug=STAGE_1,
+            winner_id=RIDER_A,
+            profile="p5",
+        )
+        result = eval_win_stage(ctx)
+        assert result is None
+
+    def test_sprinter_win_stage_counts_on_flat(self):
+        """Sprinter winning a flat stage (p1) → returns the rider."""
+        ctx = _make_stage_win_ctx(
+            role="sprinter",
+            stage_slug=STAGE_1,
+            winner_id=RIDER_A,
+            profile="p1",
+        )
+        result = eval_win_stage(ctx)
+        assert result is not None
+        assert result["rider_id"] == RIDER_A
+        assert result["stage_slug"] == STAGE_1
+
+    def test_sprinter_win_stage_counts_on_p2(self):
+        """Sprinter winning a p2 stage → returns the rider."""
+        ctx = _make_stage_win_ctx(
+            role="sprinter",
+            stage_slug=STAGE_1,
+            winner_id=RIDER_A,
+            profile="p2",
+        )
+        result = eval_win_stage(ctx)
+        assert result is not None
+        assert result["rider_id"] == RIDER_A
+
+    def test_sprinter_win_stage_counts_on_p3(self):
+        """Sprinter winning a p3 stage → returns the rider."""
+        ctx = _make_stage_win_ctx(
+            role="sprinter",
+            stage_slug=STAGE_1,
+            winner_id=RIDER_A,
+            profile="p3",
+        )
+        result = eval_win_stage(ctx)
+        assert result is not None
+        assert result["rider_id"] == RIDER_A
+
+    def test_sprinter_win_stage_missing_profile_returns_none(self):
+        """Sprinter winning a stage with unknown/missing profile → None (safe default)."""
+        ctx = _make_stage_win_ctx(
+            role="sprinter",
+            stage_slug=STAGE_1,
+            winner_id=RIDER_A,
+            profile=None,  # not in stage_profiles
+        )
+        result = eval_win_stage(ctx)
+        assert result is None
+
+    def test_stage_hunter_win_stage_not_gated(self):
+        """stage_hunter role is not gated — mountain stage win counts."""
+        ctx = _make_stage_win_ctx(
+            role="stage_hunter",
+            stage_slug=STAGE_1,
+            winner_id=RIDER_A,
+            profile="p5",  # mountain — irrelevant for stage_hunter
+        )
+        result = eval_win_stage(ctx)
+        assert result is not None
+        assert result["rider_id"] == RIDER_A
+        assert result["stage_slug"] == STAGE_1
+
+    def test_gc_leader_win_stage_not_gated(self):
+        """gc_leader role is not gated either."""
+        ctx = _make_stage_win_ctx(
+            role="gc_leader",
+            stage_slug=STAGE_1,
+            winner_id=RIDER_A,
+            profile="p6",
+        )
+        result = eval_win_stage(ctx)
+        assert result is not None
+        assert result["rider_id"] == RIDER_A
+
+    def test_sprinter_win_2_stages_only_counts_flat(self):
+        """eval_win_2_stages: sprinter — two mountain-stage wins → None (neither counts)."""
+        ctx = {
+            "stage_wins": {
+                STAGE_1: RIDER_A,
+                STAGE_2: RIDER_A,
+            },
+            "eligible_riders_by_stage": {
+                STAGE_1: {RIDER_A},
+                STAGE_2: {RIDER_A},
+            },
+            "role": "sprinter",
+            "stage_profiles": {
+                STAGE_1: "p5",
+                STAGE_2: "p4",
+            },
+        }
+        result = eval_win_2_stages(ctx)
+        assert result is None
+
+    def test_sprinter_win_2_stages_one_flat_one_mountain_returns_none(self):
+        """Only 1 flat stage — can't reach 2 — should return None."""
+        ctx = {
+            "stage_wins": {
+                STAGE_1: RIDER_A,
+                STAGE_2: RIDER_A,
+            },
+            "eligible_riders_by_stage": {
+                STAGE_1: {RIDER_A},
+                STAGE_2: {RIDER_A},
+            },
+            "role": "sprinter",
+            "stage_profiles": {
+                STAGE_1: "p1",  # flat — counts
+                STAGE_2: "p5",  # mountain — doesn't count
+            },
+        }
+        result = eval_win_2_stages(ctx)
+        assert result is None
+
+    def test_sprinter_win_2_stages_both_flat_returns_rider(self):
+        """2 flat-stage wins → returns the rider."""
+        ctx = {
+            "stage_wins": {
+                STAGE_1: RIDER_A,
+                STAGE_2: RIDER_A,
+            },
+            "eligible_riders_by_stage": {
+                STAGE_1: {RIDER_A},
+                STAGE_2: {RIDER_A},
+            },
+            "role": "sprinter",
+            "stage_profiles": {
+                STAGE_1: "p1",
+                STAGE_2: "p2",
+            },
+        }
+        result = eval_win_2_stages(ctx)
+        assert result is not None
+        assert result["rider_id"] == RIDER_A
+
+
+# ---------------------------------------------------------------------------
+# Task 10 — suppress_tier_group_duplicates
+# ---------------------------------------------------------------------------
+
+class TestSuppressTierGroupDuplicates:
+    """suppress_tier_group_duplicates: keep only highest-reward per (tier_group, rider_id)."""
+
+    def _make_goals(self, specs: list[dict]) -> list[dict]:
+        """Build minimal goal dicts from specs."""
+        return [
+            {
+                "key": s["key"],
+                "reward": s["reward"],
+                "tier_group": s.get("tier_group"),
+                "label": s["key"],
+                "evaluator": "win_stage",
+            }
+            for s in specs
+        ]
+
+    def test_suppress_tier_group_keeps_highest(self):
+        """Same tier_group + same rider: only the 30k goal_idx is kept."""
+        goals = self._make_goals([
+            {"key": "podium",  "reward": 30_000, "tier_group": "gc_placement"},  # idx 0
+            {"key": "top5",    "reward": 20_000, "tier_group": "gc_placement"},  # idx 1
+        ])
+        completed = {
+            0: {"rider_id": RIDER_A, "stage_slug": None},
+            1: {"rider_id": RIDER_A, "stage_slug": None},
+        }
+        result = suppress_tier_group_duplicates(goals, completed)
+        assert 0 in result, "highest-reward goal (idx 0, 30k) must be kept"
+        assert 1 not in result, "lower-reward goal (idx 1, 20k) must be suppressed"
+
+    def test_suppress_tier_group_different_riders_both_kept(self):
+        """Same tier_group, different riders → both kept (no cross-rider suppression)."""
+        goals = self._make_goals([
+            {"key": "podium",  "reward": 30_000, "tier_group": "gc_placement"},  # idx 0
+            {"key": "top5",    "reward": 20_000, "tier_group": "gc_placement"},  # idx 1
+        ])
+        completed = {
+            0: {"rider_id": RIDER_A, "stage_slug": None},
+            1: {"rider_id": RIDER_B, "stage_slug": None},
+        }
+        result = suppress_tier_group_duplicates(goals, completed)
+        assert 0 in result, "RIDER_A's podium must be kept"
+        assert 1 in result, "RIDER_B's top5 must be kept (different rider)"
+
+    def test_no_tier_group_all_kept(self):
+        """Goals with no tier_group are always kept regardless of rider."""
+        goals = self._make_goals([
+            {"key": "wear_gc",   "reward": 15_000},  # no tier_group, idx 0
+            {"key": "wear_youth","reward": 10_000},   # no tier_group, idx 1
+        ])
+        completed = {
+            0: {"rider_id": RIDER_A, "stage_slug": STAGE_1},
+            1: {"rider_id": RIDER_A, "stage_slug": STAGE_1},
+        }
+        result = suppress_tier_group_duplicates(goals, completed)
+        assert 0 in result
+        assert 1 in result
+
+    def test_rider_id_none_always_kept(self):
+        """Completions with rider_id=None (team goals) are never suppressed."""
+        goals = self._make_goals([
+            {"key": "two_riders_win", "reward": 20_000, "tier_group": "multi_stage"},  # idx 0
+            {"key": "win_stage",      "reward": 10_000, "tier_group": "multi_stage"},  # idx 1
+        ])
+        completed = {
+            0: {"rider_id": None, "stage_slug": None},
+            1: {"rider_id": None, "stage_slug": None},
+        }
+        result = suppress_tier_group_duplicates(goals, completed)
+        assert 0 in result
+        assert 1 in result
+
+    def test_single_completion_in_tier_group_kept(self):
+        """Only one goal in tier_group is completed — it must be kept."""
+        goals = self._make_goals([
+            {"key": "podium", "reward": 30_000, "tier_group": "gc_placement"},  # idx 0
+            {"key": "top5",   "reward": 20_000, "tier_group": "gc_placement"},  # idx 1
+        ])
+        completed = {
+            1: {"rider_id": RIDER_A, "stage_slug": None},  # only lower-reward completed
+        }
+        result = suppress_tier_group_duplicates(goals, completed)
+        assert 1 in result
+
+    def test_mixed_tier_groups_each_suppressed_independently(self):
+        """Two different tier_groups — each resolves independently."""
+        goals = self._make_goals([
+            {"key": "gc_podium",   "reward": 30_000, "tier_group": "gc_placement"},    # idx 0
+            {"key": "gc_top5",     "reward": 20_000, "tier_group": "gc_placement"},    # idx 1
+            {"key": "sprint_2s",   "reward": 20_000, "tier_group": "sprint_stages"},   # idx 2
+            {"key": "sprint_1s",   "reward": 10_000, "tier_group": "sprint_stages"},   # idx 3
+        ])
+        completed = {
+            0: {"rider_id": RIDER_A, "stage_slug": None},
+            1: {"rider_id": RIDER_A, "stage_slug": None},
+            2: {"rider_id": RIDER_B, "stage_slug": None},
+            3: {"rider_id": RIDER_B, "stage_slug": None},
+        }
+        result = suppress_tier_group_duplicates(goals, completed)
+        # gc_placement: keep idx 0 (30k), suppress idx 1 (20k)
+        assert 0 in result
+        assert 1 not in result
+        # sprint_stages: keep idx 2 (20k), suppress idx 3 (10k)
+        assert 2 in result
+        assert 3 not in result

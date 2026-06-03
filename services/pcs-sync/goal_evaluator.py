@@ -33,6 +33,9 @@ _PARIS_TZ = ZoneInfo("Europe/Paris")
 
 GT_RACE_PREFIXES = ("giro-d-italia", "tour-de-france", "vuelta-a-espana")
 
+# Spec A Q14: sprinter stage-win goals only count on flat profiles.
+FLAT_PROFILES = {"p1", "p2", "p3"}
+
 
 # ---------------------------------------------------------------------------
 # Goal definitions — mirrors apps/web/lib/gt-goals.ts exactly
@@ -209,6 +212,19 @@ def _squad_at_cutoff(
 
 
 # ---------------------------------------------------------------------------
+# Profile-gating helper (Spec A Q14)
+# ---------------------------------------------------------------------------
+
+def _stage_counts_for_role(ctx: dict, stage_slug: str) -> bool:
+    """Sprinter stage-win goals only count on flat profiles (p1/p2/p3).
+    Other roles are not gated. Spec A Q14."""
+    if ctx.get("role") != "sprinter":
+        return True
+    profile = (ctx.get("stage_profiles", {}) or {}).get(stage_slug)
+    return profile in FLAT_PROFILES
+
+
+# ---------------------------------------------------------------------------
 # Individual goal evaluators
 # ---------------------------------------------------------------------------
 
@@ -289,10 +305,13 @@ def eval_wear_kom_jersey(ctx: dict) -> Optional[dict]:
 
 
 def eval_win_stage(ctx: dict) -> Optional[dict]:
-    """Any eligible rider won a stage (rank 1)."""
+    """Any eligible rider won a stage (rank 1).
+    For sprinter role, only flat-profile stages count (Spec A Q14)."""
     stage_wins = ctx["stage_wins"]
     eligible = ctx["eligible_riders_by_stage"]
     for stage_slug, winner_id in stage_wins.items():
+        if not _stage_counts_for_role(ctx, stage_slug):
+            continue
         stage_eligible = eligible.get(stage_slug, set())
         if winner_id in stage_eligible:
             return {"rider_id": winner_id, "stage_slug": stage_slug}
@@ -300,11 +319,14 @@ def eval_win_stage(ctx: dict) -> Optional[dict]:
 
 
 def eval_win_2_stages(ctx: dict) -> Optional[dict]:
-    """Any single eligible rider won >= 2 stages."""
+    """Any single eligible rider won >= 2 stages.
+    For sprinter role, only flat-profile stages count (Spec A Q14)."""
     stage_wins = ctx["stage_wins"]
     eligible = ctx["eligible_riders_by_stage"]
     win_counts: dict[str, int] = {}
     for stage_slug, winner_id in stage_wins.items():
+        if not _stage_counts_for_role(ctx, stage_slug):
+            continue
         stage_eligible = eligible.get(stage_slug, set())
         if winner_id in stage_eligible:
             win_counts[winner_id] = win_counts.get(winner_id, 0) + 1
@@ -387,61 +409,28 @@ EVALUATORS = {
 
 
 # ---------------------------------------------------------------------------
-# Tiered goal resolution
+# Tier-group best-of suppression (Task 10)
 # ---------------------------------------------------------------------------
 
-def _resolve_tiered(goals: list[dict], completed: dict[int, dict]) -> dict[int, dict]:
-    """Remove lower-reward tiered goals when both in a pair are completed.
-
-    Works on goal dicts that have 'tier_group' (Spec C) or legacy 'tiered_with' (int index).
-    For tier_group: suppress the lower-reward goal within each group.
-    For tiered_with: original index-pair logic.
-    """
-    # Check if goals use the new tier_group system (Spec C)
-    if goals and "tier_group" in goals[0]:
-        return _resolve_tiered_by_group(goals, completed)
-    # Legacy: tiered_with index pairs
-    return _resolve_tiered_legacy(goals, completed)
-
-
-def _resolve_tiered_by_group(goals: list[dict], completed: dict[int, dict]) -> dict[int, dict]:
-    """Suppress lower-reward goals when a higher-reward goal in the same tier_group also completes."""
-    # Group completed goals by tier_group
-    group_completed: dict[str, list[tuple[int, dict]]] = {}
-    for idx, result in completed.items():
-        tg = goals[idx].get("tier_group")
-        if tg:
-            group_completed.setdefault(tg, []).append((idx, result))
-
-    suppressed: set[int] = set()
-    for tg, members in group_completed.items():
-        if len(members) < 2:
+def suppress_tier_group_duplicates(goals: list[dict], completed: dict) -> dict:
+    """Within a (tier_group, rider_id), keep only the highest-reward completed goal.
+    Goals without tier_group, or completions with rider_id None, are always kept.
+    `completed` maps goal_idx -> result (result has 'rider_id')."""
+    best: dict[tuple, int] = {}   # (tier_group, rider_id) -> goal_idx of current best
+    keep: dict[int, dict] = {}
+    for goal_idx, result in completed.items():
+        goal = goals[goal_idx]
+        tg = goal.get("tier_group")
+        rid = result.get("rider_id")
+        if not tg or rid is None:
+            keep[goal_idx] = result
             continue
-        # Keep highest reward; suppress the rest
-        members_sorted = sorted(members, key=lambda x: goals[x[0]]["reward"], reverse=True)
-        for idx, _ in members_sorted[1:]:
-            suppressed.add(idx)
-
-    return {k: v for k, v in completed.items() if k not in suppressed}
-
-
-def _resolve_tiered_legacy(goals: list[dict], completed: dict[int, dict]) -> dict[int, dict]:
-    """Original tiered_with (index) resolution logic."""
-    suppressed: set[int] = set()
-    visited: set[tuple[int, int]] = set()
-    for idx, goal in enumerate(goals):
-        partner = goal.get("tiered_with")
-        if partner is None or idx not in completed or partner not in completed:
-            continue
-        pair = (min(idx, partner), max(idx, partner))
-        if pair in visited:
-            continue
-        visited.add(pair)
-        if goals[idx]["reward"] >= goals[partner]["reward"]:
-            suppressed.add(partner)
-        else:
-            suppressed.add(idx)
-    return {k: v for k, v in completed.items() if k not in suppressed}
+        key = (tg, rid)
+        if key not in best or goal["reward"] > goals[best[key]]["reward"]:
+            best[key] = goal_idx
+    for key, goal_idx in best.items():
+        keep[goal_idx] = completed[goal_idx]
+    return keep
 
 
 # ---------------------------------------------------------------------------
@@ -504,7 +493,7 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
 
     # --- Fetch race_results for all stages + GC (paginated, see _fetch_all) ---
     all_results: list[dict] = _fetch_all(lambda: supabase.table("race_results").select(
-        "rider_id, race_slug, rank, stage, is_itt, race_date"
+        "rider_id, race_slug, rank, stage, is_itt, race_date, profile_icon"
     ).like("race_slug", f"{gt_parent_slug}%"))
 
     # Build stage_wins: {stage_slug: winner_rider_id}
@@ -515,6 +504,8 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
     gc_results: dict[str, int] = {}
     # Collect all stage slugs with dates
     stage_dates: dict[str, date] = {}
+    # Build stage_profiles: {stage_slug: profile_icon} (Spec A Q14 — sprinter gating)
+    stage_profiles: dict[str, str] = {}
 
     for r in all_results:
         slug = r["race_slug"]
@@ -532,6 +523,9 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
                 stage_dates[slug] = date.fromisoformat(str(r["race_date"])[:10])
             if rank == 1:
                 stage_wins[slug] = r["rider_id"]
+            # Capture profile_icon for each stage slug (same value for all rows in that stage)
+            if r.get("profile_icon") and slug not in stage_profiles:
+                stage_profiles[slug] = r["profile_icon"]
             if r.get("is_itt"):
                 itt_results.setdefault(slug, []).append({
                     "rider_id": r["rider_id"],
@@ -669,14 +663,16 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
                 "eligible_riders_by_stage": eligible_by_stage,
                 "all_squad_riders": all_squad_riders,
                 "last_stage_slug": last_stage_slug,
+                "role": role,
+                "stage_profiles": stage_profiles,
             }
 
             result = eval_fn(ctx)
             if result is not None:
                 completed[goal_idx] = result
 
-        # Resolve tiered goals
-        completed = _resolve_tiered(goals, completed)
+        # Resolve tiered goals — keep highest-reward per (tier_group, rider_id)
+        completed = suppress_tier_group_duplicates(goals, completed)
 
         # Insert new completions + credit treasury
         for goal_idx, result in completed.items():
