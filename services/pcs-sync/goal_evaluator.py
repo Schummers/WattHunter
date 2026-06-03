@@ -700,7 +700,7 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
                 allowed = expand_sponsor_nationality(sponsor_nat)
                 nat = rider_nat.get(triggering_rider_id, "")
                 if nat and nat in allowed:
-                    multiplier = 1.25
+                    multiplier = 1.20  # Spec C: nationality bonus reduced 1.25 → 1.20
 
             final_reward = int(reward_after_gt * multiplier)
 
