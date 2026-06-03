@@ -672,22 +672,26 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
     bonus_result = await process_race_bonuses(supabase, all_imported_slugs)
     print(f"  Sponsor bonuses: {bonus_result.get('bonuses_created', 0)} bonuses credited")
 
-    # GT Goal evaluation (V1b) — only for GT stages
-    gt_prefixes = ("race/giro-d-italia/", "race/tour-de-france/", "race/vuelta-a-espana/")
-    gt_parent = None
+    # Sponsor goal evaluation — GT and 1-week stage races (evaluate_sponsor_goals
+    # skips non-stage-race slugs automatically via _is_squad_race).
+    # Collect unique parent slugs from all imported slugs that belong to a stage race.
+    seen_parents: set[str] = set()
     for s in all_imported_slugs:
-        if any(s.startswith(p) for p in gt_prefixes):
-            m = re.match(r"^(race/[a-z0-9-]+/\d{4})", s)
-            if m:
-                gt_parent = m.group(1)
-                break
-    if gt_parent:
-        from goal_evaluator import evaluate_gt_goals
-        goal_result = await evaluate_gt_goals(supabase, gt_parent)
-        print(f"  GT Goals: {goal_result.get('goals_completed', 0)} goals awarded")
-        if goal_result.get("errors"):
-            for err in goal_result["errors"]:
-                print(f"    ERROR: {err}")
+        m = re.match(r"^(race/[a-z0-9-]+/\d{4})", s)
+        if m:
+            candidate = m.group(1)
+            if _is_squad_race(candidate) and candidate not in seen_parents:
+                seen_parents.add(candidate)
+    if seen_parents:
+        from goal_evaluator import evaluate_sponsor_goals
+        for stage_parent in sorted(seen_parents):
+            goal_result = await evaluate_sponsor_goals(supabase, stage_parent)
+            if goal_result.get("skipped"):
+                continue  # _is_squad_race guard already filters; defensive only
+            print(f"  Goals ({stage_parent}): {goal_result.get('goals_completed', 0)} awarded")
+            if goal_result.get("errors"):
+                for err in goal_result["errors"]:
+                    print(f"    ERROR: {err}")
 
     # Post-import verification: show contracted riders + imported points for manual cross-check
     if all_imported_slugs:
@@ -861,17 +865,20 @@ async def run_backfill_photos() -> None:
 
 
 async def run_evaluate_goals(race_slug: str) -> None:
-    """Evaluate GT sponsor goals (one-time bonuses) for a Grand Tour."""
+    """Evaluate sponsor goals (one-time bonuses) for a stage race (GT or 1-week)."""
     from sync import get_supabase
-    from goal_evaluator import evaluate_gt_goals
+    from goal_evaluator import evaluate_sponsor_goals
 
     supabase = get_supabase()
-    print(f"=== Evaluate GT Goals: {race_slug} ===")
-    result = await evaluate_gt_goals(supabase, race_slug)
-    print(f"Goals completed: {result.get('goals_completed', 0)}")
-    if result.get("errors"):
-        for err in result["errors"]:
-            print(f"  ERROR: {err}")
+    print(f"=== Evaluate Goals: {race_slug} ===")
+    result = await evaluate_sponsor_goals(supabase, race_slug)
+    if result.get("skipped"):
+        print(f"Skipped: {result['skipped']}")
+    else:
+        print(f"Goals completed: {result.get('goals_completed', 0)}")
+        if result.get("errors"):
+            for err in result["errors"]:
+                print(f"  ERROR: {err}")
     print("Done.")
 
 

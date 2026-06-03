@@ -815,3 +815,82 @@ class TestSuppressTierGroupDuplicates:
         # sprint_stages: keep idx 2 (20k), suppress idx 3 (10k)
         assert 2 in result
         assert 3 not in result
+
+
+# ---------------------------------------------------------------------------
+# Task 11 — evaluate_sponsor_goals: non-stage-race skip + 1-week multiplier
+# ---------------------------------------------------------------------------
+
+class TestEvaluateSponsorGoalsSkipNonStageRace:
+    """evaluate_sponsor_goals returns skipped for one-day/monument slugs."""
+
+    def test_milano_sanremo_is_skipped(self):
+        """race/milano-sanremo/2026 is a one-day race — _is_squad_race returns False."""
+        import asyncio
+        from goal_evaluator import evaluate_sponsor_goals
+
+        # Pass a dummy supabase; the function must return before any DB calls.
+        dummy_supabase = object()
+        result = asyncio.run(
+            evaluate_sponsor_goals(dummy_supabase, "race/milano-sanremo/2026")
+        )
+        assert result.get("skipped") == "not a stage race", (
+            f"Expected skipped='not a stage race', got: {result}"
+        )
+        assert result.get("goals_completed") == 0
+        assert result.get("errors") == []
+
+    def test_empty_slug_is_skipped(self):
+        """An empty string is not a stage race."""
+        import asyncio
+        from goal_evaluator import evaluate_sponsor_goals
+
+        dummy_supabase = object()
+        result = asyncio.run(evaluate_sponsor_goals(dummy_supabase, ""))
+        assert result.get("skipped") == "not a stage race"
+
+    def test_unknown_one_day_slug_is_skipped(self):
+        """A plausible one-day slug not in the calendar is not a stage race."""
+        import asyncio
+        from goal_evaluator import evaluate_sponsor_goals
+
+        dummy_supabase = object()
+        result = asyncio.run(
+            evaluate_sponsor_goals(dummy_supabase, "race/not-a-real-race/2026")
+        )
+        assert result.get("skipped") == "not a stage race"
+
+
+class TestGtRewardMultiplierVsOneWeek:
+    """Unit-level assertion: gt_reward_multiplier returns 1.0 for 1-week races.
+
+    This verifies the multiplier invariant that drives evaluate_sponsor_goals
+    reward computation: a base-10k goal at a 1-week race pays 10,000 (not 20,000).
+    Full integration with DB mocking is impractical here (the _fetch_all helper
+    uses .range() which requires a chainable mock). The multiplier is the only
+    difference between a 1-week and a GT evaluation; correctness of the
+    evaluate_sponsor_goals body for stage races is otherwise identical to
+    evaluate_gt_goals (which has existing coverage).
+    """
+
+    def test_tirreno_adriatico_returns_1(self):
+        """Tirreno-Adriatico is in the calendar as a stage-race, not a GT."""
+        assert gt_reward_multiplier("race/tirreno-adriatico/2026") == 1.0
+
+    def test_paris_nice_returns_1(self):
+        assert gt_reward_multiplier("race/paris-nice/2026") == 1.0
+
+    def test_tour_de_suisse_returns_1(self):
+        assert gt_reward_multiplier("race/tour-de-suisse/2026") == 1.0
+
+    def test_one_week_base_10k_goal_pays_10k(self):
+        """Multiplier correctly scales a 10k base reward to 10k for 1-week races."""
+        mult = gt_reward_multiplier("race/paris-nice/2026")
+        base_reward = 10_000
+        assert int(base_reward * mult) == 10_000
+
+    def test_gt_base_10k_goal_pays_20k(self):
+        """GT multiplier correctly scales a 10k base reward to 20k."""
+        mult = gt_reward_multiplier("race/giro-d-italia/2026")
+        base_reward = 10_000
+        assert int(base_reward * mult) == 20_000

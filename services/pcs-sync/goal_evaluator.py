@@ -1,7 +1,7 @@
 """
-GT Goal Evaluator — WattHunter PCS Sync Microservice.
+Stage-Race Goal Evaluator — WattHunter PCS Sync Microservice.
 
-Evaluates T4 sponsor one-time goals after each GT stage.
+Evaluates T4 sponsor one-time goals after each GT or 1-week stage race.
 Called from Pipeline B (post-race) after scoring + base sponsor bonuses.
 
 Goals are defined in apps/web/lib/gt-goals.ts (canonical source).
@@ -9,8 +9,9 @@ This file mirrors the definitions and evaluates them against race data.
 
 Spec C changes:
 - SPONSOR_GOAL_SETS dict mirrors gt-goals.ts with stable `key` fields.
-- evaluate_gt_goals dispatches via SPONSOR_GOAL_SETS (falling back to legacy GT_GOALS).
-- GT ×2 multiplier applied via gt_reward_multiplier(parent_slug).
+- evaluate_sponsor_goals is the new generalized entry point (GT + 1-week).
+- evaluate_gt_goals is kept as a backward-compatible alias.
+- GT ×2 multiplier applied via gt_reward_multiplier(parent_slug); 1-week = ×1.
 - Idempotency uses (team_id, sponsor_id, goal_key, race_slug) instead of goal_index.
 - goal_index still written for backward display compat.
 - eval_win_points_classification and new eval_win_kom_classification read gt_final_classifications.
@@ -437,34 +438,52 @@ def suppress_tier_group_duplicates(goals: list[dict], completed: dict) -> dict:
 # Main pipeline function
 # ---------------------------------------------------------------------------
 
-async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
-    """Evaluate all T4 sponsor GT goals for every team.
+async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
+    """Evaluate all T4 sponsor one-time goals for every team for a stage race.
+
+    Handles both Grand Tours (×2 reward multiplier) and 1-week stage races (×1).
+    Non-stage-race slugs (monuments, one-day races) are skipped immediately.
+
+    Squad scoping mirrors scoring.py: uses _phase_year_from_slug(parent_slug) →
+    phase_id + year filter on gt_squad / gt_role_assignments.  For GT slugs this
+    maps to the correct phase_id (giro→4, tour→6, vuelta→8). For 1-week races
+    scoring.py uses the same helper, falling back to phase_id=4; we do the same
+    so goal evaluation is always consistent with what scoring credited.
 
     Args:
         supabase: Supabase client
-        gt_parent_slug: e.g. "race/giro-d-italia/2026"
+        parent_slug: e.g. "race/giro-d-italia/2026" or "race/paris-nice/2026"
 
-    Returns dict with goals_completed count and errors.
+    Returns dict with goals_completed count and errors (or skipped key if
+    the slug is not a stage race).
     """
+    from scoring import _is_squad_race, _phase_year_from_slug
+
+    if not _is_squad_race(parent_slug):
+        return {
+            "status": "skipped",
+            "goals_completed": 0,
+            "errors": [],
+            "skipped": "not a stage race",
+        }
+
     errors: list[str] = []
     goals_completed = 0
 
-    gt_name_match = re.match(r"^race/([a-z0-9-]+)/(\d{4})", gt_parent_slug)
-    if not gt_name_match:
-        return {"status": "error", "goals_completed": 0, "errors": ["Invalid GT slug"]}
+    race_name_match = re.match(r"^race/([a-z0-9-]+)/(\d{4})", parent_slug)
+    if not race_name_match:
+        return {"status": "error", "goals_completed": 0, "errors": ["Invalid race slug"]}
 
-    gt_name = gt_name_match.group(1)
-    year = int(gt_name_match.group(2))
+    year = int(race_name_match.group(2))
 
-    gt_phase_map = {
-        "giro-d-italia": 4,
-        "tour-de-france": 5,
-        "vuelta-a-espana": 7,
-    }
-    phase_id = gt_phase_map.get(gt_name, 4)
+    # Mirror scoring.py: resolve phase_id via _phase_year_from_slug.
+    # GTs: giro→4, tour→6, vuelta→8. 1-week races: fallback phase_id=4.
+    # This is intentional — the query must match what scoring.py used when it
+    # credited XP for this race's squad (see scoring.py lines 430, 451-464).
+    phase_id, _year = _phase_year_from_slug(parent_slug)
 
-    # GT ×2 multiplier for rewards
-    base_gt_mult = gt_reward_multiplier(gt_parent_slug)
+    # GT ×2 multiplier for rewards; 1-week races get ×1.0
+    base_gt_mult = gt_reward_multiplier(parent_slug)
 
     # --- Fetch teams with T4 sponsors ---
     ts_resp = supabase.table("team_sponsors").select(
@@ -494,7 +513,7 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
     # --- Fetch race_results for all stages + GC (paginated, see _fetch_all) ---
     all_results: list[dict] = _fetch_all(lambda: supabase.table("race_results").select(
         "rider_id, race_slug, rank, stage, is_itt, race_date, profile_icon"
-    ).like("race_slug", f"{gt_parent_slug}%"))
+    ).like("race_slug", f"{parent_slug}%"))
 
     # Build stage_wins: {stage_slug: winner_rider_id}
     stage_wins: dict[str, str] = {}
@@ -542,20 +561,22 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
     # --- Fetch gt_daily_classifications (paginated) — all types including youth/kom ---
     classif_rows = _fetch_all(lambda: supabase.table("gt_daily_classifications").select(
         "race_slug, rider_id, classification_type, rank"
-    ).like("race_slug", f"{gt_parent_slug}%"))
+    ).like("race_slug", f"{parent_slug}%"))
 
     classifications: dict[str, list[dict]] = {}
     for c in classif_rows:
         classifications.setdefault(c["race_slug"], []).append(c)
 
     # --- Fetch gt_final_classifications for points/kom/youth winners ---
+    # 1-week finals are stored in the same table under {parent_slug}/{ctype}.
     final_classifications: dict[str, list[dict]] = {"points": [], "kom": [], "youth": []}
     for ctype in ("points", "kom", "youth"):
         rows = _fetch_all(lambda c=ctype: supabase.table("gt_final_classifications")
-                          .select("rider_id, rank").eq("race_slug", f"{gt_parent_slug}/{c}"))
+                          .select("rider_id, rank").eq("race_slug", f"{parent_slug}/{c}"))
         final_classifications[ctype] = rows
 
-    # --- Fetch GT squad + role assignments (paginated) ---
+    # --- Fetch squad + role assignments (paginated) ---
+    # Mirror scoring.py: filter by phase_id + year (same logic as calculate_daily_scores).
     squad_rows = _fetch_all(lambda: supabase.table("gt_squad").select(
         "team_id, rider_id, role, created_at, removed_at"
     ).eq("phase_id", phase_id).eq("year", year))
@@ -591,7 +612,7 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
     # --- Pre-fetch existing goal_key completions for this race (new idempotency) ---
     existing_resp = supabase.table("sponsor_goal_completions").select(
         "team_id, sponsor_id, goal_key, goal_index"
-    ).eq("race_slug", gt_parent_slug).execute()
+    ).eq("race_slug", parent_slug).execute()
 
     # New-style dedup: (team_id, sponsor_id, goal_key) where goal_key is not None
     existing_by_key: set[tuple[str, str, str]] = set()
@@ -706,7 +727,7 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
                     "sponsor_id": sponsor_id,
                     "goal_index": goal_idx,
                     "goal_label": goal["label"],
-                    "race_slug": gt_parent_slug,
+                    "race_slug": parent_slug,
                     "stage_slug": result.get("stage_slug"),
                     "rider_id": triggering_rider_id,
                     "base_reward": reward_after_gt,
@@ -738,8 +759,8 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
                     "type": "gt_goal_bonus",
                     "amount": final_reward,
                     "description": (
-                        f"GT Goal: {goal['label']} "
-                        f"in {gt_parent_slug} (×{multiplier})"
+                        f"Goal: {goal['label']} "
+                        f"in {parent_slug} (×{multiplier})"
                     ),
                     "rider_id": triggering_rider_id,
                 }).execute()
@@ -757,3 +778,12 @@ async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
         "goals_completed": goals_completed,
         "errors": errors,
     }
+
+
+async def evaluate_gt_goals(supabase, gt_parent_slug: str) -> dict:
+    """Backward-compatible alias for evaluate_sponsor_goals.
+
+    Kept so existing callers (run_pipeline evaluate-goals CLI, tests) continue
+    to work without modification. New code should call evaluate_sponsor_goals.
+    """
+    return await evaluate_sponsor_goals(supabase, gt_parent_slug)
