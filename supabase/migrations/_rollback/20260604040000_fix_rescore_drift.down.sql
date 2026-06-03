@@ -1,4 +1,4 @@
--- Rollback for 20260604030000_fix_rescore_drift.sql
+-- Rollback for 20260604040000_fix_rescore_drift.sql
 -- Restores the post-rescore (drifted) cumulative_xp values and removes the audit rows.
 
 ALTER TABLE public.teams DISABLE TRIGGER teams_protect_sensitive_fields;
