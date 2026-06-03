@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WattHunter — UI Mockups v3 (Sponsor card B · Underdog price in K · right layout)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-app: #0c1012; --bg-subtle: #111618; --bg-surface: #151b1e;
+    --bg-surface-hover: #1a2226; --bg-surface-active: #1f292e;
+    --border-subtle: #151b1e; --border-default: #273339; --border-hover: #334249;
+    --text-high: #eaeff1; --text-mid: #89a1ad; --text-low: #74919f; --text-ghost: #334249;
+    --cyan-400: #22d3ee; --cyan-500: #06b6d4;
+    --accent-default: #06b6d4; --accent-highlight: #22d3ee; --accent-label: #0ea5e9;
+    --badge-bg: rgba(14, 165, 233, 0.10);
+    --success: #10b981; --danger: #ef4444;
+    --type-display: 34px; --type-stat: 22px; --type-page-title: 20px; --type-section: 18px;
+    --type-stat-small: 18px; --type-emphasis: 16px; --type-body: 16px;
+    --type-caption: 14px; --type-label: 14px; --type-micro: 12px;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+    --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
+    --radius-md: 6px; --radius-lg: 8px; --radius-pill: 20px;
+    --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "Geist Mono", "SF Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg-app); color: var(--text-high); font-family: var(--font-sans); font-size: var(--type-body); line-height: 1.45; padding: var(--space-12) var(--space-6) 120px; -webkit-font-smoothing: antialiased; }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+
+  .page-head h1 { font-size: var(--type-page-title); font-weight: 700; letter-spacing: -0.01em; }
+  .page-head p { color: var(--text-mid); font-size: var(--type-caption); margin-top: var(--space-2); }
+
+  .section-label { font-size: var(--type-label); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-low); margin: var(--space-12) 0 var(--space-2); }
+  .sub-label { font-size: var(--type-micro); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-mid); margin: var(--space-6) 0 var(--space-3); }
+  .section-sub { color: var(--text-mid); font-size: var(--type-caption); margin-bottom: var(--space-5); max-width: 780px; }
+  .section-sub code, .legend code, .note code { font-family: var(--font-mono); color: var(--text-mid); }
+
+  .tag { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--type-caption); font-weight: 500; padding: 3px 10px; border-radius: var(--radius-pill); white-space: nowrap; }
+  .tag-highlight { color: var(--accent-label); background: var(--badge-bg); border: 1px solid transparent; }
+
+  .row-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-4); align-items: start; }
+
+  /* ════ SPONSOR CARD (faithful to sponsor-bonus-card.tsx) ════ */
+  .pcard { border: 1px solid var(--border-default); border-radius: var(--radius-lg); background: var(--bg-surface); }
+  .pcard.selected { border: 2px solid var(--accent-default); }
+  .phead { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 12px 14px; text-align: left; }
+  .radio { flex: none; width: 18px; height: 18px; margin-top: 2px; border-radius: 9999px; border: 2px solid var(--border-default); display: grid; place-items: center; }
+  .radio.on { border-color: var(--accent-default); background: var(--accent-default); }
+  .radio.on::after { content: ""; width: 7px; height: 7px; border-radius: 9999px; background: var(--bg-app); }
+  .phead-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+  .phead-l1 { display: flex; align-items: center; gap: 10px; }
+  .pname { font-size: var(--type-emphasis); font-weight: 600; color: var(--text-high); }
+  .pbudget { margin-left: auto; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--type-emphasis); font-weight: 600; color: var(--text-high); }
+  .chev { flex: none; color: var(--text-low); transition: transform .2s; }
+  .chev.open { transform: rotate(180deg); }
+  .ptags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+  .pbody { padding: 0 14px 14px; }
+
+  /* header row: block title + A/B column headers, aligned to the value grid */
+  .hrow { display: grid; grid-template-columns: 1fr 46px 46px; align-items: baseline; }
+  .hrow.topline { margin-top: var(--space-1); padding-top: var(--space-2); border-top: 1px solid var(--border-default); }
+  .hrow .htitle { font-size: var(--type-label); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-low); display: flex; align-items: center; gap: 6px; }
+  .hrow .hc { font-size: var(--type-micro); font-weight: 700; text-transform: uppercase; color: var(--text-low); text-align: right; }
+  .hrow .hc.gt { padding-left: var(--space-2); }
+
+  .goals-wrap { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-default); }
+  .goal-sep { border-top: 1px solid var(--border-default); margin: 10px 0; }
+
+  .brow { display: grid; grid-template-columns: 1fr 46px 46px; align-items: baseline; padding: 4px 0; }
+  .blabel { font-size: var(--type-caption); color: var(--text-high); min-width: 0; }
+  .blabel .brole { color: var(--text-mid); margin-left: 6px; }
+  .bv { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--type-caption); font-weight: 600; text-align: right; }
+  .bv.a { color: var(--text-mid); }          /* column A = secondary */
+  .bv.b { color: var(--text-high); padding-left: var(--space-2); border-left: 1px solid var(--border-subtle); }
+
+  .ab-legend { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-default); font-size: var(--type-caption); color: var(--text-mid); display: flex; flex-direction: column; gap: 3px; }
+  .ab-legend b { color: var(--text-high); font-family: var(--font-mono); }
+  .ab-legend .nat { color: var(--text-low); }
+
+  /* ════ PRICE SURFACES (K format · single "right" layout) ════ */
+  .pfull { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-low); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .pcut  { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-high); font-weight: 600; }
+  .lay-right { display: inline-flex; align-items: baseline; gap: 6px; }
+
+  .note { background: var(--bg-surface); border: 1px solid var(--border-default); border-left: 2px solid var(--accent-label); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--type-caption); color: var(--text-mid); margin-bottom: var(--space-6); }
+  .note b { color: var(--text-high); }
+
+  .demo-single { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: var(--space-4); display: inline-flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-8); }
+  .demo-single .ttl { font-size: var(--type-micro); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-low); }
+  .demo-single .line { font-size: var(--type-stat-small); }
+  .demo-single .pfull { font-size: var(--type-caption); }
+
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: var(--space-6); }
+  .surface { display: flex; flex-direction: column; gap: var(--space-3); }
+  .surface-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  .surface-title { font-size: var(--type-emphasis); font-weight: 600; color: var(--text-high); }
+  .surface-file { font-family: var(--font-mono); font-size: var(--type-micro); color: var(--text-low); }
+  .surface-note { font-size: var(--type-caption); color: var(--text-mid); }
+  .frame { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: var(--space-4); }
+
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th { font-size: var(--type-micro); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-low); text-align: left; padding: 0 0 var(--space-2); border-bottom: 1px solid var(--border-subtle); }
+  .tbl th.r, .tbl td.r { text-align: right; }
+  .tbl td { padding: var(--space-3) 0; border-bottom: 1px solid var(--border-subtle); font-size: var(--type-caption); vertical-align: middle; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl .name { font-size: var(--type-emphasis); font-weight: 600; color: var(--text-high); }
+  .tbl .rk { font-family: var(--font-mono); color: var(--text-mid); }
+  .tbl .sal { font-family: var(--font-mono); color: var(--text-high); }
+
+  .inforow { display: flex; align-items: center; justify-content: space-between; padding: var(--space-2) 0; font-size: var(--type-body); border-bottom: 1px solid var(--border-default); }
+  .inforow:last-child { border-bottom: none; }
+  .inforow .k { color: var(--text-mid); }
+  .inforow .v { font-family: var(--font-mono); font-weight: 500; color: var(--text-high); }
+  .bid-label { font-size: var(--type-body); font-weight: 500; color: var(--text-high); }
+  .bid-input { margin-top: var(--space-2); height: 40px; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface); display: flex; align-items: center; padding: 0 10px; font-family: var(--font-mono); color: var(--text-ghost); font-size: var(--type-emphasis); }
+
+  .metric-row { display: flex; gap: var(--space-3); }
+  .metric { flex: 1; background: var(--bg-surface); border-radius: var(--radius-lg); padding: 10px var(--space-3); display: flex; flex-direction: column; gap: 2px; }
+  .metric .mval { font-family: var(--font-mono); font-size: var(--type-stat); font-weight: 800; color: var(--text-high); display: flex; align-items: baseline; gap: 6px; }
+  .metric .mval .pfull { font-size: var(--type-caption); font-weight: 500; }
+  .metric .mlabel { font-size: var(--type-label); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-low); }
+
+  .stepper { display: flex; align-items: center; gap: var(--space-1); }
+  .step-btn { width: 40px; height: 40px; flex: none; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface-active); color: var(--text-mid); display: grid; place-items: center; font-size: 20px; }
+  .step-mid { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .step-input { height: 40px; width: 100%; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface); text-align: center; font-family: var(--font-mono); font-size: var(--type-emphasis); color: var(--text-high); display: grid; place-items: center; }
+  .step-help { margin-top: 3px; font-size: var(--type-micro); color: var(--text-low); }
+  .step-help .pfull, .step-help .pcut { font-size: var(--type-micro); }
+  .step-help .pcut { color: var(--text-high); }
+
+  .mcell { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .mcell .pill-input { display: flex; align-items: center; gap: 2px; height: 28px; padding: 0 var(--space-2); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+  .mcell .pill-input .ph { font-family: var(--font-mono); color: var(--text-low); font-size: var(--type-caption); }
+  .mcell .pill-input .eur { font-size: var(--type-caption); color: var(--text-ghost); }
+  .mcell .mhelp { font-size: var(--type-micro); color: var(--text-low); }
+  .mcell .mhelp .pcut { color: var(--text-high); font-size: var(--type-micro); }
+  .mcell .mhelp .pfull { font-size: var(--type-micro); }
+
+  .legend { margin-top: var(--space-8); font-size: var(--type-caption); color: var(--text-low); max-width: 840px; }
+  .legend strong { color: var(--text-mid); }
+  .end-marker { margin-top: var(--space-8); text-align: center; font-size: var(--type-micro); color: var(--text-ghost); text-transform: uppercase; letter-spacing: 0.1em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-head">
+    <h1>WattHunter — UI Mockups v3</h1>
+    <p>Sponsor card grounded in <code style="font-family:var(--font-mono);color:var(--text-mid)">sponsor-bonus-card.tsx</code> · A/B columns (A muted) · legend nat→A→B · prices in K · one layout (right).</p>
+  </header>
+
+  <!-- ════ SECTION 1 ════ -->
+  <div class="section-label">1 · Sponsor bonus card</div>
+
+  <div class="sub-label">1A · Collapsed (header only) — chevron to open</div>
+  <div class="row-3">
+    <div class="surface">
+      <div class="surface-note">Budget / GT-Team — no radio</div>
+      <div class="pcard"><div class="phead"><div class="phead-main">
+        <div class="phead-l1"><span class="pname">Decathlon AG2R</span><span class="pbudget">750K</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="ptags"><span class="tag tag-highlight">GC</span><span class="tag tag-highlight">Sprint</span><span class="tag tag-highlight">🇫🇷 FR</span></div>
+      </div></div></div>
+    </div>
+    <div class="surface">
+      <div class="surface-note">Marketplace — radio (unselected)</div>
+      <div class="pcard"><div class="phead"><div class="radio"></div><div class="phead-main">
+        <div class="phead-l1"><span class="pname">Decathlon AG2R</span><span class="pbudget">750K</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="ptags"><span class="tag tag-highlight">GC</span><span class="tag tag-highlight">Sprint</span><span class="tag tag-highlight">🇫🇷 FR</span></div>
+      </div></div></div>
+    </div>
+    <div class="surface">
+      <div class="surface-note">Marketplace — selected</div>
+      <div class="pcard selected"><div class="phead"><div class="radio on"></div><div class="phead-main">
+        <div class="phead-l1"><span class="pname">Decathlon AG2R</span><span class="pbudget">750K</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="ptags"><span class="tag tag-highlight">GC</span><span class="tag tag-highlight">Sprint</span><span class="tag tag-highlight">🇫🇷 FR</span></div>
+      </div></div></div>
+    </div>
+  </div>
+
+  <div class="sub-label">1B · Expanded (validated) — A/B columns, A amounts in secondary, headers aligned on the block line</div>
+  <div style="max-width:440px">
+    <div class="pcard">
+      <div class="phead"><div class="phead-main">
+        <div class="phead-l1"><span class="pname">Decathlon AG2R</span><span class="pbudget">750K</span><svg class="chev open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="ptags"><span class="tag tag-highlight">GC</span><span class="tag tag-highlight">Sprint</span><span class="tag tag-highlight">🇫🇷 FR</span></div>
+      </div></div>
+      <div class="pbody">
+        <div class="hrow topline"><span class="htitle">Base Bonus (cumulative)</span><span class="hc">A</span><span class="hc gt">B</span></div>
+        <div class="brow"><span class="blabel">GC — Top 10</span><span class="bv a">10k</span><span class="bv b">20k</span></div>
+        <div class="brow"><span class="blabel">Stage — Top 3</span><span class="bv a">5k</span><span class="bv b">10k</span></div>
+        <div class="brow"><span class="blabel">One-day — Top 10</span><span class="bv a">10k</span><span class="bv b">20k</span></div>
+
+        <div class="goals-wrap">
+          <div class="hrow"><span class="htitle"><span class="tag tag-highlight">GC</span> Bonus (one-time)</span><span class="hc">A</span><span class="hc gt">B</span></div>
+          <div class="brow"><span class="blabel">GC podium <span class="brole">GC Leader</span></span><span class="bv a">30k</span><span class="bv b">60k</span></div>
+          <div class="brow"><span class="blabel">Top 5 GC <span class="brole">GC Leader</span></span><span class="bv a">20k</span><span class="bv b">40k</span></div>
+          <div class="brow"><span class="blabel">Wear leader jersey <span class="brole">GC Leader</span></span><span class="bv a">15k</span><span class="bv b">30k</span></div>
+          <div class="brow"><span class="blabel">Wear young jersey <span class="brole">GC Leader</span></span><span class="bv a">10k</span><span class="bv b">20k</span></div>
+
+          <div class="goal-sep"></div>
+          <div class="hrow"><span class="htitle"><span class="tag tag-highlight">Sprint</span> Bonus (one-time)</span><span class="hc">A</span><span class="hc gt">B</span></div>
+          <div class="brow"><span class="blabel">Win points classif. <span class="brole">Sprinter</span></span><span class="bv a">30k</span><span class="bv b">60k</span></div>
+          <div class="brow"><span class="blabel">Win 2 sprint stages <span class="brole">Sprinter</span></span><span class="bv a">20k</span><span class="bv b">40k</span></div>
+          <div class="brow"><span class="blabel">Win 1 sprint stage <span class="brole">Sprinter</span></span><span class="bv a">10k</span><span class="bv b">20k</span></div>
+          <div class="brow"><span class="blabel">Wear points jersey <span class="brole">Sprinter</span></span><span class="bv a">10k</span><span class="bv b">20k</span></div>
+        </div>
+
+        <div class="ab-legend">
+          <span class="nat">🇫🇷 French rider: all bonuses ×1.20</span>
+          <span><b>A</b> &nbsp;1-week race &amp; one-day</span>
+          <span><b>B</b> &nbsp;Grand Tour &amp; Monument (×2)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ SECTION 2 ════ -->
+  <div class="section-label">2 · Underdog reduced price — in K, single layout (right)</div>
+  <div class="note"><b>Rule implication:</b> prices in K (52k / 26k) require bids to move in <b>1,000 € steps</b> — today the increment is 100 €. This mockup assumes that switch. A dedicated spec is needed (see chat prompt I gave you).</div>
+  <p class="section-sub">One layout everywhere: <strong style="color:var(--text-low)">struck full</strong> + <strong style="color:var(--text-high)">reduced</strong>, to the right. No chip. Example: underdog rk #142, full <span class="num">52k</span> → reduced <span class="num">26k</span> (−50%).</p>
+
+  <div class="demo-single">
+    <span class="ttl">The one layout — right</span>
+    <span class="line"><span class="lay-right"><span class="pfull num">52k</span><span class="pcut num">26k</span></span></span>
+  </div>
+
+  <div class="gallery">
+
+    <div class="surface">
+      <div class="surface-head"><span class="surface-title">Auction — rider table</span><span class="surface-file">rider-table.tsx:140</span></div>
+      <div class="surface-note">Salary column.</div>
+      <div class="frame">
+        <table class="tbl">
+          <thead><tr><th>Rider</th><th class="r">PCS</th><th class="r">Salary</th></tr></thead>
+          <tbody>
+            <tr><td><div class="name">Tadej Pogačar</div></td><td class="r"><span class="rk">1</span></td><td class="r"><span class="sal">500k</span></td></tr>
+            <tr><td><div class="name">Mathias Vacek</div></td><td class="r"><span class="rk">142</span></td><td class="r"><span class="lay-right"><span class="pfull num">52k</span><span class="pcut num">26k</span></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="surface">
+      <div class="surface-head"><span class="surface-title">Auction — rider dialog</span><span class="surface-file">rider-dialog.tsx:140,203</span></div>
+      <div class="surface-note">Info row + bid label.</div>
+      <div class="frame">
+        <div class="inforow"><span class="k">PCS Rank</span><span class="v">#142</span></div>
+        <div class="inforow"><span class="k">Minimum salary</span><span class="lay-right"><span class="pfull num">52k</span><span class="pcut num">26k/mo</span></span></div>
+        <div style="height:var(--space-4)"></div>
+        <div class="bid-label">Monthly salary bid <span style="color:var(--text-mid);font-weight:400">(min. <span class="pfull num">52k</span> <span class="pcut num">26k</span>/mo)</span></div>
+        <div class="bid-input">26k</div>
+      </div>
+    </div>
+
+    <div class="surface">
+      <div class="surface-head"><span class="surface-title">Rider detail — metric box</span><span class="surface-file">rider-detail-client.tsx:232</span></div>
+      <div class="surface-note">Big stat + struck inline.</div>
+      <div class="frame">
+        <div class="metric-row">
+          <div class="metric"><div class="mval">1 240</div><div class="mlabel">Game XP</div></div>
+          <div class="metric"><div class="mval">—</div><div class="mlabel">Bonus</div></div>
+          <div class="metric"><div class="mval">26k <span class="pfull">52k</span></div><div class="mlabel">Min. Salary</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="surface">
+      <div class="surface-head"><span class="surface-title">Draft bid card — stepper</span><span class="surface-file">draft-bid-card.tsx:234</span></div>
+      <div class="surface-note">Helper under input.</div>
+      <div class="frame">
+        <div class="stepper">
+          <div class="step-btn">−</div>
+          <div class="step-mid"><div class="step-input">€26k</div><div class="step-help">Min: <span class="pfull num">€52k</span> <span class="pcut num">€26k</span></div></div>
+          <div class="step-btn">+</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="surface">
+      <div class="surface-head"><span class="surface-title">Market — inline bid cell</span><span class="surface-file">market-client.tsx:361,385</span></div>
+      <div class="surface-note">Placeholder = reduced floor; “Min:” carries the strike.</div>
+      <div class="frame">
+        <div class="mcell">
+          <div class="pill-input"><span class="ph num">26k</span><span class="eur">€</span></div>
+          <div class="mhelp">Min: <span class="pfull num">€52k</span> <span class="pcut num">€26k</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="surface">
+      <div class="surface-head"><span class="surface-title">Not touched — committed €</span><span class="surface-file">status / results / treasury</span></div>
+      <div class="surface-note">Already paid/owed → no strike.</div>
+      <div class="frame">
+        <div class="inforow"><span class="k">Locked salary</span><span class="v">26k/mo</span></div>
+        <div class="inforow"><span class="k">Your bid</span><span class="v">26k/mo</span></div>
+        <div class="inforow"><span class="k">Budget after</span><span class="v">312k</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="legend"><strong>Note:</strong> a shared <code>&lt;RiderPrice&gt;</code> + K-formatting unifies the 3 formats used today (<code>155,000 EUR</code> / <code>€155 000</code> / <code>155 000</code>) into one. Strikethrough = <code>--text-low</code>, reduced = <code>--text-high</code>. No chip.</p>
+
+  <div class="end-marker">— end of mockups —</div>
+
+</div>
+</body>
+</html>

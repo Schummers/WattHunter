@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import functools
 import json
 import os
 import re
@@ -63,6 +64,70 @@ GT_SLUG_PREFIXES = (
 def _is_gt_stage(slug: str) -> bool:
     """True when the slug is a Grand Tour stage URL (e.g. race/giro-d-italia/2026/stage-4)."""
     return slug.startswith(GT_SLUG_PREFIXES) and "/stage-" in slug
+
+
+def _is_gt_race(slug: str) -> bool:
+    """True when the slug is a Grand Tour race (with or without a /stage-N or /gc suffix)."""
+    return slug.startswith(GT_SLUG_PREFIXES)
+
+
+@functools.lru_cache(maxsize=1)
+def _stage_race_slug_prefixes() -> tuple[str, ...]:
+    """Mirror of the scoring.py helper — calendar-driven stage-race whitelist."""
+    try:
+        with open(CALENDAR_PATH, encoding="utf-8") as fh:
+            calendar = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return tuple()
+    out: list[str] = []
+    for e in calendar:
+        if e.get("type") != "stage-race":
+            continue
+        s = e.get("slug") or ""
+        if s:
+            out.append(s)
+            out.append(s if s.endswith("/") else s + "/")
+    return tuple(out)
+
+
+def _is_squad_race(slug: str) -> bool:
+    """True for any stage-race slug (GT + 1-week). Use this instead of _is_gt_race
+    when the question is 'should we run squad-aware scoring / finals import here?'."""
+    if not slug:
+        return False
+    if slug.startswith(GT_SLUG_PREFIXES):
+        return True
+    return any(slug == p.rstrip("/") or slug.startswith(p)
+               for p in _stage_race_slug_prefixes())
+
+
+async def _maybe_import_finals(supabase, browser, parent_slug, race_name, race_date, gc_result, imported_slugs):
+    """After a stage-race GC import, import final Points/KOM/Youth jerseys once the race is complete.
+
+    Completion signal: GC carries PCS points (assigned only after the final stage).
+    Used for GTs (Giro/Tour/Vuelta) AND 1-week stage races whose GC carries points (Spec A A9).
+    Appends the three final slugs to imported_slugs so scoring picks them up.
+    """
+    if not (_is_squad_race(parent_slug) and gc_result.get("has_points")):
+        return
+    from sync_race import import_final_classifications
+
+    print("  Waiting 15s before final classifications...")
+    await asyncio.sleep(15)
+    ctx_f = await browser.new_context(user_agent=USER_AGENT)
+    f_page = await ctx_f.new_page()
+    try:
+        fc = await import_final_classifications(
+            supabase, f_page,
+            race_slug=parent_slug, race_name=race_name, race_date=race_date,
+        )
+        print(f"    Final classifs: points={fc['points']} kom={fc['kom']} youth={fc['youth']}")
+        for ct in ("points", "kom", "youth"):
+            imported_slugs.append(f"{parent_slug}/{ct}")
+    except Exception as exc:
+        print(f"    Final classif import failed: {exc}")
+    finally:
+        await ctx_f.close()
 
 
 async def _fetch_gt_classifications(supabase, browser, parent_slug: str, stage_url: str) -> None:
@@ -322,6 +387,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
         print(f"--- Direct GC import: {race_slug} ---")
         ctx_gc = await browser.new_context(user_agent=USER_AGENT)
         gc_page = await ctx_gc.new_page()
+        gc_result = {}
         try:
             gc_result = await import_gc_results(
                 supabase, gc_page,
@@ -334,6 +400,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
         except Exception as exc:
             print(f"  GC import failed: {exc}")
         await ctx_gc.close()
+        await _maybe_import_finals(supabase, browser, parent_slug, race_name, race_date, gc_result, imported_slugs)
         return imported_slugs
 
     # Direct stage import: when slug contains /stage-N, bypass get_stage_urls()
@@ -371,6 +438,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
         await asyncio.sleep(15)
         ctx_gc = await browser.new_context(user_agent=USER_AGENT)
         gc_page = await ctx_gc.new_page()
+        gc_result = {}
         try:
             gc_result = await import_gc_results(
                 supabase, gc_page,
@@ -383,6 +451,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
         except Exception as exc:
             print(f"  GC import failed: {exc}")
         await ctx_gc.close()
+        await _maybe_import_finals(supabase, browser, parent_slug, race_name, race_date, gc_result, imported_slugs)
 
         return imported_slugs
 
@@ -468,6 +537,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
             await asyncio.sleep(15)
             ctx_gc = await browser.new_context(user_agent=USER_AGENT)
             gc_page = await ctx_gc.new_page()
+            gc_result = {}
             try:
                 gc_result = await import_gc_results(
                     supabase, gc_page,
@@ -480,6 +550,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
             except Exception as exc:
                 print(f"  GC import failed: {exc}")
             await ctx_gc.close()
+            await _maybe_import_finals(supabase, browser, race_slug, race_name, race_date, gc_result, imported_slugs)
     else:
         print("--- One-day race — importing result ---")
         ctx = await browser.new_context(user_agent=USER_AGENT)
@@ -529,7 +600,7 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
     return imported_slugs
 
 
-async def run_post_race(race_slug: str | None = None, auto: bool = False, with_ranking: bool = False, no_cutoff: bool = False, no_overtake_detection: bool = False) -> None:
+async def run_post_race(race_slug: str | None = None, auto: bool = False, with_ranking: bool = False, no_cutoff: bool = False) -> None:
     """Post-race pipeline: import results then calculate scores."""
     from browser_session import BrowserSession
     from sync import get_supabase
@@ -593,7 +664,7 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
     # Calculate daily scores with the actual race slugs imported
     print()
     print("--- Calculating daily scores ---")
-    scoring_result = await calculate_daily_scores(supabase, race_slugs=all_imported_slugs or None, ignore_role_cutoff=no_cutoff, skip_overtake_detection=no_overtake_detection)
+    scoring_result = await calculate_daily_scores(supabase, race_slugs=all_imported_slugs or None, ignore_role_cutoff=no_cutoff)
     print(json.dumps(scoring_result, indent=2))
 
     # Sponsor bonuses for race results
@@ -601,22 +672,26 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
     bonus_result = await process_race_bonuses(supabase, all_imported_slugs)
     print(f"  Sponsor bonuses: {bonus_result.get('bonuses_created', 0)} bonuses credited")
 
-    # GT Goal evaluation (V1b) — only for GT stages
-    gt_prefixes = ("race/giro-d-italia/", "race/tour-de-france/", "race/vuelta-a-espana/")
-    gt_parent = None
+    # Sponsor goal evaluation — GT and 1-week stage races (evaluate_sponsor_goals
+    # skips non-stage-race slugs automatically via _is_squad_race).
+    # Collect unique parent slugs from all imported slugs that belong to a stage race.
+    seen_parents: set[str] = set()
     for s in all_imported_slugs:
-        if any(s.startswith(p) for p in gt_prefixes):
-            m = re.match(r"^(race/[a-z0-9-]+/\d{4})", s)
-            if m:
-                gt_parent = m.group(1)
-                break
-    if gt_parent:
-        from goal_evaluator import evaluate_gt_goals
-        goal_result = await evaluate_gt_goals(supabase, gt_parent)
-        print(f"  GT Goals: {goal_result.get('goals_completed', 0)} goals awarded")
-        if goal_result.get("errors"):
-            for err in goal_result["errors"]:
-                print(f"    ERROR: {err}")
+        m = re.match(r"^(race/[a-z0-9-]+/\d{4})", s)
+        if m:
+            candidate = m.group(1)
+            if _is_squad_race(candidate) and candidate not in seen_parents:
+                seen_parents.add(candidate)
+    if seen_parents:
+        from goal_evaluator import evaluate_sponsor_goals
+        for stage_parent in sorted(seen_parents):
+            goal_result = await evaluate_sponsor_goals(supabase, stage_parent)
+            if goal_result.get("skipped"):
+                continue  # _is_squad_race guard already filters; defensive only
+            print(f"  Goals ({stage_parent}): {goal_result.get('goals_completed', 0)} awarded")
+            if goal_result.get("errors"):
+                for err in goal_result["errors"]:
+                    print(f"    ERROR: {err}")
 
     # Post-import verification: show contracted riders + imported points for manual cross-check
     if all_imported_slugs:
@@ -634,10 +709,10 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
 # ---------------------------------------------------------------------------
 
 async def run_startlists(race_slug: str) -> None:
-    """Pre-race pipeline: fetch and import the race startlist."""
+    """Pre-race pipeline: fetch the race startlist + stage profiles (Spec A A7)."""
     from browser_session import BrowserSession
     from sync import get_supabase
-    from sync_race import import_startlist
+    from sync_race import import_startlist, import_stage_profiles
 
     supabase = get_supabase()
     race_name, race_date_val = race_meta(race_slug)
@@ -660,11 +735,21 @@ async def run_startlists(race_slug: str) -> None:
                 race_date=race_date_val,
             )
             print(json.dumps(result, indent=2))
+
+            print()
+            print("--- Importing stage profiles ---")
+            profiles = await import_stage_profiles(
+                supabase,
+                page,
+                race_slug=race_slug,
+                race_name=race_name,
+            )
+            print(json.dumps(profiles, indent=2))
         finally:
             await context.close()
 
     print()
-    print("Done — startlists complete.")
+    print("Done — startlists + stage profiles complete.")
 
 
 # ---------------------------------------------------------------------------
@@ -780,17 +865,20 @@ async def run_backfill_photos() -> None:
 
 
 async def run_evaluate_goals(race_slug: str) -> None:
-    """Evaluate GT sponsor goals (one-time bonuses) for a Grand Tour."""
+    """Evaluate sponsor goals (one-time bonuses) for a stage race (GT or 1-week)."""
     from sync import get_supabase
-    from goal_evaluator import evaluate_gt_goals
+    from goal_evaluator import evaluate_sponsor_goals
 
     supabase = get_supabase()
-    print(f"=== Evaluate GT Goals: {race_slug} ===")
-    result = await evaluate_gt_goals(supabase, race_slug)
-    print(f"Goals completed: {result.get('goals_completed', 0)}")
-    if result.get("errors"):
-        for err in result["errors"]:
-            print(f"  ERROR: {err}")
+    print(f"=== Evaluate Goals: {race_slug} ===")
+    result = await evaluate_sponsor_goals(supabase, race_slug)
+    if result.get("skipped"):
+        print(f"Skipped: {result['skipped']}")
+    else:
+        print(f"Goals completed: {result.get('goals_completed', 0)}")
+        if result.get("errors"):
+            for err in result["errors"]:
+                print(f"  ERROR: {err}")
     print("Done.")
 
 
@@ -837,12 +925,6 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Bypass the 11h CET role-assignment cutoff (retroactive scoring only)",
     )
-    post_race.add_argument(
-        "--no-overtake-detection",
-        action="store_true",
-        help="Skip overtake detection (use for retroactive rescores to avoid phantom triggers)",
-    )
-
     # startlists
     startlists = subparsers.add_parser(
         "startlists",
@@ -964,7 +1046,6 @@ async def main() -> None:
             auto=args.auto,
             with_ranking=args.with_ranking,
             no_cutoff=args.no_cutoff,
-            no_overtake_detection=args.no_overtake_detection,
         )
     elif args.command == "startlists":
         await run_startlists(args.race)

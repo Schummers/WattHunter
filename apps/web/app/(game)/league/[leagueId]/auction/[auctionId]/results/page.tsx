@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { formatMoney } from "@/lib/format";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -118,7 +119,7 @@ export default async function AuctionResultsPage({
                             {bid.teams?.name}
                           </TableCell>
                           <TableCell className="text-right font-mono">
-                            {bid.amount.toLocaleString("en-US")} EUR
+                            {formatMoney(bid.amount)}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -141,7 +142,7 @@ export default async function AuctionResultsPage({
                         Total amount
                       </span>
                       <span className="font-medium font-mono text-[var(--text-high)]">
-                        {total.toLocaleString("en-US")} EUR
+                        {formatMoney(total)}
                       </span>
                     </div>
                     {won.length > 0 && (
@@ -150,10 +151,7 @@ export default async function AuctionResultsPage({
                           Average bid
                         </span>
                         <span className="font-medium font-mono text-[var(--text-high)]">
-                          {Math.round(total / won.length).toLocaleString(
-                            "en-US"
-                          )}{" "}
-                          EUR
+                          {formatMoney(Math.round(total / won.length))}
                         </span>
                       </div>
                     )}

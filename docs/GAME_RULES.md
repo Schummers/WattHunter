@@ -86,14 +86,14 @@ New teams start at **200,000 EUR**.
 ### 4.4 Salary Formula
 
 ```
-Monthly salary = max(5,000, floor(PCS_points_1yr × 2,000 / 12 / 100) × 100)
-Floor: 5,000 EUR/month | Rounded down to nearest 100 | No cap
+Monthly salary = max(5,000, floor(PCS_points_1yr × 2,000 / 12 / 1,000) × 1,000)
+Floor: 5,000 EUR/month | Rounded down to nearest 1,000 | No cap
 ```
 
 **Examples:**
 - 114 pts PCS (#600) → 228K/yr → **19,000 EUR/month**
-- 400 pts PCS (#100) → 800K/yr → **66,600 EUR/month**
-- 2,216 pts PCS (#5) → 4.4M/yr → **369,300 EUR/month**
+- 400 pts PCS (#100) → 800K/yr → **66,000 EUR/month**
+- 2,216 pts PCS (#5) → 4.4M/yr → **369,000 EUR/month**
 
 > **Note:** The salary determines the **minimum bid at auction**. The actual contract salary is the winning bid (= `locked_salary`).
 
@@ -115,8 +115,8 @@ At payday, after `treasury += sponsor_budget − salaries`:
 |------|-------|
 | Format | Sealed-bid, 3 rounds per phase |
 | Minimum bid | Rider's market salary (formula §4.4) |
-| Minimum increment | 100 EUR |
-| Multiples | Bids must be multiples of 100 EUR |
+| Minimum increment | 1,000 EUR |
+| Multiples | Bids must be multiples of 1,000 EUR |
 | Calendar | 9 phases aligned to the WT, 3 rounds each |
 
 > **Auction = recurring monthly salary:** The winning bid is NOT a one-time purchase price. It becomes the recurring monthly salary (`locked_salary`) deducted at every payday.
@@ -172,10 +172,27 @@ At payday, after `treasury += sponsor_budget − salaries`:
 
 ### Daily XP
 
+Outside Grand Tours:
 ```
 Rider XP = daily_PCS_points × (1 + sum of active strategy bonuses)
-Team XP  = sum of XP from all roster riders
 ```
+
+Grand Tour stages (squad riders only — non-squad contracted riders score 0):
+```
+Rider XP = (PCS_points × role_mult × (1 + strategy_bonus)
+            + classif_bonus + breakaway_bonus) × nemesis_modifier
+```
+- **role_mult** (Spec A, 2026-06-02): gc_leader / climber ×1.5; tt_specialist ×2.0 on ITT only;
+  sprinter ×1.5 only on flat/hilly stages (profile p1/p2/p3); stage_hunter ×1.5 only
+  in the breakaway (≥30 km); domestique ×1.0. **GC final → ×1.0 for all roles.**
+- **classif_bonus** (daily gc/points/kom/youth): role-matched only — gc_leader→GC ×2
+  (and Youth ×1.5), sprinter→Points ×2, climber→KOM ×2; all other roles 0.
+- **breakaway_bonus**: stage_hunter only, +1 XP per 10 km in the break (no cap), additive.
+- **Final jerseys**: GC final = raw PCS points ×1.0. Points/KOM/Youth finals = rank scale
+  80/20/10 (GT) · 40/10/5 (1-week, P3) × role mult (Points→sprinter ×2, KOM→climber ×2,
+  Youth→gc_leader ×1.5; ×1.0 otherwise).
+
+Team XP = sum of XP from all roster riders
 
 ### Level progression (8 levels aligned to WT phases)
 
@@ -187,8 +204,22 @@ Team XP  = sum of XP from all roster riders
 | 4 | Giro | 350 | 9 | 2 | #30–600 | — | T4 · 750K (×4) |
 | 5 | Pre-Tour | 600 | 10 | 2 | #20–600 | Teams | T4 · 750K (×4) |
 | 6 | Tour de France | 1,200 | 11 | 2 | #10–600 | — | T5 · 1M (×2) |
-| 7 | Post-Tour | 1,800 | 12 | 3 | #4–600 | Age | T5 · 1M (×2) |
-| 8 | La Vuelta | 2,400 | 12 | 3 | #1–600 | — | T6 UAE · 1.25M |
+| 7 | Post-Tour | 2,600 | 12 | 3 | #4–600 | Age | T5 · 1M (×2) |
+| 8 | La Vuelta | 5,000 | 12 | 3 | #1–600 | — | T6 UAE · 1.25M |
+
+### In-app scoring documentation (Spec A A8)
+
+A summary of the rules above is rendered to players on the Race Team page via
+the `<ScoringDocCard />` component (`apps/web/components/scoring-doc-card.tsx`).
+It covers:
+
+- Daily multipliers (gc/points/kom ×2 matched, youth ×1.5) — see §7 + A2.
+- Finals (GC ×1.0, Points/KOM ×2, Youth ×1.5; barème 80/20/10 GT · 40/10/5 1-sem) — see A2.
+- Stage Hunter (×1.5 in breakaway ≥30 km + 1pt/10 km additive, ×1.0 elsewhere) — see A3.
+- Sprinter profile gating (×1.5 only on p1/p2/p3) — see A4.
+- Nemesis profile gating (Sprint p1-p3, GC p3-p5) — see A7.
+
+The values are not duplicated in the component — constants stay in §11.
 
 ---
 
@@ -305,16 +336,16 @@ At the start of each phase, the player **confirms** their configuration:
 | Starting treasury | 200,000 EUR |
 | Default sponsor | Lotto T1, 250,000 EUR/phase (fixed) |
 | Auction = monthly salary | Yes — not a one-time purchase |
-| Monthly salary | max(5,000, floor(PCS_pts × 2,000 / 12 / 100) × 100) |
+| Monthly salary | max(5,000, floor(PCS_pts × 2,000 / 12 / 1,000) × 1,000) |
 | Salary floor | 5,000 EUR/month |
 | Release fee | None (phase salary not refunded) |
 | Bankruptcy tolerance | −10,000 EUR |
 | Bankruptcy: releases first | Highest cumulative XP rider |
-| Bid increment | 100 EUR (multiples of 100) |
+| Bid increment | 1,000 EUR (multiples of 1,000) |
 | Max slots | 6 (Lv.1) → 12 (Lv.7–8) |
 | Max strategies | 1 (Lv.1–2) → 2 (Lv.3–6) → 3 (Lv.7–8) |
 | Rider pool | Top 600 PCS global (rolling 12 months) |
-| XP Level 8 (max) | 2,400 |
+| XP Level 8 (max) | 5,000 |
 | Max players per league | 20 |
 | Sponsor / strategy Round 1 | Immediate effect |
 | Sponsor / strategy Round 2+ | Pending — takes effect at next payday |
@@ -322,8 +353,42 @@ At the start of each phase, the player **confirms** their configuration:
 | Release cooldown | 7 days (no one can bid the rider during this window) |
 | Co-Unlock threshold | max(2, ceil(30% of league teams)) — see §12.2 |
 | Round resolution | Auto on consensus, or manual force-resolve from Status tab |
-| GT Tactics per Grand Tour | 1 of each type (5 total) |
+| GT Tactics per race | Varies by tactic and race kind (see §13 — Tactic usage per race) |
 | Commissioner round dates | Editable at any time before round closes |
+
+- **GT scoring multipliers** (Spec A, 2026-06-02): daily classif matched ×2 (youth ×1.5);
+  GC final ×1.0 for all roles; sprinter gated to profile p1/p2/p3; stage_hunter breakaway
+  threshold 30 km, distance bonus +1 XP / 10 km (no cap, additive); final secondary jersey
+  scale 80/20/10 (GT) · 40/10/5 (1-week, P3).
+
+### Tactic gating profiles (Spec A A7)
+- `NEMESIS_SPRINT_PROFILES = {p1, p2, p3}` (flat + hilly — anything but mountain).
+- `NEMESIS_GC_PROFILES     = {p3, p4, p5}` (hilly-uphill + mountain — where the GC is decided).
+- Profile source : `stage_profiles` table, seeded by `python run_pipeline.py startlists --race "<slug>"`.
+- Source code : `supabase/migrations/20260603000100_place_tactic_profile_gating.sql`.
+
+### Final secondary classifications scale (Spec A A2/A9)
+- GT      : `[80, 20, 10]` (ranks 1 / 2 / 3 base XP, before role multiplier).
+- 1-week  : `[40, 10, 5]`  (half-scale — shorter race, smaller payout).
+- Multiplier on the matching role (×2 for points→sprinter, kom→climber; ×1.5 for youth→gc_leader); ×1.0 otherwise.
+- Source : `services/pcs-sync/scoring.py:FINAL_SECONDARY_SCALE`.
+
+### Sponsor bonus barème (Spec C, 2026-06-03)
+
+A = base value for 1-week stage races and one-day races. B (Grand Tour / Monument) = A × 2, applied at runtime in `sponsor_bonus.py`.
+
+| Tier | GC (Top N) | Stage (Top N) | One-day (Top N) | Goals |
+|------|-----------|--------------|----------------|-------|
+| T1 | 5k (Top 25) | 2.5k (Top 10) | 5k (Top 25) | no |
+| T2 | 10k (Top 20) | 5k (Top 10) | 10k (Top 20) | no |
+| T3 | 25k (Top 15) | 10k (Top 5) | 20k (Top 15) | no |
+| T4 | 10k (Top 10) | 5k (Top 3) | 10k (Top 10) | yes |
+| T5 | = T4 | = T4 | = T4 | yes |
+| T6 (UAE) | deferred (unchanged) | — | — | — |
+
+- **GT / Monument multiplier :** B = A × 2 computed at runtime (not stored). T6 untouched.
+- **Nationality bonus :** ×1.20 (was ×1.25) for T1–T4 only; none for T5–T6.
+- **Goals (T4+) :** per archetype (GC / Sprint / CLM / Stage-Hunter); 1-week base × 2 for GT; best-of per tierGroup per rider; sprinter stage-win goals gated to flat profiles (p1/p2/p3); Race Leader / youth / KOM jersey goals tracked.
 
 ---
 
@@ -332,21 +397,11 @@ At the start of each phase, the player **confirms** their configuration:
 > Spec complète : `docs/plans/2026-04-23-anti-runaway-system-design.md`
 > Implémenté sur `main` — 2026-04-24
 
-3 mécanismes toujours actifs (league-wide, pas d'opt-in commissioner) pour limiter les écarts structurels entre le leader et les joueurs hors-podium.
+2 mécanismes toujours actifs (league-wide, pas d'opt-in commissioner) pour limiter les écarts structurels entre le leader et les joueurs hors-podium.
 
-### 12.1 Remontada Boost (Mécanisme 1) — DÉSACTIVÉ 2026-05-21
+> **Note** : un 3e mécanisme anti-rattrapage (boost d'overtake) a existé mais a été supprimé le 2026-06-02. Il est remplacé à terme par Spec B (Underdog system).
 
-> **DISABLED** — mécanique désactivée via feature-flag (`REMONTADA_ENABLED = False`). Trop fragile aux recalculs rétroactifs : tout rescore d'un stage passé peut corrompre l'historique des triggers/boosts, créant des cascades d'overtakes "fantômes" non mérités. Code conservé dans le codebase pour réactivation éventuelle si la mécanique est repensée. Voir `MEMORY.md` pour le contexte de la décision.
-
-- **Scope** : Grand Tours uniquement (Giro, Tour de France, Vuelta).
-- **Éligibilité** : joueurs classés rank 4+ dans la ligue au moment du trigger. Inactif si la ligue a <4 joueurs.
-- **Trigger** : le joueur A dépasse le joueur B dans le classement ligue → boost déclenché pour A.
-- **Contrainte anti-ping-pong** : 1 trigger max par paire ordonnée A→B par GT. Reset au GT suivant.
-- **Reward** : tous les points de A pendant les **3 prochaines stages effectives** sont multipliés par **1.5x**.
-- **Cumul** : si A déclenche un autre overtake pendant son boost, le timer se refresh à 3 stages (pas de stacking — reste 1.5x).
-- **UX** : banner 🔥 "Remontada Boost active" affiché sur la sub-tab GT de la page Team. Indicateur passif 🔥 visible dans le classement ligue.
-
-### 12.2 Co-Unlock Rule (Mécanisme 2)
+### 12.1 Co-Unlock Rule (Mécanisme 1)
 
 - **Règle** : un joueur peut enchérir sur un coureur uniquement si **un nombre dynamique de joueurs de la ligue** ont le niveau requis pour accéder à ce coureur.
 - **Seuil dynamique** : `required = max(2, ceil(0.30 × nb_équipes_ligue))` — 30 % des équipes, plancher 2. Le plancher préserve le gate en petite ligue ; le seuil ne dépasse jamais le nombre d'équipes (pas de lock permanent). Source de vérité TS : `apps/web/lib/co-unlock.ts` `requiredTeamsToUnlock()`. Le RPC `place_bid` réplique la formule en SQL (`GREATEST(2, CEIL(0.30 * team_count))`) — les deux **doivent** rester synchronisés.
@@ -355,10 +410,10 @@ At the start of each phase, the player **confirms** their configuration:
 - **Release exclusif** : si moins de `required` joueurs éligibles restent après un release, le coureur repasse en état "locked" jusqu'à ce que le seuil soit de nouveau atteint.
 - **UX** : coureurs locked visibles uniquement pour les joueurs éligibles, avec icône cadenas et message "Unlock when N more players reach Lv.X".
 
-### 12.3 Level Curve Stretch (Mécanisme 3)
+### 12.2 Level Curve Stretch (Mécanisme 2)
 
 - **Principe** : les seuils XP de Lv.6, Lv.7 et Lv.8 sont relevés pour ralentir la progression end-game.
-- **Nouveaux seuils** : Lv.6 = 1 200 XP | Lv.7 = 1 800 XP | Lv.8 = 2 400 XP (Lv.1–5 inchangés).
+- **Nouveaux seuils** : Lv.6 = 1 200 XP | Lv.7 = 2 600 XP | Lv.8 = 5 000 XP (Lv.1–5 inchangés). *(Spec A A1, 2026-06-02 : L7/L8 relevés depuis 1 800 / 2 400.)*
 - **Sponsor remapping** : T4 avancé de Lv.5 → Lv.4 ; T5 avancé de Lv.7 → Lv.6 ; T6 reste à Lv.8.
 - **Grandfathering** : aucun joueur ne régresse. Le niveau actuel est conservé ; seule la barre de progression vers le prochain niveau s'ajuste.
 - **Effet** : les joueurs restent clustered aux niveaux 4–6 plus longtemps, réduisant l'asymétrie slots/budget/pool entre leader et laggards.
@@ -374,24 +429,45 @@ At the start of each phase, the player **confirms** their configuration:
 
 ### Available Tactics
 
-| Tactic | Effect | Target | Limit |
-|--------|--------|--------|-------|
-| **Unleash** | ×1.5 XP for domestiques | All non-GC riders on roster | 1 per GT |
-| **Overdrive** | ×2.0 XP for stage hunters | 1 specific rider | 1 per GT |
-| **Nemesis GC** | PvP duel on GC classification | 1 rival team's GC rider | 1 per GT |
-| **Nemesis Sprint** | PvP duel on sprint classification | 1 rival team's sprinter | 1 per GT |
-| **Call the Bus** | Bench riders contribute XP | All bench riders | 1 per GT |
+| Tactic | Effect | Target |
+|--------|--------|--------|
+| **Unleash** | ×1.5 XP for domestiques | All non-GC riders on roster |
+| **Overdrive** | ×2.0 XP for stage hunters **in the breakaway** | 1 specific rider |
+| **Nemesis GC** | PvP duel on GC classification | 1 rival team's GC rider |
+| **Nemesis Sprint** | PvP duel on sprint classification | 1 rival team's sprinter |
+| **Call the Bus** | Bench riders contribute XP | All bench riders |
+
+Per-race activation budget : see *Tactic usage per race (Spec A A9)* below.
+
+### Tactic usage per race (Spec A A9)
+
+Per `(team, race)`, the max activations of each tactic depend on the race kind:
+
+| Tactic          | GT (Giro/Tour/Vuelta) | 1-week stage race |
+|-----------------|-----------------------|-------------------|
+| Unleash         | 2                     | 1                 |
+| Overdrive       | 2                     | 1                 |
+| Call the Bus    | 3                     | 2                 |
+| Nemesis GC      | 1                     | 1                 |
+| Nemesis Sprint  | 1                     | 1                 |
+
+Enforced by trigger `enforce_tactic_usage_limit` reading `public.tactic_usage_limits`.
 
 ### Placement rules
 
 - Tactics are placed **before a stage starts** (11:00 CET cutoff on the stage day).
-- Each tactic can be used **once per Grand Tour** (5 uses total per player per GT).
 - Nemesis tactics require selecting a rival team and a specific rider as the duel target.
 - Effects apply for the **duration of the selected stage** only.
 
+**Profile gating at activation (Spec A A7).** A Nemesis tactic can only be placed on a stage whose profile matches the duel type:
+- Nemesis Sprint → stage profile must be in {p1, p2, p3}.
+- Nemesis GC     → stage profile must be in {p3, p4, p5}.
+
+The profile comes from `stage_profiles` (one row per stage_slug), seeded ahead of the race by `python run_pipeline.py startlists --race "<race_slug>"`. If the stage isn't seeded yet, placement returns "stage profile unknown".
+
 ### Scoring integration
 
-- Tactic modifiers are applied **after** strategy bonuses, **before** Remontada Boost.
+- Tactic modifiers are applied **after** strategy bonuses.
 - Traceability: `rider_xp_daily` records `role_mult` and `gt_classif_bonus` per scoring event.
 - Nemesis duels are resolved at stage scoring via the internal `resolve_nemesis_for_stage` RPC.
 

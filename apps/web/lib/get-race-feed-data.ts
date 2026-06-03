@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentPhase, getPhaseRange, AUCTION_PHASES } from "./phases";
-import { GT_IDENTIFIER, GT_RACE_SLUG_PREFIX, isGTPhaseId } from "./gt-phases";
+import { isGTPhaseId } from "./gt-phases";
 import { GT_SCHEDULES, GT_REST_DAYS } from "./gt-stage-schedule";
 import { WT_PARENT_SLUGS } from "./wt-race-slugs";
 import {
@@ -21,7 +21,6 @@ import type {
   RaceFeedCard,
   RaceFeedDateGroup,
   RaceFeedPayload,
-  RemontadaData,
   RiderRaceResult,
   TeamRaceResult,
 } from "./race-feed-types";
@@ -335,49 +334,6 @@ export async function getRaceFeedData(
         isMyTeamAttacker,
       };
       pushCard(race.date, { type: "nemesis", data, raceSlug: row.stage_slug });
-    }
-  }
-
-  // 8) Fetch and slot Remontada cards (GT phases only)
-  // Feature flag — Remontada disabled 2026-05-21. Keep in sync with
-  // services/pcs-sync/remontada.py and apps/web/lib/remontada.ts.
-  const REMONTADA_ENABLED = false;
-  if (isGtPhase && REMONTADA_ENABLED) {
-    const phaseId = phase.id as 4 | 6 | 8;
-    const gtIdent = GT_IDENTIFIER[phaseId];
-    if (gtIdent) {
-      const { data: remRows = [] } = await supabase
-        .from("remontada_boosts")
-        .select(
-          "id, team_id, gt_identifier, triggered_at_stage, expires_after_stage, multiplier, created_at, updated_at, overtaken_team_id"
-        )
-        .eq("league_id", opts.leagueId)
-        .eq("gt_identifier", gtIdent);
-
-      const year = referenceDate.getFullYear();
-      const slugPrefix = GT_RACE_SLUG_PREFIX[phaseId];
-
-      for (const row of remRows ?? []) {
-        // Anchor the card at the race_date of the stage where the overtake was triggered
-        // (the "real" date of the event), not at updated_at (which moves on every reset).
-        const triggeredStage = row.triggered_at_stage ?? 0;
-        const stageSlug = `${slugPrefix}/${year}/stage-${triggeredStage}`;
-        const stageRace = racesBySlug.get(stageSlug);
-        const fallbackIso = ((row.updated_at ?? row.created_at) as string).slice(0, 10);
-        const triggeredDateIso = stageRace ? stageRace.date : fallbackIso;
-        const stagesRemaining = Math.max(0, (row.expires_after_stage ?? 0) - triggeredStage);
-        const data: RemontadaData = {
-          boostId: row.id,
-          teamId: row.team_id,
-          teamName: teamById.get(row.team_id) ?? "?",
-          isMyTeam: row.team_id === opts.myTeamId,
-          multiplier: Number(row.multiplier),
-          stagesRemaining,
-          triggeredAt: triggeredDateIso,
-          overtakenTeamName: row.overtaken_team_id ? (teamById.get(row.overtaken_team_id) ?? null) : null,
-        };
-        pushCard(triggeredDateIso, { type: "remontada", data });
-      }
     }
   }
 

@@ -3,13 +3,37 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowLeft, Swords } from "lucide-react";
 import { findTactic } from "@/lib/tactics";
-import type { GtStage } from "@/lib/gt-stages";
+import type { GtStage, StageProfileIcon } from "@/lib/gt-stages";
 import { placeTactic } from "@/app/(game)/league/[leagueId]/team/gt/tactics/actions";
 import { useDemoSafeAction } from "@/contexts/demo-context";
 import { ModalShell, ModalHeader } from "./tactic-modal-shell";
 import { StageList } from "./tactic-stage-list";
 import { cn } from "@/lib/utils";
 import { formatXp } from "@/lib/format";
+
+/**
+ * Map raw server errors from `place_tactic` (Spec A P3a) to friendly UI strings.
+ * Falls back to the raw message if no pattern matches.
+ */
+export function mapNemesisErrorMessage(
+  raw: string,
+  tacticId: "nemesis_gc" | "nemesis_sprint",
+): string {
+  const m = raw.toLowerCase();
+  if (m.includes("stage profile unknown")) {
+    return "We don't have a profile for that stage yet. Run the startlists pipeline first, then try again.";
+  }
+  if (
+    tacticId === "nemesis_sprint" &&
+    m.includes("nemesis sprint requires")
+  ) {
+    return "Nemesis Sprint only works on flat or hilly stages (p1/p2/p3). Pick a sprinter-friendly stage.";
+  }
+  if (tacticId === "nemesis_gc" && m.includes("nemesis gc requires")) {
+    return "Nemesis GC only works on hilly-uphill or mountain stages (p3/p4/p5). Pick a stage where the GC is decided.";
+  }
+  return raw;
+}
 
 export interface EligibleRival {
   teamId: string;
@@ -65,7 +89,8 @@ export function TacticNemesisModal({
         router.refresh();
         onClose();
       } catch (e: unknown) {
-        setErr(e instanceof Error ? e.message : "Failed");
+        const raw = e instanceof Error ? e.message : "Failed";
+        setErr(mapNemesisErrorMessage(raw, tacticId));
       }
     });
   };
@@ -171,7 +196,13 @@ export function TacticNemesisModal({
     );
   }
 
-  // Step 2
+  // Step 2 — stage selection. Gate the StageList by the active duel's
+  // required profile set so the user can't even click an incompatible row.
+  const requiredProfiles: Set<StageProfileIcon> =
+    tacticId === "nemesis_sprint"
+      ? new Set<StageProfileIcon>(["p1", "p2", "p3"])
+      : new Set<StageProfileIcon>(["p3", "p4", "p5"]);
+
   return (
     <ModalShell
       onClose={onClose}
@@ -227,7 +258,16 @@ export function TacticNemesisModal({
           <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
             Target stage
           </span>
-          <StageList stages={stages} value={selectedStage} onChange={setSelectedStage} fillParent />
+          <StageList
+            stages={stages}
+            value={selectedStage}
+            onChange={setSelectedStage}
+            fillParent
+            requiredProfiles={requiredProfiles}
+            // Time trials have no peloton — server-side place_tactic v4
+            // rejects both Nemesis Sprint and Nemesis GC on ITT/TTT stages.
+            blockTimeTrials
+          />
         </div>
         {err && (
           <p className="text-[length:var(--type-caption)] text-[var(--danger)]">{err}</p>

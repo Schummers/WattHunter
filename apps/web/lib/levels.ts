@@ -5,8 +5,8 @@ export const LEVELS = [
   { level: 4, xp: 350,  slots: 9,  pool: "#30-600",  poolMin: 30,  strategy: null,          maxActive: 2, sponsor: "T4 · 750K (×4)" },
   { level: 5, xp: 600,  slots: 10, pool: "#20-600",  poolMin: 20,  strategy: "Teams",       maxActive: 2, sponsor: null },
   { level: 6, xp: 1200, slots: 11, pool: "#10-600",  poolMin: 10,  strategy: null,          maxActive: 2, sponsor: "T5 · 1M (×2)" },
-  { level: 7, xp: 1800, slots: 12, pool: "#4-600",   poolMin: 4,   strategy: "Age",         maxActive: 3, sponsor: null },
-  { level: 8, xp: 2400, slots: 12, pool: "#1-600",   poolMin: 1,   strategy: null,          maxActive: 3, sponsor: "T6 UAE · 1.25M" },
+  { level: 7, xp: 2600, slots: 12, pool: "#4-600",   poolMin: 4,   strategy: "Age",         maxActive: 3, sponsor: null },
+  { level: 8, xp: 5000, slots: 12, pool: "#1-600",   poolMin: 1,   strategy: null,          maxActive: 3, sponsor: "T6 UAE · 1.25M" },
 ] as const;
 
 export type LevelData = (typeof LEVELS)[number];

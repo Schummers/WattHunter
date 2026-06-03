@@ -1,19 +1,38 @@
 "use client";
 import { Tag } from "@/components/pill";
 import { cn } from "@/lib/utils";
-import type { GtStage } from "@/lib/gt-stages";
+import type { GtStage, StageProfileIcon } from "@/lib/gt-stages";
+
+interface Props {
+  stages: GtStage[];
+  value: string;
+  onChange: (v: string) => void;
+  fillParent?: boolean;
+  /**
+   * If set, stages whose `profileIcon` is NOT in the set are rendered
+   * disabled and dimmed. Used by Nemesis tactic placement:
+   * Nemesis Sprint → {p1,p2,p3}, Nemesis GC → {p3,p4,p5}.
+   * Stages without a known profile (`profileIcon == null`) are also disabled
+   * when `requiredProfiles` is set — the server-side gate would reject them.
+   */
+  requiredProfiles?: Set<StageProfileIcon>;
+  /**
+   * If true, stages whose `stageType` is `"ITT"` or `"TTT"` are disabled and
+   * surface a "Time trial" label. Mirrors the server-side gate in
+   * `place_tactic` v4 which rejects Nemesis Sprint / Nemesis GC / Overdrive
+   * on time trials (no peloton or echappée dynamics).
+   */
+  blockTimeTrials?: boolean;
+}
 
 export function StageList({
   stages,
   value,
   onChange,
   fillParent,
-}: {
-  stages: GtStage[];
-  value: string;
-  onChange: (v: string) => void;
-  fillParent?: boolean;
-}) {
+  requiredProfiles,
+  blockTimeTrials,
+}: Props) {
   return (
     <div
       className={cn(
@@ -26,7 +45,12 @@ export function StageList({
           const isSelected = value === s.slug;
           const isLocked = !!s.hasTacticActive;
           const isCutoffLocked = s.status === "today" && !!s.isTodayCutoffPassed;
-          const isDisabled = isLocked || isCutoffLocked;
+          const isProfileMismatch =
+            !!requiredProfiles && (!s.profileIcon || !requiredProfiles.has(s.profileIcon));
+          const isTimeTrial = s.stageType === "ITT" || s.stageType === "TTT";
+          const isTimeTrialBlocked = !!blockTimeTrials && isTimeTrial;
+          const isDisabled =
+            isLocked || isCutoffLocked || isProfileMismatch || isTimeTrialBlocked;
           const isToday = s.status === "today";
           const isFirst = i === 0;
           return (
@@ -65,7 +89,27 @@ export function StageList({
                   {s.date}
                 </span>
               </div>
-              {isToday && !isLocked && !isCutoffLocked && (
+              {s.profileIcon && (
+                <Tag
+                  variant="highlighted"
+                  className="text-[length:var(--type-micro)]"
+                  data-testid={`profile-chip-${s.slug}`}
+                  aria-label={`Profile ${s.profileIcon}`}
+                >
+                  {s.profileIcon}
+                </Tag>
+              )}
+              {isTimeTrial && (
+                <Tag
+                  variant="highlighted"
+                  className="text-[length:var(--type-micro)]"
+                  data-testid={`tt-badge-${s.slug}`}
+                  aria-label={`${s.stageType} time trial`}
+                >
+                  {s.stageType}
+                </Tag>
+              )}
+              {isToday && !isLocked && !isCutoffLocked && !isProfileMismatch && !isTimeTrialBlocked && (
                 <Tag variant="highlighted" className="text-[length:var(--type-micro)]">
                   Today
                 </Tag>
@@ -78,6 +122,22 @@ export function StageList({
               {isLocked && (
                 <span className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]">
                   Tactic set
+                </span>
+              )}
+              {isProfileMismatch && !isLocked && !isCutoffLocked && (
+                <span
+                  className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]"
+                  data-testid={`profile-mismatch-${s.slug}`}
+                >
+                  Wrong profile
+                </span>
+              )}
+              {isTimeTrialBlocked && !isLocked && !isCutoffLocked && !isProfileMismatch && (
+                <span
+                  className="text-[length:var(--type-micro)] uppercase tracking-wide text-[var(--text-low)]"
+                  data-testid={`tt-blocked-${s.slug}`}
+                >
+                  Time trial
                 </span>
               )}
             </button>

@@ -1,5 +1,5 @@
 /** Bid increment shared across all bid UIs (Rider Detail, DraftBidCard) */
-export const BID_INCREMENT = 100;
+export const BID_INCREMENT = 1000;
 
 /** Snap a value to the nearest multiple of BID_INCREMENT, enforcing a floor. */
 export function snapToIncrement(value: number, min: number): number {

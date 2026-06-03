@@ -1,6 +1,6 @@
 "use client";
 
-import { formatThousands } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 import { computeAvailableBudget } from "@/lib/budget";
 
 interface BudgetSummaryProps {
@@ -41,7 +41,7 @@ export function BudgetSummary({
           Treasury
         </span>
         <span className="font-mono text-[length:var(--type-caption)] text-[var(--accent-highlight)]">
-          €{formatThousands(treasury)}
+          {formatMoney(treasury)}
         </span>
       </div>
 
@@ -52,7 +52,7 @@ export function BudgetSummary({
             Upcoming Sponsor
           </span>
           <span className="font-mono text-[length:var(--type-caption)] text-[var(--success)]">
-            +€{formatThousands(sponsorIncome)}
+            +{formatMoney(sponsorIncome)}
           </span>
         </div>
       )}
@@ -64,7 +64,7 @@ export function BudgetSummary({
             Active Roster Payroll
           </span>
           <span className="font-mono text-[length:var(--type-caption)] text-red-400">
-            −€{formatThousands(activeSalaries)}
+            −{formatMoney(activeSalaries)}
           </span>
         </div>
       )}
@@ -75,7 +75,7 @@ export function BudgetSummary({
           Draft bids ({draftCount})
         </span>
         <span className="font-mono text-[length:var(--type-caption)] text-red-400">
-          −€{formatThousands(draftBidsTotal)}
+          −{formatMoney(draftBidsTotal)}
         </span>
       </div>
 
@@ -96,7 +96,7 @@ export function BudgetSummary({
             isDeficit ? "text-red-400" : "text-[var(--accent-highlight)]"
           }`}
         >
-          {isDeficit ? "−" : ""}€{formatThousands(Math.abs(remaining))}
+          {isDeficit ? "−" : ""}{formatMoney(Math.abs(remaining))}
         </span>
       </div>
     </div>

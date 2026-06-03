@@ -8,7 +8,8 @@
 - **Spec A — Levels & Rôles & Scoring** : ralentir le leader (levels longs) + corriger les sur-boosts (GC final, rôles). **COMPLET.**
 - **Spec B — Underdog** : faire remonter les faibles (rôle underdog + boost rang-absolu + squad élargi + réduc salaire). **Design quasi complet, reste l'UI.**
 - **Spec C — Bonus & Sponsors** : économie 2-valeurs (1-sem | GT/Monument), goals par archétype. **~90%, 3 opens.**
-- **UI** (transverse) : sponsor card 2 colonnes + affichage prix barré underdog. **À maquetter (HTML).**
+- **UI** (transverse) : sponsor card 2 colonnes + affichage prix barré underdog. **MAQUETTÉ & VALIDÉ 2026-06-02** → [`docs/mockups/2026-06-02-ui-mockups.html`](../mockups/2026-06-02-ui-mockups.html). Décisions reportées dans Spec C §C4 et Spec B §B2bis.
+- **Spec D — Prix au millier** (NOUVEAU, à rédiger) : passer toutes les valeurs monétaires coureur à une granularité 1 000 € (enchères au pas de 1k, plus de centaines), affichage format "K". **Prérequis de l'implémentation `<RiderPrice>`** (Spec B). Implications : constante d'incrément (`GAME_RULES.md §11`, CLAUDE.md), formule salaire arrondie au millier, step/validation d'enchère + RPC, migration des montants existants (invariants treasury), unification des helpers de formatage. À lancer en mode plan dans un chat dédié.
 
 ## Données réelles de référence (ligue test)
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Target, Globe, Users, Clock } from "lucide-react";
-import { formatThousands } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 
 interface Strategy {
   name: string;
@@ -61,7 +61,7 @@ export function ConfigCards({
             {sponsorName}
           </span>
           <span className="mt-0.5 text-[length:var(--type-caption)] text-[var(--text-mid)]">
-            <span className="font-mono">€{formatThousands(sponsorBudget)}</span>/phase
+            <span className="font-mono">{formatMoney(sponsorBudget)}</span>/phase
           </span>
         </Link>
       ) : (
@@ -73,7 +73,7 @@ export function ConfigCards({
             {sponsorName}
           </span>
           <span className="mt-0.5 text-[length:var(--type-caption)] text-[var(--text-mid)]">
-            <span className="font-mono">€{formatThousands(sponsorBudget)}</span>/phase
+            <span className="font-mono">{formatMoney(sponsorBudget)}</span>/phase
           </span>
         </div>
       )}

@@ -10,18 +10,14 @@ For each contracted rider with pcs_points > 0 (from race_results):
 Treasury is handled separately by confirmPhaseSetup server action and sponsor_bonus.py.
 """
 from __future__ import annotations
+import json
 import logging
 import re
 from datetime import date, datetime
+from functools import lru_cache
+from pathlib import Path
 from zoneinfo import ZoneInfo
 from supabase import Client
-from remontada import (
-    get_gt_identifier,
-    get_stage_number,
-    get_active_multiplier,
-    detect_overtakes,
-    record_overtake,
-)
 from tactics import (
     compute_unleash_modifier,
     compute_overdrive_modifier,
@@ -31,8 +27,8 @@ from tactics import (
 
 logger = logging.getLogger(__name__)
 
-# Level thresholds — must match apps/web/lib/levels.ts (8 levels)
-LEVEL_THRESHOLDS = [0, 25, 150, 350, 600, 1200, 1800, 2400]
+# Level thresholds — must match apps/web/lib/levels.ts (8 levels). L7/L8 stretched (Spec A A1).
+LEVEL_THRESHOLDS = [0, 25, 150, 350, 600, 1200, 2600, 5000]
 
 
 def _parse_supabase_ts(ts: str) -> datetime:
@@ -49,20 +45,6 @@ def _parse_supabase_ts(ts: str) -> datetime:
     return datetime.fromisoformat(s).replace(tzinfo=_tz.utc)
 
 
-def _latest_snapshot_date_before(supabase: Client, team_ids: list[str], today: str) -> str | None:
-    """Return the most recent date in team_ranking_daily before today, or None if no prior snapshot exists."""
-    resp = (
-        supabase.table("team_ranking_daily")
-        .select("date")
-        .in_("team_id", team_ids)
-        .lt("date", today)
-        .order("date", desc=True)
-        .limit(1)
-        .execute()
-    )
-    return resp.data[0]["date"] if resp.data else None
-
-
 # --- GT mode --------------------------------------------------------------
 GT_RACE_PREFIXES = (
     "race/giro-d-italia/",
@@ -70,19 +52,15 @@ GT_RACE_PREFIXES = (
     "race/vuelta-a-espana/",
 )
 
-# (scope, multiplier) per role. Scope is one of:
-#   "all"   — applies to every GT result
-#   "itt"   — applies only when race_results.is_itt is True
-#   "stage" — applies to stage slugs only (anything not ending in /gc)
-#   None    — no multiplier
-ROLE_MULTIPLIERS: dict[str, tuple[str | None, float]] = {
-    "gc_leader":     ("all", 1.5),
-    "sprinter":      ("all", 1.5),
-    "climber":       ("all", 1.5),
-    "tt_specialist": ("itt", 2.0),
-    "stage_hunter":  ("stage", 1.5),
-    "domestique":    (None, 1.0),
-}
+# --- Role multipliers (Spec A A2/A3/A4/A5) -------------------------------
+# gc_leader / climber: ×1.5 on any GT stage result; GC final (/gc) → ×1.0 (A2/A5).
+# tt_specialist: ×2.0 on ITT stages only.
+# sprinter: ×1.5 only on flat/hilly stages (profile p1/p2/p3, A4); ×1.0 otherwise.
+# stage_hunter: ×1.5 only when in the breakaway (breakaway_kms ≥ threshold, A3); ×1.0 otherwise.
+# domestique: ×1.0.
+BREAKAWAY_THRESHOLD_KM = 30.0   # A3 — min km in the break to count as "in the breakaway".
+BREAKAWAY_KM_PER_POINT = 10.0   # A3 — +1 additive XP per 10 km in the break (no cap).
+SPRINT_PROFILES = ("p1", "p2", "p3")  # A4 — flat + hilly (everything but mountain p4/p5).
 
 _GT_PHASE_MAP = {
     "giro-d-italia": 4,
@@ -90,29 +68,70 @@ _GT_PHASE_MAP = {
     "vuelta-a-espana": 8,
 }
 
-# Rank-ceiling per classification — bonuses decay linearly from `top` (rank 1) down
-# to 1 (rank = top). Ranks outside the top zero out.
-CLASSIF_TOP = {"gc": 10, "points": 5, "kom": 3}
+# Rank-ceiling per daily classification — bonus decays linearly from `top` (rank 1)
+# down to 1 (rank = top). Ranks outside the top zero out.
+CLASSIF_TOP = {"gc": 10, "points": 5, "kom": 3, "youth": 5}
 
-# Matching a rider's role to a classification doubles the base bonus (×1.5 actually).
-CLASSIF_ROLE_MATCH = {
-    "gc_leader": "gc",
-    "sprinter":  "points",
-    "climber":   "kom",
+# V2 (Spec A A2): only the classification(s) matching the rider's role earn a bonus.
+# Matched daily mult is ×2 for gc/points/kom (was ×1.5); youth matched (gc_leader) is ×1.5.
+CLASSIF_ROLE_MATCH: dict[str, dict[str, float]] = {
+    "gc_leader": {"gc": 2.0, "youth": 1.5},
+    "sprinter":  {"points": 2.0},
+    "climber":   {"kom": 2.0},
+}
+
+# --- Final secondary classifications (Points / KOM / Youth) — Spec A A2 ----
+# Custom rank-derived 2-value scale (PCS gives no points for these jerseys).
+# GT/Monument vs 1-week stage race; one_week is coded for P3 (Race Team / A9).
+FINAL_SECONDARY_SCALE = {
+    "gt": [80.0, 20.0, 10.0],        # ranks 1 / 2 / 3
+    "one_week": [40.0, 10.0, 5.0],
+}
+# Final secondary classif → (role that matches, multiplier on the scale value).
+FINAL_ROLE_MATCH = {
+    "points": ("sprinter", 2.0),
+    "kom":    ("climber", 2.0),
+    "youth":  ("gc_leader", 1.5),
 }
 
 
-def _classif_bonus(classif_rows: list[dict], role: str) -> float:
-    """Sum of classification bonuses for all GT squad riders.
+def _final_secondary_bonus(classif_type: str, rank, role: str, mode: str = "gt") -> float:
+    """XP for a final Points/KOM/Youth placement (Spec A A2).
 
-    Role-matched riders earn base × 1.5 (gc_leader→GC, sprinter→Points, climber→KOM).
-    All other squad roles earn base × 1.0 for any classification they place in.
-    Riders outside the squad never reach this function (guarded upstream).
+    Base scale value by rank (mode gt vs one_week) × role multiplier when the role matches
+    (points→sprinter ×2, kom→climber ×2, youth→gc_leader ×1.5); ×1.0 otherwise.
+    Ranks beyond the scale length earn 0.
     """
-    matched_ctype = CLASSIF_ROLE_MATCH.get(role)  # None for domestique/stage_hunter/tt_specialist
+    scale = FINAL_SECONDARY_SCALE.get(mode, FINAL_SECONDARY_SCALE["gt"])
+    try:
+        r = int(rank)
+    except (TypeError, ValueError):
+        return 0.0
+    if r < 1 or r > len(scale):
+        return 0.0
+    base = scale[r - 1]
+    matched_role, mult = FINAL_ROLE_MATCH.get(classif_type, (None, 1.0))
+    rate = mult if role == matched_role else 1.0
+    return base * rate
+
+
+def _classif_bonus(classif_rows: list[dict], role: str) -> float:
+    """Daily classification bonus (Spec A A2, V2 role-matched-only).
+
+    Only the classification(s) matching the rider's role earn a bonus:
+      gc_leader → gc ×2 (and youth ×1.5), sprinter → points ×2, climber → kom ×2.
+    domestique / stage_hunter / tt_specialist match nothing → 0.
+    Base bonus per classification = (top + 1) - rank, for ranks within the top zone.
+    """
+    matched = CLASSIF_ROLE_MATCH.get(role, {})
+    if not matched:
+        return 0.0
     total = 0.0
     for row in classif_rows or []:
         ctype = row.get("classification_type")
+        mult = matched.get(ctype)
+        if mult is None:
+            continue
         top = CLASSIF_TOP.get(ctype)
         if top is None:
             continue
@@ -126,30 +145,105 @@ def _classif_bonus(classif_rows: list[dict], role: str) -> float:
         if r < 1 or r > top:
             continue
         base = (top + 1) - r
-        rate = 1.5 if ctype == matched_ctype else 1.0
-        total += base * rate
+        total += base * mult
     return total
+
+
+# --- Spec A A9: 1-week stage-race awareness ---------------------------------
+# The squad-gate + classif + finals-secondary passes are extended to any
+# stage-race slug listed in wt_calendar_2026.json (type='stage-race'),
+# NOT just the 3 GTs. One-day races (monuments) remain ungated.
+_CALENDAR_PATH = Path(__file__).parent / "wt_calendar_2026.json"
+
+
+@lru_cache(maxsize=1)
+def _stage_race_slug_prefixes() -> tuple[str, ...]:
+    """Read wt_calendar_2026.json once and return a tuple of slug-prefixes
+    (with trailing '/') for every type='stage-race' race. Used by
+    _is_squad_race() to gate scoring on 1-week stage races.
+    """
+    try:
+        with open(_CALENDAR_PATH, encoding="utf-8") as fh:
+            calendar = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return tuple()
+    prefixes: list[str] = []
+    for entry in calendar:
+        if entry.get("type") != "stage-race":
+            continue
+        slug = entry.get("slug") or ""
+        if slug:
+            # Match the race itself + any descendant (stage-N, gc, points, kom, youth).
+            prefixes.append(slug if slug.endswith("/") else slug + "/")
+            prefixes.append(slug)  # also accept the bare parent slug
+    return tuple(prefixes)
+
+
+def _is_squad_race(slug: str) -> bool:
+    """True if the slug belongs to a stage-race (GT or 1-week) — gates squad scoring.
+
+    Stricter than 'not one-day': uses the calendar whitelist so unknown slugs
+    default to False (preserves the existing monument-test invariant).
+    """
+    if not slug:
+        return False
+    if slug.startswith(GT_RACE_PREFIXES):
+        return True
+    return any(slug == p.rstrip("/") or slug.startswith(p) for p in _stage_race_slug_prefixes())
 
 
 def _is_gt_slug(slug: str) -> bool:
     return slug.startswith(GT_RACE_PREFIXES)
 
 
-def _role_multiplier(role: str, race_slug: str, is_itt: bool) -> float:
-    """Return the PCS multiplier for a rider's role given a race slug."""
+def _norm_profile(profile_icon) -> str | None:
+    """Normalize a PCS profile icon to lowercase p0-p5, or None."""
+    if not profile_icon:
+        return None
+    return str(profile_icon).strip().lower()
+
+
+def _in_breakaway(breakaway_kms) -> bool:
+    """True if the rider spent at least BREAKAWAY_THRESHOLD_KM in the break (Spec A A3)."""
+    try:
+        return breakaway_kms is not None and float(breakaway_kms) >= BREAKAWAY_THRESHOLD_KM
+    except (TypeError, ValueError):
+        return False
+
+
+def _breakaway_distance_bonus(breakaway_kms) -> float:
+    """Additive XP for time in the break: +1 per BREAKAWAY_KM_PER_POINT km, no cap (Spec A A3).
+
+    Awarded only when the rider counts as in the breakaway (≥ threshold).
+    Additive, not role-multiplied (still scaled by nemesis_modifier).
+    """
+    if not _in_breakaway(breakaway_kms):
+        return 0.0
+    return float(breakaway_kms) // BREAKAWAY_KM_PER_POINT
+
+
+def _role_multiplier(
+    role: str,
+    race_slug: str,
+    is_itt: bool,
+    breakaway_kms=None,
+    profile_icon=None,
+) -> float:
+    """Return the PCS role multiplier for a GT result (Spec A A2/A3/A4/A5)."""
     if not role:
         return 1.0
-    scope, mult = ROLE_MULTIPLIERS.get(role, (None, 1.0))
-    if scope is None:
+    # GC final (slug ends /gc): raw PCS points, no role multiplier (A2).
+    if race_slug.endswith("/gc"):
         return 1.0
-    if scope == "all":
-        return mult
-    if scope == "itt":
-        return mult if is_itt else 1.0
-    if scope == "stage":
-        # GC result slugs end with `/gc`; everything else counts as a stage.
-        return mult if not race_slug.endswith("/gc") else 1.0
-    return 1.0
+    if role in ("gc_leader", "climber"):
+        return 1.5
+    if role == "tt_specialist":
+        return 2.0 if is_itt else 1.0
+    if role == "sprinter":
+        return 1.5 if _norm_profile(profile_icon) in SPRINT_PROFILES else 1.0
+    if role == "stage_hunter":
+        return 1.5 if _in_breakaway(breakaway_kms) else 1.0
+    return 1.0  # domestique + unknown
 
 
 def _phase_year_from_slug(slug: str) -> tuple[int, int]:
@@ -226,7 +320,6 @@ async def calculate_daily_scores(
     supabase: Client,
     race_slugs: list[str] | None = None,
     ignore_role_cutoff: bool = False,
-    skip_overtake_detection: bool = False,
 ) -> dict:
     """
     For each contracted rider with pcs_points > 0 in race_results:
@@ -246,11 +339,11 @@ async def calculate_daily_scores(
     # Task 1: filter by race_slugs if provided, else fallback to today's date
     if race_slugs:
         history = supabase.table("race_results").select(
-            "rider_id, race_slug, pcs_points, race_date, is_itt"
+            "rider_id, race_slug, pcs_points, race_date, is_itt, breakaway_kms, profile_icon"
         ).in_("race_slug", race_slugs).gt("pcs_points", 0).execute()
     else:
         history = supabase.table("race_results").select(
-            "rider_id, race_slug, pcs_points, race_date, is_itt"
+            "rider_id, race_slug, pcs_points, race_date, is_itt, breakaway_kms, profile_icon"
         ).eq("race_date", today).gt("pcs_points", 0).execute()
 
     if not history.data:
@@ -268,6 +361,8 @@ async def calculate_daily_scores(
             "pcs_points": h["pcs_points"],
             "race_date": h.get("race_date"),
             "is_itt": bool(h.get("is_itt", False)),
+            "breakaway_kms": h.get("breakaway_kms"),
+            "profile_icon": h.get("profile_icon"),
         })
 
     # Build race_slug → race_date mapping for the second pass (classif-only entries).
@@ -323,24 +418,25 @@ async def calculate_daily_scores(
         }
         team_strategies.setdefault(team_id, []).append(entry)
 
-    # --- Step 3b: Pre-fetch GT squad membership + latest roles when scoring GT slugs.
-    # Only fetched when at least one race_slug is a GT slug to avoid extra reads.
+    # --- Step 3b: Pre-fetch squad membership + latest roles when scoring stage-race slugs.
+    # Spec A A9: extends from GT-only to any stage-race (GT + 1-week) via _is_squad_race.
+    # Only fetched when at least one race_slug is a stage-race slug to avoid extra reads.
     # Uses 11:00 CET cutoff per stage date for both squad membership and role assignments.
-    gt_slugs = [s for s in (race_slugs or []) if _is_gt_slug(s)]
+    squad_slugs = [s for s in (race_slugs or []) if _is_squad_race(s)]
     gt_squad_members: dict[tuple[str, str], bool] = {}  # (team_id, rider_id) → True
     gt_roles: dict[tuple[str, str], str] = {}           # (team_id, rider_id) → latest role
     _paris_tz = ZoneInfo("Europe/Paris")
-    if gt_slugs:
-        phase_id, year = _phase_year_from_slug(gt_slugs[0])
+    if squad_slugs:
+        phase_id, year = _phase_year_from_slug(squad_slugs[0])
 
         # Build race_slug → race_date mapping for cutoff computation
         _slug_dates: dict[str, str] = {}
         for h in (history.data or []):
-            if _is_gt_slug(h.get("race_slug", "")):
+            if _is_squad_race(h.get("race_slug", "")):
                 _slug_dates.setdefault(h["race_slug"], h.get("race_date", today))
 
-        # Compute cutoff from the first GT slug's date (all slugs in one call share a date)
-        _cutoff_date_str = _slug_dates.get(gt_slugs[0], today)
+        # Compute cutoff from the first stage-race slug's date (all slugs in one call share a date)
+        _cutoff_date_str = _slug_dates.get(squad_slugs[0], today)
         _cutoff_dt = date.fromisoformat(str(_cutoff_date_str))
         if ignore_role_cutoff:
             # Retroactive scoring: accept all role/squad assignments regardless of time
@@ -374,58 +470,62 @@ async def calculate_daily_scores(
             if key not in gt_roles:
                 gt_roles[key] = r["role"]
 
-    # --- Step 3c: Daily classifications for the current GT stage(s).
+    # --- Step 3c: Daily classifications for the current stage-race stage(s).
     # Indexed by (race_slug, rider_id) so each rider-stage pair gets its own bonus.
     classif_by_key: dict[tuple[str, str], list[dict]] = {}
-    if gt_slugs:
+    if squad_slugs:
         classif_resp = supabase.table("gt_daily_classifications").select(
             "race_slug, rider_id, classification_type, rank"
-        ).in_("race_slug", gt_slugs).execute()
+        ).in_("race_slug", squad_slugs).execute()
         for row in (classif_resp.data or []):
             classif_by_key.setdefault(
                 (row["race_slug"], row["rider_id"]), []
             ).append(row)
 
+    # --- Step 3d: Final secondary classifications (Points/KOM/Youth) for completed stage-races.
+    # Read from the DEDICATED gt_final_classifications table (kept out of race_results so it
+    # never pollutes sponsor_bonus / goal_evaluator / UI — see Task 4 storage rationale).
+    # Gated: empty for ordinary stage-slug runs → no .table() call (mock-safe).
+    # Spec A A9: extended to any stage-race (GT + 1-week) — mode selection happens in the loop.
+    final_secondary_slugs = [
+        s for s in (race_slugs or [])
+        if _is_squad_race(s) and s.rsplit("/", 1)[-1] in ("points", "kom", "youth")
+    ]
+    final_by_rider: dict[str, list[dict]] = {}
+    if final_secondary_slugs:
+        fr_resp = supabase.table("gt_final_classifications").select(
+            "rider_id, race_slug, classification_type, rank, race_date"
+        ).in_("race_slug", final_secondary_slugs).execute()
+        for row in (fr_resp.data or []):
+            final_by_rider.setdefault(row["rider_id"], []).append(row)
+
     # === Resolve unresolved Nemesis duels for the stages we're about to score ===
     # Must run BEFORE the tactics prefetch so the per-rider loop sees outcomes.
-    if gt_slugs:
-        for gt_slug in gt_slugs:
+    if squad_slugs:
+        for gt_slug in squad_slugs:
             try:
                 supabase.rpc("resolve_nemesis_for_stage", {"p_stage_slug": gt_slug}).execute()
             except Exception as e:
                 # Don't fail scoring if resolution errors — log and continue
                 print(f"WARN: resolve_nemesis_for_stage failed for {gt_slug}: {e}")
 
-    # === Pre-fetch active tactics for the GT stages we are about to score ===
+    # === Pre-fetch active tactics for the stage-race stages we are about to score ===
     # Keyed by stage_slug → list of activations with team_id + tactic_type + nemesis fields.
     # This prefetch now sees the resolved outcomes (if any).
     gt_tactics: dict[str, list[dict]] = {}
-    if gt_slugs:  # avoid an empty `.in_([])` query
+    if squad_slugs:  # avoid an empty `.in_([])` query
         tactics_resp = supabase.table("gt_tactic_activations").select(
             "id, team_id, phase_id, year, tactic_type, stage_slug,"
             " nemesis_target_team_id, nemesis_target_role,"
             " resolved_attacker_rider_id, resolved_target_rider_id,"
             " outcome, resolved_at"
-        ).in_("stage_slug", gt_slugs).execute()
+        ).in_("stage_slug", squad_slugs).execute()
 
         for row in tactics_resp.data or []:
             gt_tactics.setdefault(row["stage_slug"], []).append(row)
 
     # Track all league_ids for snapshot step
     league_ids_seen: set[str] = set()
-
-    # --- Remontada: identify GT stages in this run (used later for overtake attribution) ---
-    # Map: gt_identifier -> max stage number seen in this batch (used as trigger stage).
-    # We use MAX because if two GT stages are scored in one call (unusual), the later one
-    # reflects the cumulative state after this run.
-    remontada_stage_in_run: dict[str, int] = {}
-    for slug in (race_slugs or []):
-        gt_id = get_gt_identifier(slug)
-        stage_no = get_stage_number(slug)
-        if gt_id and stage_no is not None:
-            remontada_stage_in_run[gt_id] = max(
-                remontada_stage_in_run.get(gt_id, 0), stage_no
-            )
 
     # --- Step 4: Calculate XP per team and persist ---
     for team_id, team_clist in team_contracts.items():
@@ -472,24 +572,31 @@ async def calculate_daily_scores(
 
                 raw_points = entry["pcs_points"]
                 race_slug = entry["race_slug"]
+                breakaway_kms = entry.get("breakaway_kms")
+                profile_icon = entry.get("profile_icon")
 
-                # === Compute role multiplier (squad only) + classif bonus (all contracted GT riders).
+                # === Compute role multiplier (squad only) + classif bonus (all squad-race contracted riders).
+                # Spec A A9: extends squad-gating from GT-only to any stage-race (GT + 1-week).
                 in_squad = (team_id, rider_id) in gt_squad_members
                 gt_role_mult = 1.0
                 gt_classif_bonus = 0.0
+                gt_distance_bonus = 0.0
                 role = "domestique"  # default; overridden for squad members with assigned role
-                gt_id = get_gt_identifier(race_slug)
-                stage_no = get_stage_number(race_slug)
-                if _is_gt_slug(race_slug):
+                if _is_squad_race(race_slug):
                     if not in_squad:
-                        continue  # non-squad contracted riders earn 0 XP on GT stages
+                        continue  # non-squad contracted riders earn 0 XP on stage-race stages
                     role = gt_roles.get((team_id, rider_id), "domestique")
-                    gt_role_mult = _role_multiplier(role, race_slug, entry.get("is_itt", False))
-                    # All squad riders earn classif bonus; role-matched riders earn ×1.5.
+                    gt_role_mult = _role_multiplier(
+                        role, race_slug, entry.get("is_itt", False),
+                        breakaway_kms, profile_icon,
+                    )
+                    # V2: only role-matched classifications earn a bonus (Spec A A2).
                     gt_classif_bonus = _classif_bonus(
                         classif_by_key.get((race_slug, rider_id), []),
                         role,
                     )
+                    if role == "stage_hunter" and not race_slug.endswith("/gc"):
+                        gt_distance_bonus = _breakaway_distance_bonus(breakaway_kms)
 
                 # === Apply tactic modifiers (no-op when gt_tactics is empty) ===
                 nemesis_modifier = 1.0
@@ -506,7 +613,9 @@ async def calculate_daily_scores(
                                 gt_role_mult = override
                                 tactic_applied = applied
                         elif t_type == "overdrive":
-                            override, applied = compute_overdrive_modifier(role, race_slug)
+                            override, applied = compute_overdrive_modifier(
+                                role, race_slug, breakaway_kms
+                            )
                             if override is not None:
                                 gt_role_mult = override
                                 tactic_applied = applied
@@ -544,21 +653,12 @@ async def calculate_daily_scores(
                                 nemesis_modifier = min(nemesis_modifier, nem_mod)
                                 tactic_applied = applied
 
-                # Remontada Boost (Mech 1): 2x when active for this team at this GT stage.
-                remontada_mult = 1.0
-                if gt_id and stage_no is not None:
-                    remontada_mult = get_active_multiplier(
-                        supabase,
-                        team_id=team_id,
-                        gt_identifier=gt_id,
-                        stage_number=stage_no,
-                    )
-
                 xp = max(
                     0,
                     round(
-                        (raw_points * gt_role_mult * (1 + bonus) + gt_classif_bonus)
-                        * remontada_mult * nemesis_modifier,
+                        (raw_points * gt_role_mult * (1 + bonus)
+                         + gt_classif_bonus + gt_distance_bonus)
+                        * nemesis_modifier,
                         2,
                     ),
                 )
@@ -574,9 +674,9 @@ async def calculate_daily_scores(
                         "strategy_bonus": bonus,
                         "role_mult": gt_role_mult,
                         "classif_bonus": gt_classif_bonus,
-                        "remontada_mult": remontada_mult,
                         "gt_role_mult": gt_role_mult,
                         "gt_classif_bonus": gt_classif_bonus,
+                        "gt_distance_bonus": gt_distance_bonus,
                         "nemesis_modifier": nemesis_modifier,
                         "tactic_applied": tactic_applied,
                         "xp_gained": xp,
@@ -610,18 +710,7 @@ async def calculate_daily_scores(
                 if c_classif_bonus == 0:
                     continue
 
-                c_gt_id = get_gt_identifier(c_race_slug)
-                c_stage_no = get_stage_number(c_race_slug)
-                c_remontada = 1.0
-                if c_gt_id and c_stage_no is not None:
-                    c_remontada = get_active_multiplier(
-                        supabase,
-                        team_id=team_id,
-                        gt_identifier=c_gt_id,
-                        stage_number=c_stage_no,
-                    )
-
-                c_xp = max(0, round(c_classif_bonus * c_remontada, 2))
+                c_xp = max(0, round(c_classif_bonus, 2))
                 c_date = race_date_by_slug.get(c_race_slug, today)
 
                 try:
@@ -634,9 +723,9 @@ async def calculate_daily_scores(
                         "strategy_bonus": 0.0,
                         "role_mult": 1.0,
                         "classif_bonus": c_classif_bonus,
-                        "remontada_mult": c_remontada,
                         "gt_role_mult": 1.0,
                         "gt_classif_bonus": c_classif_bonus,
+                        "gt_distance_bonus": 0.0,
                         "nemesis_modifier": 1.0,
                         "tactic_applied": None,
                         "xp_gained": c_xp,
@@ -652,6 +741,53 @@ async def calculate_daily_scores(
 
                 total_xp += c_xp
                 processed_in_team.add((c_rider_id, c_race_slug))
+
+        # === Third pass: final secondary classification XP (Points/KOM/Youth) ===
+        # Spec A A2 — rank → 2-value scale × role mult. Squad-gated; GT-only in P2.
+        if final_by_rider:
+            for contract in team_clist:
+                f_rider_id = contract["rider_id"]
+                if (team_id, f_rider_id) not in gt_squad_members:
+                    continue
+                for fr in final_by_rider.get(f_rider_id, []):
+                    f_slug = fr["race_slug"]
+                    if (f_rider_id, f_slug) in processed_in_team:
+                        continue
+                    f_ctype = fr.get("classification_type") or f_slug.rsplit("/", 1)[-1]
+                    f_role = gt_roles.get((team_id, f_rider_id), "domestique")
+                    f_mode = "gt" if _is_gt_slug(f_slug) else "one_week"
+                    f_bonus = _final_secondary_bonus(f_ctype, fr.get("rank"), f_role, mode=f_mode)
+                    if f_bonus == 0:
+                        continue
+                    f_xp = max(0, round(f_bonus, 2))
+                    f_date = fr.get("race_date") or race_date_by_slug.get(f_slug, today)
+                    try:
+                        supabase.table("rider_xp_daily").upsert({
+                            "team_id": team_id,
+                            "rider_id": f_rider_id,
+                            "contract_id": contract["id"],
+                            "date": f_date,
+                            "raw_pcs_points": 0,
+                            "strategy_bonus": 0.0,
+                            "role_mult": 1.0,
+                            "classif_bonus": f_bonus,
+                            "gt_role_mult": 1.0,
+                            "gt_classif_bonus": f_bonus,
+                            "gt_distance_bonus": 0.0,
+                            "nemesis_modifier": 1.0,
+                            "tactic_applied": None,
+                            "xp_gained": f_xp,
+                            "race_slug": f_slug,
+                        }, on_conflict="team_id,rider_id,race_slug").execute()
+                    except Exception as e:
+                        logger.error(
+                            f"final classif upsert failed for rider {f_rider_id} "
+                            f"slug {f_slug}: {e}"
+                        )
+                        errors.append(str(e))
+                        continue
+                    total_xp += f_xp
+                    processed_in_team.add((f_rider_id, f_slug))
 
         if total_xp == 0:
             continue
@@ -698,7 +834,7 @@ async def calculate_daily_scores(
             logger.error(f"Failed to update team {team_id}: {e}")
             errors.append(str(e))
 
-    # --- Step 5: Snapshot team_ranking_daily + Remontada overtake detection ---
+    # --- Step 5: Snapshot team_ranking_daily ---
     for league_id in league_ids_seen:
         # 5a. Build POST-scoring ranking for this league.
         try:
@@ -708,7 +844,6 @@ async def calculate_daily_scores(
                 "cumulative_xp", desc=True
             ).execute()
             league_rows = league_teams_resp.data or []
-            post_snapshot = [(row["id"], rank) for rank, row in enumerate(league_rows, start=1)]
 
             # 5b. Write the existing daily snapshot (unchanged behavior).
             for rank, row in enumerate(league_rows, start=1):
@@ -718,38 +853,6 @@ async def calculate_daily_scores(
                     "rank": rank,
                     "cumulative_xp": row["cumulative_xp"],
                 }, on_conflict="team_id,date").execute()
-
-            # 5c. Remontada: if this run touched a GT, compare last snapshot to now and trigger.
-            # Skip during retroactive rescores (skip_overtake_detection=True) to avoid phantom triggers.
-            if remontada_stage_in_run and not skip_overtake_detection:
-                team_ids = [r["id"] for r in league_rows]
-                prev_date = _latest_snapshot_date_before(supabase, team_ids, today)
-                pre_rows = []
-                if prev_date:
-                    pre_rows = (
-                        supabase.table("team_ranking_daily")
-                        .select("team_id, rank")
-                        .eq("date", prev_date)
-                        .in_("team_id", team_ids)
-                        .execute()
-                    ).data or []
-                pre_snapshot = sorted(
-                    [(r["team_id"], r["rank"]) for r in pre_rows],
-                    key=lambda x: x[1],
-                )
-
-                if pre_snapshot:  # skip leagues with no prior baseline
-                    overtakes = detect_overtakes(pre_snapshot, post_snapshot)
-                    for gt_id, stage_no in remontada_stage_in_run.items():
-                        for overtaker, overtaken in overtakes:
-                            record_overtake(
-                                supabase,
-                                league_id=league_id,
-                                gt_identifier=gt_id,
-                                overtaker_team_id=overtaker,
-                                overtaken_team_id=overtaken,
-                                triggered_at_stage=stage_no,
-                            )
 
         except Exception as e:
             logger.error(f"Failed to snapshot/detect for league {league_id}: {e}")

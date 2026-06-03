@@ -66,7 +66,7 @@ Le `gt_classif_bonus` (présence dans gc/points/kom) applique un mult quand le r
 - **Final** : barème custom **2-valeurs** dérivé du rang (1/2/3), ×1.5 si gc_leader → **80/20/10 en GT/Monument**, **40/10/5 en course d'1 semaine**. Identique aux finals Points et KOM (mêmes valeurs, même logique rang→barème) — les trois finals secondaires sont traités de façon uniforme. PCS ne donne aucun point jeune nulle part, et aucun point Points/KOM hors GT → d'où le barème custom commun.
 
 **Pré-requis technique :**
-- **Daily (à chaque étape, dans le pipeline post-race)** : ajouter `youth` à l'enum `classification_type` + ajouter `("youth", lambda: stage.youth()[:50])` à la liste de `sync_race.py:import_daily_classifications` (ligne ~513), au même endroit que gc/points/kom. Même HTML d'étape déjà fetché → **aucun fetch supplémentaire**. Le youth est ainsi scrapé ET scoré chaque jour en même temps que les autres (`_fetch_gt_classifications` dans `run_pipeline.py`).
+- **Daily (à chaque étape, dans le pipeline post-race)** : ajouter `youth` à l'enum `classification_type` + ajouter `("youth", lambda: stage.youth()[:20])` à la liste de `sync_race.py:import_daily_classifications` (ligne ~513) — slice `[:20]` aligné sur `points` (le scoring ne lit que le top 5), au même endroit que gc/points/kom. Même HTML d'étape déjà fetché → **aucun fetch supplémentaire**. Le youth est ainsi scrapé ET scoré chaque jour en même temps que les autres (`_fetch_gt_classifications` dans `run_pipeline.py`).
 - `scoring.py` : `CLASSIF_TOP["youth"]=5`, match `youth→gc_leader` (×1.5), traité dans la boucle de bonus de classement quotidien avec gc/points/kom.
 - **Finals** : importer/scorer les classements finaux Points/KOM/Youth (slugs dédiés `/points`,`/kom`,`/youth`, ou table). **Lire le rang** (pas les points PCS — absents hors GT), puis appliquer le barème custom 2-valeurs (80/20/10 GT/Monument · 40/10/5 1-sem) × mult de rôle : points→sprinter ×2, kom→climber ×2, youth→gc_leader ×1.5. Le **GC final** reste importé via ses points PCS bruts ×1.0 (`import_gc_results` actuel). Aujourd'hui seul `/gc` est importé.
 - Débloque aussi le goal "maillot jeune" de Spec C.
@@ -151,7 +151,7 @@ Les changements de barème (A2/A3/A4/A7) modifient en profondeur la façon dont 
   - Stage hunter : ×1.5 en échappée (≥30 km) + 1 pt/10 km additif, ×1.0 sinon.
   - Sprinter : bonus ×1.5 seulement sur P1/P2/P3.
   - Nemesis : gating profil (Sprint P1-P3, GC P3-P5).
-- **Contraintes** : **Rule #1 — lire `docs/watthunter-design-system-v3.md` avant tout dev front**. Le design visuel (composant, emplacement exact, copy EN) se décide à l'étape frontend ; ce spec acte uniquement l'**exigence** de documenter le scoring in-app. Textes en **anglais** (Language rule).
+- **Contraintes** : **Rule #1 — lire `docs/watthunter-design-system-v3.md` avant tout dev front**. Le design visuel (composant, emplacement exact, copy EN) se décide à l'étape frontend ; ce spec acte uniquement l'**exigence** de documenter le scoring in-app. Textes en **anglais** (Language rule). Référence de langage visuel établie pour cette refonte : [`docs/mockups/2026-06-02-ui-mockups.html`](../../mockups/2026-06-02-ui-mockups.html) (cartes, tags, mini-tableaux 2 colonnes).
 - `docs/GAME_RULES.md §7/§11/§12.3` mis à jour en parallèle (source de vérité des constantes).
 
 ### A9 — Escouade « Race team » : sélection pour les courses d'1 semaine (NOUVEAU, LOCKED 2026-06-02)

@@ -90,7 +90,7 @@ interface Props {
   teamId: string;
   phaseId: 4 | 6 | 8;
   year: number;
-  gtFullName: string;
+  raceTeamLabel: string;
   squad: SquadEntry[];
   availableRiders: AvailableRiderEntry[];
   sponsor?: SponsorRow | null;
@@ -108,7 +108,7 @@ export function GtTeamClient({
   teamId,
   phaseId,
   year,
-  gtFullName,
+  raceTeamLabel,
   squad,
   availableRiders,
   sponsor,
@@ -141,9 +141,9 @@ export function GtTeamClient({
     setSheetCurrentRiderId(riderId);
   };
 
-  const gtShortName = gtFullName.includes("Giro")
+  const gtShortName = raceTeamLabel.includes("Giro")
     ? "Giro"
-    : gtFullName.includes("Tour")
+    : raceTeamLabel.includes("Tour")
       ? "Tour"
       : "Vuelta";
 

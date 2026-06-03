@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { BackHeader } from "@/components/back-header";
 import { SegmentedControl } from "@/components/segmented-control";
 import { TransactionRow } from "@/components/transaction-row";
-import { formatEuro } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 import {
   TRANSACTION_FILTER_OPTIONS,
   filterTransactions,
@@ -83,7 +83,7 @@ export function TransactionsClient({ transactions }: TransactionsClientProps) {
                 {group.label}
               </span>
               <span className="font-mono text-[length:var(--type-caption)] font-semibold text-[var(--text-high)] tabular-nums">
-                {group.net >= 0 ? "+" : ""}{formatEuro(group.net)}
+                {group.net >= 0 ? "+" : "−"}{formatMoney(group.net)}
               </span>
             </div>
             <div className="divide-y divide-[var(--border-subtle)]">

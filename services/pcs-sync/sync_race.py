@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from datetime import date
 from typing import Optional, List, Dict, Any
 
@@ -86,6 +87,18 @@ def _detect_itt(stage) -> bool:
     return s in ("ITT", "TTT")
 
 
+def _stage_profile_icon(stage) -> Optional[str]:
+    """Return the PCS profile icon (p0-p5) for a stage, or None if unavailable."""
+    try:
+        attr = getattr(stage, "profile_icon", None)
+        val = attr() if callable(attr) else attr
+    except Exception:
+        return None
+    if not val:
+        return None
+    return str(val).strip().lower()
+
+
 async def get_stage_urls(page, race_slug: str) -> List[Dict[str, str]]:
     """Return stage URL dicts for a multi-stage race, or [] for one-day races.
 
@@ -119,6 +132,7 @@ async def import_race_results(
 
     html = await fetch_html(page, fetch_url)
     stage = Stage(fetch_url, html=html, update_html=False)
+    profile_icon = _stage_profile_icon(stage)
     results = stage.results()
 
     # Build lookup map from pcs_slug → rider_id
@@ -150,6 +164,8 @@ async def import_race_results(
                     "pcs_points": int(entry.get("pcs_points") or entry.get("points", 0) or 0),
                     "rank": entry.get("rank"),
                     "is_itt": _detect_itt(stage),
+                    "breakaway_kms": entry.get("breakaway_kms"),
+                    "profile_icon": profile_icon,
                 }
             race_class = _classify_race(race_slug)
             if race_class:
@@ -195,7 +211,7 @@ async def import_gc_results(
 
     if not gc_entries:
         logger.warning("No GC results found for %s", gc_url)
-        return {"race": gc_url, "imported": 0, "skipped": 0, "total_in_race": 0, "errors": []}
+        return {"race": gc_url, "imported": 0, "skipped": 0, "total_in_race": 0, "errors": [], "has_points": False}
 
     # Build lookup map from pcs_slug → rider_id
     riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
@@ -206,6 +222,7 @@ async def import_gc_results(
     imported = 0
     skipped = 0
     errors: List[str] = []
+    has_points = False
 
     for entry in gc_entries:
         rider_url = entry.get("rider_url", "")
@@ -215,6 +232,9 @@ async def import_gc_results(
 
         try:
             rider_id = rider_map[rider_url]
+            pts = int(entry.get("pcs_points") or 0)
+            if pts > 0:
+                has_points = True
 
             row = {
                 "rider_id": rider_id,
@@ -222,7 +242,7 @@ async def import_gc_results(
                 "race_name": f"{race_name} - GC",
                 "stage": "gc",
                 "race_date": race_date or None,
-                "pcs_points": int(entry.get("pcs_points") or 0),
+                "pcs_points": pts,
                 "rank": entry.get("rank"),
                 "is_itt": False,
             }
@@ -245,7 +265,72 @@ async def import_gc_results(
         "skipped": skipped,
         "total_in_race": len(gc_entries),
         "errors": errors,
+        "has_points": has_points,
     }
+
+
+FINAL_SECONDARY_TYPES = ("points", "kom", "youth")
+
+
+async def import_final_classifications(
+    supabase: Client,
+    page,
+    *,
+    race_slug: str,
+    race_name: str,
+    race_date: str,
+) -> Dict[str, int]:
+    """Import final Points/KOM/Youth standings for a completed GT (Spec A A2).
+
+    These jerseys carry no PCS points, so we store the rank into the DEDICATED table
+    gt_final_classifications (NOT race_results — see the storage rationale at the top of
+    Task 4) keyed by race_slug {race_slug}/points|/kom|/youth; scoring's finals pass applies
+    the 2-value rank scale. GT-only — the caller gates on GT completion (GC has points).
+    """
+    counts = {"points": 0, "kom": 0, "youth": 0}
+
+    riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+    rider_map: Dict[str, str] = {
+        r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+    }
+
+    for ctype in FINAL_SECONDARY_TYPES:
+        url = f"{race_slug}/{ctype}"
+        try:
+            html = await fetch_html(page, url)
+            stage = Stage(url, html=html, update_html=False)
+            # Stage.points()/kom()/youth() parse the standings table on the dedicated page.
+            # ⚠️ Verify against live lib during the first real scraping run: confirm
+            # Stage("race/<gt>/2026/points").points() returns final standings with
+            # rider_url + rank on the dedicated jersey page. If a method name differs,
+            # adjust the getattr mapping here. The unit test mocks Stage independently.
+            entries = getattr(stage, ctype)() or []
+        except Exception as exc:
+            logger.warning("Failed to fetch final %s for %s: %s", ctype, url, exc)
+            continue
+
+        for entry in entries:
+            rider_url = entry.get("rider_url", "")
+            rank = entry.get("rank")
+            rid = rider_map.get(rider_url)
+            if not rid or rank is None:
+                continue
+            try:
+                supabase.table("gt_final_classifications").upsert(
+                    {
+                        "race_slug": url,
+                        "classification_type": ctype,
+                        "rider_id": rid,
+                        "rank": int(rank),
+                        "race_date": race_date or None,
+                    },
+                    on_conflict="race_slug,rider_id",
+                ).execute()
+                counts[ctype] += 1
+            except Exception as exc:
+                logger.error("Failed final %s upsert (%s): %s", ctype, rid, exc)
+
+    return counts
 
 
 async def update_global_ranking(supabase: Client, browser, *, pages: int = 6) -> Dict[str, Any]:
@@ -492,13 +577,13 @@ async def import_daily_classifications(
     race_slug: str,
     stage_url: str,
 ) -> Dict[str, int]:
-    """Fetch gc/points/kom classifications for a single GT stage and upsert.
+    """Fetch gc/points/kom/youth classifications for a single GT stage and upsert.
 
-    Stores top 50 GC, top 20 points, top 10 KOM for safety; scoring reads only
-    the top 10/5/3 respectively. Swallows errors per classification so a single
-    failed fetch does not abort the whole call.
+    Stores top 50 GC, top 20 points, top 10 KOM, top 20 youth for safety;
+    scoring reads only the top 10/5/3 respectively. Swallows errors per
+    classification so a single failed fetch does not abort the whole call.
     """
-    counts = {"gc": 0, "points": 0, "kom": 0}
+    counts = {"gc": 0, "points": 0, "kom": 0, "youth": 0}
     stage_label = stage_url.split("/")[-1]
 
     riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
@@ -513,6 +598,7 @@ async def import_daily_classifications(
         ("gc", lambda: stage.gc()[:50]),
         ("points", lambda: stage.points()[:20]),
         ("kom", lambda: stage.kom()[:10]),
+        ("youth", lambda: stage.youth()[:20]),
     ]
 
     for kind, fetch in fetchers:
@@ -603,3 +689,131 @@ async def import_startlist(
         "total_in_startlist": len(startlist_entries),
         "errors": errors,
     }
+
+
+def _stage_year_from_slug(race_slug: str) -> Optional[int]:
+    """Extract the 4-digit year from a race slug like 'race/tour-de-france/2026'."""
+    import re
+    m = re.search(r"/(\d{4})(?:/|$)", race_slug)
+    return int(m.group(1)) if m else None
+
+
+def _stage_date_from_md(md: Optional[str], year: Optional[int]) -> Optional[str]:
+    """Combine a 'MM-DD' string from Race.stages() with the year inferred from the slug.
+
+    Returns an ISO date string ('YYYY-MM-DD') or None on missing/invalid input.
+    """
+    if not md or not year:
+        return None
+    s = str(md).strip()
+    parts = s.split("-")
+    if len(parts) != 2:
+        return None
+    try:
+        mm = int(parts[0])
+        dd = int(parts[1])
+        return f"{year:04d}-{mm:02d}-{dd:02d}"
+    except ValueError:
+        return None
+
+
+async def import_stage_profiles(
+    supabase: Client,
+    page,
+    race_slug: str,
+    race_name: str,
+) -> Dict[str, int]:
+    """Scrape every stage's profile_icon from the race overview page (Race.stages())
+    and upsert one row per stage into stage_profiles.
+
+    One fetch per race — no per-stage scraping. Skips stages with no profile_icon
+    (CHECK constraint forbids NULL). Returns counts.
+    """
+    html = await fetch_html(page, race_slug)
+    race = Race(race_slug, html=html, update_html=False)
+
+    if race.is_one_day_race():
+        return {"imported": 0, "skipped": 0, "total_stages": 0}
+
+    stages = race.stages()
+    year = _stage_year_from_slug(race_slug)
+
+    imported = 0
+    skipped = 0
+
+    for stage in stages:
+        stage_url = stage.get("stage_url") or ""
+        raw_icon = stage.get("profile_icon")
+        icon = str(raw_icon).strip().lower() if raw_icon else ""
+        if not stage_url or not icon:
+            skipped += 1
+            continue
+
+        # PCS sometimes returns a canonical race URL that differs from the
+        # input slug (e.g. `race/dauphine/2026` → `race/tour-auvergne-rhone-alpes/2026`).
+        # Persist under the input slug so the rest of the codebase (front,
+        # wt_calendar, wt-race-slugs) can look stages up by their canonical
+        # WattHunter slug.
+        normalized_slug = _normalize_stage_slug(stage_url, race_slug)
+        if normalized_slug is None:
+            logger.warning(
+                "Unparseable stage_url %r for race_slug %r — skipping",
+                stage_url, race_slug,
+            )
+            skipped += 1
+            continue
+
+        race_date = _stage_date_from_md(stage.get("date"), year)
+        stage_type = _parse_stage_type(stage.get("stage_name"))
+        try:
+            supabase.table("stage_profiles").upsert(
+                {
+                    "race_slug": normalized_slug,
+                    "profile_icon": icon,
+                    "race_date": race_date,
+                    "stage_type": stage_type,
+                },
+                on_conflict="race_slug",
+            ).execute()
+            imported += 1
+        except Exception as exc:
+            logger.error("Failed stage_profiles upsert for %s: %s", normalized_slug, exc)
+            skipped += 1
+
+    return {"imported": imported, "skipped": skipped, "total_stages": len(stages)}
+
+
+# Matches "(ITT)" or "(TTT)" anywhere in the stage name (PCS includes it in the
+# title for TT stages, e.g. "Stage 16 (ITT) | Évian Les-Bains - Thonon Les-Bains").
+_STAGE_TYPE_RE = re.compile(r"\((I|T)TT\)")
+
+
+def _parse_stage_type(stage_name: Any) -> str:
+    """Return 'ITT', 'TTT' or 'RR' based on the marker PCS embeds in the
+    stage name from `Race.stages()`. Defaults to 'RR' when no marker is found
+    or when `stage_name` is missing — the same default as the column.
+    """
+    if not stage_name:
+        return "RR"
+    match = _STAGE_TYPE_RE.search(str(stage_name))
+    if not match:
+        return "RR"
+    return f"{match.group(1)}TT"
+
+
+_STAGE_SUFFIX_RE = re.compile(r"/(stage-\d+(?:[a-z])?)$")
+
+
+def _normalize_stage_slug(pcs_stage_url: str, input_race_slug: str) -> Optional[str]:
+    """Rewrite a PCS-canonical stage URL (`race/<pcs-name>/<year>/stage-N`)
+    onto the input race slug, so that `stage_profiles.race_slug` matches the
+    slug the rest of the codebase uses (wt_calendar, wt-race-slugs, front).
+
+    Returns the rewritten slug, or None if the PCS URL has no `/stage-N` suffix.
+    Idempotent: when PCS canonical and input slugs are identical, returns
+    the same value as before (no behavior change).
+    """
+    match = _STAGE_SUFFIX_RE.search(pcs_stage_url)
+    if not match:
+        return None
+    return f"{input_race_slug.rstrip('/')}/{match.group(1)}"

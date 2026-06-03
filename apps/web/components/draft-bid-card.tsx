@@ -4,7 +4,8 @@ import { useState } from "react";
 import { ChevronRight, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MovementTag } from "@/components/movement-tag";
-import { countryCodeToFlag, formatThousands } from "@/lib/format";
+import { countryCodeToFlag, formatThousands, formatMoney } from "@/lib/format";
+import { RiderPrice } from "@/components/rider-price";
 import { BID_INCREMENT, snapToIncrement } from "@/lib/budget";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 
@@ -91,10 +92,10 @@ export function DraftBidCard({
       return;
     }
 
-    if (parsed % 100 !== 0) {
-      setInputError("Must be a multiple of €100");
+    if (parsed % 1000 !== 0) {
+      setInputError("Must be a multiple of €1,000");
     } else if (parsed < minSalary) {
-      setInputError(`Min: €${formatThousands(minSalary)}`);
+      setInputError(`Min: ${formatMoney(minSalary)}`);
     } else {
       setInputError(null);
     }
@@ -231,7 +232,7 @@ export function DraftBidCard({
             }`}
           />
           <span className={`mt-[3px] text-[length:var(--type-micro)] ${inputError ? "text-red-400" : "text-[var(--text-low)]"}`}>
-            {inputError ?? <>Min: <span className="font-mono">€{formatThousands(minSalary)}</span></>}
+            {inputError ?? <>Min: <RiderPrice amount={minSalary} /></>}
           </span>
         </div>
 

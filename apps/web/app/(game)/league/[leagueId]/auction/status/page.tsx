@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPhase } from "@/lib/phases";
-import { formatEuro } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 import { getLevelByNumber } from "@/lib/levels";
 import { Tag } from "@/components/pill";
 import { RoundStepper } from "@/components/round-stepper";
@@ -232,15 +232,15 @@ export default async function StatusPage({
                 <div className="w-24 text-right font-mono flex flex-col justify-center">
                   {row.purchasing_power === row.budget ? (
                     <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
-                      {formatEuro(row.budget)}
+                      {formatMoney(row.budget)}
                     </span>
                   ) : (
                     <>
                       <span className="text-[length:var(--type-caption)] text-[var(--text-low)] line-through">
-                        {formatEuro(row.budget)}
+                        {formatMoney(row.budget)}
                       </span>
                       <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
-                        {formatEuro(row.purchasing_power)}
+                        {formatMoney(row.purchasing_power)}
                       </span>
                     </>
                   )}
@@ -448,15 +448,15 @@ async function renderDemoAuctionStatus() {
                 <div className="w-24 text-right font-mono flex flex-col justify-center">
                   {row.purchasing_power === row.budget ? (
                     <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
-                      {formatEuro(row.budget)}
+                      {formatMoney(row.budget)}
                     </span>
                   ) : (
                     <>
                       <span className="text-[length:var(--type-caption)] text-[var(--text-low)] line-through">
-                        {formatEuro(row.budget)}
+                        {formatMoney(row.budget)}
                       </span>
                       <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
-                        {formatEuro(row.purchasing_power)}
+                        {formatMoney(row.purchasing_power)}
                       </span>
                     </>
                   )}

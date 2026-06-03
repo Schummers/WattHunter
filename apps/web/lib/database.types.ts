@@ -362,6 +362,41 @@ export type Database = {
           },
         ]
       }
+      gt_final_classifications: {
+        Row: {
+          classification_type: string
+          created_at: string
+          race_date: string | null
+          race_slug: string
+          rank: number
+          rider_id: string
+        }
+        Insert: {
+          classification_type: string
+          created_at?: string
+          race_date?: string | null
+          race_slug: string
+          rank: number
+          rider_id: string
+        }
+        Update: {
+          classification_type?: string
+          created_at?: string
+          race_date?: string | null
+          race_slug?: string
+          rank?: number
+          rider_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gt_final_classifications_rider_id_fkey"
+            columns: ["rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gt_rescue_windows: {
         Row: {
           gt_identifier: string
@@ -385,7 +420,8 @@ export type Database = {
           applied_at: string
           created_at: string
           id: string
-          phase_id: number
+          phase_id: number | null
+          race_slug: string | null
           rider_id: string
           role: string
           team_id: string
@@ -395,7 +431,8 @@ export type Database = {
           applied_at?: string
           created_at?: string
           id?: string
-          phase_id: number
+          phase_id?: number | null
+          race_slug?: string | null
           rider_id: string
           role: string
           team_id: string
@@ -405,7 +442,8 @@ export type Database = {
           applied_at?: string
           created_at?: string
           id?: string
-          phase_id?: number
+          phase_id?: number | null
+          race_slug?: string | null
           rider_id?: string
           role?: string
           team_id?: string
@@ -434,7 +472,8 @@ export type Database = {
           dnf_refund_claimed: boolean
           dnf_stage: number | null
           id: string
-          phase_id: number
+          phase_id: number | null
+          race_slug: string | null
           removed_at: string | null
           rider_id: string
           role: string
@@ -446,7 +485,8 @@ export type Database = {
           dnf_refund_claimed?: boolean
           dnf_stage?: number | null
           id?: string
-          phase_id: number
+          phase_id?: number | null
+          race_slug?: string | null
           removed_at?: string | null
           rider_id: string
           role?: string
@@ -458,7 +498,8 @@ export type Database = {
           dnf_refund_claimed?: boolean
           dnf_stage?: number | null
           id?: string
-          phase_id?: number
+          phase_id?: number | null
+          race_slug?: string | null
           removed_at?: string | null
           rider_id?: string
           role?: string
@@ -489,7 +530,8 @@ export type Database = {
           nemesis_target_role: string | null
           nemesis_target_team_id: string | null
           outcome: string | null
-          phase_id: number
+          phase_id: number | null
+          race_slug: string | null
           resolved_at: string | null
           resolved_attacker_rider_id: string | null
           resolved_target_rider_id: string | null
@@ -504,7 +546,8 @@ export type Database = {
           nemesis_target_role?: string | null
           nemesis_target_team_id?: string | null
           outcome?: string | null
-          phase_id: number
+          phase_id?: number | null
+          race_slug?: string | null
           resolved_at?: string | null
           resolved_attacker_rider_id?: string | null
           resolved_target_rider_id?: string | null
@@ -519,7 +562,8 @@ export type Database = {
           nemesis_target_role?: string | null
           nemesis_target_team_id?: string | null
           outcome?: string | null
-          phase_id?: number
+          phase_id?: number | null
+          race_slug?: string | null
           resolved_at?: string | null
           resolved_attacker_rider_id?: string | null
           resolved_target_rider_id?: string | null
@@ -611,6 +655,7 @@ export type Database = {
           created_at: string
           id: string
           invite_code: string
+          is_demo: boolean
           max_players: number
           name: string
           season_year: number
@@ -623,6 +668,7 @@ export type Database = {
           created_at?: string
           id?: string
           invite_code: string
+          is_demo?: boolean
           max_players?: number
           name: string
           season_year?: number
@@ -635,6 +681,7 @@ export type Database = {
           created_at?: string
           id?: string
           invite_code?: string
+          is_demo?: boolean
           max_players?: number
           name?: string
           season_year?: number
@@ -654,10 +701,12 @@ export type Database = {
       }
       race_results: {
         Row: {
+          breakaway_kms: number | null
           created_at: string
           id: string
           is_itt: boolean
           pcs_points: number
+          profile_icon: string | null
           race_class: string | null
           race_date: string
           race_name: string
@@ -667,10 +716,12 @@ export type Database = {
           stage: string | null
         }
         Insert: {
+          breakaway_kms?: number | null
           created_at?: string
           id?: string
           is_itt?: boolean
           pcs_points?: number
+          profile_icon?: string | null
           race_class?: string | null
           race_date: string
           race_name: string
@@ -680,10 +731,12 @@ export type Database = {
           stage?: string | null
         }
         Update: {
+          breakaway_kms?: number | null
           created_at?: string
           id?: string
           is_itt?: boolean
           pcs_points?: number
+          profile_icon?: string | null
           race_class?: string | null
           race_date?: string
           race_name?: string
@@ -730,116 +783,6 @@ export type Database = {
             columns: ["rider_id"]
             isOneToOne: false
             referencedRelation: "riders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      remontada_boost_triggers: {
-        Row: {
-          created_at: string
-          gt_identifier: string
-          league_id: string
-          overtaken_team_id: string
-          overtaker_team_id: string
-          triggered_at_stage: number
-        }
-        Insert: {
-          created_at?: string
-          gt_identifier: string
-          league_id: string
-          overtaken_team_id: string
-          overtaker_team_id: string
-          triggered_at_stage: number
-        }
-        Update: {
-          created_at?: string
-          gt_identifier?: string
-          league_id?: string
-          overtaken_team_id?: string
-          overtaker_team_id?: string
-          triggered_at_stage?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "remontada_boost_triggers_league_id_fkey"
-            columns: ["league_id"]
-            isOneToOne: false
-            referencedRelation: "leagues"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "remontada_boost_triggers_overtaken_team_id_fkey"
-            columns: ["overtaken_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "remontada_boost_triggers_overtaker_team_id_fkey"
-            columns: ["overtaker_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      remontada_boosts: {
-        Row: {
-          created_at: string
-          expires_after_stage: number
-          gt_identifier: string
-          id: string
-          league_id: string
-          multiplier: number
-          overtaken_team_id: string | null
-          team_id: string
-          triggered_at_stage: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          expires_after_stage: number
-          gt_identifier: string
-          id?: string
-          league_id: string
-          multiplier?: number
-          overtaken_team_id?: string | null
-          team_id: string
-          triggered_at_stage: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          expires_after_stage?: number
-          gt_identifier?: string
-          id?: string
-          league_id?: string
-          multiplier?: number
-          overtaken_team_id?: string | null
-          team_id?: string
-          triggered_at_stage?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "remontada_boosts_league_id_fkey"
-            columns: ["league_id"]
-            isOneToOne: false
-            referencedRelation: "leagues"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "remontada_boosts_overtaken_team_id_fkey"
-            columns: ["overtaken_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "remontada_boosts_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -953,12 +896,12 @@ export type Database = {
           created_at: string
           date: string
           gt_classif_bonus: number
+          gt_distance_bonus: number
           gt_role_mult: number
           id: string
           nemesis_modifier: number
           race_slug: string
           raw_pcs_points: number
-          remontada_mult: number
           rider_id: string
           role_mult: number
           strategy_bonus: number
@@ -972,12 +915,12 @@ export type Database = {
           created_at?: string
           date: string
           gt_classif_bonus?: number
+          gt_distance_bonus?: number
           gt_role_mult?: number
           id?: string
           nemesis_modifier?: number
           race_slug: string
           raw_pcs_points?: number
-          remontada_mult?: number
           rider_id: string
           role_mult?: number
           strategy_bonus?: number
@@ -991,12 +934,12 @@ export type Database = {
           created_at?: string
           date?: string
           gt_classif_bonus?: number
+          gt_distance_bonus?: number
           gt_role_mult?: number
           id?: string
           nemesis_modifier?: number
           race_slug?: string
           raw_pcs_points?: number
-          remontada_mult?: number
           rider_id?: string
           role_mult?: number
           strategy_bonus?: number
@@ -1348,6 +1291,33 @@ export type Database = {
         }
         Relationships: []
       }
+      stage_profiles: {
+        Row: {
+          created_at: string
+          profile_icon: string
+          race_date: string | null
+          race_slug: string
+          stage_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          profile_icon: string
+          race_date?: string | null
+          race_slug: string
+          stage_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          profile_icon?: string
+          race_date?: string | null
+          race_slug?: string
+          stage_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       strategies: {
         Row: {
           created_at: string
@@ -1375,6 +1345,24 @@ export type Database = {
           name?: string
           slug?: string
           xp_bonus?: number
+        }
+        Relationships: []
+      }
+      tactic_usage_limits: {
+        Row: {
+          max_per_race: number
+          race_kind: string
+          tactic_type: string
+        }
+        Insert: {
+          max_per_race: number
+          race_kind: string
+          tactic_type: string
+        }
+        Update: {
+          max_per_race?: number
+          race_kind?: string
+          tactic_type?: string
         }
         Relationships: []
       }
@@ -1710,6 +1698,7 @@ export type Database = {
         Args: { p_bonuses: Json; p_team_id: string }
         Returns: Json
       }
+      demo_league_id: { Args: never; Returns: string }
       grant_xp: {
         Args: {
           p_adjusted_at?: string
@@ -1722,6 +1711,7 @@ export type Database = {
       gt_add_to_squad: {
         Args: {
           p_phase_id: number
+          p_race_slug?: string
           p_rider_id: string
           p_role: string
           p_team_id: string
@@ -1732,6 +1722,7 @@ export type Database = {
       gt_assign_role: {
         Args: {
           p_phase_id: number
+          p_race_slug?: string
           p_rider_id: string
           p_role: string
           p_team_id: string
@@ -1757,6 +1748,7 @@ export type Database = {
       gt_remove_from_squad: {
         Args: {
           p_phase_id: number
+          p_race_slug?: string
           p_rider_id: string
           p_team_id: string
           p_year: number
@@ -1768,10 +1760,15 @@ export type Database = {
           p_new_rider_id: string
           p_old_rider_id: string
           p_phase_id: number
+          p_race_slug?: string
           p_team_id: string
           p_year: number
         }
         Returns: Json
+      }
+      infer_race_kind: {
+        Args: { p_phase_id: number; p_race_slug: string }
+        Returns: string
       }
       is_league_member: { Args: { p_league_id: string }; Returns: boolean }
       join_league_by_code: {
@@ -1779,10 +1776,6 @@ export type Database = {
         Returns: Json
       }
       launch_first_auction: { Args: { p_league_id: string }; Returns: Json }
-      set_starting_level: {
-        Args: { p_league_id: string; p_level: number }
-        Returns: Json
-      }
       leave_league: { Args: { p_league_id: string }; Returns: Json }
       place_bid: {
         Args: {
@@ -1798,6 +1791,7 @@ export type Database = {
           p_nemesis_target_role?: string
           p_nemesis_target_team_id?: string
           p_phase_id: number
+          p_race_slug?: string
           p_stage_slug: string
           p_tactic_type: string
           p_team_id: string
@@ -1812,6 +1806,10 @@ export type Database = {
       resolve_nemesis_for_stage: {
         Args: { p_stage_slug: string }
         Returns: number
+      }
+      set_starting_level: {
+        Args: { p_league_id: string; p_level: number }
+        Returns: Json
       }
       validate_round: {
         Args: { p_current_phase_id: number; p_league_id: string }

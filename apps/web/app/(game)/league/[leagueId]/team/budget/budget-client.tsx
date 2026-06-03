@@ -7,7 +7,7 @@ import { PhaseNavigator } from "@/components/phase-navigator";
 import { FilterChips } from "@/components/filter-chips";
 import { TransactionRow } from "@/components/transaction-row";
 import { SponsorBonusCard } from "@/components/sponsor-bonus-card";
-import { formatEuro } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 import { AUCTION_PHASES, getCurrentPhase } from "@/lib/phases";
 import {
   TRANSACTION_FILTER_OPTIONS,
@@ -35,12 +35,6 @@ interface BudgetClientProps {
   transactions: Transaction[];
   phaseIndex: number;
   currentSponsor: SponsorRow | null;
-}
-
-function formatCompact(amount: number): string {
-  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(amount % 1_000_000 === 0 ? 0 : 1)}M €`;
-  if (amount >= 1_000) return `${Math.round(amount / 1_000)}k €`;
-  return formatEuro(amount);
 }
 
 export function BudgetClient({
@@ -90,7 +84,7 @@ export function BudgetClient({
             Treasury
           </span>
           <div className="mt-1 font-[family-name:var(--font-geist-mono)] text-[length:var(--type-display)] font-black leading-none text-[var(--accent-highlight)] tabular-nums">
-            {formatEuro(treasury)}
+            {formatMoney(treasury)}
           </div>
 
           {/* P&L rows */}
@@ -98,26 +92,26 @@ export function BudgetClient({
             <div className="flex items-center justify-between text-[length:var(--type-caption)]">
               <span className="text-[var(--text-low)]">Sponsor</span>
               <span className="font-[family-name:var(--font-geist-mono)] font-semibold text-[var(--text-high)] tabular-nums">
-                +{formatCompact(sponsorIncome)}
+                +{formatMoney(sponsorIncome)}
               </span>
             </div>
             <div className="flex items-center justify-between text-[length:var(--type-caption)]">
               <span className="text-[var(--text-low)]">Bonuses</span>
               <span className="font-[family-name:var(--font-geist-mono)] font-semibold text-[var(--text-high)] tabular-nums">
-                +{formatCompact(bonusIncome)}
+                +{formatMoney(bonusIncome)}
               </span>
             </div>
             <div className="flex items-center justify-between text-[length:var(--type-caption)]">
               <span className="text-[var(--text-low)]">Salaries</span>
               <span className="font-[family-name:var(--font-geist-mono)] font-semibold text-[var(--text-high)] tabular-nums">
-                -{formatCompact(phaseSalaries)}
+                -{formatMoney(phaseSalaries)}
               </span>
             </div>
             <div className="border-t border-[var(--border-glass)] pt-1.5">
               <div className="flex items-center justify-between text-[length:var(--type-caption)]">
                 <span className="font-semibold text-[var(--text-high)]">Phase result</span>
                 <span className="font-[family-name:var(--font-geist-mono)] font-bold text-[var(--text-high)] tabular-nums">
-                  {phaseResult >= 0 ? "+" : ""}{formatCompact(phaseResult)}
+                  {phaseResult >= 0 ? "+" : ""}{formatMoney(phaseResult)}
                 </span>
               </div>
             </div>

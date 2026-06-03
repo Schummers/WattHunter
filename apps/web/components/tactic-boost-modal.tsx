@@ -89,6 +89,10 @@ export function TacticBoostModal({
             value={selectedStage}
             onChange={setSelectedStage}
             fillParent
+            // Overdrive boosts stage hunters in the echappée, which doesn't
+            // exist on a time trial — server-side place_tactic v4 rejects it.
+            // Unleash and Call the Bus stay allowed (domestique / bench logic).
+            blockTimeTrials={tacticId === "overdrive"}
           />
         </div>
         {err && (

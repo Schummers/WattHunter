@@ -72,6 +72,41 @@ export function getPhaseRaces(phaseStartDate: string, phaseEndDate: string): Upc
     }));
 }
 
+export interface CalendarRace {
+  slug: string;
+  name: string;
+  type: "one-day" | "stage-race";
+  /** Single date for one-day races, start date for stage races. */
+  startDate: string;
+  /** Same as startDate for one-day races, last stage date for stage races. */
+  endDate: string;
+}
+
+/**
+ * Look up a race by its WattHunter slug (e.g. `"race/dauphine/2026"`).
+ * Returns a normalized shape so callers don't have to branch on `type`.
+ */
+export function getRaceBySlug(slug: string): CalendarRace | undefined {
+  const found = (calendarData as Race[]).find((r) => r.slug === slug);
+  if (!found) return undefined;
+  if (found.type === "one-day") {
+    return {
+      slug: found.slug,
+      name: found.name,
+      type: "one-day",
+      startDate: found.date,
+      endDate: found.date,
+    };
+  }
+  return {
+    slug: found.slug,
+    name: found.name,
+    type: "stage-race",
+    startDate: found.start_date,
+    endDate: found.end_date,
+  };
+}
+
 export function formatRaceDate(startDate: string, endDate: string | null): string {
   const start = new Date(startDate + "T12:00:00");
   const startStr = start.toLocaleDateString("en-US", { month: "short", day: "numeric" });

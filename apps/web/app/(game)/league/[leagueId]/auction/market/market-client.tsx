@@ -8,7 +8,8 @@ import { FilterChips } from "@/components/filter-chips";
 import { StickyBar } from "@/components/sticky-bar";
 import { addDraft } from "@/app/(game)/league/[leagueId]/auction/actions";
 import { useDemoSafeAction } from "@/contexts/demo-context";
-import { formatThousands, countryCodeToFlag, calcMinSalary, formatEuro } from "@/lib/format";
+import { formatThousands, countryCodeToFlag, calcMinSalary, formatMoney } from "@/lib/format";
+import { RiderPrice } from "@/components/rider-price";
 import { computeAvailableBudget } from "@/lib/budget";
 
 interface Rider {
@@ -357,7 +358,7 @@ export function MarketClient({
             type="text"
             inputMode="numeric"
             min={minSalary}
-            step={100}
+            step={1000}
             placeholder={formatThousands(minSalary)}
             value={currentBid ? formatThousands(currentBid) : ""}
             onChange={(e) => {
@@ -382,7 +383,7 @@ export function MarketClient({
         {/* Min salary — only visible when there's an active bid */}
         {(bids[r.id] || savedDraftIds.has(r.id)) && (
           <div className="text-[length:var(--type-micro)] text-[var(--text-low)] mt-px">
-            Min: <span className="font-mono tabular-nums">€{formatThousands(minSalary)}</span>
+            Min: <RiderPrice amount={minSalary} />
           </div>
         )}
         {errors[r.id] && (
@@ -549,7 +550,7 @@ export function MarketClient({
       >
         <div className="flex items-center justify-between">
           <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)]">
-            <span className="font-mono tabular-nums">{totalBidCount}/{maxSlots}</span> slots &middot; <span className="font-mono tabular-nums">{formatEuro(remainingBudget)}</span>
+            <span className="font-mono tabular-nums">{totalBidCount}/{maxSlots}</span> slots &middot; <span className="font-mono tabular-nums">{remainingBudget < 0 ? "−" : ""}{formatMoney(remainingBudget)}</span>
           </span>
           <button
             type="button"

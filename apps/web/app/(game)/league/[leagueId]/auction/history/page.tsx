@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Search } from "lucide-react";
-import { formatEuro } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 import { GT_FULL_NAME, type GtPhaseId } from "@/lib/gt-phases";
 import {
   DEMO_LEAGUE_SLUG,
@@ -174,7 +174,7 @@ export default async function AuctionHistoryPage({
                             >
                               <span>{bid.bidder_name}</span>
                               <span className="font-mono">
-                                {formatEuro(bid.amount)}
+                                {formatMoney(bid.amount)}
                               </span>
                             </div>
                           ))}
@@ -212,7 +212,7 @@ export default async function AuctionHistoryPage({
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-[var(--text-mid)]">{formatEuro(bid.amount)}</span>
+                      <span className="font-mono text-[var(--text-mid)]">{formatMoney(bid.amount)}</span>
                       <span className={bid.won ? "text-[var(--accent-default)]" : "text-[var(--text-low)] opacity-60"}>
                         {bid.won ? "Won" : "Lost"}
                       </span>
@@ -352,7 +352,7 @@ async function renderDemoAuctionHistory() {
                             }`}
                           >
                             <span>{bid.bidder_name}</span>
-                            <span className="font-mono">{formatEuro(bid.amount)}</span>
+                            <span className="font-mono">{formatMoney(bid.amount)}</span>
                           </div>
                         ))}
                       </div>
