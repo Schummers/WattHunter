@@ -422,7 +422,9 @@ async def test_process_race_bonuses_qualifying_result():
         }],
         # 4. sponsor_bonuses idempotence pre-fetch (none exist yet)
         [],
-        # 5. sponsor_bonuses batch upsert
+        # 5. sponsor_goal_completions — no neutralizing goals
+        [],
+        # 6. sponsor_bonuses batch upsert
         [],
     )
 
@@ -476,7 +478,9 @@ async def test_process_race_bonuses_rpc_failure_captured():
         }],
         # 4. sponsor_bonuses idempotence pre-fetch (none exist yet)
         [],
-        # 5. sponsor_bonuses batch upsert
+        # 5. sponsor_goal_completions — no neutralizing goals
+        [],
+        # 6. sponsor_bonuses batch upsert
         [],
     )
 
@@ -522,6 +526,8 @@ async def test_process_race_bonuses_non_qualifying_result():
             "sponsors": lotto_row,
         }],
         # 4. sponsor_bonuses idempotence pre-fetch (unused — bonus never qualifies)
+        [],
+        # 5. sponsor_goal_completions — no neutralizing goals
         [],
     )
 
@@ -617,7 +623,9 @@ async def test_process_race_bonuses_idempotent_on_rerun():
             "race_slug": "race/paris-nice/2026",
             "result_type": "gc",
         }],
-        # 5. sponsor_bonuses upsert (still happens — idempotent at DB level)
+        # 5. sponsor_goal_completions — no neutralizing goals
+        [],
+        # 6. sponsor_bonuses upsert (still happens — idempotent at DB level)
         [],
     )
 
@@ -627,6 +635,113 @@ async def test_process_race_bonuses_idempotent_on_rerun():
     assert result["errors"] == []
     # CRITICAL: the RPC must NOT have been called (no double-credit)
     sb.rpc.assert_not_called()
+
+
+# ===========================================================================
+# No-cumul rule — base bonus suppressed when a one-time goal already paid
+# (GAME_RULES.md §17). Neutralization targets come from
+# sponsor_goal_completions.neutralized_stage_slugs.
+# ===========================================================================
+
+_DECATHLON = {
+    "id": "sp-dec", "tier": 4, "nationality": None,
+    "bonus_gc": 10000, "gc_threshold": 10,
+    "bonus_stage": 5000, "stage_threshold": 3,
+    "bonus_one_day": 10000, "one_day_threshold": 10,
+    "has_explicit_prestige": False,
+}
+
+
+@pytest.mark.asyncio
+async def test_no_cumul_skips_gc_base_bonus_when_goal_completed():
+    """A rider who triggered gc_podium must NOT also receive the /gc base bonus."""
+    from sponsor_bonus import process_race_bonuses
+
+    sb = make_supabase(
+        # 1. race_results — GC final, rank 2 (would normally earn the gc base bonus)
+        [{
+            "rider_id": RIDER_ID,
+            "race_slug": "race/giro-d-italia/2026/gc",
+            "race_class": "stage_race",
+            "stage": "gc",
+            "rank": 2,
+            "pcs_points": 200,
+            "race_date": "2026-05-30",
+        }],
+        # 2. contracts
+        [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "status": "active",
+          "riders": {"nationality": "IT"}}],
+        # 3. team_sponsors (T4 Decathlon)
+        [{"team_id": TEAM_ID, "sponsor_id": "sp-dec", "sponsors": _DECATHLON}],
+        # 4. sponsor_bonuses idempotence pre-fetch — none
+        [],
+        # 5. sponsor_goal_completions — gc_podium consumed the /gc base bonus
+        [{"team_id": TEAM_ID, "rider_id": RIDER_ID,
+          "neutralized_stage_slugs": ["race/giro-d-italia/2026/gc"]}],
+    )
+
+    result = await process_race_bonuses(sb, ["race/giro-d-italia/2026/gc"])
+
+    assert result["status"] == "completed"
+    assert result["bonuses_created"] == 0
+    # No treasury credit: the goal already paid.
+    sb.rpc.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_no_cumul_multistage_keeps_uncounted_stage():
+    """win_2_stages neutralizes only the counted stages; a third (uncounted) stage
+    win keeps its base bonus."""
+    from sponsor_bonus import process_race_bonuses
+
+    def _stage(n):
+        return {
+            "rider_id": RIDER_ID,
+            "race_slug": f"race/paris-nice/2026/stage-{n}",
+            "race_class": "stage_race",
+            "stage": f"stage-{n}",
+            "rank": 1,
+            "pcs_points": 100,
+            "race_date": "2026-03-0{}".format(n),
+        }
+
+    sb = make_supabase(
+        # 1. race_results — 3 stage wins
+        [_stage(1), _stage(2), _stage(3)],
+        # 2. contracts
+        [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "status": "active",
+          "riders": {"nationality": None}}],
+        # 3. team_sponsors (T4 Decathlon)
+        [{"team_id": TEAM_ID, "sponsor_id": "sp-dec", "sponsors": _DECATHLON}],
+        # 4. sponsor_bonuses idempotence pre-fetch — none
+        [],
+        # 5. sponsor_goal_completions — goal consumed stages 1 & 2 only
+        [{"team_id": TEAM_ID, "rider_id": RIDER_ID,
+          "neutralized_stage_slugs": [
+              "race/paris-nice/2026/stage-1",
+              "race/paris-nice/2026/stage-2",
+          ]}],
+        # 6. sponsor_bonuses batch upsert
+        [],
+    )
+
+    result = await process_race_bonuses(sb, [
+        "race/paris-nice/2026/stage-1",
+        "race/paris-nice/2026/stage-2",
+        "race/paris-nice/2026/stage-3",
+    ])
+
+    assert result["status"] == "completed"
+    # Only stage-3 survives.
+    assert result["bonuses_created"] == 1
+    sb.rpc.assert_called_once_with("credit_sponsor_bonuses", {
+        "p_team_id": TEAM_ID,
+        "p_bonuses": [{
+            "amount": 5000,
+            "rider_id": RIDER_ID,
+            "description": "Sponsor bonus: stage rank 1 in race/paris-nice/2026/stage-3 (×1.0)",
+        }],
+    })
 
 
 # ===========================================================================

@@ -595,6 +595,20 @@ T4 sponsors offer **one-time bonus goals** during Grand Tours, on top of regular
 - Goals follow a "best of two" tiered structure: if a higher-tier goal is completed, the lower-tier payout is replaced (not cumulated).
 - Each goal pays **once per GT** — tracked in `sponsor_goal_completions`.
 
+### Cumul rule: one-time goal vs base race bonus
+
+**No cumul (Aligned in code).** When a rider triggers a one-time sponsor goal, the base race bonus (§9) for that same rider on the same race is **neutralized** — only the goal payout is credited, never both.
+
+How it works: `evaluate_sponsor_goals` runs **before** `process_race_bonuses` and persists the consumed base-bonus race_slugs in `sponsor_goal_completions.neutralized_stage_slugs`. `process_race_bonuses` reads them and skips emitting those base bonuses. Because the base bonus is never created, reruns can never re-credit it (idempotent by construction).
+
+Mapping goal → neutralized base bonus:
+- `gc_podium` / `gc_top5` → the final GC result (`{parent}/gc`).
+- `sprint_win_stage` / `sh_win_stage` → the won stage.
+- `sprint_win_2_stages` / `sh_win_2_stages` → **every counted stage** (sprinter profile gating p1/p2/p3 respected — a non-flat stage win that doesn't count toward the goal keeps its base bonus).
+- `sh_kom_classification` / `sprint_points_classification` and wear-jersey goals → no-op (no single-race base bonus exists for these).
+
+Historical note: GC no-cumul was applied manually during the 2026-06-03 Giro cutover (3 base bonuses reverted); stage-win cumul was preserved for that one cutover and aligned in code before the Tour de France 2026.
+
 ### Evaluation
 - Goals are evaluated after each stage scoring.
 - Payout is credited to treasury immediately upon goal completion.

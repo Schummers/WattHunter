@@ -667,14 +667,13 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
     scoring_result = await calculate_daily_scores(supabase, race_slugs=all_imported_slugs or None, ignore_role_cutoff=no_cutoff)
     print(json.dumps(scoring_result, indent=2))
 
-    # Sponsor bonuses for race results
-    from sponsor_bonus import process_race_bonuses
-    bonus_result = await process_race_bonuses(supabase, all_imported_slugs)
-    print(f"  Sponsor bonuses: {bonus_result.get('bonuses_created', 0)} bonuses credited")
-
-    # Sponsor goal evaluation — GT and 1-week stage races (evaluate_sponsor_goals
-    # skips non-stage-race slugs automatically via _is_squad_race).
-    # Collect unique parent slugs from all imported slugs that belong to a stage race.
+    # Sponsor goal evaluation — MUST run BEFORE process_race_bonuses so the
+    # no-cumul rule (GAME_RULES.md §17) can suppress base bonuses for riders who
+    # triggered a one-time goal. Goals persist the consumed base-bonus race_slugs
+    # in sponsor_goal_completions.neutralized_stage_slugs, which process_race_bonuses
+    # reads. Running goals first keeps the pipeline idempotent: the suppressed base
+    # bonus is never created, so a rerun can never re-credit it.
+    # evaluate_sponsor_goals skips non-stage-race slugs automatically via _is_squad_race.
     seen_parents: set[str] = set()
     for s in all_imported_slugs:
         m = re.match(r"^(race/[a-z0-9-]+/\d{4})", s)
@@ -692,6 +691,11 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
             if goal_result.get("errors"):
                 for err in goal_result["errors"]:
                     print(f"    ERROR: {err}")
+
+    # Sponsor base bonuses for race results — AFTER goals (see no-cumul note above).
+    from sponsor_bonus import process_race_bonuses
+    bonus_result = await process_race_bonuses(supabase, all_imported_slugs)
+    print(f"  Sponsor bonuses: {bonus_result.get('bonuses_created', 0)} bonuses credited")
 
     # Post-import verification: show contracted riders + imported points for manual cross-check
     if all_imported_slugs:

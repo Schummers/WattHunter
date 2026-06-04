@@ -168,7 +168,7 @@ watthunter/
 │   ├── backfill_photos.py       # One-shot : self-host photos top 300 (cmd backfill-photos)
 │   ├── auction.py               # Resolution 3-round sealed-bid
 │   ├── scoring.py               # XP quotidien
-│   ├── sponsor_bonus.py         # Calcul bonus sponsors sur resultats de course
+│   ├── sponsor_bonus.py         # Calcul bonus sponsors sur resultats de course. No-cumul rule (GAME_RULES §17) : skip le base bonus d'un (rider, race) qui a déclenché un one-time goal, en lisant `sponsor_goal_completions.neutralized_stage_slugs`. **Doit tourner APRÈS `evaluate_sponsor_goals`** (ordre garanti dans `run_post_race`).
 │   ├── validation.py            # Validation donnees PCS
 │   ├── resolve_now.py           # Script resolution manuelle (dev)
 │   ├── resolve_gt_rescue.py     # Resolution DNF rescue (refund/replace)
@@ -395,7 +395,7 @@ users ←──── league_members ────→ leagues
        tactic_usage_limits             (race_kind ∈ {gt, one_week} × 5 tactics, max_per_race — source of truth du trigger enforce_tactic_usage_limit ; Spec A A9 P3b)
        gt_emergency_bids               (DNF replacement bids during GT)
        gt_rescue_windows               (replace window cutoff per (gt_identifier, gt_year))
-       sponsor_goal_completions        (one-time sponsor goal payout tracking ; +`goal_key` TEXT column + unique index `idx_goal_completions_key` on (team_id, sponsor_id, goal_key, race_slug) — Spec C idempotency)
+       sponsor_goal_completions        (one-time sponsor goal payout tracking ; `goal_key` TEXT NOT NULL + sole unique index `idx_goal_completions_key` on (team_id, sponsor_id, goal_key, race_slug) — Spec C idempotency ; legacy goal_index index `idx_goal_completions_dedup` dropped ; `neutralized_stage_slugs text[]` — base-bonus race_slugs consumed by the goal for the no-cumul rule, migration 20260604050000)
 ```
 
 ### Migrations

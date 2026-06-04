@@ -348,6 +348,30 @@ async def process_race_bonuses(
             for r in (existing_bonuses_resp.data or [])
         }
 
+    # No-cumul rule (GAME_RULES.md §17): a rider who triggered a one-time sponsor
+    # goal must not also receive the base bonus on the same race. goal_evaluator
+    # persists the consumed base-bonus race_slugs in
+    # sponsor_goal_completions.neutralized_stage_slugs; we skip emitting those here.
+    # Goals are evaluated BEFORE this step (see run_pipeline.run_post_race), so the
+    # base bonus is never created → never re-credited on a rerun (idempotent).
+    neutralized: set[tuple[str, str, str]] = set()
+    if race_slugs:
+        parent_slugs = {
+            m.group(1)
+            for s in race_slugs
+            if (m := _re.match(r"^(race/[a-z0-9-]+/\d{4})", s))
+        }
+        if parent_slugs:
+            completions_resp = (
+                supabase.table("sponsor_goal_completions")
+                .select("team_id,rider_id,neutralized_stage_slugs")
+                .in_("race_slug", list(parent_slugs))
+                .execute()
+            )
+            for row in (completions_resp.data or []):
+                for slug in (row.get("neutralized_stage_slugs") or []):
+                    neutralized.add((row["team_id"], row["rider_id"], slug))
+
     for result in race_results:
         rider_id = result["rider_id"]
         race_slug = result["race_slug"]
@@ -368,6 +392,10 @@ async def process_race_bonuses(
             sponsor = team_sponsor.get(team_id)
 
             if not sponsor:
+                continue
+
+            # No-cumul: a one-time goal already paid for this (rider, race) → skip base bonus.
+            if (team_id, rider_id, race_slug) in neutralized:
                 continue
 
             # GT stage: only squad members (at race time) can trigger sponsor bonuses.

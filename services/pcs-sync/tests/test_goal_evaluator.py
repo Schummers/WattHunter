@@ -156,6 +156,19 @@ class TestSponsorGoalSetsStructure:
         assert "stage_hunter" in cats
         assert "sprint" not in cats
 
+    def test_win_a_stage_is_role_disambiguated_for_dual_sponsors(self):
+        """soudal/lidl-trek carry BOTH sprinter and stage_hunter 'Win a stage' /
+        'Win 2 stages' goals; the keys MUST stay distinct. The goal_key backfill
+        migration relies on this disambiguation (legacy goal_index → role key)."""
+        for slug in ("soudal", "lidl-trek"):
+            keys = {g["key"] for g in SPONSOR_GOAL_SETS[slug]}
+            assert {"sprint_win_stage", "sh_win_stage"} <= keys, slug
+            assert {"sprint_win_2_stages", "sh_win_2_stages"} <= keys, slug
+            # Both share the label "Win a stage" but never the key.
+            win_stage_labels = [g["label"] for g in SPONSOR_GOAL_SETS[slug]
+                                if g["key"] in ("sprint_win_stage", "sh_win_stage")]
+            assert win_stage_labels == ["Win a stage", "Win a stage"], slug
+
 
 # ---------------------------------------------------------------------------
 # Helper: build ctx for final-classification evaluators
@@ -711,6 +724,86 @@ class TestSprinterProfileGating:
 
 
 # ---------------------------------------------------------------------------
+# No-cumul rule — neutralized_stage_slugs (P0, blocks Tour 2026 double-pay)
+#
+# Win evaluators must report which base-bonus race_slugs the goal consumes, so
+# process_race_bonuses can skip emitting those base bonuses. neutralized_slugs()
+# is the single source of truth mapping a completed goal → the slugs to neutralize.
+# ---------------------------------------------------------------------------
+
+STAGE_3 = "race/giro-d-italia/2026/stage-3"
+
+
+class TestNeutralizedStageSlugs:
+    def test_win_stage_reports_its_stage_slug(self):
+        ctx = _make_stage_win_ctx(
+            role="stage_hunter", stage_slug=STAGE_1, winner_id=RIDER_A, profile="p5",
+        )
+        result = eval_win_stage(ctx)
+        assert result is not None
+        assert result["neutralized_stage_slugs"] == [STAGE_1]
+
+    def test_win_2_stages_reports_both_counted_slugs(self):
+        ctx = {
+            "stage_wins": {STAGE_1: RIDER_A, STAGE_2: RIDER_A},
+            "eligible_riders_by_stage": {STAGE_1: {RIDER_A}, STAGE_2: {RIDER_A}},
+            "role": "stage_hunter",
+            "stage_profiles": {STAGE_1: "p2", STAGE_2: "p1"},
+        }
+        result = eval_win_2_stages(ctx)
+        assert result is not None
+        assert sorted(result["neutralized_stage_slugs"]) == sorted([STAGE_1, STAGE_2])
+
+    def test_win_2_stages_excludes_non_counted_sprinter_stage(self):
+        """A sprinter who wins 2 flat + 1 mountain: the goal counts only the 2 flat
+        stages, so the mountain stage's base bonus must stay (not neutralized)."""
+        ctx = {
+            "stage_wins": {STAGE_1: RIDER_A, STAGE_2: RIDER_A, STAGE_3: RIDER_A},
+            "eligible_riders_by_stage": {
+                STAGE_1: {RIDER_A}, STAGE_2: {RIDER_A}, STAGE_3: {RIDER_A},
+            },
+            "role": "sprinter",
+            "stage_profiles": {STAGE_1: "p1", STAGE_2: "p2", STAGE_3: "p5"},
+        }
+        result = eval_win_2_stages(ctx)
+        assert result is not None
+        assert STAGE_3 not in result["neutralized_stage_slugs"]
+        assert sorted(result["neutralized_stage_slugs"]) == sorted([STAGE_1, STAGE_2])
+
+    def test_neutralized_slugs_gc_podium_targets_gc_race(self):
+        from goal_evaluator import neutralized_slugs
+        goal = {"key": "gc_podium", "category": "gc"}
+        result = {"rider_id": RIDER_A, "stage_slug": None}
+        assert neutralized_slugs(goal, result, "race/giro-d-italia/2026") == [
+            "race/giro-d-italia/2026/gc"
+        ]
+
+    def test_neutralized_slugs_gc_top5_targets_gc_race(self):
+        from goal_evaluator import neutralized_slugs
+        goal = {"key": "gc_top5", "category": "gc"}
+        result = {"rider_id": RIDER_A, "stage_slug": None}
+        assert neutralized_slugs(goal, result, "race/giro-d-italia/2026") == [
+            "race/giro-d-italia/2026/gc"
+        ]
+
+    def test_neutralized_slugs_stage_win_passes_through(self):
+        from goal_evaluator import neutralized_slugs
+        goal = {"key": "sh_win_stage", "category": "stage_hunter"}
+        result = {
+            "rider_id": RIDER_A, "stage_slug": STAGE_1,
+            "neutralized_stage_slugs": [STAGE_1],
+        }
+        assert neutralized_slugs(goal, result, "race/giro-d-italia/2026") == [STAGE_1]
+
+    def test_neutralized_slugs_classification_goal_is_noop(self):
+        """sh_kom_classification / wear-jersey goals consume no stage base bonus."""
+        from goal_evaluator import neutralized_slugs
+        goal = {"key": "sh_kom_classification", "category": "stage_hunter"}
+        result = {"rider_id": RIDER_A, "stage_slug": None}  # no neutralized field
+        assert neutralized_slugs(goal, result, "race/giro-d-italia/2026") == []
+
+
+# ---------------------------------------------------------------------------
 # Task 10 — suppress_tier_group_duplicates
 # ---------------------------------------------------------------------------
 
@@ -1047,6 +1140,36 @@ def _make_run2_supabase():
     )
 
 
+def _make_run3_supabase():
+    """Supabase mock: a prior completion exists at the SAME goal_index (0) but a
+    DIFFERENT goal_key. Dedup is key-based, so the gc_podium goal must STILL credit.
+
+    This guards the exact #1 fix: the old goal_index-based suppression would have
+    wrongly skipped this; key-based dedup must not. Same call sequence as run 1
+    (credit path runs), only the existing-keys SELECT differs.
+    """
+    return make_supabase(
+        _E2E_TEAM_SPONSORS,
+        _E2E_RACE_RESULTS,
+        [],                       # gt_daily_classifications
+        [], [], [],               # gt_final_classifications points/kom/youth
+        _E2E_SQUAD,
+        _E2E_ROLE_ASSIGNMENTS,
+        _E2E_RIDERS_NAT,
+        # sponsor_goal_completions SELECT: different key at the same legacy index 0
+        [{
+            "team_id": _E2E_TEAM_ID,
+            "sponsor_id": _E2E_SPONSOR_ID,
+            "goal_key": "gc_youth_jersey",
+            "goal_index": 0,
+        }],
+        [],                       # sponsor_goal_completions INSERT
+        [{"id": _E2E_TEAM_ID, "treasury": 500_000}],  # teams SELECT
+        [],                       # teams UPDATE
+        [],                       # treasury_log INSERT
+    )
+
+
 class TestEvaluateSponsorGoalsE2EIdempotency:
     """Regression: evaluate_sponsor_goals must not double-credit treasury.
 
@@ -1124,3 +1247,34 @@ class TestEvaluateSponsorGoalsE2EIdempotency:
         assert len(teams_updates) == 0, (
             f"DOUBLE-CREDIT BUG: teams was updated {len(teams_updates)} time(s) on run 2"
         )
+
+    def test_run3_different_key_same_index_still_credits(self):
+        """A prior completion at the same goal_index but a different goal_key must
+        NOT block a genuinely-earned goal. Dedup is key-based, not index-based."""
+        import asyncio
+        from goal_evaluator import evaluate_sponsor_goals
+
+        sb = _make_run3_supabase()
+        result = asyncio.run(evaluate_sponsor_goals(sb, _E2E_RACE_SLUG))
+
+        assert result["status"] == "completed", f"errors: {result.get('errors')}"
+        assert result["goals_completed"] == 1, (
+            "gc_podium must still credit despite a different-key row at the same index"
+        )
+        sgc_inserts = sb.inserts.get("sponsor_goal_completions", [])
+        assert len(sgc_inserts) == 1 and sgc_inserts[0]["goal_key"] == "gc_podium"
+        tlog_inserts = sb.inserts.get("treasury_log", [])
+        assert len(tlog_inserts) == 1 and tlog_inserts[0]["amount"] == 30_000
+
+    def test_run1_records_neutralized_gc_slug(self):
+        """The persisted completion carries the base-bonus slug to neutralize
+        (no-cumul rule). gc_podium → {parent}/gc."""
+        import asyncio
+        from goal_evaluator import evaluate_sponsor_goals
+
+        sb = _make_run1_supabase()
+        asyncio.run(evaluate_sponsor_goals(sb, _E2E_RACE_SLUG))
+
+        sgc_inserts = sb.inserts.get("sponsor_goal_completions", [])
+        assert len(sgc_inserts) == 1
+        assert sgc_inserts[0]["neutralized_stage_slugs"] == [f"{_E2E_RACE_SLUG}/gc"]

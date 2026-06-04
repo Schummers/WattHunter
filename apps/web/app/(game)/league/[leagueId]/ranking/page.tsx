@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { getAchievementBySlug } from "@/lib/achievements";
+import { getParentRaceSlug } from "@/lib/race-feed-helpers";
 import { RankingClient } from "./ranking-client";
 import {
   DEMO_LEAGUE_SLUG,
@@ -127,13 +128,18 @@ export default async function RankingPage({
     }
   }
 
-  // Build race list — group staged races into single entries
+  // Build race list — group stages AND GT secondary classifications (gc/points/kom/youth)
+  // under their parent race (e.g. "race/giro-d-italia/2026"). Otherwise the final-jersey
+  // XP credited via `gt_final_classifications` would surface as standalone "races" and
+  // be excluded from the Giro/Tour/Vuelta team ranking — see fix/ranking-parent-slug-finals.
   const parentRaceMap = new Map<string, { slug: string; name: string; date: string; childSlugs: string[] }>();
   for (const slug of allRaceSlugs) {
     const meta = raceMeta[slug] || { name: slug, date: "" };
-    const stageMatch = slug.match(/^(.+)\/stage-\d+$/);
-    const parentSlug = stageMatch ? stageMatch[1] : slug;
-    const parentName = stageMatch ? meta.name.replace(/\s*\|?\s*Stage\s+\d+.*$/i, "") || meta.name : meta.name;
+    const detectedParent = getParentRaceSlug(slug);
+    const parentSlug = detectedParent ?? slug;
+    const parentName = detectedParent
+      ? meta.name.replace(/\s*\|?\s*Stage\s+\d+.*$/i, "") || meta.name
+      : meta.name;
 
     const existing = parentRaceMap.get(parentSlug);
     if (existing) {
@@ -388,12 +394,15 @@ async function renderDemoRanking(initialRace?: string) {
     }
   }
 
+  // Same parent-grouping logic as the live ranking (stages + GT finals roll up to parent).
   const parentRaceMap = new Map<string, { slug: string; name: string; date: string; childSlugs: string[] }>();
   for (const slug of allRaceSlugs) {
     const meta = raceMeta[slug] || { name: slug, date: "" };
-    const stageMatch = slug.match(/^(.+)\/stage-\d+$/);
-    const parentSlug = stageMatch ? stageMatch[1] : slug;
-    const parentName = stageMatch ? meta.name.replace(/\s*\|?\s*Stage\s+\d+.*$/i, "") || meta.name : meta.name;
+    const detectedParent = getParentRaceSlug(slug);
+    const parentSlug = detectedParent ?? slug;
+    const parentName = detectedParent
+      ? meta.name.replace(/\s*\|?\s*Stage\s+\d+.*$/i, "") || meta.name
+      : meta.name;
     const existing = parentRaceMap.get(parentSlug);
     if (existing) {
       if (!existing.childSlugs.includes(slug)) existing.childSlugs.push(slug);
