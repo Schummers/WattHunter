@@ -96,6 +96,7 @@ interface Props {
   teamId: string;
   phaseId: 4 | 6 | 8;
   year: number;
+  underdogEligible: boolean;
   raceTeamLabel: string;
   squad: SquadEntry[];
   availableRiders: AvailableRiderEntry[];
@@ -114,6 +115,7 @@ export function GtTeamClient({
   teamId,
   phaseId,
   year,
+  underdogEligible,
   raceTeamLabel,
   squad,
   availableRiders,
@@ -201,7 +203,7 @@ export function GtTeamClient({
           </p>
         </div>
 
-        {ROLE_ORDER.map((block) => {
+        {ROLE_ORDER.filter((r) => r.role !== "underdog" || underdogEligible).map((block) => {
           const riders = byRole(block.role);
           const cap = block.max;
           const showOpenSlots = riders.length < cap;
