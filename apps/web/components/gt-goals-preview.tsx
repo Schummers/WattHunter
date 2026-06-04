@@ -18,6 +18,9 @@ const CATEGORY_LABELS: Record<GtGoalCategory, string> = {
   stage_hunter: "Stage Hunter",
 };
 
+/** Column grid shared by the category header and every goal row: label | A | B. */
+const ROW_GRID = "grid grid-cols-[1fr_3.25rem_3.25rem] items-baseline";
+
 interface IndexedGoal extends GtGoal {
   originalIndex: number;
 }
@@ -56,19 +59,29 @@ export function GtGoalsPreview({ goals, completedGoalIndices = [] }: GtGoalsPrev
           {groupIdx > 0 && (
             <div className="border-t border-[var(--border-default)] my-2.5" />
           )}
-          <div className="flex items-center gap-1.5 mb-2">
-            <Tag variant="highlighted">{CATEGORY_LABELS[category]}</Tag>
-            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
-              Bonus (one-time)
+          {/* Category header + A/B column headers, aligned to the value columns */}
+          <div className={`${ROW_GRID} mb-1`}>
+            <span className="flex items-center gap-1.5">
+              <Tag variant="highlighted">{CATEGORY_LABELS[category]}</Tag>
+              <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+                Bonus (one-time)
+              </span>
+            </span>
+            <span className="text-right text-[length:var(--type-micro)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+              A
+            </span>
+            <span className="text-right text-[length:var(--type-micro)] font-bold uppercase tracking-wide text-[var(--text-low)] pl-2">
+              B
             </span>
           </div>
           <ul className="flex flex-col">
             {categoryGoals.map((g) => {
               const isCompleted = completedSet.has(g.originalIndex);
+              const valueColor = isCompleted ? "text-[var(--accent-default)]" : undefined;
               return (
                 <li
                   key={`${g.label}-${g.originalIndex}`}
-                  className={`flex items-baseline justify-between py-1 ${isCompleted ? "opacity-50" : ""}`}
+                  className={`${ROW_GRID} py-1 ${isCompleted ? "opacity-50" : ""}`}
                 >
                   <span className="flex items-center gap-1.5 min-w-0">
                     {isCompleted && (
@@ -81,8 +94,11 @@ export function GtGoalsPreview({ goals, completedGoalIndices = [] }: GtGoalsPrev
                       {g.role ? ROLE_LABELS[g.role] ?? g.role : "All"}
                     </span>
                   </span>
-                  <span className={`font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold tabular-nums shrink-0 ml-2 ${isCompleted ? "text-[var(--accent-default)]" : "text-[var(--text-high)]"}`}>
+                  <span className={`text-right font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold tabular-nums ${valueColor ?? "text-[var(--text-mid)]"}`}>
                     +{formatBudget(g.reward)}
+                  </span>
+                  <span className={`text-right font-[family-name:var(--font-geist-mono)] text-[length:var(--type-caption)] font-semibold tabular-nums pl-2 border-l border-[var(--border-subtle)] ${valueColor ?? "text-[var(--text-high)]"}`}>
+                    +{formatBudget(g.reward * 2)}
                   </span>
                 </li>
               );
