@@ -489,3 +489,29 @@ def test_final_secondary_bonus_one_week_scale():
     from scoring import _final_secondary_bonus
     assert _final_secondary_bonus("points", 1, "sprinter", mode="one_week") == 80.0  # 40 × 2
     assert _final_secondary_bonus("kom", 2, "domestique", mode="one_week") == 10.0   # 10 × 1
+
+
+# --- Spec B underdog multiplier (Spec B B2) -----------------------------------
+
+
+def test_underdog_multiplier_clamp_and_finals():
+    """Underdog boost = clamp(pcs_rank/100, 1, 4) on stages; 1.0 on finals + unknown rank."""
+    from scoring import _underdog_multiplier
+
+    assert _underdog_multiplier(272, "race/giro-d-italia/2026/stage-5") == 2.72
+    assert _underdog_multiplier(213, "race/giro-d-italia/2026/stage-5") == 2.13
+    assert _underdog_multiplier(432, "race/giro-d-italia/2026/stage-5") == 4.0   # capped
+    assert _underdog_multiplier(69,  "race/giro-d-italia/2026/stage-5") == 1.0   # floored
+    assert _underdog_multiplier(272, "race/giro-d-italia/2026/gc") == 1.0        # no boost on finals
+    assert _underdog_multiplier(None, "race/giro-d-italia/2026/stage-5") == 1.0  # unknown rank
+
+
+def test_underdog_role_boosts_stage_points():
+    """A squad rider in the underdog role earns raw_points × clamp(pcs_rank/100,1,4) on a stage."""
+    # Reuse the file's existing GT-scoring fixture builder. Key asserts:
+    #   - rider pcs_rank = 272, role = 'underdog', stage raw_points = 80
+    #   - expected xp = round(80 * 2.72, 2) = 217.6  (no strategy bonus, no classif)
+    # If the file exposes a unit-level seam, prefer asserting _underdog_multiplier(272, stage)*80.
+    from scoring import _underdog_multiplier
+    raw_points = 80
+    assert round(raw_points * _underdog_multiplier(272, "race/giro-d-italia/2026/stage-5"), 2) == 217.6

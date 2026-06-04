@@ -246,6 +246,19 @@ def _role_multiplier(
     return 1.0  # domestique + unknown
 
 
+def _underdog_multiplier(pcs_rank: "int | None", race_slug: str) -> float:
+    """Underdog role boost: clamp(pcs_rank / 100, 1, 4) on GT stages.
+
+    Returns 1.0 on final-classification slugs (…/gc, …/points, …/kom — no role mult on
+    finals per Spec A D4) and when the rider has no PCS rank.
+    """
+    if pcs_rank is None:
+        return 1.0
+    if race_slug.endswith(("/gc", "/points", "/kom")):
+        return 1.0
+    return max(1.0, min(4.0, pcs_rank / 100.0))
+
+
 def _phase_year_from_slug(slug: str) -> tuple[int, int]:
     """Return (phase_id, year) from a GT race slug like race/giro-d-italia/2026/stage-4."""
     m = re.match(r"^race/([a-z0-9-]+)/(\d{4})", slug)
@@ -385,7 +398,7 @@ async def calculate_daily_scores(
     # --- Step 2: Get all active/notice contracts with rider info for policy matching ---
     contracts = supabase.table("contracts").select(
         "id, team_id, rider_id, purchased_at, release_date, released_at, "
-        "riders:rider_id(specialty, nationality, real_team, birthdate)"
+        "riders:rider_id(specialty, nationality, real_team, birthdate, pcs_rank)"
     ).in_("status", ["active", "notice"]).execute()
 
     if not contracts.data:
@@ -547,6 +560,7 @@ async def calculate_daily_scores(
                 "nationality": rider_join.get("nationality"),
                 "real_team": rider_join.get("real_team"),
                 "birthdate": rider_join.get("birthdate"),
+                "pcs_rank": rider_join.get("pcs_rank"),
             }
 
             # Task 2: per-rider strategy bonus
@@ -581,6 +595,7 @@ async def calculate_daily_scores(
                 gt_role_mult = 1.0
                 gt_classif_bonus = 0.0
                 gt_distance_bonus = 0.0
+                underdog_mult = 1.0
                 role = "domestique"  # default; overridden for squad members with assigned role
                 if _is_squad_race(race_slug):
                     if not in_squad:
@@ -589,6 +604,10 @@ async def calculate_daily_scores(
                     gt_role_mult = _role_multiplier(
                         role, race_slug, entry.get("is_itt", False),
                         breakaway_kms, profile_icon,
+                    )
+                    underdog_mult = (
+                        _underdog_multiplier(rider_info.get("pcs_rank"), race_slug)
+                        if role == "underdog" else 1.0
                     )
                     # V2: only role-matched classifications earn a bonus (Spec A A2).
                     gt_classif_bonus = _classif_bonus(
@@ -658,7 +677,7 @@ async def calculate_daily_scores(
                     round(
                         (raw_points * gt_role_mult * (1 + bonus)
                          + gt_classif_bonus + gt_distance_bonus)
-                        * nemesis_modifier,
+                        * nemesis_modifier * underdog_mult,
                         2,
                     ),
                 )
@@ -678,6 +697,7 @@ async def calculate_daily_scores(
                         "gt_classif_bonus": gt_classif_bonus,
                         "gt_distance_bonus": gt_distance_bonus,
                         "nemesis_modifier": nemesis_modifier,
+                        "underdog_mult": underdog_mult,
                         "tactic_applied": tactic_applied,
                         "xp_gained": xp,
                         "race_slug": race_slug,

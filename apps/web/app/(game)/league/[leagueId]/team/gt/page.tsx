@@ -42,7 +42,7 @@ export default async function GtTeamPage({
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id")
+    .select("id, underdog_eligible")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
@@ -107,6 +107,7 @@ export default async function GtTeamPage({
         teamId={team.id}
         phaseId={phaseId}
         year={year}
+        underdogEligible={!!team.underdog_eligible}
         raceTeamLabel={raceTeamLabel}
         squad={squad}
         availableRiders={availableRiders}

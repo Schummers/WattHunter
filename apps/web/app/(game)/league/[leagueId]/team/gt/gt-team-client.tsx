@@ -84,12 +84,19 @@ const ROLE_ORDER: Array<{
     max: 2,
     desc: "No stage bonus or daily bonus. Base PCS points only.",
   },
+  {
+    role: "underdog",
+    label: "Underdog",
+    max: 2,
+    desc: "Eligible teams only. Stage points ×(PCS rank ÷ 100), capped ×4. No bonus on final classifications.",
+  },
 ];
 
 interface Props {
   teamId: string;
   phaseId: 4 | 6 | 8;
   year: number;
+  underdogEligible: boolean;
   raceTeamLabel: string;
   squad: SquadEntry[];
   availableRiders: AvailableRiderEntry[];
@@ -108,6 +115,7 @@ export function GtTeamClient({
   teamId,
   phaseId,
   year,
+  underdogEligible,
   raceTeamLabel,
   squad,
   availableRiders,
@@ -195,7 +203,7 @@ export function GtTeamClient({
           </p>
         </div>
 
-        {ROLE_ORDER.map((block) => {
+        {ROLE_ORDER.filter((r) => r.role !== "underdog" || underdogEligible).map((block) => {
           const riders = byRole(block.role);
           const cap = block.max;
           const showOpenSlots = riders.length < cap;

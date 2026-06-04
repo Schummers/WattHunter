@@ -21,6 +21,7 @@ const ROLE_LABEL: Record<GtRole, string> = {
   tt_specialist: "TT Specialist",
   stage_hunter: "Stage Hunter",
   domestique: "Domestique",
+  underdog: "Underdog",
 };
 import type { AvailableRiderEntry } from "@/app/(game)/league/[leagueId]/team/gt/gt-team-client";
 
