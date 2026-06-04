@@ -34,7 +34,7 @@ Discovered during reconciliation that the live `process_race_bonuses` credits a 
 - **GC** (top10 base + gc_podium / gc_top5 / gc_top10 one-time goals): **no cumul**. If the rider triggers a one-time GC goal, the base bonus on `/gc` is neutralized.
 - **Stage wins** (stage base + sprint_win_stage / sh_win_stage): **cumul preserved for this cutover** to stay consistent with historical credits (Narváez s4, Ballerini s6, Ganna s10, Milan s21). Will be aligned to the no-cumul rule in `process_race_bonuses` **before the Tour de France 2026**.
 
-Applied: reverted 3 GC base bonuses (Klimax/Gall 20k, Leopard/Hindley 20k, TheAussieMate/Arensman 20k), with `treasury_log` audit (`type=sponsor_bonus_revert`). Documented in `GAME_RULES.md §17 → Cumul rule`.
+Applied: reverted 3 GC base bonuses (Klimax/Gall 20k, Leopard/Hindley 20k, TheAussieMate/Arensman 20k), with `treasury_log` audit (`type=sponsor_bonus_revert`). Documented in `GAME_RULES.md §18 → Cumul rule`.
 
 ## 5. Decision: fair-play retroactive compensation for new Spec C rules
 
@@ -71,7 +71,7 @@ Total redistributed: **+447 500 €** and ~4 100 XP across 8 teams.
 
 | Item | Severity | Notes |
 |---|---|---|
-| ~~`process_race_bonuses`: extend no-cumul rule to sprint/stage_hunter goals~~ | ✅ **Done** | Implemented on branch `feature/sponsor-no-cumul-rule`: goals evaluated before bonuses, neutralization persisted in `sponsor_goal_completions.neutralized_stage_slugs`, base bonus skipped. Idempotent by construction. See GAME_RULES.md §17. |
+| ~~`process_race_bonuses`: extend no-cumul rule to sprint/stage_hunter goals~~ | ✅ **Done** | Implemented on branch `feature/sponsor-no-cumul-rule`: goals evaluated before bonuses, neutralization persisted in `sponsor_goal_completions.neutralized_stage_slugs`, base bonus skipped. Idempotent by construction. See GAME_RULES.md §18. |
 | T6 (UAE) sponsor base bonus alignment | Medium | Migration `20260603120000` deliberately deferred T6. UAE should mirror T4 (same base bonus + same goal sets). Create a new migration. |
 | Sponsor card front-end wireframe | Medium | UI cards don't match the original wireframe — amounts not displayed as designed. Front audit. |
 | `profile_icon` backfill on Giro stages 4/8/11 (and earlier) | Low | NULL profile_icon breaks Spec C sprinter gating (`win_stage` / `win_2_stages` require `profile_icon ∈ {p1,p2,p3}`). Re-run `import_stage_profiles` once Cloudflare is unblocked. Not bugged retroactively (Giro already closed). |

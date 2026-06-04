@@ -639,7 +639,7 @@ async def test_process_race_bonuses_idempotent_on_rerun():
 
 # ===========================================================================
 # No-cumul rule — base bonus suppressed when a one-time goal already paid
-# (GAME_RULES.md §17). Neutralization targets come from
+# (GAME_RULES.md §18). Neutralization targets come from
 # sponsor_goal_completions.neutralized_stage_slugs.
 # ===========================================================================
 

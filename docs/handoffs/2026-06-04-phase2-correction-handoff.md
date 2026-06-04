@@ -12,7 +12,7 @@ Travailler sur la branche existante **`test/phase2-validation-audit`** (commit d
 ## À lire en premier (sources de vérité)
 1. **Plan complet** : `~/.claude/plans/your-trial-has-expired-rustling-ullman.md` — sections « PHASE 2 » (plan + RÉSULTATS) = la liste triée des bugs.
 2. **Mémoire** : `~/.claude/projects/-Users-jonathanschummers-Documents-WattHunter/memory/phase2_audit_2026-06-04.md` + `MEMORY.md`.
-3. **Règles** : `docs/GAME_RULES.md` (§6.4 Nemesis, §7 scoring, §11 constantes, §17 cumul, sections underdog) ; `CLAUDE.md` (règles NEVER DO, workflow migrations).
+3. **Règles** : `docs/GAME_RULES.md` (§6.4 Nemesis, §7 scoring, §11 constantes, §18 cumul, sections underdog) ; `CLAUDE.md` (règles NEVER DO, workflow migrations).
 4. **Tests posés** : `services/pcs-sync/tests/test_constants_drift_guard.py`, `services/pcs-sync/tests/test_pipeline_idempotence_guard.py`.
 
 ## État actuel

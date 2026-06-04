@@ -167,7 +167,7 @@ watthunter/
 │   ├── backfill_photos.py       # One-shot : self-host photos top 300 (cmd backfill-photos)
 │   ├── auction.py               # Resolution 3-round sealed-bid
 │   ├── scoring.py               # XP quotidien
-│   ├── sponsor_bonus.py         # Calcul bonus sponsors sur resultats de course. No-cumul rule (GAME_RULES §17) : skip le base bonus d'un (rider, race) qui a déclenché un one-time goal, en lisant `sponsor_goal_completions.neutralized_stage_slugs`. **Doit tourner APRÈS `evaluate_sponsor_goals`** (ordre garanti dans `run_post_race`).
+│   ├── sponsor_bonus.py         # Calcul bonus sponsors sur resultats de course. No-cumul rule (GAME_RULES §18) : skip le base bonus d'un (rider, race) qui a déclenché un one-time goal, en lisant `sponsor_goal_completions.neutralized_stage_slugs`. **Doit tourner APRÈS `evaluate_sponsor_goals`** (ordre garanti dans `run_post_race`).
 │   ├── validation.py            # Validation donnees PCS
 │   ├── resolve_now.py           # Script resolution manuelle (dev)
 │   ├── resolve_gt_rescue.py     # Resolution DNF rescue (refund/replace)

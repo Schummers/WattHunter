@@ -1,7 +1,7 @@
 """Phase-2 validation audit — pipeline idempotence / no-cumul ordering guards.
 
 Covers:
-- ID-3: goals MUST be evaluated before base bonuses (no-cumul §17). A swap would
+- ID-3: goals MUST be evaluated before base bonuses (no-cumul §18). A swap would
   silently let base bonuses be credited before neutralization is known → double-pay.
 - ID-1: `sponsor_bonus.process_race_bonuses` fetches league/GT-wide tables
   (contracts, team_sponsors, gt_squad, race_results) with bare `.execute()` and
@@ -25,7 +25,7 @@ from db_utils import _fetch_all
 
 def test_goals_evaluated_before_base_bonuses() -> None:
     """In run_post_race, evaluate_sponsor_goals must appear before
-    process_race_bonuses so neutralized_stage_slugs are persisted first (§17)."""
+    process_race_bonuses so neutralized_stage_slugs are persisted first (§18)."""
     src = inspect.getsource(run_pipeline.run_post_race)
     goals_pos = src.find("evaluate_sponsor_goals(")
     bonus_pos = src.find("process_race_bonuses(")

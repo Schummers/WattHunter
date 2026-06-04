@@ -384,7 +384,7 @@ def neutralized_slugs(goal: dict, result: dict, parent_slug: str) -> list[str]:
 
     process_race_bonuses reads these from sponsor_goal_completions and skips
     emitting the matching base bonus, so a rider never receives both the goal
-    and the base bonus on the same race (see GAME_RULES.md §17).
+    and the base bonus on the same race (see GAME_RULES.md §18).
 
       - GC placement goals (gc_podium / gc_top5) → the final GC result `{parent}/gc`.
       - Stage-win goals → each counted stage, carried by the evaluator in

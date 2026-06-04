@@ -343,7 +343,7 @@ async def process_race_bonuses(
             for r in existing_bonuses
         }
 
-    # No-cumul rule (GAME_RULES.md §17): a rider who triggered a one-time sponsor
+    # No-cumul rule (GAME_RULES.md §18): a rider who triggered a one-time sponsor
     # goal must not also receive the base bonus on the same race. goal_evaluator
     # persists the consumed base-bonus race_slugs in
     # sponsor_goal_completions.neutralized_stage_slugs; we skip emitting those here.

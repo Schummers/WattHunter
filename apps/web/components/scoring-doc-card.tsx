@@ -64,9 +64,9 @@ export function ScoringDocCard() {
           <Table2Col
             rows={[
               { label: "GC final (PCS points 400/290/240…)", chips: ["GC Leader"], multiplier: "×1.0" },
-              { label: "Points final (custom 2-tier)", chips: ["Sprinter"], multiplier: "×2" },
-              { label: "KOM final (custom 2-tier)", chips: ["Climber"], multiplier: "×2" },
-              { label: "Youth final (custom 2-tier)", chips: ["GC Leader"], multiplier: "×1.5" },
+              { label: "Points final (custom rank scale)", chips: ["Sprinter"], multiplier: "×2" },
+              { label: "KOM final (custom rank scale)", chips: ["Climber"], multiplier: "×2" },
+              { label: "Youth final (custom rank scale)", chips: ["GC Leader"], multiplier: "×1.5" },
             ]}
             headers={["Final", "Role multiplier"]}
           />

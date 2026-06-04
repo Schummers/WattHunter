@@ -668,7 +668,7 @@ async def run_post_race(race_slug: str | None = None, auto: bool = False, with_r
     print(json.dumps(scoring_result, indent=2))
 
     # Sponsor goal evaluation — MUST run BEFORE process_race_bonuses so the
-    # no-cumul rule (GAME_RULES.md §17) can suppress base bonuses for riders who
+    # no-cumul rule (GAME_RULES.md §18) can suppress base bonuses for riders who
     # triggered a one-time goal. Goals persist the consumed base-bonus race_slugs
     # in sponsor_goal_completions.neutralized_stage_slugs, which process_race_bonuses
     # reads. Running goals first keeps the pipeline idempotent: the suppressed base

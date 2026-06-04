@@ -2,7 +2,7 @@
 
 > **Living document** — Updated with every rule change.
 > Source of truth for implemented and planned game mechanics.
-> Last updated: 2026-05-15
+> Last updated: 2026-06-04
 
 ## Overview
 
@@ -276,10 +276,9 @@ Multipliers (T1–T4 only):
 - **×1.20** if the rider's nationality matches the sponsor's nationality
 - Cumulative: Monument + nationality = ×2.4
 
-**T5–T6: explicit prestige bonuses (no nationality multiplier)**
+**T5–T6: prestige bonuses (no nationality multiplier)**
 
-Separate amounts for One-Day / Monument / Stage Race GC / Grand Tour GC / Stage.
-Only multiplier: ×2 for a Grand Tour stage.
+No nationality multiplier. Since Spec C (2026-06-03), T5 mirrors the T4 base barème with prestige applied at runtime — see §11 (Sponsor bonus barème) for the authoritative amounts. T6 (UAE) is unchanged/deferred.
 
 ### Sponsor changes
 
@@ -351,7 +350,7 @@ At the start of each phase, the player **confirms** their configuration:
 | Sponsor / strategy Round 2+ | Pending — takes effect at next payday |
 | Release effect | Start of next phase (except bankruptcy: immediate) |
 | Release cooldown | 7 days (no one can bid the rider during this window) |
-| Co-Unlock threshold | max(2, ceil(30% of league teams)) — see §12.2 |
+| Co-Unlock threshold | max(2, ceil(30% of league teams)) — see §12.1 |
 | Round resolution | Auto on consensus, or manual force-resolve from Status tab |
 | GT Tactics per race | Varies by tactic and race kind (see §13 — Tactic usage per race) |
 | Commissioner round dates | Editable at any time before round closes |
@@ -529,13 +528,13 @@ A player can join an **active league** (one that has already started auctions).
 | Rule | Value |
 |------|-------|
 | Starting XP | Average of existing teams' cumulative XP |
-| Starting treasury | Average of existing teams' treasury (rounded to nearest 100) |
+| Starting treasury | Average of existing teams' treasury (rounded to nearest 1,000) |
 | Starting level | Computed from average XP (`compute_level`) |
 | Sponsor | None — player must select one (locked until next phase if Round 1 closed) |
 | Strategies | None — player configures after joining |
 
 - The new team inherits the league's progression so they are competitive immediately.
-- Treasury is rounded to the nearest 100 (because bids must be multiples of 100).
+- Treasury is rounded to the nearest 1,000 (because bids must be multiples of 1,000).
 - No retroactive race results — XP starts accumulating from the join date.
 
 ---
@@ -569,7 +568,7 @@ During Grand Tours, riders can abandon (DNF). The GT Rescue system gives players
   exception baked into the rule.
 
 ### Emergency bids
-- Same rules as regular bids: min = rider's market salary, multiples of 100, ≥ 5000 €.
+- Same rules as regular bids: min = rider's market salary, multiples of 1,000, ≥ 5000 €.
 - Budget validation: `treasury >= bid amount`.
 - Only riders **not already in the league** can be emergency-bid.
 - The emergency contract has `phase_recruited_id` set (same release lock as regular contracts).
@@ -585,13 +584,13 @@ During Grand Tours, riders can abandon (DNF). The GT Rescue system gives players
 
 ## 18. Sponsor GT Goals (V1b)
 
-> Applies to **T4 sponsors** (Ineos, Decathlon AG2R, Soudal Quick-Step, Lidl-Trek).
+> Applies to **T4+ sponsors** (T4: Ineos, Decathlon AG2R, Soudal Quick-Step, Lidl-Trek; T5: Visma-Lease a Bike, Red Bull-Bora).
 
-T4 sponsors offer **one-time bonus goals** during Grand Tours, on top of regular race-result bonuses (§9).
+T4+ sponsors offer **one-time bonus goals** during Grand Tours, on top of regular race-result bonuses (§9).
 
 ### Structure
-- Each T4 sponsor defines a set of GT-specific goals (e.g., "Podium GC final", "Stage win").
-- Goals are **role-gated**: only riders with the matching GT role (GC leader, stage hunter, domestique) can trigger a goal.
+- Each goal-eligible sponsor defines a set of GT-specific goals (e.g., "Podium GC final", "Stage win"), per archetype (GC / Sprint / CLM / Stage-Hunter).
+- Goals are **role-gated**: only riders with the matching GT role for that archetype (e.g. gc_leader, sprinter, tt_specialist, climber, stage_hunter) can trigger a goal.
 - Goals follow a "best of two" tiered structure: if a higher-tier goal is completed, the lower-tier payout is replaced (not cumulated).
 - Each goal pays **once per GT** — tracked in `sponsor_goal_completions`.
 
