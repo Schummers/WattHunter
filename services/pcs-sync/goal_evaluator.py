@@ -26,6 +26,7 @@ from datetime import date, datetime
 from typing import Optional
 from zoneinfo import ZoneInfo
 
+from db_utils import _fetch_all
 from sponsor_bonus import expand_sponsor_nationality
 
 logger = logging.getLogger(__name__)
@@ -106,35 +107,6 @@ def _parse_ts(ts: str) -> datetime:
         base, frac = s.split(".", 1)
         s = base + "." + (frac + "000000")[:6]
     return datetime.fromisoformat(s).replace(tzinfo=_tz.utc)
-
-
-# ---------------------------------------------------------------------------
-# Pagination helper — Supabase PostgREST caps responses at 1000 rows by default.
-# GT pipelines fetch entire grand tours (1500+ rows across stages), so we must
-# paginate. Without this, late-stage results (e.g. ITT stage 10) get truncated
-# and goals silently fail to credit.
-# ---------------------------------------------------------------------------
-
-def _fetch_all(query_factory, page_size: int = 1000) -> list[dict]:
-    """Run a Supabase query repeatedly with .range() until all rows fetched.
-
-    Args:
-        query_factory: callable returning a fresh, unrun query builder.
-        page_size: rows per page (matches PostgREST default cap).
-
-    Returns:
-        Flat list of all rows.
-    """
-    all_rows: list[dict] = []
-    offset = 0
-    while True:
-        resp = query_factory().range(offset, offset + page_size - 1).execute()
-        rows = resp.data or []
-        all_rows.extend(rows)
-        if len(rows) < page_size:
-            break
-        offset += page_size
-    return all_rows
 
 
 def _gt_cutoff_for_date(race_date: date) -> datetime:

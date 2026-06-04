@@ -14,6 +14,8 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
+from db_utils import _fetch_all
+
 logger = logging.getLogger(__name__)
 
 # Grand tour slugs used for ×2 stage multiplier detection
@@ -195,14 +197,12 @@ async def process_race_bonuses(
     errors: list[str] = []
     bonuses_created = 0
 
-    # Step 1 — Fetch race results
-    results_resp = (
-        supabase.table("race_results")
+    # Step 1 — Fetch race results (paginated: a full GT spans 1500+ rows)
+    race_results: list[dict] = _fetch_all(
+        lambda: supabase.table("race_results")
         .select("rider_id,race_slug,race_class,stage,rank,pcs_points,race_date")
         .in_("race_slug", race_slugs)
-        .execute()
     )
-    race_results: list[dict] = results_resp.data or []
 
     if not race_results:
         return {"status": "completed", "bonuses_created": 0, "errors": []}
@@ -263,13 +263,11 @@ async def process_race_bonuses(
         # Fetch all squad rows for matching years (query once, filter per slug)
         all_squad_rows: list[dict] = []
         for year in years:
-            squad_resp = (
-                supabase.table("gt_squad")
+            all_squad_rows.extend(_fetch_all(
+                lambda y=year: supabase.table("gt_squad")
                 .select("team_id,rider_id,created_at,removed_at")
-                .eq("year", year)
-                .execute()
-            )
-            all_squad_rows.extend(squad_resp.data or [])
+                .eq("year", y)
+            ))
 
         for slug in gt_stage_slugs:
             race_date_str = _gt_slug_dates.get(slug)
@@ -294,14 +292,13 @@ async def process_race_bonuses(
                     members.add((row["team_id"], row["rider_id"]))
             gt_squad_by_slug[slug] = members
 
-    # Step 2 — Fetch active/notice contracts with rider nationality
-    contracts_resp = (
-        supabase.table("contracts")
+    # Step 2 — Fetch active/notice contracts with rider nationality (paginated:
+    # league-wide across all teams → easily exceeds 1000 rows at scale)
+    contracts: list[dict] = _fetch_all(
+        lambda: supabase.table("contracts")
         .select("team_id,rider_id,status,riders:rider_id(nationality)")
         .in_("status", ["active", "notice"])
-        .execute()
     )
-    contracts: list[dict] = contracts_resp.data or []
 
     if not contracts:
         return {"status": "completed", "bonuses_created": 0, "errors": []}
@@ -313,13 +310,12 @@ async def process_race_bonuses(
         nat = (c.get("riders") or {}).get("nationality")
         rider_teams.setdefault(rid, []).append({"team_id": c["team_id"], "nationality": nat})
 
-    # Step 3 — Fetch team_sponsors with full sponsor data
-    sponsors_resp = (
-        supabase.table("team_sponsors")
+    # Step 3 — Fetch team_sponsors with full sponsor data (paginated: one row
+    # per team, league-wide)
+    team_sponsors_rows: list[dict] = _fetch_all(
+        lambda: supabase.table("team_sponsors")
         .select("team_id,sponsor_id,sponsors(*)")
-        .execute()
     )
-    team_sponsors_rows: list[dict] = sponsors_resp.data or []
 
     # Build lookup: team_id → sponsor dict
     team_sponsor: dict[str, dict] = {}
@@ -337,15 +333,14 @@ async def process_race_bonuses(
     # rerunning the pipeline on the same race re-credits previously paid bonuses.
     existing_bonus_keys: set[tuple[str, str, str, str]] = set()
     if race_slugs:
-        existing_bonuses_resp = (
-            supabase.table("sponsor_bonuses")
+        existing_bonuses = _fetch_all(
+            lambda: supabase.table("sponsor_bonuses")
             .select("team_id,rider_id,race_slug,result_type")
             .in_("race_slug", race_slugs)
-            .execute()
         )
         existing_bonus_keys = {
             (r["team_id"], r["rider_id"], r["race_slug"], r["result_type"])
-            for r in (existing_bonuses_resp.data or [])
+            for r in existing_bonuses
         }
 
     # No-cumul rule (GAME_RULES.md §17): a rider who triggered a one-time sponsor
@@ -362,13 +357,12 @@ async def process_race_bonuses(
             if (m := _re.match(r"^(race/[a-z0-9-]+/\d{4})", s))
         }
         if parent_slugs:
-            completions_resp = (
-                supabase.table("sponsor_goal_completions")
+            completions_rows = _fetch_all(
+                lambda: supabase.table("sponsor_goal_completions")
                 .select("team_id,rider_id,neutralized_stage_slugs")
                 .in_("race_slug", list(parent_slugs))
-                .execute()
             )
-            for row in (completions_resp.data or []):
+            for row in completions_rows:
                 for slug in (row.get("neutralized_stage_slugs") or []):
                     neutralized.add((row["team_id"], row["rider_id"], slug))
 
@@ -472,14 +466,13 @@ async def process_race_bonuses(
     reverted_count = 0
     for slug in gt_stage_slugs:
         squad_for_slug = gt_squad_by_slug.get(slug, set())
-        # Fetch existing bonuses for this GT stage slug
-        existing_resp = (
-            supabase.table("sponsor_bonuses")
+        # Fetch existing bonuses for this GT stage slug (paginated)
+        existing_for_slug = _fetch_all(
+            lambda s=slug: supabase.table("sponsor_bonuses")
             .select("id, team_id, rider_id, final_bonus")
-            .eq("race_slug", slug)
-            .execute()
+            .eq("race_slug", s)
         )
-        for bonus_row in (existing_resp.data or []):
+        for bonus_row in existing_for_slug:
             key = (bonus_row["team_id"], bonus_row["rider_id"])
             if key not in squad_for_slug:
                 # This rider was not in the squad at race time — revert bonus
