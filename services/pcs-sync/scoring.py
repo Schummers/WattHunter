@@ -664,6 +664,12 @@ async def calculate_daily_scores(
                 # the two boosts must never stack (× nemesis × underdog). If a Nemesis
                 # duel materially affects this rider, we drop the underdog multiplier.
                 nemesis_applied = False
+                # Nemesis modifiers are collected, then combined after the loop. The
+                # attacker (own duel) and each enemy duel that targets this rider are
+                # tracked separately so a single target_won reward (1.25) is NOT clamped
+                # against the initial 1.0 — see the combination block below.
+                attacker_nem_mod: float | None = None
+                target_nem_mods: list[float] = []
 
                 for tactic in gt_tactics.get(race_slug, []):
                     t_type = tactic["tactic_type"]
@@ -697,7 +703,7 @@ async def calculate_daily_scores(
                                 )
                                 if role_override is not None:
                                     gt_role_mult = role_override
-                                nemesis_modifier = nem_mod
+                                attacker_nem_mod = nem_mod
                                 tactic_applied = applied
                                 if role_override is not None or nem_mod != 1.0:
                                     nemesis_applied = True
@@ -714,14 +720,25 @@ async def calculate_daily_scores(
                                 )
                                 if role_override is not None:
                                     gt_role_mult = role_override
-                                # SC-3 (decided 2026-06-04 — keep as-is, documented): if 2+ enemy
-                                # Nemesis duels target the same rider on the same stage (very rare),
-                                # the harshest modifier wins (min). A losing-target 0.5 thus overrides
-                                # a winning-target 1.25. Accepted: worst-case dominates.
-                                nemesis_modifier = min(nemesis_modifier, nem_mod)
+                                target_nem_mods.append(nem_mod)
                                 tactic_applied = applied
                                 if role_override is not None or nem_mod != 1.0:
                                     nemesis_applied = True
+
+                # === Combine Nemesis modifiers ===
+                # Fix (2026-06-04): a single enemy duel the target WINS now keeps its
+                # 1.25 reward — previously `min(1.0_initial, 1.25)` silently clamped it
+                # to 1.0, so a defended duel never paid out (contradicting §6.4).
+                # SC-3 (decided — kept): when 2+ enemy duels target the same rider, the
+                # harshest of those still wins (min over the target list). The own-duel
+                # (attacker) modifier and the targeted-duels worst case combine by min.
+                _nem_inputs: list[float] = []
+                if attacker_nem_mod is not None:
+                    _nem_inputs.append(attacker_nem_mod)
+                if target_nem_mods:
+                    _nem_inputs.append(min(target_nem_mods))
+                if _nem_inputs:
+                    nemesis_modifier = min(_nem_inputs)
 
                 # SC-2: drop the underdog multiplier when a Nemesis duel materially affects
                 # this rider — the two boosts are mutually exclusive (see comment above).
