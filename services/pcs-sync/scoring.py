@@ -655,6 +655,11 @@ async def calculate_daily_scores(
                 # === Apply tactic modifiers (no-op when gt_tactics is empty) ===
                 nemesis_modifier = 1.0
                 tactic_applied: str | None = None
+                # SC-2: Underdog and Nemesis are mutually exclusive. Nemesis duels are
+                # fought by gc_leader/sprinter rivals; the underdog role is separate, so
+                # the two boosts must never stack (× nemesis × underdog). If a Nemesis
+                # duel materially affects this rider, we drop the underdog multiplier.
+                nemesis_applied = False
 
                 for tactic in gt_tactics.get(race_slug, []):
                     t_type = tactic["tactic_type"]
@@ -690,6 +695,8 @@ async def calculate_daily_scores(
                                     gt_role_mult = role_override
                                 nemesis_modifier = nem_mod
                                 tactic_applied = applied
+                                if role_override is not None or nem_mod != 1.0:
+                                    nemesis_applied = True
                     else:
                         # Tactic owned by another team — only Nemesis affects this rider
                         if t_type in ("nemesis_gc", "nemesis_sprint"):
@@ -703,9 +710,19 @@ async def calculate_daily_scores(
                                 )
                                 if role_override is not None:
                                     gt_role_mult = role_override
-                                # Cap at 0.5 if multiple attackers all won (spec §6.4)
+                                # SC-3 (decided 2026-06-04 — keep as-is, documented): if 2+ enemy
+                                # Nemesis duels target the same rider on the same stage (very rare),
+                                # the harshest modifier wins (min). A losing-target 0.5 thus overrides
+                                # a winning-target 1.25. Accepted: worst-case dominates.
                                 nemesis_modifier = min(nemesis_modifier, nem_mod)
                                 tactic_applied = applied
+                                if role_override is not None or nem_mod != 1.0:
+                                    nemesis_applied = True
+
+                # SC-2: drop the underdog multiplier when a Nemesis duel materially affects
+                # this rider — the two boosts are mutually exclusive (see comment above).
+                if nemesis_applied:
+                    underdog_mult = 1.0
 
                 xp = max(
                     0,
