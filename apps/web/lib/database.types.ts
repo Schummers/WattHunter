@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -156,6 +157,7 @@ export type Database = {
           rider_id: string
           status: string
           team_id: string
+          underdog_discount: boolean
           updated_at: string
         }
         Insert: {
@@ -172,6 +174,7 @@ export type Database = {
           rider_id: string
           status?: string
           team_id: string
+          underdog_discount?: boolean
           updated_at?: string
         }
         Update: {
@@ -188,6 +191,7 @@ export type Database = {
           rider_id?: string
           status?: string
           team_id?: string
+          underdog_discount?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -907,6 +911,7 @@ export type Database = {
           strategy_bonus: number
           tactic_applied: string | null
           team_id: string
+          underdog_mult: number
           xp_gained: number
         }
         Insert: {
@@ -926,6 +931,7 @@ export type Database = {
           strategy_bonus?: number
           tactic_applied?: string | null
           team_id: string
+          underdog_mult?: number
           xp_gained?: number
         }
         Update: {
@@ -945,6 +951,7 @@ export type Database = {
           strategy_bonus?: number
           tactic_applied?: string | null
           team_id?: string
+          underdog_mult?: number
           xp_gained?: number
         }
         Relationships: [
@@ -1158,9 +1165,11 @@ export type Database = {
           created_at: string
           final_reward: number
           goal_index: number
+          goal_key: string
           goal_label: string
           id: string
           multiplier: number
+          neutralized_stage_slugs: string[]
           race_slug: string
           rider_id: string | null
           sponsor_id: string
@@ -1172,9 +1181,11 @@ export type Database = {
           created_at?: string
           final_reward: number
           goal_index: number
+          goal_key: string
           goal_label: string
           id?: string
           multiplier?: number
+          neutralized_stage_slugs?: string[]
           race_slug: string
           rider_id?: string | null
           sponsor_id: string
@@ -1186,9 +1197,11 @@ export type Database = {
           created_at?: string
           final_reward?: number
           goal_index?: number
+          goal_key?: string
           goal_label?: string
           id?: string
           multiplier?: number
+          neutralized_stage_slugs?: string[]
           race_slug?: string
           rider_id?: string | null
           sponsor_id?: string
@@ -1540,6 +1553,7 @@ export type Database = {
           phase_confirmed_at: string | null
           phase_confirmed_id: number | null
           treasury: number
+          underdog_eligible: boolean
           updated_at: string
           user_id: string
         }
@@ -1556,6 +1570,7 @@ export type Database = {
           phase_confirmed_at?: string | null
           phase_confirmed_id?: number | null
           treasury?: number
+          underdog_eligible?: boolean
           updated_at?: string
           user_id: string
         }
@@ -1572,6 +1587,7 @@ export type Database = {
           phase_confirmed_at?: string | null
           phase_confirmed_id?: number | null
           treasury?: number
+          underdog_eligible?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -1637,6 +1653,44 @@ export type Database = {
           },
           {
             foreignKeyName: "treasury_log_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      underdog_eligibility: {
+        Row: {
+          computed_at: string
+          is_eligible: boolean
+          leader_xp: number
+          phase_id: number
+          team_id: string
+          team_xp: number
+          year: number
+        }
+        Insert: {
+          computed_at?: string
+          is_eligible: boolean
+          leader_xp: number
+          phase_id: number
+          team_id: string
+          team_xp: number
+          year: number
+        }
+        Update: {
+          computed_at?: string
+          is_eligible?: boolean
+          leader_xp?: number
+          phase_id?: number
+          team_id?: string
+          team_xp?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "underdog_eligibility_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
@@ -1799,6 +1853,10 @@ export type Database = {
         }
         Returns: string
       }
+      recompute_underdog_eligibility: {
+        Args: { p_phase_id: number; p_year: number }
+        Returns: Json
+      }
       release_rider: {
         Args: { p_contract_id: string; p_current_phase_id: number }
         Returns: Json
@@ -1950,3 +2008,5 @@ export const Constants = {
     Enums: {},
   },
 } as const
+A new version of Supabase CLI is available: v2.104.0 (currently installed v2.90.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
