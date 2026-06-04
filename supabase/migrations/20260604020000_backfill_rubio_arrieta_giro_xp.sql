@@ -11,13 +11,20 @@
 -- This migration only deposits the INPUTS. The XP itself is produced by re-running the scoring
 -- pipeline (services/pcs-sync/scripts/rescore_rubio_arrieta_giro.py), keeping the determinism guarantee.
 -- All inserts are guarded (WHERE NOT EXISTS) so the migration is safe to re-apply.
+--
+-- Reset-safety: every insert is ALSO guarded by EXISTS(rider) / EXISTS(team). The referenced
+-- riders/teams are gameplay data synced from PCS — they exist in prod (so behaviour is identical
+-- there) but NOT on a fresh `supabase db reset`. Without these guards the FK to riders/teams aborts
+-- the reset, blocking every later migration. The guards make the migration a clean no-op on an
+-- empty DB while preserving the determinism guarantee (Rule #2).
 
 -- 1a. Backfill missing GC final result for Einer Rubio (import bug: rank 23 skipped).
 INSERT INTO public.race_results
   (rider_id, race_slug, race_name, stage, race_date, pcs_points, rank, race_class, is_itt, breakaway_kms, profile_icon)
-VALUES
-  ('c45504a3-067e-4ff1-97db-f7eb53e15955', 'race/giro-d-italia/2026/gc', 'Giro d''Italia', 'gc',
-   '2026-05-31', 55, 23, 'grand_tour', false, NULL, NULL)
+SELECT
+  'c45504a3-067e-4ff1-97db-f7eb53e15955', 'race/giro-d-italia/2026/gc', 'Giro d''Italia', 'gc',
+  '2026-05-31', 55, 23, 'grand_tour', false, NULL, NULL
+WHERE EXISTS (SELECT 1 FROM public.riders WHERE id = 'c45504a3-067e-4ff1-97db-f7eb53e15955')
 ON CONFLICT (rider_id, race_slug) DO UPDATE
   SET pcs_points = EXCLUDED.pcs_points, rank = EXCLUDED.rank;
 
@@ -34,7 +41,9 @@ WHERE NOT EXISTS (
     AND rider_id = 'c45504a3-067e-4ff1-97db-f7eb53e15955'
     AND phase_id = 4 AND year = 2026 AND role = 'tt_specialist'
     AND created_at = '2026-05-12T00:00:00Z'::timestamptz
-);
+)
+AND EXISTS (SELECT 1 FROM public.riders WHERE id = 'c45504a3-067e-4ff1-97db-f7eb53e15955')
+AND EXISTS (SELECT 1 FROM public.teams WHERE id = '640a3f78-013f-467d-a0db-7b0403748951');
 
 INSERT INTO public.gt_role_assignments (team_id, rider_id, phase_id, year, role, applied_at)
 SELECT '640a3f78-013f-467d-a0db-7b0403748951', 'c45504a3-067e-4ff1-97db-f7eb53e15955',
@@ -45,7 +54,9 @@ WHERE NOT EXISTS (
     AND rider_id = 'c45504a3-067e-4ff1-97db-f7eb53e15955'
     AND phase_id = 4 AND year = 2026 AND role = 'tt_specialist'
     AND applied_at = '2026-05-12T00:00:00Z'::timestamptz
-);
+)
+AND EXISTS (SELECT 1 FROM public.riders WHERE id = 'c45504a3-067e-4ff1-97db-f7eb53e15955')
+AND EXISTS (SELECT 1 FROM public.teams WHERE id = '640a3f78-013f-467d-a0db-7b0403748951');
 
 -- 1c. STAGE-5 SWAP at Peejee: bench Enrico Zanoncello (domestique, 0 XP at stage 5) for stage 5
 --     only, and field Igor Arrieta (stage win, 80 pts) as stage_hunter in his place. Peejee's
@@ -69,7 +80,9 @@ WHERE NOT EXISTS (
     AND rider_id = 'cd99ec8b-0d54-439d-a864-dade72715ea5'
     AND phase_id = 4 AND year = 2026 AND role = 'stage_hunter'
     AND created_at = '2026-05-13T00:00:00Z'::timestamptz
-);
+)
+AND EXISTS (SELECT 1 FROM public.riders WHERE id = 'cd99ec8b-0d54-439d-a864-dade72715ea5')
+AND EXISTS (SELECT 1 FROM public.teams WHERE id = 'd5be67d4-4229-4899-b735-1ac4de12494c');
 
 -- (3) Re-add Zanoncello from stage 6 onward (created after the stage-5 cutoff, before stage-6).
 --     Preserves his existing stage-6 XP (he is a member again at the 05-14 cutoff).
@@ -82,7 +95,9 @@ WHERE NOT EXISTS (
     AND rider_id = '8b7c75c0-7e41-4026-b949-042c295a5556'
     AND phase_id = 4 AND year = 2026 AND role = 'domestique'
     AND created_at = '2026-05-13T20:00:00Z'::timestamptz
-);
+)
+AND EXISTS (SELECT 1 FROM public.riders WHERE id = '8b7c75c0-7e41-4026-b949-042c295a5556')
+AND EXISTS (SELECT 1 FROM public.teams WHERE id = 'd5be67d4-4229-4899-b735-1ac4de12494c');
 
 -- (4) Arrieta stage_hunter role assignment, applied before the stage-5 cutoff.
 INSERT INTO public.gt_role_assignments (team_id, rider_id, phase_id, year, role, applied_at)
@@ -94,4 +109,6 @@ WHERE NOT EXISTS (
     AND rider_id = 'cd99ec8b-0d54-439d-a864-dade72715ea5'
     AND phase_id = 4 AND year = 2026 AND role = 'stage_hunter'
     AND applied_at = '2026-05-13T00:00:00Z'::timestamptz
-);
+)
+AND EXISTS (SELECT 1 FROM public.riders WHERE id = 'cd99ec8b-0d54-439d-a864-dade72715ea5')
+AND EXISTS (SELECT 1 FROM public.teams WHERE id = 'd5be67d4-4229-4899-b735-1ac4de12494c');

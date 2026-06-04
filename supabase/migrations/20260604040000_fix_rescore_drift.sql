@@ -12,7 +12,9 @@
 --
 -- The teams trigger blocks XP edits except for service_role; migrations run as postgres, so we
 -- disable it for the correction (same pattern as 20260509120000_fix_round2_treasury_double_count).
--- On a fresh db reset these teams do not exist (gameplay data), so the UPDATEs simply match 0 rows.
+-- On a fresh db reset these teams do not exist (gameplay data), so the UPDATEs simply match 0 rows
+-- and the audit INSERT below is filtered per-row by EXISTS(team) (no-op on an empty DB; identical
+-- in prod where every team exists). Without the EXISTS guard the FK to teams aborts the reset.
 
 ALTER TABLE public.teams DISABLE TRIGGER teams_protect_sensitive_fields;
 
@@ -27,10 +29,15 @@ UPDATE public.teams SET cumulative_xp = 1642.05 WHERE id = 'd5be67d4-4229-4899-b
 ALTER TABLE public.teams ENABLE TRIGGER teams_protect_sensitive_fields;
 
 -- Audit trail for the correction (amount = pre-rescore - drifted).
-INSERT INTO public.team_xp_adjustments (team_id, amount, reason, adjusted_at) VALUES
-  ('75122355-d629-4f10-927c-2eedc17883cd',  118.75, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04'),
-  ('3935c0aa-12d5-4ef9-a04d-84de12977c1c',   77.15, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04'),
-  ('d33c4106-6fc2-49b5-a60e-a609ee963d6f',   40.37, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04'),
-  ('68ccf635-6599-4d53-a112-de66b27fa4cf',    9.50, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04'),
-  ('dd1dbdb6-cd30-44b4-b62b-2a6a992a286c',    5.88, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04'),
-  ('d5be67d4-4229-4899-b735-1ac4de12494c',  -12.00, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04');
+-- INSERT...SELECT (not VALUES) so each row is filtered by EXISTS(team) → reset-safe.
+INSERT INTO public.team_xp_adjustments (team_id, amount, reason, adjusted_at)
+SELECT v.team_id, v.amount, v.reason, v.adjusted_at
+FROM (VALUES
+  ('75122355-d629-4f10-927c-2eedc17883cd'::uuid,  118.75::numeric, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04'::date),
+  ('3935c0aa-12d5-4ef9-a04d-84de12977c1c'::uuid,   77.15::numeric, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04'::date),
+  ('d33c4106-6fc2-49b5-a60e-a609ee963d6f'::uuid,   40.37::numeric, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04'::date),
+  ('68ccf635-6599-4d53-a112-de66b27fa4cf'::uuid,    9.50::numeric, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04'::date),
+  ('dd1dbdb6-cd30-44b4-b62b-2a6a992a286c'::uuid,    5.88::numeric, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04'::date),
+  ('d5be67d4-4229-4899-b735-1ac4de12494c'::uuid,  -12.00::numeric, 'Rescore drift correction (Rubio/Arrieta backfill 20260604020000)', '2026-06-04'::date)
+) AS v(team_id, amount, reason, adjusted_at)
+WHERE EXISTS (SELECT 1 FROM public.teams WHERE id = v.team_id);
