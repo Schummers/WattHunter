@@ -166,8 +166,9 @@ watthunter/
 │   ├── photo_storage.py         # Download photo PCS + upload bucket Supabase rider-photos
 │   ├── backfill_photos.py       # One-shot : self-host photos top 300 (cmd backfill-photos)
 │   ├── auction.py               # Resolution 3-round sealed-bid
-│   ├── scoring.py               # XP quotidien
-│   ├── sponsor_bonus.py         # Calcul bonus sponsors sur resultats de course. No-cumul rule (GAME_RULES §18) : skip le base bonus d'un (rider, race) qui a déclenché un one-time goal, en lisant `sponsor_goal_completions.neutralized_stage_slugs`. **Doit tourner APRÈS `evaluate_sponsor_goals`** (ordre garanti dans `run_post_race`).
+│   ├── db_utils.py              # Helpers partagés Supabase/PostgREST — `_fetch_all(query_factory)` pagine via `.range()` au-delà du cap 1000 lignes. Importé par scoring/sponsor_bonus/goal_evaluator (tout fetch GT/league-wide doit passer par là, sinon troncature silencieuse).
+│   ├── scoring.py               # XP quotidien. Fail-loud (`_unseeded_stage_slugs`) si une étape squad-race `/stage-` est scorée sans `profile_icon` importé (sinon sprinter ×1.5 dégradé en ×1.0 silencieusement). Nemesis : underdog et Nemesis mutuellement exclusifs (pas de cumul `× nemesis × underdog`) ; un coureur cible qui gagne son duel garde sa récompense ×1.25 (combinaison `min` sur les duels ciblants, multi-duel = pire cas).
+│   ├── sponsor_bonus.py         # Calcul bonus sponsors sur resultats de course. Fetches paginés via `db_utils._fetch_all` (race_results / contracts / team_sponsors / gt_squad — cap PostgREST 1000). No-cumul rule (GAME_RULES §18) : skip le base bonus d'un (rider, race) qui a déclenché un one-time goal, en lisant `sponsor_goal_completions.neutralized_stage_slugs`. **Doit tourner APRÈS `evaluate_sponsor_goals`** (ordre garanti dans `run_post_race`).
 │   ├── validation.py            # Validation donnees PCS
 │   ├── resolve_now.py           # Script resolution manuelle (dev)
 │   ├── resolve_gt_rescue.py     # Resolution DNF rescue (refund/replace)

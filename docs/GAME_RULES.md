@@ -470,6 +470,18 @@ The profile comes from `stage_profiles` (one row per stage_slug), seeded ahead o
 - Traceability: `rider_xp_daily` records `role_mult` and `gt_classif_bonus` per scoring event.
 - Nemesis duels are resolved at stage scoring via the internal `resolve_nemesis_for_stage` RPC.
 
+**Nemesis duel outcomes** (multiplier applied to the rider's stage XP):
+
+| Outcome       | Attacker            | Target              |
+|---------------|---------------------|---------------------|
+| attacker_won  | role_mult → ×2.0    | ×0.5                |
+| target_won    | ×0.75               | ×1.25               |
+| no_resolution | ×1.0                | ×1.0                |
+
+- A target who **wins** its defensive duel keeps the ×1.25 reward (it is not clamped to ×1.0).
+- Multiple enemy duels on the same rider/stage (rare): the **harshest** target multiplier wins (min).
+- Underdog role boost and Nemesis are **mutually exclusive** — if a Nemesis duel affects a rider, the underdog `clamp(pcs_rank/100)` multiplier is not also applied (no `× nemesis × underdog` stacking).
+
 ---
 
 ## 14. Underdog (Spec B)
