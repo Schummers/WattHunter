@@ -502,6 +502,10 @@ async def calculate_daily_scores(
         for r in (squad_resp.data or []):
             created = _parse_supabase_ts(r["created_at"])
             removed = _parse_supabase_ts(r["removed_at"]) if r.get("removed_at") else None
+            # SC-6: membership window is [created, removed) at the cutoff instant —
+            # created AT the cutoff counts (<=), a removal AT the cutoff does not
+            # (strict >). This is consistent with the role-assignment rule below
+            # (`applied > cutoff` skips), so both treat "exactly at cutoff" as active.
             if created <= gt_cutoff and (removed is None or removed > gt_cutoff):
                 gt_squad_members[(r["team_id"], r["rider_id"])] = True
 
@@ -743,6 +747,10 @@ async def calculate_daily_scores(
                         "date": entry.get("race_date", today),
                         "raw_pcs_points": raw_points,
                         "strategy_bonus": bonus,
+                        # SC-5: role_mult/classif_bonus are the legacy columns; gt_role_mult/
+                        # gt_classif_bonus are the current ones. They are written with identical
+                        # values on purpose (backward-compat for older readers). Kept in sync, not
+                        # dropped — removing the legacy pair needs a migration + a frontend audit.
                         "role_mult": gt_role_mult,
                         "classif_bonus": gt_classif_bonus,
                         "gt_role_mult": gt_role_mult,

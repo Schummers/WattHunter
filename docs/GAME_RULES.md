@@ -273,8 +273,8 @@ Each sponsor has a threshold and amount for 3 categories:
 
 Multipliers (T1–T4 only):
 - **×2** for a Monument or Grand Tour
-- **×1.25** if the rider's nationality matches the sponsor's nationality
-- Cumulative: Monument + nationality = ×2.5
+- **×1.20** if the rider's nationality matches the sponsor's nationality
+- Cumulative: Monument + nationality = ×2.4
 
 **T5–T6: explicit prestige bonuses (no nationality multiplier)**
 
