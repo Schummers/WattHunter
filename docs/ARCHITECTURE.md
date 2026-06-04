@@ -89,9 +89,8 @@ watthunter/
 │   │   ├── metric-box.tsx       # Valeur Geist Mono + label, highlight accent
 │   │   ├── pill.tsx             # Tag v3 (4 variants: default/highlighted/success/warning)
 │   │   ├── segmented-control.tsx # Filter Chips v3 (container border, caption type)
-│   │   ├── sponsor-bonus-card.tsx     # Card bonus sponsor (race result bonuses)
-│   │   ├── sponsor-bonus-details.tsx  # Details bonus sponsor
-│   │   ├── gt-goals-preview.tsx       # Sponsor GT goals display
+│   │   ├── sponsor-bonus-card.tsx     # Card bonus sponsor — 2-col A/B economy + shared legend
+│   │   ├── gt-goals-preview.tsx       # Sponsor GT goals display (2-col A/B)
 │   │   ├── back-header.tsx      # ArrowLeft + label, router.back()
 │   │   ├── phase-navigator.tsx  # Navigation entre phases WT
 │   │   ├── filter-chips.tsx     # Composant chips de filtrage

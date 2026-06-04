@@ -8,7 +8,7 @@ import { Tag } from "@/components/pill";
 import {
   BaseBonusContent,
   PrestigeBonusContent,
-  NATIONALITY_DEMONYMS,
+  SponsorBonusLegend,
 } from "@/components/sponsor-bonus-card";
 import { GtGoalsPreview } from "@/components/gt-goals-preview";
 import { getGoalsForSponsor } from "@/lib/gt-goals";
@@ -157,19 +157,7 @@ function SponsorCard({
             <BaseBonusContent sponsor={sponsor} />
           )}
           <GtGoalsPreview goals={getGoalsForSponsor(sponsor.slug)} />
-          {nationalities.length > 0 && (
-            <div className="flex items-center gap-1.5 border-t border-[var(--border-default)] mt-2.5 pt-2.5 text-[length:var(--type-caption)] text-[var(--text-low)]">
-              {nationalities.map((nat) => (
-                <span key={nat}>{countryCodeToFlag(nat)}</span>
-              ))}
-              <span>
-                {nationalities
-                  .map((nat) => NATIONALITY_DEMONYMS[nat] ?? nat)
-                  .join(" / ")}{" "}
-                rider: all bonuses ×1.25
-              </span>
-            </div>
-          )}
+          <SponsorBonusLegend sponsor={sponsor} />
         </div>
       )}
     </div>
