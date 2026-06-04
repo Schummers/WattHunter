@@ -51,7 +51,7 @@ export function ConfigCards({
       {/* Sponsor card */}
       {isEditable ? (
         <Link
-          href={`/league/${leagueId}/budget/marketplace?from=auctions`}
+          href={`/league/${leagueId}/team/budget/marketplace?from=auctions`}
           className="relative flex flex-1 flex-col rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] p-[10px] transition-colors hover:bg-[var(--bg-surface-hover)] cursor-pointer"
         >
           <span className="text-[length:var(--type-micro)] font-semibold uppercase tracking-wide text-[var(--text-low)]">
