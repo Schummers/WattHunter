@@ -279,7 +279,11 @@ def eval_win_stage(ctx: dict) -> Optional[dict]:
             continue
         stage_eligible = eligible.get(stage_slug, set())
         if winner_id in stage_eligible:
-            return {"rider_id": winner_id, "stage_slug": stage_slug}
+            return {
+                "rider_id": winner_id,
+                "stage_slug": stage_slug,
+                "neutralized_stage_slugs": [stage_slug],
+            }
     return None
 
 
@@ -288,16 +292,17 @@ def eval_win_2_stages(ctx: dict) -> Optional[dict]:
     For sprinter role, only flat-profile stages count (Spec A Q14)."""
     stage_wins = ctx["stage_wins"]
     eligible = ctx["eligible_riders_by_stage"]
-    win_counts: dict[str, int] = {}
+    win_slugs: dict[str, list[str]] = {}
     for stage_slug, winner_id in stage_wins.items():
         if not _stage_counts_for_role(ctx, stage_slug):
             continue
         stage_eligible = eligible.get(stage_slug, set())
         if winner_id in stage_eligible:
-            win_counts[winner_id] = win_counts.get(winner_id, 0) + 1
-    for rid, count in win_counts.items():
-        if count >= 2:
-            return {"rider_id": rid, "stage_slug": None}
+            win_slugs.setdefault(winner_id, []).append(stage_slug)
+    for rid, slugs in win_slugs.items():
+        if len(slugs) >= 2:
+            # No-cumul: the goal replaces the base bonus on every counted stage.
+            return {"rider_id": rid, "stage_slug": None, "neutralized_stage_slugs": slugs}
     return None
 
 
@@ -396,6 +401,27 @@ def suppress_tier_group_duplicates(goals: list[dict], completed: dict) -> dict:
     for key, goal_idx in best.items():
         keep[goal_idx] = completed[goal_idx]
     return keep
+
+
+# ---------------------------------------------------------------------------
+# No-cumul rule — map a completed goal to the base-bonus race_slugs it consumes
+# ---------------------------------------------------------------------------
+
+def neutralized_slugs(goal: dict, result: dict, parent_slug: str) -> list[str]:
+    """Base-bonus race_slugs that this completed one-time goal consumes (no-cumul).
+
+    process_race_bonuses reads these from sponsor_goal_completions and skips
+    emitting the matching base bonus, so a rider never receives both the goal
+    and the base bonus on the same race (see GAME_RULES.md §17).
+
+      - GC placement goals (gc_podium / gc_top5) → the final GC result `{parent}/gc`.
+      - Stage-win goals → each counted stage, carried by the evaluator in
+        result["neutralized_stage_slugs"] (sprinter profile gating already applied).
+      - Classification / wear-jersey goals → nothing (no single-race base bonus).
+    """
+    if goal.get("category") == "gc" and goal.get("key") in ("gc_podium", "gc_top5"):
+        return [f"{parent_slug}/gc"]
+    return list(result.get("neutralized_stage_slugs", []))
 
 
 # ---------------------------------------------------------------------------
@@ -686,6 +712,7 @@ async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
                     "multiplier": float(multiplier),
                     "final_reward": final_reward,
                     "goal_key": goal_key,
+                    "neutralized_stage_slugs": neutralized_slugs(goal, result, parent_slug),
                 }
 
                 supabase.table("sponsor_goal_completions").insert(insert_payload).execute()
