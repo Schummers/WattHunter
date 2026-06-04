@@ -196,6 +196,29 @@ def _is_gt_slug(slug: str) -> bool:
     return slug.startswith(GT_RACE_PREFIXES)
 
 
+def _unseeded_stage_slugs(history_rows: list[dict]) -> list[str]:
+    """Return squad-race *stage* slugs whose profile_icon was never imported (SC-4).
+
+    A stage's profile (p1..p5 / itt) is identical across all its race_results rows;
+    if none carry a profile_icon, `import_stage_profiles` (cmd `startlists`) never
+    ran for that stage. Scoring it would silently degrade the sprinter ×1.5 role
+    multiplier to ×1.0 (profile not in SPRINT_PROFILES) — a hard-to-spot scoring
+    error. We surface these loudly instead of scoring on incomplete data.
+
+    Only individual road/ITT stages (`/stage-N`) on squad races are checked;
+    final classifications (/gc, /points, /kom, /youth) carry no profile and are
+    excluded.
+    """
+    seeded_by_slug: dict[str, bool] = {}
+    for h in history_rows:
+        slug = h.get("race_slug") or ""
+        if "/stage-" not in slug or not _is_squad_race(slug):
+            continue
+        has_profile = _norm_profile(h.get("profile_icon")) is not None
+        seeded_by_slug[slug] = seeded_by_slug.get(slug, False) or has_profile
+    return sorted(slug for slug, seeded in seeded_by_slug.items() if not seeded)
+
+
 def _norm_profile(profile_icon) -> str | None:
     """Normalize a PCS profile icon to lowercase p0-p5, or None."""
     if not profile_icon:
@@ -365,6 +388,18 @@ async def calculate_daily_scores(
             "processed": 0,
             "message": "No race results found",
         }
+
+    # SC-4 — fail loud if a squad-race stage being scored has no imported profile.
+    # Without profile_icon the sprinter ×1.5 role multiplier silently drops to ×1.0.
+    unseeded = _unseeded_stage_slugs(history.data)
+    if unseeded:
+        raise ValueError(
+            "Stage profiles not imported for squad-race stage(s): "
+            f"{', '.join(unseeded)}. Run "
+            "`run_pipeline.py startlists --race <race>` (import_stage_profiles) "
+            "before scoring — missing profile_icon silently degrades the sprinter "
+            "×1.5 role multiplier to ×1.0 (SC-4)."
+        )
 
     # Build rider_id → list of (race_slug, pcs_points) for per-race upserts
     rider_race_points: dict[str, list[dict]] = {}

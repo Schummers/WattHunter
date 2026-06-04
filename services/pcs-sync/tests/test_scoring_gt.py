@@ -28,9 +28,13 @@ def _base_mocks(
     squad_removed_at: str | None = None,
     role_applied_at: str = "2026-05-10T09:00:00+02:00",
     breakaway_kms: float | None = None,
-    profile_icon: str | None = None,
+    profile_icon: str | None = "p4",
 ):
     """Build a Supabase mock covering the full GT scoring flow (role multipliers only).
+
+    profile_icon defaults to "p4" (mountain): a real stage always carries a profile,
+    and scoring now fails loud on an unseeded squad stage (SC-4). "p4" is neutral for
+    every role except sprinter (which the sprinter-specific tests set explicitly).
 
     Response order mirrors the supabase.table() calls made by calculate_daily_scores:
       1. race_results select
@@ -608,6 +612,7 @@ async def test_rider_not_in_squad_gets_no_xp():
             "pcs_points": 100,
             "race_date": "2026-05-11",
             "is_itt": False,
+            "profile_icon": "p4",
         }],
         [],
         [{
@@ -645,7 +650,7 @@ async def test_squad_rider_no_stage_points_gets_classif_bonus():
     sb = make_supabase(
         # 1. race_results: only RIDER_ID_2 scores stage points
         [{"rider_id": RIDER_ID_2, "race_slug": GIRO_SLUG, "pcs_points": 50,
-          "race_date": "2026-05-11", "is_itt": False}],
+          "race_date": "2026-05-11", "is_itt": False, "profile_icon": "p4"}],
         # 2. prev rider_xp_daily
         [],
         # 3. contracts: both riders
