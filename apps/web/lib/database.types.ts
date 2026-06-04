@@ -1,4 +1,3 @@
-Initialising login role...
 export type Json =
   | string
   | number
@@ -1825,6 +1824,7 @@ export type Database = {
         Returns: string
       }
       is_league_member: { Args: { p_league_id: string }; Returns: boolean }
+      is_underdog_rank: { Args: { p_rider_id: string }; Returns: boolean }
       join_league_by_code: {
         Args: { p_code: string; p_team_name?: string }
         Returns: Json
@@ -2008,5 +2008,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-A new version of Supabase CLI is available: v2.104.0 (currently installed v2.90.0)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
