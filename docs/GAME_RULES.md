@@ -558,8 +558,17 @@ T4 sponsors offer **one-time bonus goals** during Grand Tours, on top of regular
 
 ### Cumul rule: one-time goal vs base race bonus
 
-- **GC placements (top10 base bonus + gc_podium / gc_top5 one-time goal):** **no cumul**. If a rider triggers a one-time GC goal (`gc_podium`, `gc_top5`), the rider's base bonus on the same `/gc` race result is neutralized — only the higher payout (the one-time goal) is credited. Affects: T4 sponsors with GC set (Ineos, Decathlon AG2R via their gc_leader). Decided & applied during the 2026-06-03 Giro cutover.
-- **Stage wins (stage base bonus + sprint_win_stage / sh_win_stage one-time goal):** currently cumulated by the live `process_race_bonuses`. **Will be aligned with the no-cumul rule before the Tour de France 2026** — i.e. when a sprinter/stage_hunter triggers a per-GT one-time win goal, the base bonus on that same stage is dropped. Backlog item, code change in `process_race_bonuses`.
+**No cumul (Aligned in code).** When a rider triggers a one-time sponsor goal, the base race bonus (§9) for that same rider on the same race is **neutralized** — only the goal payout is credited, never both.
+
+How it works: `evaluate_sponsor_goals` runs **before** `process_race_bonuses` and persists the consumed base-bonus race_slugs in `sponsor_goal_completions.neutralized_stage_slugs`. `process_race_bonuses` reads them and skips emitting those base bonuses. Because the base bonus is never created, reruns can never re-credit it (idempotent by construction).
+
+Mapping goal → neutralized base bonus:
+- `gc_podium` / `gc_top5` → the final GC result (`{parent}/gc`).
+- `sprint_win_stage` / `sh_win_stage` → the won stage.
+- `sprint_win_2_stages` / `sh_win_2_stages` → **every counted stage** (sprinter profile gating p1/p2/p3 respected — a non-flat stage win that doesn't count toward the goal keeps its base bonus).
+- `sh_kom_classification` / `sprint_points_classification` and wear-jersey goals → no-op (no single-race base bonus exists for these).
+
+Historical note: GC no-cumul was applied manually during the 2026-06-03 Giro cutover (3 base bonuses reverted); stage-win cumul was preserved for that one cutover and aligned in code before the Tour de France 2026.
 
 ### Evaluation
 - Goals are evaluated after each stage scoring.

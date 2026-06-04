@@ -71,7 +71,7 @@ Total redistributed: **+447 500 €** and ~4 100 XP across 8 teams.
 
 | Item | Severity | Notes |
 |---|---|---|
-| `process_race_bonuses`: extend no-cumul rule to sprint/stage_hunter goals | **Required before Tour 2026** | Logic: skip base bonus emission when the rider triggers a same-race one-time `sprint_win_stage` / `sh_win_stage` / `sprint_win_2_stages` / `sh_win_2_stages` goal. |
+| ~~`process_race_bonuses`: extend no-cumul rule to sprint/stage_hunter goals~~ | ✅ **Done** | Implemented on branch `feature/sponsor-no-cumul-rule`: goals evaluated before bonuses, neutralization persisted in `sponsor_goal_completions.neutralized_stage_slugs`, base bonus skipped. Idempotent by construction. See GAME_RULES.md §17. |
 | T6 (UAE) sponsor base bonus alignment | Medium | Migration `20260603120000` deliberately deferred T6. UAE should mirror T4 (same base bonus + same goal sets). Create a new migration. |
 | Sponsor card front-end wireframe | Medium | UI cards don't match the original wireframe — amounts not displayed as designed. Front audit. |
 | `profile_icon` backfill on Giro stages 4/8/11 (and earlier) | Low | NULL profile_icon breaks Spec C sprinter gating (`win_stage` / `win_2_stages` require `profile_icon ∈ {p1,p2,p3}`). Re-run `import_stage_profiles` once Cloudflare is unblocked. Not bugged retroactively (Giro already closed). |
