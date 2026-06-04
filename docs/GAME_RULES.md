@@ -182,9 +182,12 @@ Grand Tour stages (squad riders only — non-squad contracted riders score 0):
 Rider XP = (PCS_points × role_mult × (1 + strategy_bonus)
             + classif_bonus + breakaway_bonus) × nemesis_modifier
 ```
-- **role_mult** (Spec A, 2026-06-02): gc_leader / climber ×1.5; tt_specialist ×2.0 on ITT only;
-  sprinter ×1.5 only on flat/hilly stages (profile p1/p2/p3); stage_hunter ×1.5 only
-  in the breakaway (≥30 km); domestique ×1.0. **GC final → ×1.0 for all roles.**
+- **role_mult** (Spec A, 2026-06-02): a rider has **exactly one role**, so `role_mult` takes
+  exactly one value — the per-role multipliers never stack. gc_leader / climber ×1.5;
+  tt_specialist ×2.0 on ITT only; sprinter ×1.5 only on flat/hilly stages (profile p1/p2/p3);
+  stage_hunter ×1.5 only in the breakaway (≥30 km); **underdog ×clamp(pcs_rank/100, 1, 4)**
+  (Spec B — mutually exclusive with the roles above; see §14); domestique ×1.0.
+  **GC final → ×1.0 for all roles.**
 - **classif_bonus** (daily gc/points/kom/youth): role-matched only — gc_leader→GC ×2
   (and Youth ×1.5), sprinter→Points ×2, climber→KOM ×2; all other roles 0.
 - **breakaway_bonus**: stage_hunter only, +1 XP per 10 km in the break (no cap), additive.
@@ -501,10 +504,12 @@ Mécanisme anti-rattrapage complémentaire au Co-Unlock Rule et au Level Curve S
 ### Avantage 1 — Rôle Underdog (cap 2)
 
 - Assignable uniquement par les équipes éligibles au sein de leur squad GT ou Race Team.
-- **Boost de scoring** : points de stage × `clamp(pcs_rank / 100, 1.0, 4.0)`.
+- **`underdog` est un rôle à part entière** (comme gc_leader, sprinter…) : un coureur a UN seul rôle, donc le boost underdog **remplace** le `role_mult` habituel — il ne s'y ajoute pas. Dans la formule §7, c'est la valeur que prend `role_mult` quand le rôle est underdog (pas un facteur séparé). Un underdog ne touche donc jamais aussi le ×1.5 gc_leader/sprinter.
+- **Boost de scoring** : `role_mult = clamp(pcs_rank / 100, 1.0, 4.0)`.
   - Ex. : coureur rang 272 → ×2.72 ; rang 432 → ×4.0 (plafond) ; rang 69 → ×1.0 (plancher).
 - **Pas de bonus sur les classements finaux** (GC, Points, KOM, Youth).
 - Coureur éligible au rôle : `pcs_rank > 100`.
+- **Exclusif avec Nemesis** : si un duel Nemesis affecte le coureur sur l'étape, le boost underdog ne s'applique pas (voir §13).
 
 ### Avantage 2 — Cap squad élargi (8 → 10)
 
