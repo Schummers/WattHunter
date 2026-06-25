@@ -9,3 +9,13 @@ export const CLASSIC_SQUAD_SIZE = 8;
 export function isClassic(mode: LeagueMode | null | undefined): boolean {
   return mode === "classic";
 }
+
+/** Team seed values for a classic-mode league (pure, testable). */
+export function classicTeamDefaults() {
+  return {
+    starting_level: 8,
+    treasury: CLASSIC_PHASE_BUDGET,
+    underdog_eligible: false,
+    assignSponsor: false,
+  } as const;
+}

@@ -30,7 +30,8 @@ vi.mock("next/navigation", () => ({
   redirect: mockRedirect,
 }));
 
-import { signupAndCreateLeague, classicTeamDefaults } from "./actions";
+import { signupAndCreateLeague } from "./actions";
+import { classicTeamDefaults } from "@/lib/league-mode";
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getLevelByNumber } from "@/lib/levels";
+import { classicTeamDefaults } from "@/lib/league-mode";
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -55,15 +57,25 @@ export async function createLeagueWithTeam(
     return { error: leagueError?.message ?? "League creation failed" };
   }
 
-  // 3. Insert team
+  // 3. Insert team (classic vs manager defaults diverge here)
+  const isClassicMode = params.mode === "classic";
+  const classicDefaults = isClassicMode ? classicTeamDefaults() : null;
+
+  const teamLevel = isClassicMode ? classicDefaults!.starting_level : params.startingLevel;
+  const teamXp = isClassicMode ? getLevelByNumber(classicDefaults!.starting_level).xp : params.cumulativeXp;
+  const teamTreasury = isClassicMode ? classicDefaults!.treasury : undefined;
+  const teamUnderdogEligible = isClassicMode ? classicDefaults!.underdog_eligible : undefined;
+
   const { data: team, error: teamError } = await supabase
     .from("teams")
     .insert({
       user_id: params.userId,
       league_id: league.id,
       name: params.teamName,
-      level: params.startingLevel,
-      cumulative_xp: params.cumulativeXp,
+      level: teamLevel,
+      cumulative_xp: teamXp,
+      ...(teamTreasury !== undefined && { treasury: teamTreasury }),
+      ...(teamUnderdogEligible !== undefined && { underdog_eligible: teamUnderdogEligible }),
     })
     .select("id")
     .single();
@@ -71,22 +83,25 @@ export async function createLeagueWithTeam(
     return { error: teamError?.message ?? "Team creation failed" };
   }
 
-  // 4. Auto-assign default sponsor (level-aware, matches legacy createLeague behavior)
-  // Level 1 → Lotto (T1), Level 2 → Astana (T2), Level 3+ → no auto-assign (player picks)
-  const defaultSlug =
-    params.startingLevel <= 1 ? "lotto" : params.startingLevel === 2 ? "astana" : null;
-  if (defaultSlug) {
-    const { data: defaultSponsor } = await supabase
-      .from("sponsors")
-      .select("id")
-      .eq("slug", defaultSlug)
-      .maybeSingle();
-    if (defaultSponsor) {
-      await supabase.from("team_sponsors").insert({
-        team_id: team.id,
-        sponsor_id: defaultSponsor.id,
-        activated_at: new Date().toISOString(),
-      });
+  // 4. Auto-assign default sponsor (manager mode only)
+  // Classic mode skips sponsor assignment entirely.
+  // Manager: Level 1 → Lotto (T1), Level 2 → Astana (T2), Level 3+ → no auto-assign (player picks)
+  if (!isClassicMode) {
+    const defaultSlug =
+      params.startingLevel <= 1 ? "lotto" : params.startingLevel === 2 ? "astana" : null;
+    if (defaultSlug) {
+      const { data: defaultSponsor } = await supabase
+        .from("sponsors")
+        .select("id")
+        .eq("slug", defaultSlug)
+        .maybeSingle();
+      if (defaultSponsor) {
+        await supabase.from("team_sponsors").insert({
+          team_id: team.id,
+          sponsor_id: defaultSponsor.id,
+          activated_at: new Date().toISOString(),
+        });
+      }
     }
   }
 

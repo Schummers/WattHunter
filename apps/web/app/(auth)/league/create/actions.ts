@@ -5,21 +5,7 @@ import { z } from "zod/v4";
 import { createClient } from "@/lib/supabase/server";
 import { getLevelByNumber } from "@/lib/levels";
 import { generateInviteCode, createLeagueWithTeam } from "@/lib/league-creation";
-import { CLASSIC_PHASE_BUDGET } from "@/lib/league-mode";
-
-// ---------------------------------------------------------------------------
-// classicTeamDefaults — pure helper, fully testable
-// ---------------------------------------------------------------------------
-
-/** Team seed values for a classic-mode league (pure, testable). */
-export function classicTeamDefaults() {
-  return {
-    starting_level: 8,
-    treasury: CLASSIC_PHASE_BUDGET,
-    underdog_eligible: false,
-    assignSponsor: false,
-  } as const;
-}
+import { classicTeamDefaults } from "@/lib/league-mode";
 
 // ---------------------------------------------------------------------------
 // createLeague — for already-authenticated users
