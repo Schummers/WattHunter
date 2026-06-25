@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { calcMinSalary, formatMoney } from "@/lib/format";
 import { getCurrentPhase, getPhaseRange } from "@/lib/phases";
+import { isClassic, phaseResetRpcFor, type LeagueMode } from "@/lib/league-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LEVELS } from "@/lib/levels";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -288,6 +289,15 @@ async function triggerPhasePayday(
   const phase = getCurrentPhase();
   const { start: phaseStart } = getPhaseRange(phase, new Date().getFullYear());
 
+  const { data: leagueRow } = await admin
+    .from("leagues")
+    .select("mode")
+    .eq("id", leagueId)
+    .maybeSingle();
+
+  const leagueMode = (leagueRow?.mode ?? "manager") as LeagueMode;
+  const rpcName = phaseResetRpcFor(leagueMode);
+
   const { data: memberData } = await admin
     .from("league_members")
     .select("team_id")
@@ -305,12 +315,20 @@ async function triggerPhasePayday(
   const errors: string[] = [];
 
   for (const team of (teams ?? []) as { id: string; name: string }[]) {
-    const { data, error } = await admin.rpc("confirm_phase_setup", {
-      p_team_id: team.id,
-      p_current_phase_id: phase.id,
-      p_current_phase_label: phase.label,
-      p_phase_start: phaseStart.toISOString(),
-    });
+    const rpcArgs = isClassic(leagueMode)
+      ? {
+          p_team_id: team.id,
+          p_phase_id: phase.id,
+          p_phase_label: phase.label,
+        }
+      : {
+          p_team_id: team.id,
+          p_current_phase_id: phase.id,
+          p_current_phase_label: phase.label,
+          p_phase_start: phaseStart.toISOString(),
+        };
+
+    const { data, error } = await admin.rpc(rpcName, rpcArgs);
 
     if (error) {
       errors.push(`${team.name}: ${error.message}`);

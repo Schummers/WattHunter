@@ -42,11 +42,15 @@ export default async function GtTeamPage({
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id, underdog_eligible")
+    .select("id, underdog_eligible, leagues!inner(mode)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
   if (!team) redirect(`/league/${leagueId}`);
+
+  const leagueMode = (
+    Array.isArray(team.leagues) ? team.leagues[0]?.mode : (team.leagues as { mode?: string } | null)?.mode
+  ) as import("@/lib/league-mode").LeagueMode | null | undefined;
 
   const currentGT = getCurrentGTPhase();
 
@@ -120,6 +124,7 @@ export default async function GtTeamPage({
         myGcLeader={myGc.leader ? { name: myGc.leader.name, xp: myGc.xp } : null}
         mySprinter={mySprinter.leader ? { name: mySprinter.leader.name, xp: mySprinter.xp } : null}
         incomingNemesis={incomings as IncomingNemesis[]}
+        mode={leagueMode}
       />
     </>
   );

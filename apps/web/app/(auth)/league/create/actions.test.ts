@@ -31,6 +31,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { signupAndCreateLeague } from "./actions";
+import { classicTeamDefaults } from "@/lib/league-mode";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -57,6 +58,17 @@ function fluentQuery(result: { data: unknown; error: unknown | null }) {
 // ---------------------------------------------------------------------------
 // Test suite
 // ---------------------------------------------------------------------------
+
+describe("classicTeamDefaults", () => {
+  it("returns level 8, flat budget, underdog off, no sponsor", () => {
+    expect(classicTeamDefaults()).toEqual({
+      starting_level: 8,
+      treasury: 1_500_000,
+      underdog_eligible: false,
+      assignSponsor: false,
+    });
+  });
+});
 
 describe("signupAndCreateLeague action", () => {
   beforeEach(() => {

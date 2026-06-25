@@ -15,6 +15,7 @@ import { releaseRider } from "@/app/(game)/league/[leagueId]/rider/[riderId]/act
 import { useDemoSafeAction } from "@/contexts/demo-context";
 import { ReleaseConfirmModal } from "@/components/release-confirm-modal";
 import { computeAvailableBudget } from "@/lib/budget";
+import { type LeagueMode } from "@/lib/league-mode";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -84,6 +85,7 @@ interface AuctionsClientProps {
   isCommissioner: boolean;
   existingAuctionBids: { rider_id: string; amount: number }[];
   stepperRounds: StepperRound[];
+  mode?: LeagueMode;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,6 +112,7 @@ export function AuctionsClient({
   isCommissioner: _isCommissioner,
   existingAuctionBids,
   stepperRounds,
+  mode,
 }: AuctionsClientProps) {
   const router = useRouter();
   const removeDraftSafe = useDemoSafeAction(removeDraft);
@@ -266,6 +269,7 @@ export function AuctionsClient({
             }))}
             maxStrategies={maxStrategies}
             isEditable={true}
+            mode={mode}
           />
           {pendingSponsorName && !hasOpenRound && (
             <p className="text-[length:var(--type-caption)] text-[var(--accent-default)] px-4 mt-1.5 leading-snug">
@@ -400,6 +404,7 @@ export function AuctionsClient({
             draftBidsTotal={draftBidsTotal}
             draftCount={draftCount}
             phaseConfirmed={phaseConfirmed}
+            mode={mode}
           />
         </section>
 

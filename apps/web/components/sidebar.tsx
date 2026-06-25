@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getGTSubTabLabel } from "@/lib/gt-phases";
+import { isClassic, type LeagueMode } from "@/lib/league-mode";
 
 type NavKey = "home" | "auction" | "team" | "budget" | "ranking" | "achievements";
 
@@ -70,15 +71,31 @@ interface SidebarProps {
   leagueName: string;
   leagues: League[];
   unlockedTabs: NavKey[];
+  mode?: LeagueMode;
 }
 
-export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs }: SidebarProps) {
+export function Sidebar({ leagueId, leagueName, leagues, unlockedTabs, mode }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const hasMultiple = leagues.length > 1;
-  const navItems = buildNavItems();
+  const rawNavItems = buildNavItems();
+
+  // In classic mode: drop the "Budget" nav key and strip "My Team" + "Budget" team sub-items
+  const navItems = rawNavItems
+    .filter((item) => !(isClassic(mode) && item.key === "budget"))
+    .map((item) => {
+      if (item.key === "team" && isClassic(mode)) {
+        return {
+          ...item,
+          subItems: item.subItems?.filter(
+            (sub) => sub.label !== "My Team" && sub.label !== "Budget",
+          ),
+        };
+      }
+      return item;
+    });
 
   useEffect(() => {
     if (!open) return;

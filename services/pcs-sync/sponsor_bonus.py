@@ -22,6 +22,11 @@ logger = logging.getLogger(__name__)
 GRAND_TOUR_SLUGS = ("giro-d-italia", "tour-de-france", "vuelta-a-espana")
 
 
+def is_classic_league(league: dict) -> bool:
+    """Classic-mode leagues have no sponsors/goals; skip them."""
+    return league.get("mode") == "classic"
+
+
 # ---------------------------------------------------------------------------
 # Part A — classify_result_type
 # ---------------------------------------------------------------------------
@@ -311,15 +316,25 @@ async def process_race_bonuses(
         rider_teams.setdefault(rid, []).append({"team_id": c["team_id"], "nationality": nat})
 
     # Step 3 — Fetch team_sponsors with full sponsor data (paginated: one row
-    # per team, league-wide)
+    # per team, league-wide). Include league mode to skip classic leagues
+    # (classic-mode leagues have no sponsors — running the bonus pipeline on
+    # them would silently no-op, but we skip early with a log line to be explicit).
     team_sponsors_rows: list[dict] = _fetch_all(
         lambda: supabase.table("team_sponsors")
-        .select("team_id,sponsor_id,sponsors(*)")
+        .select("team_id,sponsor_id,sponsors(*),teams!inner(league_id,leagues!inner(mode))")
     )
 
-    # Build lookup: team_id → sponsor dict
+    # Build lookup: team_id → sponsor dict (exclude classic-mode leagues)
     team_sponsor: dict[str, dict] = {}
     for ts in team_sponsors_rows:
+        team_data = ts.get("teams") or {}
+        league_data = team_data.get("leagues") or {}
+        if is_classic_league(league_data):
+            logger.info(
+                f"[SponsorBonus] Skipping team={ts['team_id'][:8]} "
+                f"— classic-mode league (no sponsors)"
+            )
+            continue
         team_sponsor[ts["team_id"]] = ts.get("sponsors") or {}
 
     # Step 4 — Process each result

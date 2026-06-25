@@ -420,7 +420,11 @@ describe("forceResolveRound", () => {
     mockAdminFrom.mockReturnValueOnce(chainable({ data: [], error: null }));
     // 5. Find next scheduled auction → null (last round)
     mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // 6. SELECT league_members for cascade
+    // 6. SELECT leagues.mode for cascade routing
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({ data: { mode: "manager" }, error: null })
+    );
+    // 7. SELECT league_members for cascade
     mockAdminFrom.mockReturnValueOnce(
       chainable({
         data: [
@@ -430,7 +434,7 @@ describe("forceResolveRound", () => {
         error: null,
       })
     );
-    // 7. SELECT teams for cascade
+    // 8. SELECT teams for cascade
     mockAdminFrom.mockReturnValueOnce(
       chainable({
         data: [

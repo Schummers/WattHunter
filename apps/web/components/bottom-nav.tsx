@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, Gavel, Users, Medal, Trophy, type LucideIcon } from "lucide-react";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
+import { isClassic, type LeagueMode } from "@/lib/league-mode";
 
 export type NavTabKey = "home" | "auction" | "team" | "budget" | "ranking" | "achievements";
 
@@ -25,11 +26,16 @@ const tabs: NavTab[] = [
 interface BottomNavProps {
   leagueId: string;
   unlockedTabs: NavTabKey[];
+  mode?: LeagueMode;
 }
 
-export function BottomNav({ leagueId, unlockedTabs }: BottomNavProps) {
+export function BottomNav({ leagueId, unlockedTabs, mode }: BottomNavProps) {
   const pathname = usePathname();
   const visible = useScrollDirection();
+
+  const visibleTabs = isClassic(mode)
+    ? tabs.filter((t) => t.key !== "budget")
+    : tabs;
 
   return (
     <nav
@@ -38,7 +44,7 @@ export function BottomNav({ leagueId, unlockedTabs }: BottomNavProps) {
       }`}
     >
       <div className="flex items-center justify-around">
-        {tabs.map((tab) => {
+        {visibleTabs.map((tab) => {
           const href = tab.href(leagueId);
           const isActive =
             tab.key === "home"

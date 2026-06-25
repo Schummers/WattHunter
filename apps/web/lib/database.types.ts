@@ -660,6 +660,7 @@ export type Database = {
           invite_code: string
           is_demo: boolean
           max_players: number
+          mode: string
           name: string
           season_year: number
           starting_level: number
@@ -673,6 +674,7 @@ export type Database = {
           invite_code: string
           is_demo?: boolean
           max_players?: number
+          mode?: string
           name: string
           season_year?: number
           starting_level?: number
@@ -686,6 +688,7 @@ export type Database = {
           invite_code?: string
           is_demo?: boolean
           max_players?: number
+          mode?: string
           name?: string
           season_year?: number
           starting_level?: number

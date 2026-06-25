@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 import { createClient } from "@/lib/supabase/server";
 import { getLevelByNumber } from "@/lib/levels";
 import { generateInviteCode, createLeagueWithTeam } from "@/lib/league-creation";
+import { classicTeamDefaults } from "@/lib/league-mode";
 
 // ---------------------------------------------------------------------------
 // createLeague — for already-authenticated users
@@ -13,6 +14,7 @@ import { generateInviteCode, createLeagueWithTeam } from "@/lib/league-creation"
 const createLeagueSchema = z.object({
   name: z.string().min(2, "League name must be at least 2 characters.").max(50),
   starting_level: z.coerce.number().int().min(1).max(8).default(1),
+  mode: z.enum(["manager", "classic"]).default("manager"),
 });
 
 export async function createLeague(
@@ -22,13 +24,14 @@ export async function createLeague(
   const parsed = createLeagueSchema.safeParse({
     name: formData.get("name"),
     starting_level: formData.get("starting_level"),
+    mode: formData.get("mode"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { name, starting_level } = parsed.data;
+  const { name, starting_level, mode } = parsed.data;
   const levelData = getLevelByNumber(starting_level);
 
   const supabase = await createClient();
@@ -71,6 +74,7 @@ export async function createLeague(
       commissioner_id: user.id,
       max_players: 20,
       starting_level,
+      mode,
     })
     .select("id")
     .single();
@@ -80,48 +84,84 @@ export async function createLeague(
     return { error: `Failed to create league: ${leagueError?.message ?? "unknown"}` };
   }
 
-  const { data: team, error: teamError } = await supabase
-    .from("teams")
-    .insert({
-      user_id: user.id,
-      league_id: league.id,
-      name: displayName,
-      level: starting_level,
-      cumulative_xp: levelData.xp,
-    })
-    .select("id")
-    .single();
-
-  if (teamError || !team) {
-    console.error("Team creation failed:", teamError);
-    return { error: "Failed to create team." };
-  }
-
-  // Auto-assign default sponsor based on starting level (single sponsor per team)
-  // Level 1 → Lotto (T1), Level 2 → Astana (T2), Level 3+ → no auto-assign (player picks)
-  const defaultSlug = starting_level <= 1 ? "lotto" : starting_level === 2 ? "astana" : null;
-  if (defaultSlug) {
-    const { data: defaultSponsor } = await supabase
-      .from("sponsors")
+  if (mode === "classic") {
+    // Classic branch: level 8, flat treasury, no underdog, no sponsor.
+    const defaults = classicTeamDefaults();
+    const { data: team, error: teamError } = await supabase
+      .from("teams")
+      .insert({
+        user_id: user.id,
+        league_id: league.id,
+        name: displayName,
+        level: defaults.starting_level,
+        cumulative_xp: getLevelByNumber(defaults.starting_level).xp,
+        treasury: defaults.treasury,
+        underdog_eligible: defaults.underdog_eligible,
+      })
       .select("id")
-      .eq("slug", defaultSlug)
       .single();
 
-    if (defaultSponsor) {
-      await supabase
-        .from("team_sponsors")
-        .insert({ team_id: team.id, sponsor_id: defaultSponsor.id, activated_at: new Date().toISOString() });
+    if (teamError || !team) {
+      console.error("Team creation failed:", teamError);
+      return { error: "Failed to create team." };
     }
-  }
 
-  const { error: memberError } = await supabase.from("league_members").insert({
-    league_id: league.id,
-    user_id: user.id,
-    team_id: team.id,
-  });
+    // No team_sponsors insert for classic mode.
 
-  if (memberError) {
-    return { error: "Failed to join league." };
+    const { error: memberError } = await supabase.from("league_members").insert({
+      league_id: league.id,
+      user_id: user.id,
+      team_id: team.id,
+    });
+
+    if (memberError) {
+      return { error: "Failed to join league." };
+    }
+  } else {
+    // Manager branch — byte-for-byte unchanged behavior.
+    const { data: team, error: teamError } = await supabase
+      .from("teams")
+      .insert({
+        user_id: user.id,
+        league_id: league.id,
+        name: displayName,
+        level: starting_level,
+        cumulative_xp: levelData.xp,
+      })
+      .select("id")
+      .single();
+
+    if (teamError || !team) {
+      console.error("Team creation failed:", teamError);
+      return { error: "Failed to create team." };
+    }
+
+    // Auto-assign default sponsor based on starting level (single sponsor per team)
+    // Level 1 → Lotto (T1), Level 2 → Astana (T2), Level 3+ → no auto-assign (player picks)
+    const defaultSlug = starting_level <= 1 ? "lotto" : starting_level === 2 ? "astana" : null;
+    if (defaultSlug) {
+      const { data: defaultSponsor } = await supabase
+        .from("sponsors")
+        .select("id")
+        .eq("slug", defaultSlug)
+        .single();
+
+      if (defaultSponsor) {
+        await supabase
+          .from("team_sponsors")
+          .insert({ team_id: team.id, sponsor_id: defaultSponsor.id, activated_at: new Date().toISOString() });
+      }
+    }
+
+    const { error: memberError } = await supabase.from("league_members").insert({
+      league_id: league.id,
+      user_id: user.id,
+      team_id: team.id,
+    });
+
+    if (memberError) {
+      return { error: "Failed to join league." };
+    }
   }
 
   redirect(`/league/${league.id}`);
@@ -146,6 +186,7 @@ const signupAndCreateLeagueSchema = z
     email: z.email("Invalid email address."),
     password: z.string().min(6, "Password must be at least 6 characters."),
     confirm_password: z.string(),
+    mode: z.enum(["manager", "classic"]).nullish().transform((v) => v ?? "manager"),
   })
   .refine((d) => d.password === d.confirm_password, {
     message: "Passwords do not match.",
@@ -162,13 +203,14 @@ export async function signupAndCreateLeague(
     email: formData.get("email"),
     password: formData.get("password"),
     confirm_password: formData.get("confirm_password"),
+    mode: formData.get("mode"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { league_name, team_name, email, password } = parsed.data;
+  const { league_name, team_name, email, password, mode } = parsed.data;
   const supabase = await createClient();
 
   // 1. Sign up the user
@@ -213,6 +255,7 @@ export async function signupAndCreateLeague(
     teamName: team_name,
     startingLevel,
     cumulativeXp: levelData.xp,
+    mode,
   });
 
   if (result.error || !result.leagueId) {

@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { TACTICS, type TacticId, type TacticState } from "@/lib/tactics";
 import type { GtStage } from "@/lib/gt-stages";
+import type { LeagueMode } from "@/lib/league-mode";
+import { isClassic } from "@/lib/league-mode";
 import { TacticCard } from "./tactic-card";
 import { TacticBoostModal } from "./tactic-boost-modal";
 import { TacticNemesisModal, type EligibleRival } from "./tactic-nemesis-modal";
@@ -21,11 +23,12 @@ interface Props {
   eligibleSprintRivals: EligibleRival[];
   myGcLeader: { name: string; xp: number } | null;
   mySprinter: { name: string; xp: number } | null;
+  mode?: LeagueMode | null;
 }
 
 export function TeamTacticsSection({
   teamId, phaseId, year, activations, stages,
-  eligibleGcRivals, eligibleSprintRivals, myGcLeader, mySprinter,
+  eligibleGcRivals, eligibleSprintRivals, myGcLeader, mySprinter, mode,
 }: Props) {
   const [open, setOpen] = useState<TacticId | null>(null);
   const todayStageSlug = stages.find((s) => s.status === "today")?.slug;
@@ -60,7 +63,7 @@ export function TeamTacticsSection({
         </span>
       </div>
       <div className="flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {TACTICS.map((t) => {
+        {TACTICS.filter((t) => !(isClassic(mode) && t.id === "call_the_bus")).map((t) => {
           const s = stateOf(t.id);
           return (
             <TacticCard

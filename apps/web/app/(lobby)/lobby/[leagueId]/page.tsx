@@ -3,6 +3,7 @@ import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 import { getDefaultStartingLevel } from "@/lib/levels";
 import { LobbyPanels } from "./lobby-panels";
+import { type LeagueMode } from "@/lib/league-mode";
 
 export default async function LobbyPage({
   params,
@@ -22,7 +23,7 @@ export default async function LobbyPage({
   ] = await Promise.all([
     supabase
       .from("leagues")
-      .select("id, name, invite_code, commissioner_id, max_players, starting_level")
+      .select("id, name, invite_code, commissioner_id, max_players, starting_level, mode")
       .eq("id", leagueId)
       .single(),
     supabase
@@ -78,6 +79,7 @@ export default async function LobbyPage({
         pcs_rank: r.pcs_rank as number,
         pcs_points_1yr: (r.pcs_points_1yr as number | null) ?? 0,
       }))}
+      mode={((league.mode as string | null) ?? "manager") as LeagueMode}
     />
   );
 }

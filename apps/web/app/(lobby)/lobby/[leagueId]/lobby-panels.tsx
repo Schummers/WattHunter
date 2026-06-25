@@ -12,6 +12,7 @@ import { PlayerList } from "./_components/player-list";
 import { RiderPoolList } from "./_components/rider-pool-list";
 import { RulesTab } from "./_components/rules-tab";
 import { setStartingLevel } from "./actions";
+import { type LeagueMode, isClassic } from "@/lib/league-mode";
 
 export interface LobbyLeague {
   id: string;
@@ -42,6 +43,7 @@ export interface LobbyPanelsProps {
   recommendedLevel: number;
   isCommissioner: boolean;
   riders: LobbyRider[];
+  mode: LeagueMode;
 }
 
 export function LobbyPanels({
@@ -51,6 +53,7 @@ export function LobbyPanels({
   recommendedLevel,
   isCommissioner,
   riders,
+  mode,
 }: LobbyPanelsProps) {
   const [selectedLevel, setSelectedLevel] = useState<number>(league.starting_level);
   const [savingLevel, startSavingLevel] = useTransition();
@@ -70,11 +73,13 @@ export function LobbyPanels({
     });
   }
 
+  const classicMode = isClassic(mode);
+
   return (
     <Tabs defaultValue="lobby" className="gap-4">
       <TabsList variant="line">
         <TabsTrigger value="lobby">Lobby</TabsTrigger>
-        <TabsTrigger value="pool">Level &amp; Pool</TabsTrigger>
+        {!classicMode && <TabsTrigger value="pool">Level &amp; Pool</TabsTrigger>}
         <TabsTrigger value="rules">Rules</TabsTrigger>
       </TabsList>
 
@@ -94,31 +99,33 @@ export function LobbyPanels({
         />
       </TabsContent>
 
-      <TabsContent value="pool" className="space-y-6 pt-2">
-        <GameLoopExplainer />
-        {isCommissioner && levelError ? (
-          <p className="text-[length:var(--type-caption)] text-[var(--status-danger)]">
-            {levelError}
-          </p>
-        ) : isCommissioner && savingLevel ? (
-          <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-            Saving…
-          </p>
-        ) : null}
-        <LevelSelector
-          selected={selectedLevel}
-          recommended={recommendedLevel}
-          isCommissioner={isCommissioner}
-          disabled={savingLevel}
-          onSelect={handleLevelChange}
-        />
-        <LevelStatsCards level={selectedLevel} />
-        <RiderPoolList
-          leagueId={league.id}
-          level={selectedLevel}
-          riders={riders}
-        />
-      </TabsContent>
+      {!classicMode && (
+        <TabsContent value="pool" className="space-y-6 pt-2">
+          <GameLoopExplainer />
+          {isCommissioner && levelError ? (
+            <p className="text-[length:var(--type-caption)] text-[var(--status-danger)]">
+              {levelError}
+            </p>
+          ) : isCommissioner && savingLevel ? (
+            <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+              Saving…
+            </p>
+          ) : null}
+          <LevelSelector
+            selected={selectedLevel}
+            recommended={recommendedLevel}
+            isCommissioner={isCommissioner}
+            disabled={savingLevel}
+            onSelect={handleLevelChange}
+          />
+          <LevelStatsCards level={selectedLevel} />
+          <RiderPoolList
+            leagueId={league.id}
+            level={selectedLevel}
+            riders={riders}
+          />
+        </TabsContent>
+      )}
 
       <TabsContent value="rules" className="space-y-6 pt-2">
         <RulesTab leagueId={league.id} />

@@ -66,13 +66,14 @@ export default async function AuctionsPage({
   const maxSlots = getMaxSlots(level);
   const maxActiveStrategies = getMaxActiveStrategies(level);
 
-  // Check commissioner
+  // Check commissioner + fetch league mode
   const { data: league } = await supabase
     .from("leagues")
-    .select("commissioner_id")
+    .select("commissioner_id, mode")
     .eq("id", leagueId)
     .single();
   const isCommissioner = league?.commissioner_id === user.id;
+  const leagueMode = (league?.mode ?? "manager") as import("@/lib/league-mode").LeagueMode;
 
   // All-rounds query (includes closed — for stepper display)
   const { data: allRoundsRaw } = await supabase
@@ -358,6 +359,7 @@ export default async function AuctionsPage({
       isCommissioner={isCommissioner}
       existingAuctionBids={existingAuctionBids}
       stepperRounds={stepperRounds}
+      mode={leagueMode}
     />
   );
 }
@@ -644,6 +646,7 @@ async function renderDemoAuction() {
       isCommissioner={false}
       existingAuctionBids={existingAuctionBids}
       stepperRounds={stepperRounds}
+      mode="manager"
     />
   );
 }
