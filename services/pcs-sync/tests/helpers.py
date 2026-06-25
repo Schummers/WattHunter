@@ -66,6 +66,25 @@ def make_supabase(*responses):
     sb.upserts = {}
     sb.updates = {}
     sb.inserts = {}
+    sb.rpc_calls = []
+
+    def _rpc_side_effect(fn_name, params=None):
+        sb.rpc_calls.append({"fn": fn_name, "params": params or {}})
+        # Mimic the atomic credit RPCs: a fresh call credits final_reward/amount.
+        # (Idempotency-on-rerun is exercised at the SQL layer, not here — the
+        #  Python existing-key pre-check skips reruns before the RPC is reached.)
+        data = {"ok": True, "credited": 0, "skipped": 0}
+        comp = (params or {}).get("p_completion")
+        if isinstance(comp, dict):
+            data = {"ok": True, "credited": comp.get("final_reward", 0), "skipped": 0}
+        chain = make_chain(data)
+        # Honor a test-configured RPC failure (sb.rpc.return_value.execute.side_effect = Exc).
+        configured = sb.rpc.return_value.execute.side_effect
+        if configured is not None:
+            chain.execute.side_effect = configured
+        return chain
+
+    sb.rpc.side_effect = _rpc_side_effect
 
     def _side_effect(name):
         payload = queue.pop(0) if queue else None

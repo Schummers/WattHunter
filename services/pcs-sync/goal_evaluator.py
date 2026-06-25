@@ -682,57 +682,42 @@ async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
 
             final_reward = int(reward_after_gt * multiplier)
 
-            try:
-                insert_payload: dict = {
-                    "team_id": team_id,
-                    "sponsor_id": sponsor_id,
-                    "goal_index": goal_idx,
-                    "goal_label": goal["label"],
-                    "race_slug": parent_slug,
-                    "stage_slug": result.get("stage_slug"),
-                    "rider_id": triggering_rider_id,
-                    "base_reward": reward_after_gt,
-                    "multiplier": float(multiplier),
-                    "final_reward": final_reward,
-                    "goal_key": goal_key,
-                    "neutralized_stage_slugs": neutralized_slugs(goal, result, parent_slug),
-                }
+            completion_payload: dict = {
+                "team_id": team_id,
+                "sponsor_id": sponsor_id,
+                "goal_index": goal_idx,
+                "goal_label": goal["label"],
+                "race_slug": parent_slug,
+                "stage_slug": result.get("stage_slug"),
+                "rider_id": triggering_rider_id,
+                "base_reward": reward_after_gt,
+                "multiplier": float(multiplier),
+                "final_reward": final_reward,
+                "goal_key": goal_key,
+                "neutralized_stage_slugs": neutralized_slugs(goal, result, parent_slug),
+                "description": f"Goal: {goal['label']} in {parent_slug} (×{multiplier})",
+            }
 
-                supabase.table("sponsor_goal_completions").insert(insert_payload).execute()
+            # Atomic + idempotent payout (audit findings B2-01/B2-02). The completion
+            # insert, the treasury_log row, and the relative treasury credit happen in
+            # ONE transaction inside credit_goal_reward. A rerun is a no-op (ON CONFLICT),
+            # and a mid-pipeline failure can no longer record the completion without
+            # paying — the previous split insert/credit could permanently lose money.
+            try:
+                resp = supabase.rpc(
+                    "credit_goal_reward", {"p_completion": completion_payload}
+                ).execute()
             except Exception as exc:
-                errors.append(f"insert goal completion team={team_id} goal={goal_idx}: {exc}")
+                errors.append(f"credit_goal_reward team={team_id} goal={goal_idx}: {exc}")
                 continue
 
-            # Credit treasury (same path as before — direct UPDATE + treasury_log)
-            try:
-                team_resp = supabase.table("teams").select("id, treasury").eq("id", team_id).execute()
-                team_data = team_resp.data
-                current = (
-                    team_data.get("treasury", 0) if isinstance(team_data, dict)
-                    else (team_data[0].get("treasury", 0) if team_data else 0)
-                )
-                supabase.table("teams").update(
-                    {"treasury": current + final_reward}
-                ).eq("id", team_id).execute()
-
-                supabase.table("treasury_log").insert({
-                    "team_id": team_id,
-                    "type": "gt_goal_bonus",
-                    "amount": final_reward,
-                    "description": (
-                        f"Goal: {goal['label']} "
-                        f"in {parent_slug} (×{multiplier})"
-                    ),
-                    "rider_id": triggering_rider_id,
-                }).execute()
-
+            credited = resp.data.get("credited", 0) if isinstance(resp.data, dict) else 0
+            if credited > 0:
                 goals_completed += 1
                 logger.info(
                     f"[GoalEval] Awarded {goal['label']} → {final_reward}€ "
                     f"for team={team_id}"
                 )
-            except Exception as exc:
-                errors.append(f"treasury credit team={team_id} goal={goal_idx}: {exc}")
 
     return {
         "status": "completed",

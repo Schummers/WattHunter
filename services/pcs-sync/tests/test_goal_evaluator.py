@@ -1179,7 +1179,7 @@ class TestEvaluateSponsorGoalsE2EIdempotency:
     """
 
     def test_run1_credits_treasury_exactly_once(self):
-        """First evaluation: 1 sponsor_goal_completions insert, 1 treasury_log insert."""
+        """First evaluation: exactly 1 atomic credit_goal_reward RPC call."""
         import asyncio
         from goal_evaluator import evaluate_sponsor_goals
 
@@ -1192,29 +1192,22 @@ class TestEvaluateSponsorGoalsE2EIdempotency:
         )
         assert result["errors"] == []
 
-        # Exactly 1 sponsor_goal_completions insert
-        sgc_inserts = sb.inserts.get("sponsor_goal_completions", [])
-        assert len(sgc_inserts) == 1, (
-            f"Expected 1 sponsor_goal_completions insert, got {len(sgc_inserts)}: {sgc_inserts}"
-        )
-        assert sgc_inserts[0]["goal_key"] == "gc_podium"
-        assert sgc_inserts[0]["team_id"] == _E2E_TEAM_ID
-        assert sgc_inserts[0]["final_reward"] == 30_000  # 30k base × 1.0 (1-week) × 1.0
+        # Completion insert + treasury_log + relative credit now happen atomically
+        # inside credit_goal_reward (no direct table writes from Python).
+        assert sb.inserts.get("sponsor_goal_completions", []) == []
+        assert sb.inserts.get("treasury_log", []) == []
+        assert sb.updates.get("teams", []) == []
 
-        # Exactly 1 treasury_log insert (type gt_goal_bonus)
-        tlog_inserts = sb.inserts.get("treasury_log", [])
-        assert len(tlog_inserts) == 1, (
-            f"Expected 1 treasury_log insert, got {len(tlog_inserts)}: {tlog_inserts}"
+        # Exactly 1 atomic payout RPC carrying the right completion.
+        payout_calls = [c for c in sb.rpc_calls if c["fn"] == "credit_goal_reward"]
+        assert len(payout_calls) == 1, (
+            f"Expected 1 credit_goal_reward call, got {len(payout_calls)}: {sb.rpc_calls}"
         )
-        assert tlog_inserts[0]["type"] == "gt_goal_bonus"
-        assert tlog_inserts[0]["amount"] == 30_000
-
-        # Exactly 1 teams update (treasury credited)
-        teams_updates = sb.updates.get("teams", [])
-        assert len(teams_updates) == 1, (
-            f"Expected 1 teams update, got {len(teams_updates)}"
-        )
-        assert teams_updates[0]["treasury"] == 530_000  # 500k + 30k
+        comp = payout_calls[0]["params"]["p_completion"]
+        assert comp["goal_key"] == "gc_podium"
+        assert comp["team_id"] == _E2E_TEAM_ID
+        assert comp["final_reward"] == 30_000  # 30k base × 1.0 (1-week) × 1.0
+        assert comp["description"]  # audit/treasury_log description present
 
     def test_run2_skips_credit_entirely(self):
         """Second evaluation: existing goal_key row → no inserts, no treasury credit."""
@@ -1248,6 +1241,12 @@ class TestEvaluateSponsorGoalsE2EIdempotency:
             f"DOUBLE-CREDIT BUG: teams was updated {len(teams_updates)} time(s) on run 2"
         )
 
+        # CRITICAL: the payout RPC must not even be reached on run 2 (pre-check skips)
+        payout_calls = [c for c in sb.rpc_calls if c["fn"] == "credit_goal_reward"]
+        assert len(payout_calls) == 0, (
+            f"DOUBLE-CREDIT BUG: credit_goal_reward called {len(payout_calls)} time(s) on run 2"
+        )
+
     def test_run3_different_key_same_index_still_credits(self):
         """A prior completion at the same goal_index but a different goal_key must
         NOT block a genuinely-earned goal. Dedup is key-based, not index-based."""
@@ -1261,10 +1260,11 @@ class TestEvaluateSponsorGoalsE2EIdempotency:
         assert result["goals_completed"] == 1, (
             "gc_podium must still credit despite a different-key row at the same index"
         )
-        sgc_inserts = sb.inserts.get("sponsor_goal_completions", [])
-        assert len(sgc_inserts) == 1 and sgc_inserts[0]["goal_key"] == "gc_podium"
-        tlog_inserts = sb.inserts.get("treasury_log", [])
-        assert len(tlog_inserts) == 1 and tlog_inserts[0]["amount"] == 30_000
+        payout_calls = [c for c in sb.rpc_calls if c["fn"] == "credit_goal_reward"]
+        assert len(payout_calls) == 1
+        comp = payout_calls[0]["params"]["p_completion"]
+        assert comp["goal_key"] == "gc_podium"
+        assert comp["final_reward"] == 30_000
 
     def test_run1_records_neutralized_gc_slug(self):
         """The persisted completion carries the base-bonus slug to neutralize
@@ -1275,6 +1275,7 @@ class TestEvaluateSponsorGoalsE2EIdempotency:
         sb = _make_run1_supabase()
         asyncio.run(evaluate_sponsor_goals(sb, _E2E_RACE_SLUG))
 
-        sgc_inserts = sb.inserts.get("sponsor_goal_completions", [])
-        assert len(sgc_inserts) == 1
-        assert sgc_inserts[0]["neutralized_stage_slugs"] == [f"{_E2E_RACE_SLUG}/gc"]
+        payout_calls = [c for c in sb.rpc_calls if c["fn"] == "credit_goal_reward"]
+        assert len(payout_calls) == 1
+        comp = payout_calls[0]["params"]["p_completion"]
+        assert comp["neutralized_stage_slugs"] == [f"{_E2E_RACE_SLUG}/gc"]
