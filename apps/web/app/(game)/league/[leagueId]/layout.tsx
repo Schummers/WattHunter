@@ -9,6 +9,7 @@ import { RailProvider } from "@/contexts/rail-context";
 import { LeagueShell } from "./league-shell";
 import { DemoLeagueLayout } from "./demo-layout";
 import { DEMO_LEAGUE_SLUG } from "@/lib/demo-constants";
+import { type LeagueMode } from "@/lib/league-mode";
 
 export default async function LeagueLayout({
   children,
@@ -36,7 +37,7 @@ export default async function LeagueLayout({
     await Promise.all([
       supabase
         .from("league_members")
-        .select("team_id, leagues:league_id(name), teams:team_id(name)")
+        .select("team_id, leagues:league_id(name, mode), teams:team_id(name)")
         .eq("league_id", leagueId)
         .eq("user_id", user.id)
         .single(),
@@ -54,8 +55,9 @@ export default async function LeagueLayout({
     redirect("/league/choose");
   }
 
-  const leagueName =
-    (membership.leagues as unknown as { name: string } | null)?.name ?? "League";
+  const leagueData = membership.leagues as unknown as { name: string; mode: string | null } | null;
+  const leagueName = leagueData?.name ?? "League";
+  const leagueMode = (leagueData?.mode ?? "manager") as LeagueMode;
 
   const leagues = (allMemberships ?? []).map((m) => {
     const league = m.leagues as unknown as { id: string; name: string };
@@ -82,6 +84,7 @@ export default async function LeagueLayout({
           leagueName={leagueName}
           leagues={leagues}
           unlockedTabs={unlockedTabs}
+          mode={leagueMode}
         />
         <LeagueShell>
           <main className="flex-1 overflow-y-auto pb-20 lg:pb-8 lg:flex-[3] lg:min-w-[440px]">
@@ -93,7 +96,7 @@ export default async function LeagueLayout({
             />
             {children}
           </main>
-          <BottomNav leagueId={leagueId} unlockedTabs={unlockedTabs} />
+          <BottomNav leagueId={leagueId} unlockedTabs={unlockedTabs} mode={leagueMode} />
         </LeagueShell>
         </div>
       </div>
