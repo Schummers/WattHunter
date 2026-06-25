@@ -122,8 +122,8 @@ describe("formatBonusEur", () => {
 });
 
 describe("formatRaceDateLabel", () => {
-  it("formats an ISO date as French short label", () => {
-    expect(formatRaceDateLabel("2026-05-04")).toBe("4 mai");
-    expect(formatRaceDateLabel("2026-05-15")).toBe("15 mai");
+  it("formats an ISO date as English short label", () => {
+    expect(formatRaceDateLabel("2026-05-04")).toBe("4 May");
+    expect(formatRaceDateLabel("2026-05-15")).toBe("15 May");
   });
 });

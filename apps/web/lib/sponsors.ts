@@ -58,7 +58,7 @@ export function tierLabel(tier: number): string {
 export function formatBudget(monthly: number): string {
   if (monthly >= 1_000_000) {
     const m = monthly / 1_000_000;
-    return m === Math.floor(m) ? `${m}M` : `${m}M`;
+    return `${m % 1 === 0 ? m : m.toFixed(2).replace(/\.?0+$/, "")}M`;
   }
   return `${Math.round(monthly / 1000)}K`;
 }

@@ -181,8 +181,17 @@ export async function GET(request: Request) {
   // Determine redirect destination
   let redirectTo = `${origin}/league/choose`;
 
-  // Validate next parameter to prevent open redirect
-  const isValidNext = next && next.startsWith("/") && !next.startsWith("//") && !next.includes(":");
+  // Validate next parameter to prevent open redirect.
+  // Prefix checks alone are bypassable (e.g. "/\evil.com" normalizes to "//evil.com"
+  // in browsers), so resolve against origin and require the result to stay same-origin.
+  let isValidNext = false;
+  if (next && next.startsWith("/") && !next.startsWith("//")) {
+    try {
+      isValidNext = new URL(next, origin).origin === origin;
+    } catch {
+      isValidNext = false;
+    }
+  }
 
   if (isValidNext) {
     redirectTo = `${origin}${next}`;
