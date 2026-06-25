@@ -10,6 +10,7 @@ import { LeagueShell } from "./league-shell";
 import { DemoLeagueLayout } from "./demo-layout";
 import { DEMO_LEAGUE_SLUG } from "@/lib/demo-constants";
 import { type LeagueMode } from "@/lib/league-mode";
+import { LeagueModeProvider } from "@/contexts/league-mode-context";
 
 export default async function LeagueLayout({
   children,
@@ -94,7 +95,7 @@ export default async function LeagueLayout({
               leagues={leagues}
               settingsHref={`/league/${leagueId}/settings`}
             />
-            {children}
+            <LeagueModeProvider mode={leagueMode}>{children}</LeagueModeProvider>
           </main>
           <BottomNav leagueId={leagueId} unlockedTabs={unlockedTabs} mode={leagueMode} />
         </LeagueShell>

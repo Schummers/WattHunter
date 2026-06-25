@@ -4,6 +4,7 @@ import { usePathname, useParams } from "next/navigation";
 import { SubTabs } from "@/components/sub-tabs";
 import { getGTSubTabLabel } from "@/lib/gt-phases";
 import { isClassic, type LeagueMode } from "@/lib/league-mode";
+import { useLeagueMode } from "@/contexts/league-mode-context";
 
 interface TeamSubTabsProps {
   leagueId: string;
@@ -34,14 +35,13 @@ export function TeamSubTabs({ leagueId, mode }: TeamSubTabsProps) {
 
 export default function TeamLayout({
   children,
-  mode,
 }: {
   children: React.ReactNode;
-  mode?: LeagueMode;
 }) {
   const pathname = usePathname();
   const params = useParams<{ leagueId: string }>();
   const leagueId = params.leagueId;
+  const mode = useLeagueMode();
 
   // Strategies page keeps its own page-level hide (unchanged access from My Team card).
   const hideTabs = pathname.includes("/strategies") || pathname.includes("/rescue");
@@ -49,7 +49,7 @@ export default function TeamLayout({
   return (
     <>
       {!hideTabs && (
-        <TeamSubTabs leagueId={leagueId} mode={mode ?? "manager"} />
+        <TeamSubTabs leagueId={leagueId} mode={mode} />
       )}
       {children}
     </>
