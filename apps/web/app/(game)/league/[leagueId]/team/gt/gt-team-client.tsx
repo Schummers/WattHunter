@@ -12,6 +12,8 @@ import type { GtStage } from "@/lib/gt-stages";
 import type { GtRole } from "./actions";
 import type { SponsorRow } from "@/lib/sponsors";
 import { countryCodeToFlag } from "@/lib/format";
+import type { LeagueMode } from "@/lib/league-mode";
+import { isClassic } from "@/lib/league-mode";
 
 interface SquadEntry {
   riderId: string;
@@ -109,6 +111,7 @@ interface Props {
   myGcLeader: { name: string; xp: number } | null;
   mySprinter: { name: string; xp: number } | null;
   incomingNemesis: IncomingNemesis[];
+  mode?: LeagueMode | null;
 }
 
 export function GtTeamClient({
@@ -128,6 +131,7 @@ export function GtTeamClient({
   myGcLeader,
   mySprinter,
   incomingNemesis,
+  mode,
 }: Props) {
   const router = useRouter();
   const [sponsorOpen, setSponsorOpen] = useState(false);
@@ -160,24 +164,26 @@ export function GtTeamClient({
       {/* Banner at top — auto-hides when no incomings */}
       <NemesisIncomingBanner incomings={incomingNemesis} />
 
-      {/* Section 1 — Sponsors Goals */}
-      <section className="px-4">
-        <h2 className="mb-3 text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-          Sponsors Goals
-        </h2>
-        {sponsor ? (
-          <SponsorBonusCard
-            sponsor={sponsor}
-            expanded={sponsorOpen}
-            onToggle={() => setSponsorOpen((v) => !v)}
-            completedGoalIndices={completedGoalIndices}
-          />
-        ) : (
-          <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-            No sponsor assigned.
-          </p>
-        )}
-      </section>
+      {/* Section 1 — Sponsors Goals (hidden in classic mode) */}
+      {!isClassic(mode) && (
+        <section className="px-4">
+          <h2 className="mb-3 text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
+            Sponsors Goals
+          </h2>
+          {sponsor ? (
+            <SponsorBonusCard
+              sponsor={sponsor}
+              expanded={sponsorOpen}
+              onToggle={() => setSponsorOpen((v) => !v)}
+              completedGoalIndices={completedGoalIndices}
+            />
+          ) : (
+            <p className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+              No sponsor assigned.
+            </p>
+          )}
+        </section>
+      )}
 
       {/* NEW: Team Tactics — between Sponsors and Composition */}
       <TeamTacticsSection
@@ -190,6 +196,7 @@ export function GtTeamClient({
         eligibleSprintRivals={eligibleSprintRivals}
         myGcLeader={myGcLeader}
         mySprinter={mySprinter}
+        mode={mode}
       />
 
       {/* Section 2 — Team Composition */}
