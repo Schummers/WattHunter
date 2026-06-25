@@ -200,6 +200,7 @@ const signupAndCreateLeagueSchema = z
     email: z.email("Invalid email address."),
     password: z.string().min(6, "Password must be at least 6 characters."),
     confirm_password: z.string(),
+    mode: z.enum(["manager", "classic"]).nullish().transform((v) => v ?? "manager"),
   })
   .refine((d) => d.password === d.confirm_password, {
     message: "Passwords do not match.",
@@ -216,13 +217,14 @@ export async function signupAndCreateLeague(
     email: formData.get("email"),
     password: formData.get("password"),
     confirm_password: formData.get("confirm_password"),
+    mode: formData.get("mode"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { league_name, team_name, email, password } = parsed.data;
+  const { league_name, team_name, email, password, mode } = parsed.data;
   const supabase = await createClient();
 
   // 1. Sign up the user
@@ -267,6 +269,7 @@ export async function signupAndCreateLeague(
     teamName: team_name,
     startingLevel,
     cumulativeXp: levelData.xp,
+    mode,
   });
 
   if (result.error || !result.leagueId) {

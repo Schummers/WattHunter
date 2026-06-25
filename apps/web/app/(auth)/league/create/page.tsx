@@ -9,9 +9,11 @@ import { signupAndCreateLeague } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form-field";
+import { SegmentedControl } from "@/components/segmented-control";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { setSignupIntentCookie, clearSignupIntentCookie } from "@/app/auth/callback/oauth-intent";
+import { type LeagueMode } from "@/lib/league-mode";
 
 export default function CreateLeaguePage() {
   return (
@@ -28,6 +30,7 @@ function CreateLeagueForm() {
   const [step, setStep] = useState<1 | 2>(1);
   const [leagueName, setLeagueName] = useState("");
   const [teamName, setTeamName] = useState("");
+  const [mode, setMode] = useState<LeagueMode>("manager");
   const [email, setEmail] = useState("");
   const [step1Error, setStep1Error] = useState<string | null>(
     oauthError === "create_failed" ? "League creation failed after sign-in. Please try again." : null
@@ -94,6 +97,13 @@ function CreateLeagueForm() {
 
       {step === 1 ? (
         <form onSubmit={handleNext} className="flex flex-col gap-4">
+          <FormField label="Mode" htmlFor="mode">
+            <SegmentedControl
+              segments={["Manager", "Classic"]}
+              activeIndex={mode === "manager" ? 0 : 1}
+              onChange={(i) => setMode(i === 0 ? "manager" : "classic")}
+            />
+          </FormField>
           <FormField label="League name" htmlFor="league_name">
             <Input
               id="league_name"
@@ -147,6 +157,7 @@ function CreateLeagueForm() {
           <input type="hidden" name="league_name" value={leagueName} />
           <input type="hidden" name="team_name" value={teamName} />
           <input type="hidden" name="email" value={email} />
+          <input type="hidden" name="mode" value={mode} />
 
           <FormField label="Password" htmlFor="password">
             <Input

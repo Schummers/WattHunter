@@ -23,6 +23,7 @@ export async function createLeagueWithTeam(
     teamName: string;
     startingLevel: number;
     cumulativeXp: number;
+    mode?: "manager" | "classic";
   }
 ): Promise<CreateLeagueResult> {
   // 1. Find unique invite code (5 attempts)
@@ -46,6 +47,7 @@ export async function createLeagueWithTeam(
       commissioner_id: params.userId,
       max_players: 20,
       starting_level: params.startingLevel,
+      mode: params.mode ?? "manager",
     })
     .select("id")
     .single();
