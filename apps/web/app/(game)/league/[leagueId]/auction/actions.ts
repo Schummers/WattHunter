@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { calcMinSalary, formatMoney } from "@/lib/format";
 import { getCurrentPhase, getPhaseRange } from "@/lib/phases";
-import { isClassic, type LeagueMode } from "@/lib/league-mode";
+import { isClassic, phaseResetRpcFor, type LeagueMode } from "@/lib/league-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LEVELS } from "@/lib/levels";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -276,14 +276,6 @@ export async function validateRound(input: { leagueId: string }) {
 
   revalidatePath(`/league/${leagueId}/auction`);
   return { success: true };
-}
-
-// ---------------------------------------------------------------------------
-// phaseResetRpcFor — pure router: picks the correct RPC for a league mode
-// ---------------------------------------------------------------------------
-
-export function phaseResetRpcFor(mode: LeagueMode): "classic_phase_reset" | "confirm_phase_setup" {
-  return isClassic(mode) ? "classic_phase_reset" : "confirm_phase_setup";
 }
 
 // ---------------------------------------------------------------------------

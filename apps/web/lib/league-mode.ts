@@ -19,3 +19,10 @@ export function classicTeamDefaults() {
     assignSponsor: false,
   } as const;
 }
+
+/** Picks the phase-transition RPC for a league mode (pure router). */
+export function phaseResetRpcFor(
+  mode: LeagueMode,
+): "classic_phase_reset" | "confirm_phase_setup" {
+  return isClassic(mode) ? "classic_phase_reset" : "confirm_phase_setup";
+}

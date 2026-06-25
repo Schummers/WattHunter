@@ -39,7 +39,8 @@ vi.mock("@/lib/phases", () => ({
 
 // NOTE: lib/budget.ts and lib/levels.ts are pure functions — intentionally NOT mocked.
 
-import { validateRound, phaseResetRpcFor } from "./actions";
+import { validateRound } from "./actions";
+import { phaseResetRpcFor } from "@/lib/league-mode";
 
 // ---------------------------------------------------------------------------
 // Test UUIDs (RFC-4122 v4: version nibble = 4, variant nibble = 8)
