@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Target, Globe, Users, Clock } from "lucide-react";
 import { formatMoney } from "@/lib/format";
+import { type LeagueMode, isClassic } from "@/lib/league-mode";
 
 interface Strategy {
   name: string;
@@ -17,6 +18,7 @@ interface ConfigCardsProps {
   strategies: Strategy[];
   maxStrategies: number;
   isEditable: boolean;
+  mode?: LeagueMode;
 }
 
 const STRATEGY_ICONS: Record<string, React.ElementType> = {
@@ -45,7 +47,10 @@ export function ConfigCards({
   strategies,
   maxStrategies,
   isEditable,
+  mode,
 }: ConfigCardsProps) {
+  if (isClassic(mode)) return null;
+
   return (
     <div className="flex gap-2 px-4">
       {/* Sponsor card */}

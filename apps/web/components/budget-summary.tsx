@@ -2,6 +2,7 @@
 
 import { formatMoney } from "@/lib/format";
 import { computeAvailableBudget } from "@/lib/budget";
+import { type LeagueMode, isClassic } from "@/lib/league-mode";
 
 interface BudgetSummaryProps {
   treasury: number;
@@ -10,6 +11,7 @@ interface BudgetSummaryProps {
   draftBidsTotal: number;
   draftCount: number;
   phaseConfirmed?: boolean;
+  mode?: LeagueMode;
 }
 
 export function BudgetSummary({
@@ -19,7 +21,63 @@ export function BudgetSummary({
   draftBidsTotal,
   draftCount,
   phaseConfirmed = false,
+  mode,
 }: BudgetSummaryProps) {
+  // Classic mode: flat per-phase budget, no sponsor income, no salary rows
+  if (isClassic(mode)) {
+    const remaining = treasury - draftBidsTotal;
+    const isDeficit = remaining < 0;
+
+    return (
+      <div
+        className={`rounded-lg border bg-[var(--bg-surface)] px-3 py-[10px] transition-colors ${
+          isDeficit ? "border-[var(--danger-border)]" : "border-[var(--border-default)]"
+        }`}
+      >
+        {/* Budget */}
+        <div className="flex items-center justify-between py-[3px]">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+            Budget
+          </span>
+          <span className="font-mono text-[length:var(--type-caption)] text-[var(--accent-highlight)]">
+            {formatMoney(treasury)}
+          </span>
+        </div>
+
+        {/* Spent */}
+        <div className="flex items-center justify-between py-[3px]">
+          <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+            Spent
+          </span>
+          <span className="font-mono text-[length:var(--type-caption)] text-red-400">
+            −{formatMoney(draftBidsTotal)}
+          </span>
+        </div>
+
+        {/* Divider */}
+        <div className="my-1 h-px bg-[var(--border-default)]" />
+
+        {/* Remaining row */}
+        <div className="flex items-center justify-between pt-1">
+          <span
+            className={`text-[length:var(--type-emphasis)] font-semibold ${
+              isDeficit ? "text-red-400" : "text-[var(--text-high)]"
+            }`}
+          >
+            {isDeficit ? "Deficit" : "Remaining"}
+          </span>
+          <span
+            className={`font-mono text-[length:var(--type-stat-small)] font-bold ${
+              isDeficit ? "text-red-400" : "text-[var(--accent-highlight)]"
+            }`}
+          >
+            {isDeficit ? "−" : ""}{formatMoney(Math.abs(remaining))}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   const remaining = computeAvailableBudget(
     treasury,
     sponsorIncome,
