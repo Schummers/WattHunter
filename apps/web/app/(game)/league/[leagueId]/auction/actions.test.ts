@@ -39,7 +39,7 @@ vi.mock("@/lib/phases", () => ({
 
 // NOTE: lib/budget.ts and lib/levels.ts are pure functions — intentionally NOT mocked.
 
-import { validateRound } from "./actions";
+import { validateRound, phaseResetRpcFor } from "./actions";
 
 // ---------------------------------------------------------------------------
 // Test UUIDs (RFC-4122 v4: version nibble = 4, variant nibble = 8)
@@ -202,6 +202,15 @@ function setupAdminForResolve(opts: { lockSucceeds: boolean }) {
 // ---------------------------------------------------------------------------
 // Test suite
 // ---------------------------------------------------------------------------
+
+describe("phaseResetRpcFor", () => {
+  it("routes classic leagues to classic_phase_reset", () => {
+    expect(phaseResetRpcFor("classic")).toBe("classic_phase_reset");
+  });
+  it("routes manager leagues to confirm_phase_setup", () => {
+    expect(phaseResetRpcFor("manager")).toBe("confirm_phase_setup");
+  });
+});
 
 describe("validateRound (via RPC)", () => {
   beforeEach(() => {
