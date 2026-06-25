@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { getMaxSlots } from "@/lib/levels";
+import { isClassic, CLASSIC_SQUAD_SIZE } from "@/lib/league-mode";
 import { getMaxActiveStrategies, STRATEGY_TYPES } from "@/lib/strategies";
 import { calcMinSalary, countryCodeToFlag } from "@/lib/format";
 import { riderMatchesStrategy } from "@/lib/boost";
@@ -63,7 +64,6 @@ export default async function AuctionsPage({
 
   const team = Array.isArray(member.teams) ? member.teams[0] : member.teams;
   const level = team?.level ?? 1;
-  const maxSlots = getMaxSlots(level);
   const maxActiveStrategies = getMaxActiveStrategies(level);
 
   // Check commissioner + fetch league mode
@@ -74,6 +74,8 @@ export default async function AuctionsPage({
     .single();
   const isCommissioner = league?.commissioner_id === user.id;
   const leagueMode = (league?.mode ?? "manager") as import("@/lib/league-mode").LeagueMode;
+  // Classic mode: fixed 8-rider squad regardless of level (matches the place_bid backend cap).
+  const maxSlots = isClassic(leagueMode) ? CLASSIC_SQUAD_SIZE : getMaxSlots(level);
 
   // All-rounds query (includes closed — for stepper display)
   const { data: allRoundsRaw } = await supabase

@@ -37,8 +37,9 @@ describe("getRaceFeedData", () => {
     vi.clearAllMocks();
   });
 
-  it("returns empty groups + null next phase when no races, no auctions (non-GT phase)", async () => {
-    // Feb 1 is not a GT phase (phases 4/6/8 are GT) — GT schedule injection is skipped
+  it("returns empty groups but still surfaces the next phase when no races (non-GT phase)", async () => {
+    // Feb 1 is not a GT phase (phases 4/6/8 are GT) — GT schedule injection is skipped.
+    // Even with an empty feed, the upcoming phase must be resolved (no "Season over").
     const supabase = buildSupabase({});
     const result = await getRaceFeedData(supabase, {
       leagueId: "L1",
@@ -46,8 +47,10 @@ describe("getRaceFeedData", () => {
       referenceDate: new Date("2026-02-01T08:00:00Z"),
     });
     expect(result.groups).toEqual([]);
-    expect(result.nextPhaseRound1Date).toBeNull();
     expect(result.isGtPhase).toBe(false);
+    // No auctions scheduled → falls back to the next phase's calendar start date + label.
+    expect(result.nextPhaseRound1Date).not.toBeNull();
+    expect(result.nextPhaseLabel).toBeTruthy();
   });
 
   it("injects GT future stages from static schedule in GT phases", async () => {

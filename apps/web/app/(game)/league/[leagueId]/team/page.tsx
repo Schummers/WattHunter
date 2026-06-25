@@ -1,7 +1,9 @@
+import { redirect } from "next/navigation";
 import { ChevronRight, Target, Globe, Users, Clock } from "lucide-react";
 import { RailLink } from "@/components/rail-link";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
+import { isClassic } from "@/lib/league-mode";
 import { RiderCard } from "@/components/rider-card";
 import { BrandCard } from "@/components/brand-card";
 import { Badge } from "@/components/ui/badge";
@@ -56,10 +58,19 @@ export default async function MyTeamPage({
 
   const { data: member } = await supabase
     .from("league_members")
-    .select("id, team_id, teams:team_id(id, name, cumulative_xp, level)")
+    .select("id, team_id, teams:team_id(id, name, cumulative_xp, level), leagues:league_id(mode)")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
+
+  // Classic mode has no "My Team" page (no levels/strategies/roster) — the team view is the
+  // Grand Tour squad builder. Send classic users straight there.
+  const leagueRow = member
+    ? (Array.isArray(member.leagues) ? member.leagues[0] : member.leagues)
+    : null;
+  if (member && isClassic((leagueRow?.mode ?? "manager") as "manager" | "classic")) {
+    redirect(`/league/${leagueId}/team/gt`);
+  }
 
   if (!member) {
     return (

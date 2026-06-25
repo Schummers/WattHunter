@@ -15,7 +15,7 @@ import { releaseRider } from "@/app/(game)/league/[leagueId]/rider/[riderId]/act
 import { useDemoSafeAction } from "@/contexts/demo-context";
 import { ReleaseConfirmModal } from "@/components/release-confirm-modal";
 import { computeAvailableBudget } from "@/lib/budget";
-import { type LeagueMode } from "@/lib/league-mode";
+import { type LeagueMode, isClassic } from "@/lib/league-mode";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -132,13 +132,17 @@ export function AuctionsClient({
   const totalCount = rosterCount + draftCount;
 
   const draftBidsTotal = drafts.reduce((s, d) => s + d.amount, 0);
-  const remaining = computeAvailableBudget(
-    treasury,
-    sponsorIncome,
-    activeSalaries,
-    draftBidsTotal,
-    phaseConfirmed
-  );
+  // Classic mode: flat budget, no sponsor income / salaries — keep the sticky footer and
+  // deficit check consistent with the BudgetSummary card (treasury − spent).
+  const remaining = isClassic(mode)
+    ? treasury - draftBidsTotal
+    : computeAvailableBudget(
+        treasury,
+        sponsorIncome,
+        activeSalaries,
+        draftBidsTotal,
+        phaseConfirmed
+      );
   const isDeficit = remaining < 0;
 
   const hasOpenRound = activeRound !== null;
@@ -251,37 +255,39 @@ export function AuctionsClient({
           <RoundStepper rounds={stepperRounds} />
         </section>
 
-        {/* Section: Sponsor & Strategies */}
-        <section>
-          <div className="px-4 mb-2">
-            <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
-              Sponsor &amp; Strategies
-            </span>
-          </div>
-          <ConfigCards
-            leagueId={leagueId}
-            sponsorName={sponsorName}
-            sponsorBudget={sponsorIncome}
-            strategies={activeStrategies.map((p) => ({
-              name: p.name,
-              value: p.name,
-              boostPct: p.boostPct,
-            }))}
-            maxStrategies={maxStrategies}
-            isEditable={true}
-            mode={mode}
-          />
-          {pendingSponsorName && !hasOpenRound && (
-            <p className="text-[length:var(--type-caption)] text-[var(--accent-default)] px-4 mt-1.5 leading-snug">
-              {pendingSponsorName} will be active from next auction phase.
+        {/* Section: Sponsor & Strategies — hidden entirely in classic mode (no sponsors/strategies) */}
+        {!isClassic(mode) && (
+          <section>
+            <div className="px-4 mb-2">
+              <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
+                Sponsor &amp; Strategies
+              </span>
+            </div>
+            <ConfigCards
+              leagueId={leagueId}
+              sponsorName={sponsorName}
+              sponsorBudget={sponsorIncome}
+              strategies={activeStrategies.map((p) => ({
+                name: p.name,
+                value: p.name,
+                boostPct: p.boostPct,
+              }))}
+              maxStrategies={maxStrategies}
+              isEditable={true}
+              mode={mode}
+            />
+            {pendingSponsorName && !hasOpenRound && (
+              <p className="text-[length:var(--type-caption)] text-[var(--accent-default)] px-4 mt-1.5 leading-snug">
+                {pendingSponsorName} will be active from next auction phase.
+              </p>
+            )}
+            <p className="text-[length:var(--type-micro)] text-[var(--text-low)] px-4 mt-1.5 leading-snug">
+              {hasOpenRound
+                ? "You can change sponsor and strategy during any of the 3 auction rounds."
+                : "Auction closed — changes apply from the next phase."}
             </p>
-          )}
-          <p className="text-[length:var(--type-micro)] text-[var(--text-low)] px-4 mt-1.5 leading-snug">
-            {hasOpenRound
-              ? "You can change sponsor and strategy during any of the 3 auction rounds."
-              : "Auction closed — changes apply from the next phase."}
-          </p>
-        </section>
+          </section>
+        )}
 
         {/* Section: Roster */}
         <section>

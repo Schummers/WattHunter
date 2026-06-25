@@ -103,7 +103,15 @@ export async function getRaceFeedData(
   }
 
   if (racesBySlug.size === 0) {
-    return { groups: [], nextPhaseRound1Date: null, nextPhaseLabel: null, isGtPhase, phaseId: phase.id };
+    // Empty feed (new league / between phases): still surface the upcoming phase instead of
+    // falling through to the "Season over" banner.
+    const { nextPhaseRound1Date, nextPhaseLabel } = await computeNextPhase(
+      supabase,
+      opts.leagueId,
+      phase.id,
+      referenceDate.getFullYear()
+    );
+    return { groups: [], nextPhaseRound1Date, nextPhaseLabel, isGtPhase, phaseId: phase.id };
   }
 
   // 2) Fetch team and rider lookup tables
@@ -343,32 +351,45 @@ export async function getRaceFeedData(
     .map((date) => ({ date, cards: byDate.get(date)! }));
 
   // 10) Compute next phase Round 1 date
-  let nextPhaseRound1Date: string | null = null;
-  let nextPhaseLabel: string | null = null;
-  const nextPhase = AUCTION_PHASES.find((p) => p.id === phase.id + 1) ?? null;
-  if (nextPhase) {
-    nextPhaseLabel = nextPhase.label;
-    const nextStartIso = new Date(
-      referenceDate.getFullYear(),
-      nextPhase.startMonth - 1,
-      nextPhase.startDay
-    )
-      .toISOString()
-      .slice(0, 10);
-    const { data: auctionRows = [] } = await supabase
-      .from("auctions")
-      .select("opens_at")
-      .eq("league_id", opts.leagueId)
-      .gte("opens_at", nextStartIso)
-      .order("opens_at", { ascending: true })
-      .limit(1);
-    nextPhaseRound1Date =
-      auctionRows && auctionRows.length > 0
-        ? (auctionRows[0].opens_at as string).slice(0, 10)
-        : nextStartIso;
-  }
+  const { nextPhaseRound1Date, nextPhaseLabel } = await computeNextPhase(
+    supabase,
+    opts.leagueId,
+    phase.id,
+    referenceDate.getFullYear()
+  );
 
   return { groups, nextPhaseRound1Date, nextPhaseLabel, isGtPhase, phaseId: phase.id };
+}
+
+// Resolves the next phase label + its Round 1 date (actual auction date if one is scheduled,
+// else the phase calendar start). Independent of the current phase's race list, so it can run
+// even when the feed is empty (brand-new league, between phases) — otherwise the home screen
+// wrongly shows "Season over" instead of the upcoming phase.
+async function computeNextPhase(
+  supabase: SupabaseClient,
+  leagueId: string,
+  currentPhaseId: number,
+  referenceYear: number
+): Promise<{ nextPhaseRound1Date: string | null; nextPhaseLabel: string | null }> {
+  const nextPhase = AUCTION_PHASES.find((p) => p.id === currentPhaseId + 1) ?? null;
+  if (!nextPhase) return { nextPhaseRound1Date: null, nextPhaseLabel: null };
+
+  const nextStartIso = new Date(referenceYear, nextPhase.startMonth - 1, nextPhase.startDay)
+    .toISOString()
+    .slice(0, 10);
+  const { data: auctionRows = [] } = await supabase
+    .from("auctions")
+    .select("opens_at")
+    .eq("league_id", leagueId)
+    .gte("opens_at", nextStartIso)
+    .order("opens_at", { ascending: true })
+    .limit(1);
+
+  const nextPhaseRound1Date =
+    auctionRows && auctionRows.length > 0
+      ? (auctionRows[0].opens_at as string).slice(0, 10)
+      : nextStartIso;
+  return { nextPhaseRound1Date, nextPhaseLabel: nextPhase.label };
 }
 
 function isCutoffPassedCET(): boolean {
