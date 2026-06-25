@@ -10,7 +10,7 @@ import { StickyBar } from "@/components/sticky-bar";
 import { addDraft, removeDraft } from "@/app/(game)/league/[leagueId]/auction/actions";
 import { releaseRider } from "./actions";
 import { useDemoSafeAction } from "@/contexts/demo-context";
-import { formatThousands, formatMoney, countryCodeToFlag } from "@/lib/format";
+import { formatThousands, formatMoney, formatXp, countryCodeToFlag } from "@/lib/format";
 import { RiderPrice } from "@/components/rider-price";
 import { Plus, Minus } from "lucide-react";
 import { BID_INCREMENT, snapToIncrement, computeAvailableBudget } from "@/lib/budget";
@@ -646,7 +646,7 @@ export function RiderDetailClient({
             type="button"
             onClick={handleStickyAction}
             disabled={!stickyButtonEnabled || saving}
-            className="rounded-lg px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold cta-gradient text-[var(--cta-text)] disabled:opacity-40"
+            className="rounded-md px-4 py-1.5 text-[length:var(--type-emphasis)] font-semibold cta-gradient text-[var(--cta-text)] disabled:opacity-40"
           >
             {stickyButtonLabel}
           </button>
@@ -788,7 +788,7 @@ function GameResultsSection({ raceResults }: { raceResults: RaceResult[] }) {
                   )}
                   {r.xp_gained != null && (
                     <span className="font-mono text-[length:var(--type-body)] font-bold text-[var(--text-high)]">
-                      {r.xp_gained} XP
+                      {formatXp(r.xp_gained)} XP
                     </span>
                   )}
                 </div>
