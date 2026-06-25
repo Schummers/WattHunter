@@ -82,13 +82,17 @@ La "Race Team" (`gt_squad`) est déjà une couche unique de 8 coureurs avec rôl
 On ne scinde rien: en classic, la squad EST le roster.
 
 - L'enchère crée des **contracts** (mécanisme inchangé).
-- Pour les 3 phases GT (Giro/Tour/Vuelta): un **pont** insère chaque contract gagné dans
-  `gt_squad` (rôle non assigné) → le joueur assigne les rôles sur Race Team → le scoring
-  applique rôles + tactiques.
+- Pour les 3 phases GT (Giro/Tour/Vuelta): construction de squad **manuelle**, exactement
+  comme en mode manager GT. Le joueur ajoute ses coureurs détenus à la Race Team via le
+  rider picker et assigne les rôles → le scoring applique rôles + tactiques. Comme les 8
+  contrats correspondent exactement aux 8 slots de rôles, la seule décision qui reste est
+  l'assignation des rôles (gameplay). **Décision (2026-06-25): pas de pont auto-rempli**
+  (Option A), zéro code neuf, cohérent avec le manager.
 - Pour la phase **Classics** (courses d'un jour): le scoring lit directement les contracts
-  (chemin non-GT, points PCS bruts, pas de rôles ni tactiques). Pas de pont nécessaire.
+  (chemin non-GT, points PCS bruts, pas de rôles ni tactiques).
 
-Le pont contracts → `gt_squad` est le seul vrai morceau de code neuf, et il est petit.
+Auto-remplissage de la squad (insérer les 8 contrats dans `gt_squad` à la résolution
+d'enchère) = enhancement possible plus tard si le clic manuel gêne ; non retenu en v1.
 
 ### Modèle de budget
 
