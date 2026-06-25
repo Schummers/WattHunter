@@ -363,7 +363,7 @@ export async function getRaceFeedData(
 
 // Resolves the next phase label + its Round 1 date (actual auction date if one is scheduled,
 // else the phase calendar start). Independent of the current phase's race list, so it can run
-// even when the feed is empty (brand-new league, between phases) — otherwise the home screen
+// even when the feed is empty (brand-new league, between phases). Otherwise the home screen
 // wrongly shows "Season over" instead of the upcoming phase.
 async function computeNextPhase(
   supabase: SupabaseClient,

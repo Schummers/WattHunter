@@ -63,7 +63,7 @@ export default async function MyTeamPage({
     .eq("user_id", user.id)
     .single();
 
-  // Classic mode has no "My Team" page (no levels/strategies/roster) — the team view is the
+  // Classic mode has no "My Team" page (no levels/strategies/roster): the team view is the
   // Grand Tour squad builder. Send classic users straight there.
   const leagueRow = member
     ? (Array.isArray(member.leagues) ? member.leagues[0] : member.leagues)

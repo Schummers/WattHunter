@@ -132,8 +132,8 @@ export function AuctionsClient({
   const totalCount = rosterCount + draftCount;
 
   const draftBidsTotal = drafts.reduce((s, d) => s + d.amount, 0);
-  // Classic mode: flat budget, no sponsor income / salaries — keep the sticky footer and
-  // deficit check consistent with the BudgetSummary card (treasury − spent).
+  // Classic mode: flat budget, no sponsor income / salaries. Keep the sticky footer and
+  // deficit check consistent with the BudgetSummary card (treasury minus spent).
   const remaining = isClassic(mode)
     ? treasury - draftBidsTotal
     : computeAvailableBudget(
@@ -255,7 +255,7 @@ export function AuctionsClient({
           <RoundStepper rounds={stepperRounds} />
         </section>
 
-        {/* Section: Sponsor & Strategies — hidden entirely in classic mode (no sponsors/strategies) */}
+        {/* Section: Sponsor & Strategies (hidden entirely in classic mode: no sponsors/strategies) */}
         {!isClassic(mode) && (
           <section>
             <div className="px-4 mb-2">
