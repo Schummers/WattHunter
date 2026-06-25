@@ -29,10 +29,34 @@ export const GT_SCHEDULES: Record<string, GtStageEntry[]> = {
     { number: 20, date: "2026-05-30", name: "Gemona del Friuli - Piancavallo" },
     { number: 21, date: "2026-05-31", name: "Rome - Rome" },
   ],
+  "tour-de-france/2026": [
+    { number: 1, date: "2026-07-04", name: "Barcelona - Barcelona" },
+    { number: 2, date: "2026-07-05", name: "Tarragona - Barcelona" },
+    { number: 3, date: "2026-07-06", name: "Granollers - Les Angles" },
+    { number: 4, date: "2026-07-07", name: "Carcassonne - Foix" },
+    { number: 5, date: "2026-07-08", name: "Lannemezan - Pau" },
+    { number: 6, date: "2026-07-09", name: "Pau - Gavarnie-Gèdre" },
+    { number: 7, date: "2026-07-10", name: "Hagetmau - Bordeaux" },
+    { number: 8, date: "2026-07-11", name: "Périgueux - Bergerac" },
+    { number: 9, date: "2026-07-12", name: "Malemort - Ussel" },
+    { number: 10, date: "2026-07-14", name: "Aurillac - Le Lioran" },
+    { number: 11, date: "2026-07-15", name: "Vichy - Nevers" },
+    { number: 12, date: "2026-07-16", name: "Circuit de Nevers Magny-Cours - Chalon-sur-Saône" },
+    { number: 13, date: "2026-07-17", name: "Dole - Belfort" },
+    { number: 14, date: "2026-07-18", name: "Mulhouse - Le Markstein" },
+    { number: 15, date: "2026-07-19", name: "Champagnole - Plateau de Solaison" },
+    { number: 16, date: "2026-07-21", name: "Évian Les-Bains - Thonon Les-Bains", isItt: true },
+    { number: 17, date: "2026-07-22", name: "Chambéry - Voiron" },
+    { number: 18, date: "2026-07-23", name: "Voiron - Orcières Merlette" },
+    { number: 19, date: "2026-07-24", name: "Gap - Alpe d'Huez" },
+    { number: 20, date: "2026-07-25", name: "Le Bourg d'Oisans - Alpe d'Huez" },
+    { number: 21, date: "2026-07-26", name: "Thoiry - Paris" },
+  ],
 };
 
 export const GT_REST_DAYS: Record<string, string[]> = {
   "giro-d-italia/2026": ["2026-05-11", "2026-05-18", "2026-05-25"],
+  "tour-de-france/2026": ["2026-07-13", "2026-07-20"],
 };
 
 /**
