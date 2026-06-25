@@ -76,23 +76,23 @@ export function formatXp(value: number): string {
   return value > 0 ? `+${value}` : `${value}`;
 }
 
-const FRENCH_MONTHS_SHORT = [
-  "janv.", "fév.", "mars", "avr.", "mai", "juin",
-  "juil.", "août", "sept.", "oct.", "nov.", "déc.",
+const MONTHS_SHORT = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
 export function formatRaceDateLabel(isoDate: string): string {
   const [, month, day] = isoDate.split("-").map((s) => parseInt(s, 10));
-  const monthLabel = FRENCH_MONTHS_SHORT[(month ?? 1) - 1];
+  const monthLabel = MONTHS_SHORT[(month ?? 1) - 1];
   return `${day} ${monthLabel}`;
 }
 
-const FRENCH_LONG_MONTHS = [
-  "janvier", "février", "mars", "avril", "mai", "juin",
-  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+const MONTHS_LONG = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 export function formatRound1DateLabel(isoDate: string): string {
   const [, month, day] = isoDate.split("-").map((s) => parseInt(s, 10));
-  return `${day} ${FRENCH_LONG_MONTHS[(month ?? 1) - 1]}`;
+  return `${day} ${MONTHS_LONG[(month ?? 1) - 1]}`;
 }

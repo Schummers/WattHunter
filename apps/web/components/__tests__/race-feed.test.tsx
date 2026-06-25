@@ -59,9 +59,9 @@ const payload: RaceFeedPayload = {
 describe("RaceFeed", () => {
   it("renders one group per date with proper labels", () => {
     render(<RaceFeed leagueId="L1" payload={payload} />);
-    expect(screen.getByText("4 mai")).toBeInTheDocument();
-    expect(screen.getByText("5 mai")).toBeInTheDocument();
-    expect(screen.getByText("6 mai")).toBeInTheDocument();
+    expect(screen.getByText("4 May")).toBeInTheDocument();
+    expect(screen.getByText("5 May")).toBeInTheDocument();
+    expect(screen.getByText("6 May")).toBeInTheDocument();
   });
 
   it("renders past, today, and future cards", () => {
