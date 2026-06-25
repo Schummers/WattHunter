@@ -15,6 +15,7 @@ from procyclingstats import Stage, Race, Ranking, RaceStartlist
 from supabase import Client
 
 from sync import fetch_html, calculate_monthly_salary, get_supabase, format_rider_name
+from db_utils import _fetch_all
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -136,9 +137,9 @@ async def import_race_results(
     results = stage.results()
 
     # Build lookup map from pcs_slug → rider_id
-    riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+    riders_resp = _fetch_all(lambda: supabase.table("riders").select("id, pcs_slug"))
     rider_map: Dict[str, str] = {
-        r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+        r["pcs_slug"]: r["id"] for r in riders_resp
     }
 
     imported = 0
@@ -214,9 +215,9 @@ async def import_gc_results(
         return {"race": gc_url, "imported": 0, "skipped": 0, "total_in_race": 0, "errors": [], "has_points": False}
 
     # Build lookup map from pcs_slug → rider_id
-    riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+    riders_resp = _fetch_all(lambda: supabase.table("riders").select("id, pcs_slug"))
     rider_map: Dict[str, str] = {
-        r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+        r["pcs_slug"]: r["id"] for r in riders_resp
     }
 
     imported = 0
@@ -289,9 +290,9 @@ async def import_final_classifications(
     """
     counts = {"points": 0, "kom": 0, "youth": 0}
 
-    riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+    riders_resp = _fetch_all(lambda: supabase.table("riders").select("id, pcs_slug"))
     rider_map: Dict[str, str] = {
-        r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+        r["pcs_slug"]: r["id"] for r in riders_resp
     }
 
     for ctype in FINAL_SECONDARY_TYPES:
@@ -350,9 +351,9 @@ async def update_global_ranking(supabase: Client, browser, *, pages: int = 6) ->
     )
 
     # Build rider lookup map
-    riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+    riders_resp = _fetch_all(lambda: supabase.table("riders").select("id, pcs_slug"))
     rider_map: Dict[str, str] = {
-        r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+        r["pcs_slug"]: r["id"] for r in riders_resp
     }
 
     updated = 0
@@ -527,9 +528,9 @@ async def import_season_rankings(
             ranking_entries = ranking.individual_ranking()
 
             # Build rider lookup per season (fresh query each time)
-            riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+            riders_resp = _fetch_all(lambda: supabase.table("riders").select("id, pcs_slug"))
             rider_map: Dict[str, str] = {
-                r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+                r["pcs_slug"]: r["id"] for r in riders_resp
             }
 
             upserted_this_season = 0
@@ -586,9 +587,9 @@ async def import_daily_classifications(
     counts = {"gc": 0, "points": 0, "kom": 0, "youth": 0}
     stage_label = stage_url.split("/")[-1]
 
-    riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+    riders_resp = _fetch_all(lambda: supabase.table("riders").select("id, pcs_slug"))
     rider_map: Dict[str, str] = {
-        r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+        r["pcs_slug"]: r["id"] for r in riders_resp
     }
 
     html = await fetch_html(page, stage_url)
@@ -651,9 +652,9 @@ async def import_startlist(
     startlist_entries = startlist_obj.startlist()
 
     # Build rider lookup map
-    riders_resp = supabase.table("riders").select("id, pcs_slug").execute()
+    riders_resp = _fetch_all(lambda: supabase.table("riders").select("id, pcs_slug"))
     rider_map: Dict[str, str] = {
-        r["pcs_slug"]: r["id"] for r in (riders_resp.data or [])
+        r["pcs_slug"]: r["id"] for r in riders_resp
     }
 
     imported = 0

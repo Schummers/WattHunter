@@ -18,6 +18,7 @@ from functools import lru_cache
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from supabase import Client
+from db_utils import _fetch_all
 from tactics import (
     compute_unleash_modifier,
     compute_overdrive_modifier,
@@ -374,15 +375,15 @@ async def calculate_daily_scores(
     # --- Step 1: Get race results ---
     # Task 1: filter by race_slugs if provided, else fallback to today's date
     if race_slugs:
-        history = supabase.table("race_results").select(
+        history_rows = _fetch_all(lambda: supabase.table("race_results").select(
             "rider_id, race_slug, pcs_points, race_date, is_itt, breakaway_kms, profile_icon"
-        ).in_("race_slug", race_slugs).gt("pcs_points", 0).execute()
+        ).in_("race_slug", race_slugs).gt("pcs_points", 0))
     else:
-        history = supabase.table("race_results").select(
+        history_rows = _fetch_all(lambda: supabase.table("race_results").select(
             "rider_id, race_slug, pcs_points, race_date, is_itt, breakaway_kms, profile_icon"
-        ).eq("race_date", today).gt("pcs_points", 0).execute()
+        ).eq("race_date", today).gt("pcs_points", 0))
 
-    if not history.data:
+    if not history_rows:
         return {
             "status": "completed",
             "processed": 0,
@@ -391,7 +392,7 @@ async def calculate_daily_scores(
 
     # SC-4 — fail loud if a squad-race stage being scored has no imported profile.
     # Without profile_icon the sprinter ×1.5 role multiplier silently drops to ×1.0.
-    unseeded = _unseeded_stage_slugs(history.data)
+    unseeded = _unseeded_stage_slugs(history_rows)
     if unseeded:
         raise ValueError(
             "Stage profiles not imported for squad-race stage(s): "
@@ -403,7 +404,7 @@ async def calculate_daily_scores(
 
     # Build rider_id → list of (race_slug, pcs_points) for per-race upserts
     rider_race_points: dict[str, list[dict]] = {}
-    for h in history.data:
+    for h in history_rows:
         rider_race_points.setdefault(h["rider_id"], []).append({
             "race_slug": h["race_slug"],
             "pcs_points": h["pcs_points"],
@@ -415,7 +416,7 @@ async def calculate_daily_scores(
 
     # Build race_slug → race_date mapping for the second pass (classif-only entries).
     race_date_by_slug: dict[str, str] = {}
-    for h in history.data:
+    for h in history_rows:
         race_date_by_slug.setdefault(h["race_slug"], h.get("race_date", today))
 
     # Pre-fetch existing rider_xp_daily for these race_slugs to compute deltas (idempotency).
@@ -423,20 +424,20 @@ async def calculate_daily_scores(
     # On re-run prev=total → delta=0 → teams unchanged (no double-count).
     prev_team_xp: dict[str, float] = {}
     if race_slugs:
-        prev_resp = supabase.table("rider_xp_daily").select(
+        prev_rows = _fetch_all(lambda: supabase.table("rider_xp_daily").select(
             "team_id, xp_gained"
-        ).in_("race_slug", race_slugs).execute()
-        for row in (prev_resp.data or []):
+        ).in_("race_slug", race_slugs))
+        for row in prev_rows:
             tid = row["team_id"]
             prev_team_xp[tid] = prev_team_xp.get(tid, 0.0) + float(row.get("xp_gained") or 0)
 
     # --- Step 2: Get all active/notice contracts with rider info for policy matching ---
-    contracts = supabase.table("contracts").select(
+    contracts_rows = _fetch_all(lambda: supabase.table("contracts").select(
         "id, team_id, rider_id, purchased_at, release_date, released_at, "
         "riders:rider_id(specialty, nationality, real_team, birthdate, pcs_rank)"
-    ).in_("status", ["active", "notice"]).execute()
+    ).in_("status", ["active", "notice"]))
 
-    if not contracts.data:
+    if not contracts_rows:
         return {
             "status": "completed",
             "processed": 0,
@@ -445,18 +446,18 @@ async def calculate_daily_scores(
 
     # Group contracts by team for efficient processing
     team_contracts: dict[str, list[dict]] = {}
-    for c in contracts.data:
+    for c in contracts_rows:
         team_id = c["team_id"]
         team_contracts.setdefault(team_id, []).append(c)
 
     # --- Step 3: Get strategies with slug and config for per-rider matching ---
-    strategies = supabase.table("team_strategies").select(
+    strategies_rows = _fetch_all(lambda: supabase.table("team_strategies").select(
         "team_id, config, strategies:strategy_id(slug, xp_bonus)"
-    ).eq("is_active", True).execute()
+    ).eq("is_active", True))
 
     # Build per-team strategy list: [{slug, xp_bonus, config}, ...]
     team_strategies: dict[str, list[dict]] = {}
-    for s in strategies.data or []:
+    for s in strategies_rows:
         team_id = s["team_id"]
         strategy_data = s.get("strategies") or {}
         entry = {
@@ -479,7 +480,7 @@ async def calculate_daily_scores(
 
         # Build race_slug → race_date mapping for cutoff computation
         _slug_dates: dict[str, str] = {}
-        for h in (history.data or []):
+        for h in history_rows:
             if _is_squad_race(h.get("race_slug", "")):
                 _slug_dates.setdefault(h["race_slug"], h.get("race_date", today))
 
@@ -496,10 +497,10 @@ async def calculate_daily_scores(
                 tzinfo=_paris_tz,
             )
 
-        squad_resp = supabase.table("gt_squad").select(
+        squad_rows = _fetch_all(lambda: supabase.table("gt_squad").select(
             "team_id, rider_id, role, created_at, removed_at"
-        ).eq("phase_id", phase_id).eq("year", year).execute()
-        for r in (squad_resp.data or []):
+        ).eq("phase_id", phase_id).eq("year", year))
+        for r in squad_rows:
             created = _parse_supabase_ts(r["created_at"])
             removed = _parse_supabase_ts(r["removed_at"]) if r.get("removed_at") else None
             # SC-6: membership window is [created, removed) at the cutoff instant —
@@ -509,12 +510,12 @@ async def calculate_daily_scores(
             if created <= gt_cutoff and (removed is None or removed > gt_cutoff):
                 gt_squad_members[(r["team_id"], r["rider_id"])] = True
 
-        role_resp = supabase.table("gt_role_assignments").select(
+        role_rows = _fetch_all(lambda: supabase.table("gt_role_assignments").select(
             "team_id, rider_id, role, applied_at"
         ).eq("phase_id", phase_id).eq("year", year).order(
             "applied_at", desc=True
-        ).execute()
-        for r in (role_resp.data or []):
+        ))
+        for r in role_rows:
             applied = _parse_supabase_ts(r["applied_at"])
             if applied > gt_cutoff:
                 continue
@@ -526,10 +527,10 @@ async def calculate_daily_scores(
     # Indexed by (race_slug, rider_id) so each rider-stage pair gets its own bonus.
     classif_by_key: dict[tuple[str, str], list[dict]] = {}
     if squad_slugs:
-        classif_resp = supabase.table("gt_daily_classifications").select(
+        classif_rows = _fetch_all(lambda: supabase.table("gt_daily_classifications").select(
             "race_slug, rider_id, classification_type, rank"
-        ).in_("race_slug", squad_slugs).execute()
-        for row in (classif_resp.data or []):
+        ).in_("race_slug", squad_slugs))
+        for row in classif_rows:
             classif_by_key.setdefault(
                 (row["race_slug"], row["rider_id"]), []
             ).append(row)
@@ -545,10 +546,10 @@ async def calculate_daily_scores(
     ]
     final_by_rider: dict[str, list[dict]] = {}
     if final_secondary_slugs:
-        fr_resp = supabase.table("gt_final_classifications").select(
+        fr_rows = _fetch_all(lambda: supabase.table("gt_final_classifications").select(
             "rider_id, race_slug, classification_type, rank, race_date"
-        ).in_("race_slug", final_secondary_slugs).execute()
-        for row in (fr_resp.data or []):
+        ).in_("race_slug", final_secondary_slugs))
+        for row in fr_rows:
             final_by_rider.setdefault(row["rider_id"], []).append(row)
 
     # === Resolve unresolved Nemesis duels for the stages we're about to score ===
@@ -566,14 +567,14 @@ async def calculate_daily_scores(
     # This prefetch now sees the resolved outcomes (if any).
     gt_tactics: dict[str, list[dict]] = {}
     if squad_slugs:  # avoid an empty `.in_([])` query
-        tactics_resp = supabase.table("gt_tactic_activations").select(
+        tactics_rows = _fetch_all(lambda: supabase.table("gt_tactic_activations").select(
             "id, team_id, phase_id, year, tactic_type, stage_slug,"
             " nemesis_target_team_id, nemesis_target_role,"
             " resolved_attacker_rider_id, resolved_target_rider_id,"
             " outcome, resolved_at"
-        ).in_("stage_slug", squad_slugs).execute()
+        ).in_("stage_slug", squad_slugs))
 
-        for row in tactics_resp.data or []:
+        for row in tactics_rows:
             gt_tactics.setdefault(row["stage_slug"], []).append(row)
 
     # Track all league_ids for snapshot step

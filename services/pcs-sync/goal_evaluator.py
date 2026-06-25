@@ -448,12 +448,12 @@ async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
     base_gt_mult = gt_reward_multiplier(parent_slug)
 
     # --- Fetch teams with T4 sponsors ---
-    ts_resp = supabase.table("team_sponsors").select(
+    ts_rows = _fetch_all(lambda: supabase.table("team_sponsors").select(
         "team_id, sponsor_id, sponsors(id, slug, tier, nationality)"
-    ).execute()
+    ))
 
     t4_teams: list[dict] = []
-    for row in (ts_resp.data or []):
+    for row in ts_rows:
         sponsor = row.get("sponsors") or {}
         if sponsor.get("tier") != 4:
             continue
@@ -590,12 +590,13 @@ async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
 
         goals = SPONSOR_GOAL_SETS.get(sponsor_slug, [])
 
-        # All squad riders for this team (any stage)
+        # All squad riders for this team = union of per-stage squads, each taken
+        # at that stage's 11:00 CET cutoff. Do NOT seed from date.today(): when
+        # this evaluator runs retroactively (e.g. `evaluate-goals` days later),
+        # today's cutoff would admit riders added to the squad AFTER the race —
+        # the temporal-squad bug family. The per-stage union below is the only
+        # temporally-correct membership source.
         all_squad_riders: set[str] = set()
-        for (tid, rid), _ in _squad_at_cutoff(squad_rows, _gt_cutoff_for_date(date.today())).items():
-            if tid == team_id:
-                all_squad_riders.add(rid)
-        # Also include any rider who was in squad at any past stage cutoff
         for s_slug in all_stage_slugs:
             for (tid, rid), _ in stage_squad[s_slug].items():
                 if tid == team_id:
