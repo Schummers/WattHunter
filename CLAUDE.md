@@ -171,3 +171,17 @@ Détails complets, plans et migrations dans MEMORY.md.
 - **Radius-as-affordance** : 6px = interactive (buttons, chips), 20px = decorative (tags, badges)
 - **3 component patterns** : Underline Tabs (`ui/tabs.tsx` line variant), Filter Chips (`segmented-control.tsx`), Tags (`pill.tsx` / `ui/badge.tsx`)
 - Backlog : `docs/archive/TODO_BACKLOG.md`
+
+## Agent skills
+
+### Issue tracker
+
+Issues locales en markdown sous `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Labels canoniques par défaut (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context : `CONTEXT.md` + `docs/adr/` à la racine. See `docs/agents/domain.md`.
