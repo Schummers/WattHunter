@@ -27,7 +27,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 from db_utils import _fetch_all
-from sponsor_bonus import expand_sponsor_nationality
+from sponsor_bonus import expand_sponsor_nationality, is_classic_league
 
 logger = logging.getLogger(__name__)
 
@@ -448,12 +448,22 @@ async def evaluate_sponsor_goals(supabase, parent_slug: str) -> dict:
     base_gt_mult = gt_reward_multiplier(parent_slug)
 
     # --- Fetch teams with T4 sponsors ---
+    # Include league mode to skip classic-mode leagues (no sponsors/goals).
     ts_rows = _fetch_all(lambda: supabase.table("team_sponsors").select(
-        "team_id, sponsor_id, sponsors(id, slug, tier, nationality)"
+        "team_id, sponsor_id, sponsors(id, slug, tier, nationality), "
+        "teams!inner(league_id, leagues!inner(mode))"
     ))
 
     t4_teams: list[dict] = []
     for row in ts_rows:
+        team_data = row.get("teams") or {}
+        league_data = team_data.get("leagues") or {}
+        if is_classic_league(league_data):
+            logger.info(
+                f"[GoalEval] Skipping team={row['team_id'][:8]} "
+                f"— classic-mode league (no sponsor goals)"
+            )
+            continue
         sponsor = row.get("sponsors") or {}
         if sponsor.get("tier") != 4:
             continue
