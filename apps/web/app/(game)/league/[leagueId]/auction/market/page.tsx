@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { MarketClient } from "./market-client";
 import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
+import { isClassic, CLASSIC_SQUAD_SIZE, type LeagueMode } from "@/lib/league-mode";
 import { getNextAuctionDate, formatAuctionDate, getCurrentPhase } from "@/lib/phases";
 import { buildCoUnlockChecker } from "@/lib/co-unlock";
 import {
@@ -57,6 +58,15 @@ export default async function MarketPage({
   const checkLock = await buildCoUnlockChecker(leagueId);
   const phaseConfirmedId = (team as { phase_confirmed_id?: number | null })?.phase_confirmed_id ?? null;
   const phaseConfirmed = phaseConfirmedId === getCurrentPhase().id;
+
+  // Classic mode: fixed 8-rider squad regardless of level (matches the place_bid backend cap).
+  const { data: league } = await supabase
+    .from("leagues")
+    .select("mode")
+    .eq("id", leagueId)
+    .single();
+  const leagueMode = (league?.mode ?? "manager") as LeagueMode;
+  const maxSlots = isClassic(leagueMode) ? CLASSIC_SQUAD_SIZE : getMaxSlots(level);
 
   const [
     { data: riders },
@@ -199,7 +209,7 @@ export default async function MarketPage({
       activeRound={activeRound}
       nextRound={nextRound}
       nextAuctionLabel={nextAuctionLabel}
-      maxSlots={getMaxSlots(level)}
+      maxSlots={maxSlots}
       currentSlots={ownTeamSlots}
       treasury={team?.treasury ?? 0}
       sponsorIncome={sponsorIncome}
