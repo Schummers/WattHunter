@@ -63,7 +63,7 @@ describe("classicTeamDefaults", () => {
   it("returns level 8, flat budget, underdog off, no sponsor", () => {
     expect(classicTeamDefaults()).toEqual({
       starting_level: 8,
-      treasury: 1_500_000,
+      treasury: 2_000_000,
       underdog_eligible: false,
       assignSponsor: false,
     });
