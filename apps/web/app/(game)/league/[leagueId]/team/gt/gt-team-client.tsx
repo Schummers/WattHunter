@@ -210,25 +210,31 @@ export function GtTeamClient({
           </p>
         </div>
 
-        {ROLE_ORDER.filter((r) => r.role !== "underdog" || underdogEligible).map((block) => {
+        {ROLE_ORDER.filter((r) => r.role !== "underdog" || underdogEligible || isClassic(mode)).map((block) => {
           const riders = byRole(block.role);
           const cap = block.max;
           const showOpenSlots = riders.length < cap;
           const openSlotCount = cap - riders.length;
           const headerCount = `${riders.length} / ${cap}`;
+          // Classic reuses the underdog role purely for its scoring multiplier; surface it as "Wildcard".
+          const isWildcard = block.role === "underdog" && isClassic(mode);
+          const blockLabel = isWildcard ? "Wildcard" : block.label;
+          const blockDesc = isWildcard
+            ? "Cheap riders shine. Stage points ×(PCS rank ÷ 100), capped ×4. No bonus on final classifications."
+            : block.desc;
 
           return (
             <div key={block.role} className="flex flex-col">
               <div className="flex items-center justify-between px-4 pt-1 pb-0">
                 <span className="text-[length:var(--type-label)] font-semibold uppercase tracking-wide text-[var(--text-high)]">
-                  {block.label.toUpperCase()}
+                  {blockLabel.toUpperCase()}
                 </span>
                 <span className="text-[length:var(--type-label)] text-[var(--text-low)]">
                   {headerCount}
                 </span>
               </div>
               <p className="mb-1 px-4 text-[length:var(--type-micro)] text-[var(--text-low)]">
-                {block.desc}
+                {blockDesc}
               </p>
 
               {riders.map((r) =>
@@ -270,7 +276,11 @@ export function GtTeamClient({
           open={!!sheetRole}
           onClose={() => setSheetRole(null)}
           role={sheetRole}
-          roleLabel={ROLE_ORDER.find((r) => r.role === sheetRole)!.label}
+          roleLabel={
+            sheetRole === "underdog" && isClassic(mode)
+              ? "Wildcard"
+              : ROLE_ORDER.find((r) => r.role === sheetRole)!.label
+          }
           roleDesc={ROLE_ORDER.find((r) => r.role === sheetRole)!.desc}
           mode={sheetMode}
           currentRiderId={sheetCurrentRiderId}

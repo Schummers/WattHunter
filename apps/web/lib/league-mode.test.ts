@@ -9,13 +9,13 @@ describe("league-mode", () => {
     expect(isClassic(undefined)).toBe(false);
   });
   it("exposes the classic constants", () => {
-    expect(CLASSIC_PHASE_BUDGET).toBe(1_500_000);
-    expect(CLASSIC_SQUAD_SIZE).toBe(8);
+    expect(CLASSIC_PHASE_BUDGET).toBe(2_000_000);
+    expect(CLASSIC_SQUAD_SIZE).toBe(10);
   });
   it("classicTeamDefaults returns level 8, flat budget, underdog off, no sponsor", () => {
     expect(classicTeamDefaults()).toEqual({
       starting_level: 8,
-      treasury: 1_500_000,
+      treasury: 2_000_000,
       underdog_eligible: false,
       assignSponsor: false,
     });
