@@ -60,7 +60,7 @@ interface MarketClientProps {
   activeSalaries: number;
   phaseConfirmed?: boolean;
   draftBids?: DraftBid[];
-  giroRiderIds?: string[];
+  tdfRiderIds?: string[];
 }
 
 const BASE_FILTER_OPTIONS = [
@@ -137,24 +137,24 @@ export function MarketClient({
   activeSalaries,
   phaseConfirmed = false,
   draftBids: initialDraftBids = [],
-  giroRiderIds = [],
+  tdfRiderIds = [],
 }: MarketClientProps) {
   const router = useRouter();
   const addDraftSafe = useDemoSafeAction(addDraft);
   const [search, setSearch] = useState("");
   const [activeFilterIndex, setActiveFilterIndex] = useState(0);
 
-  const giroRiderSet = useMemo(() => new Set(giroRiderIds), [giroRiderIds]);
-  const hasGiro = giroRiderIds.length > 0;
+  const tdfRiderSet = useMemo(() => new Set(tdfRiderIds), [tdfRiderIds]);
+  const hasTdf = tdfRiderIds.length > 0;
 
   const filterOptions = useMemo(() => {
-    if (!hasGiro) return BASE_FILTER_OPTIONS;
+    if (!hasTdf) return BASE_FILTER_OPTIONS;
     return [
       { label: "All" },
-      { label: "Giro" },
+      { label: "TdF" },
       ...BASE_FILTER_OPTIONS.slice(1),
     ];
-  }, [hasGiro]);
+  }, [hasTdf]);
 
   const activeFilter = filterOptions[activeFilterIndex]?.label ?? "All";
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -185,8 +185,8 @@ export function MarketClient({
   const filteredRiders = useMemo(() => {
     let result = riders;
 
-    if (activeFilter === "Giro") {
-      result = result.filter((r) => giroRiderSet.has(r.id));
+    if (activeFilter === "TdF") {
+      result = result.filter((r) => tdfRiderSet.has(r.id));
     }
 
     if (search.trim()) {
@@ -213,10 +213,10 @@ export function MarketClient({
     }
 
     return result;
-  }, [riders, search, activeFilter, giroRiderSet]);
+  }, [riders, search, activeFilter, tdfRiderSet]);
 
   const groupedRiders = useMemo(() => {
-    if (activeFilter === "All" || activeFilter === "Giro") return null;
+    if (activeFilter === "All" || activeFilter === "TdF") return null;
 
     const groups: Record<string, Rider[]> = {};
     for (const r of filteredRiders) {
