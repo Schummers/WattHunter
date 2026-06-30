@@ -2,7 +2,7 @@
 
 > **Living document** — Updated with every rule change.
 > Source of truth for implemented and planned game mechanics.
-> Last updated: 2026-06-04
+> Last updated: 2026-06-30
 
 ## Overview
 
@@ -19,6 +19,7 @@ WattHunter is a cycling fantasy game for friend groups. Players build virtual te
 | A player can be in multiple leagues | Yes |
 | Invite code | 6 alphanumeric characters (no 0/O/1/I/l) |
 | League statuses | pending → active → completed |
+| Game mode | `manager` (default) or `classic` — see §19 |
 
 **Launch rules:**
 - Only the commissioner (creator) can start the first auction
@@ -628,3 +629,100 @@ Historical note: GC no-cumul was applied manually during the 2026-06-03 Giro cut
 ### Evaluation
 - Goals are evaluated after each stage scoring.
 - Payout is credited to treasury immediately upon goal completion.
+
+---
+
+## 19. Game Modes — Manager vs Classic
+
+WattHunter has **two league modes**, selected at league creation and stored in
+`leagues.mode` (`'manager' | 'classic'`, default `'manager'`). Everything in §1–§13
+above describes **Manager mode** (the original, full-economy game). **Classic mode** is a
+simpler, more egalitarian variant that reuses the same auction + scoring engine but flattens
+the economy. The two modes share exactly one persistent invariant: **cumulative XP + the
+league GC ranking**.
+
+### Manager vs Classic at a glance
+
+| | Manager (default) | Classic |
+|---|---|---|
+| Economy | Persistent treasury, sponsor income, recurring salaries | Flat **1.5M budget reset every phase**, no salaries, no sponsors |
+| Market | Progressive unlock by level + co-unlock | **Everyone is level 8** → full rider pool |
+| Balancing | Level curve, co-unlock, underdog | None (equality via equal budget) |
+| Squad | Roster ≤12 (contracts) + 8-rider GT squad + bench | **Single layer: 8 riders = the squad** |
+| Tactics | 5 | 4 (**Call the Bus removed** — no bench) |
+| Policies / strategies | Yes | No |
+| Sponsors / GT goals | Yes | No |
+| Underdog | Yes | No (`underdog_eligible = false`) |
+| Persists between phases | Roster + treasury | **Only cumulative XP + GC** |
+
+### Classic rules (locked)
+
+1. **4 phases** (a shorter calendar than Manager's 9): Classics (id 3) → Giro (4) → Tour (6)
+   → Vuelta (8). See `lib/classic-phases.ts` (`CLASSIC_PHASE_IDS`).
+2. **Flat 1.5M budget** (`CLASSIC_PHASE_BUDGET`), reset to 1.5M at the start of each phase.
+   No treasury carries over, no recurring salary. A bid is a **one-time cost** inside the
+   phase envelope (sum of bids ≤ treasury, enforced by `place_bid` as in Manager).
+3. **All teams level 8** → full pool, co-unlock always satisfied, no level differentiation.
+4. **8 riders per phase** (`CLASSIC_SQUAD_SIZE`), single layer: the GT squad **is** the
+   roster. Role caps unchanged (1 GC, 1 sprint, 1 climb, 1 TT, 2 stage hunters, 2
+   domestiques = 8). `place_bid` caps the squad at 8 in classic (vs 12 at level 8 in Manager).
+5. **3 auction rounds** per phase (unchanged).
+6. **Roster frozen** during a phase: no release/rebid once the phase auction has started.
+7. **No sponsors, no policies, no underdog.**
+8. **Call the Bus removed** (no bench). The other 4 tactics remain.
+9. Achievements, Level and Treasury columns are **left as-is** — Level/Treasury simply render
+   empty in classic (no column removal = no custom code).
+
+### Budget lifecycle (important nuance)
+
+The per-phase reset is the `classic_phase_reset` RPC (migration `20260625000100`): it sets
+`treasury = 1,500,000`, archives/releases the previous phase's contracts (new auction starts
+on an empty squad, full budget), and marks the phase confirmed. It is the classic counterpart
+of `confirm_phase_setup` and runs at the **phase transition** (when the last round of a phase
+closes, via `triggerPhasePayday`).
+
+Because that reset fires at phase **end**, the **first** phase's budget is **not** funded by
+it — it is seeded at team creation via `classicTeamDefaults()` (`level 8`, `treasury 1.5M`,
+`underdog_eligible false`, no sponsor). The phase-transition RPC is routed by
+`phaseResetRpcFor(mode)`.
+
+### What classic keeps / neutralizes / removes
+
+| System | Classic | Mechanism |
+|---|---|---|
+| Auctions + 3 rounds, exclusive ownership | Keep | Unchanged (`contracts` unique constraint) |
+| Scoring + cumulative XP + GC | Keep | `scoring.py` is **mode-agnostic** (never reads `mode`) |
+| GT roles + caps (8), tactics (4) | Keep | `gt_squad` reused; Call the Bus removed |
+| Level / pool gating / co-unlock | Neutralize | Everyone level 8 (config, not code) |
+| Underdog | Neutralize | `underdog_eligible = false` |
+| Sponsors + bonuses + GT goals | Remove | No sponsor assigned; `sponsor_bonus.py` / `goal_evaluator.py` not run on classic leagues |
+| Policies / strategies | Remove | Not exposed; strategy boost = 0 |
+| Persistent treasury / recurring salaries | Replace | 1.5M reset per phase |
+| Bench / roster ≤12 / Call the Bus | Remove | Single 8-rider layer |
+
+### One pipeline, not two
+
+Classic is **not a parallel system**. Round resolution (`forceResolveRound`) and scoring
+(`scoring.py`) are fully shared and never branch on mode. Classic adds only **three shallow
+branch points**: the `place_bid` slot cap (8), the phase-reset RPC choice
+(`classic_phase_reset` vs `confirm_phase_setup`), and budget display.
+
+### Classic UI (mode-conditional rendering)
+
+- **Nav / Team tab**: no Budget tab; the Team tab is the **Race Team** (GT squad builder)
+  only — `/team` redirects to `/team/gt` in classic.
+- **Auction**: Sponsor & Strategies section hidden; slot counter shows `/8`; budget shown as
+  `treasury − spent` (consistent in the summary card and the sticky footer).
+- **Tactics**: Call the Bus card hidden.
+- **Lobby**: "Level & Pool" tab hidden (everyone level 8).
+- **Ranking / Achievements**: unchanged.
+
+### Status & caveats (as of 2026-06-30)
+
+- Shipped via PR #52 (`056ade4`); front aligned to classic rules + Tour 2026 stage calendar
+  added 2026-06-30 (slots, budget, sponsor hiding, team→GT redirect, home "next phase").
+- **MVP covers the GT phases** (Giro/Tour/Vuelta). **Classics-phase scoring is deferred**
+  (one-day races, raw PCS path, no roles/tactics).
+- **Stage schedules**: Giro 2026 + Tour 2026 present in `lib/gt-stage-schedule.ts`; **Vuelta
+  2026 still missing** (stage cards won't render during the Vuelta until added).
+- Playtest league: see the "Classic League V2 seed" memory.
