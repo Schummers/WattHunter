@@ -87,14 +87,14 @@ New teams start at **200,000 EUR**.
 ### 4.4 Salary Formula
 
 ```
-Monthly salary = max(5,000, floor(PCS_points_1yr × 2,000 / 12 / 1,000) × 1,000)
+Monthly salary = max(5,000, floor(PCS_points_1yr × 2,500 / 12 / 1,000) × 1,000)
 Floor: 5,000 EUR/month | Rounded down to nearest 1,000 | No cap
 ```
 
 **Examples:**
-- 114 pts PCS (#600) → 228K/yr → **19,000 EUR/month**
-- 400 pts PCS (#100) → 800K/yr → **66,000 EUR/month**
-- 2,216 pts PCS (#5) → 4.4M/yr → **369,000 EUR/month**
+- 114 pts PCS (#600) → 285K/yr → **23,000 EUR/month**
+- 400 pts PCS (#100) → 1.0M/yr → **83,000 EUR/month**
+- 2,216 pts PCS (#5) → 5.54M/yr → **461,000 EUR/month**
 
 > **Note:** The salary determines the **minimum bid at auction**. The actual contract salary is the winning bid (= `locked_salary`).
 
@@ -339,7 +339,7 @@ At the start of each phase, the player **confirms** their configuration:
 | Starting treasury | 200,000 EUR |
 | Default sponsor | Lotto T1, 250,000 EUR/phase (fixed) |
 | Auction = monthly salary | Yes — not a one-time purchase |
-| Monthly salary | max(5,000, floor(PCS_pts × 2,000 / 12 / 1,000) × 1,000) |
+| Monthly salary | max(5,000, floor(PCS_pts × 2,500 / 12 / 1,000) × 1,000) |
 | Salary floor | 5,000 EUR/month |
 | Release fee | None (phase salary not refunded) |
 | Bankruptcy tolerance | −10,000 EUR |

@@ -51,7 +51,7 @@ export function formatShortDate(date: Date | string): string {
 }
 
 /** Salary coefficient: pts_PCS × SALARY_COEFFICIENT / 12, floor at SALARY_FLOOR. */
-export const SALARY_COEFFICIENT = 2000;
+export const SALARY_COEFFICIENT = 2500;
 export const SALARY_FLOOR = 5000;
 
 /** Calculate minimum monthly salary for a rider based on PCS points (floored to nearest 1000). */

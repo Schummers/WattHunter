@@ -307,8 +307,8 @@ async def new_browser_page(browser):
 # Pipeline A — init-riders (Task 8: removed season rankings import)
 # ---------------------------------------------------------------------------
 
-async def run_init_riders() -> None:
-    """Annual initialization: sync top 600 PCS riders."""
+async def run_init_riders(pages: int = 6) -> None:
+    """Annual initialization: sync top PCS riders (default top 600 = 6 pages of 100)."""
     from sync import get_supabase, sync_top500
 
     supabase = get_supabase()
@@ -316,9 +316,9 @@ async def run_init_riders() -> None:
     print("=== Pipeline A: init-riders ===")
     print()
 
-    # Sync top 600 PCS global ranking (season rankings handled by Pipeline E)
-    print("--- Sync top 600 PCS riders ---")
-    result = await sync_top500(supabase, pages=6)
+    # Sync top PCS global ranking (season rankings handled by Pipeline E)
+    print(f"--- Sync top {pages * 100} PCS riders ---")
+    result = await sync_top500(supabase, pages=pages)
     print(json.dumps(result, indent=2))
 
     print()
@@ -910,9 +910,15 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # init-riders
-    subparsers.add_parser(
+    init_riders = subparsers.add_parser(
         "init-riders",
-        help="Pipeline A — sync top 600 PCS riders.",
+        help="Pipeline A — sync top PCS riders (default 600).",
+    )
+    init_riders.add_argument(
+        "--pages",
+        type=int,
+        default=6,
+        help="Number of 100-rider ranking pages to scrape (default 6 = top 600; use 3 for top 300).",
     )
 
     # post-race
@@ -1070,7 +1076,7 @@ async def main() -> None:
     args = parser.parse_args()
 
     if args.command == "init-riders":
-        await run_init_riders()
+        await run_init_riders(pages=args.pages)
     elif args.command == "post-race":
         if not args.race and not args.auto:
             print("ERROR: Either --race or --auto is required.")
