@@ -645,27 +645,30 @@ league GC ranking**.
 
 | | Manager (default) | Classic |
 |---|---|---|
-| Economy | Persistent treasury, sponsor income, recurring salaries | Flat **1.5M budget reset every phase**, no salaries, no sponsors |
+| Economy | Persistent treasury, sponsor income, recurring salaries | Flat **2M budget reset every phase**, no salaries, no sponsors |
 | Market | Progressive unlock by level + co-unlock | **Everyone is level 8** → full rider pool |
 | Balancing | Level curve, co-unlock, underdog | None (equality via equal budget) |
-| Squad | Roster ≤12 (contracts) + 8-rider GT squad + bench | **Single layer: 8 riders = the squad** |
+| Squad | Roster ≤12 (contracts) + 8-rider GT squad + bench | **Single layer: 10 riders = the squad** |
 | Tactics | 5 | 4 (**Call the Bus removed** — no bench) |
 | Policies / strategies | Yes | No |
 | Sponsors / GT goals | Yes | No |
-| Underdog | Yes | No (`underdog_eligible = false`) |
+| Underdog | Yes (catch-up for trailing teams) | Reused as 2 **Wildcard** slots per squad (`underdog_eligible` stays false) |
 | Persists between phases | Roster + treasury | **Only cumulative XP + GC** |
 
 ### Classic rules (locked)
 
 1. **4 phases** (a shorter calendar than Manager's 9): Classics (id 3) → Giro (4) → Tour (6)
    → Vuelta (8). See `lib/classic-phases.ts` (`CLASSIC_PHASE_IDS`).
-2. **Flat 1.5M budget** (`CLASSIC_PHASE_BUDGET`), reset to 1.5M at the start of each phase.
+2. **Flat 2M budget** (`CLASSIC_PHASE_BUDGET`), reset to 2M at the start of each phase.
    No treasury carries over, no recurring salary. A bid is a **one-time cost** inside the
    phase envelope (sum of bids ≤ treasury, enforced by `place_bid` as in Manager).
 3. **All teams level 8** → full pool, co-unlock always satisfied, no level differentiation.
-4. **8 riders per phase** (`CLASSIC_SQUAD_SIZE`), single layer: the GT squad **is** the
-   roster. Role caps unchanged (1 GC, 1 sprint, 1 climb, 1 TT, 2 stage hunters, 2
-   domestiques = 8). `place_bid` caps the squad at 8 in classic (vs 12 at level 8 in Manager).
+4. **10 riders per phase** (`CLASSIC_SQUAD_SIZE`), single layer: the GT squad **is** the
+   roster. Role caps: 1 GC, 1 sprint, 1 climb, 1 TT, 2 stage hunters, 2 domestiques, **2
+   Wildcards = 10**. `place_bid` caps the squad at 10 in classic (vs 12 at level 8 in Manager).
+   **Wildcard** = the `underdog` role reused only for its scoring multiplier (stage points ×
+   clamp(pcs_rank/100, 1, 4), no final-classification bonus); available in classic regardless
+   of `underdog_eligible`. Migration `20260630130000` (reversible via `_rollback/*.down.sql`).
 5. **3 auction rounds** per phase (unchanged).
 6. **Roster frozen** during a phase: no release/rebid once the phase auction has started.
 7. **No sponsors, no policies, no underdog.**
@@ -682,7 +685,7 @@ of `confirm_phase_setup` and runs at the **phase transition** (when the last rou
 closes, via `triggerPhasePayday`).
 
 Because that reset fires at phase **end**, the **first** phase's budget is **not** funded by
-it — it is seeded at team creation via `classicTeamDefaults()` (`level 8`, `treasury 1.5M`,
+it — it is seeded at team creation via `classicTeamDefaults()` (`level 8`, `treasury 2M`,
 `underdog_eligible false`, no sponsor). The phase-transition RPC is routed by
 `phaseResetRpcFor(mode)`.
 
@@ -697,7 +700,7 @@ it — it is seeded at team creation via `classicTeamDefaults()` (`level 8`, `tr
 | Underdog | Neutralize | `underdog_eligible = false` |
 | Sponsors + bonuses + GT goals | Remove | No sponsor assigned; `sponsor_bonus.py` / `goal_evaluator.py` not run on classic leagues |
 | Policies / strategies | Remove | Not exposed; strategy boost = 0 |
-| Persistent treasury / recurring salaries | Replace | 1.5M reset per phase |
+| Persistent treasury / recurring salaries | Replace | 2M reset per phase |
 | Bench / roster ≤12 / Call the Bus | Remove | Single 8-rider layer |
 
 ### One pipeline, not two
@@ -711,7 +714,7 @@ branch points**: the `place_bid` slot cap (8), the phase-reset RPC choice
 
 - **Nav / Team tab**: no Budget tab; the Team tab is the **Race Team** (GT squad builder)
   only — `/team` redirects to `/team/gt` in classic.
-- **Auction**: Sponsor & Strategies section hidden; slot counter shows `/8`; budget shown as
+- **Auction**: Sponsor & Strategies section hidden; slot counter shows `/10`; budget shown as
   `treasury − spent` (consistent in the summary card and the sticky footer).
 - **Tactics**: Call the Bus card hidden.
 - **Lobby**: "Level & Pool" tab hidden (everyone level 8).
