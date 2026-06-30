@@ -61,7 +61,7 @@ export default async function MarketPage({
   const [
     { data: riders },
     { data: leagueTeams },
-    { data: giroStartlist },
+    { data: tdfStartlist },
   ] = await Promise.all([
     supabase
       .from("riders")
@@ -76,7 +76,7 @@ export default async function MarketPage({
     supabase
       .from("race_startlists")
       .select("rider_id")
-      .eq("race_slug", "race/giro-d-italia/2026"),
+      .eq("race_slug", "race/tour-de-france/2026"),
   ]);
 
   const leagueTeamIds = (leagueTeams ?? []).map((t) => t.id);
@@ -190,7 +190,7 @@ export default async function MarketPage({
     }
   }
 
-  const giroRiderIds = (giroStartlist ?? []).map((s) => s.rider_id);
+  const tdfRiderIds = (tdfStartlist ?? []).map((s) => s.rider_id);
 
   return (
     <MarketClient
@@ -206,7 +206,7 @@ export default async function MarketPage({
       activeSalaries={activeSalaries}
       phaseConfirmed={phaseConfirmed}
       draftBids={draftBidMap}
-      giroRiderIds={giroRiderIds}
+      tdfRiderIds={tdfRiderIds}
     />
   );
 }
@@ -234,7 +234,7 @@ async function renderDemoAuctionMarket() {
   const [
     { data: riders },
     { data: leagueTeams },
-    { data: giroStartlist },
+    { data: tdfStartlist },
   ] = await Promise.all([
     supabase
       .from("riders")
@@ -249,7 +249,7 @@ async function renderDemoAuctionMarket() {
     supabase
       .from("race_startlists")
       .select("rider_id")
-      .eq("race_slug", "race/giro-d-italia/2026"),
+      .eq("race_slug", "race/tour-de-france/2026"),
   ]);
 
   const leagueTeamIds = (leagueTeams ?? []).map((t) => t.id);
@@ -339,7 +339,7 @@ async function renderDemoAuctionMarket() {
     sponsorIncome = (sp as { monthly_budget: number }).monthly_budget ?? 0;
   }
 
-  const giroRiderIds = (giroStartlist ?? []).map((s) => s.rider_id);
+  const tdfRiderIds = (tdfStartlist ?? []).map((s) => s.rider_id);
 
   return (
     <MarketClient
@@ -355,7 +355,7 @@ async function renderDemoAuctionMarket() {
       activeSalaries={activeSalaries}
       phaseConfirmed={phaseConfirmed}
       draftBids={draftBidMap}
-      giroRiderIds={giroRiderIds}
+      tdfRiderIds={tdfRiderIds}
     />
   );
 }
