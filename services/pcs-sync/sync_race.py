@@ -659,7 +659,9 @@ async def import_startlist(
 
     imported = 0
     skipped = 0
+    removed = 0
     errors: List[str] = []
+    imported_ids: List[str] = []
 
     for entry in startlist_entries:
         rider_url = entry.get("rider_url", "")
@@ -679,14 +681,34 @@ async def import_startlist(
                 on_conflict="rider_id,race_slug",
             ).execute()
             imported += 1
+            imported_ids.append(rider_id)
         except Exception as exc:
             logger.error("Failed to upsert startlist entry for %s: %s", rider_url, exc)
             errors.append(str(exc))
+
+    # Purge stale entries: riders previously stored for this race but no longer on the
+    # PCS startlist (provisional selections get trimmed to the final squad as the race
+    # nears). Only runs when this scrape returned a real startlist, so a failed/empty
+    # fetch never wipes the existing data.
+    if imported_ids:
+        existing = (
+            supabase.table("race_startlists")
+            .select("rider_id")
+            .eq("race_slug", race_slug)
+            .execute()
+        )
+        stale_ids = [r["rider_id"] for r in (existing.data or []) if r["rider_id"] not in set(imported_ids)]
+        if stale_ids:
+            supabase.table("race_startlists").delete().eq("race_slug", race_slug).in_(
+                "rider_id", stale_ids
+            ).execute()
+            removed = len(stale_ids)
 
     return {
         "race": race_slug,
         "imported": imported,
         "skipped": skipped,
+        "removed": removed,
         "total_in_startlist": len(startlist_entries),
         "errors": errors,
     }
