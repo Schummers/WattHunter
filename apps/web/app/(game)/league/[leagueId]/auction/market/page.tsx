@@ -59,7 +59,7 @@ export default async function MarketPage({
   const phaseConfirmedId = (team as { phase_confirmed_id?: number | null })?.phase_confirmed_id ?? null;
   const phaseConfirmed = phaseConfirmedId === getCurrentPhase().id;
 
-  // Classic mode: fixed 8-rider squad regardless of level (matches the place_bid backend cap).
+  // Classic mode: fixed squad size (CLASSIC_SQUAD_SIZE) regardless of level (matches the place_bid backend cap).
   const { data: league } = await supabase
     .from("leagues")
     .select("mode")

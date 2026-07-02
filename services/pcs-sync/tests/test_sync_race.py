@@ -233,6 +233,79 @@ async def test_imports_startlist():
 
 
 # ---------------------------------------------------------------------------
+# 6b. test_startlist_purges_stale_riders
+# ---------------------------------------------------------------------------
+
+
+async def test_startlist_purges_stale_riders():
+    """Full re-scrape (>= PURGE_MIN_RATIO of stored rows) → stale riders removed."""
+    import sync_race
+
+    fake_startlist = [
+        {"rider_url": "rider/one", "team_name": "Team Alpha"},
+        {"rider_url": "rider/two", "team_name": "Team Beta"},
+    ]
+
+    mock_startlist = MagicMock()
+    mock_startlist.return_value.startlist.return_value = fake_startlist
+
+    sb = make_supabase(
+        [  # riders select — both entries match
+            {"id": "r1", "pcs_slug": "rider/one"},
+            {"id": "r2", "pcs_slug": "rider/two"},
+        ],
+        [],  # upsert rider/one
+        [],  # upsert rider/two
+        [  # existing race_startlists rows — r3 is no longer on the startlist
+            {"rider_id": "r1"},
+            {"rider_id": "r2"},
+            {"rider_id": "r3"},
+        ],
+        [],  # delete stale rows
+    )
+
+    with _patch_fetch_html(), patch("sync_race.RaceStartlist", mock_startlist):
+        result = await sync_race.import_startlist(
+            sb, page=MagicMock(),
+            race_slug=RACE_SLUG, race_name=RACE_NAME, race_date=RACE_DATE,
+        )
+
+    assert result["imported"] == 2
+    assert result["removed"] == 1  # r3 purged (2 imported >= 0.5 * 3 stored)
+
+
+async def test_startlist_purge_skipped_on_partial_scrape():
+    """Partial scrape (< PURGE_MIN_RATIO of stored rows) → purge skipped, nothing removed."""
+    import sync_race
+
+    fake_startlist = [
+        {"rider_url": "rider/one", "team_name": "Team Alpha"},
+    ]
+
+    mock_startlist = MagicMock()
+    mock_startlist.return_value.startlist.return_value = fake_startlist
+
+    sb = make_supabase(
+        [{"id": "r1", "pcs_slug": "rider/one"}],  # riders select
+        [],  # upsert rider/one
+        [  # existing rows: 3 stored, only 1 imported → 1 < 0.5 * 3 → skip purge
+            {"rider_id": "r1"},
+            {"rider_id": "r2"},
+            {"rider_id": "r3"},
+        ],
+    )
+
+    with _patch_fetch_html(), patch("sync_race.RaceStartlist", mock_startlist):
+        result = await sync_race.import_startlist(
+            sb, page=MagicMock(),
+            race_slug=RACE_SLUG, race_name=RACE_NAME, race_date=RACE_DATE,
+        )
+
+    assert result["imported"] == 1
+    assert result["removed"] == 0  # valid rows preserved despite truncated scrape
+
+
+# ---------------------------------------------------------------------------
 # 7. test_import_race_results_sets_is_itt_for_itt_stage
 # ---------------------------------------------------------------------------
 
