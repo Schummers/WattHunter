@@ -12,7 +12,7 @@ describe("ScoringDocCard", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders all 5 section titles", () => {
+  it("renders all 6 section titles", () => {
     render(<ScoringDocCard />);
     expect(
       screen.getByRole("heading", { name: "Daily classifications", level: 3 }),
@@ -27,8 +27,18 @@ describe("ScoringDocCard", () => {
       screen.getByRole("heading", { name: "Sprinter", level: 3 }),
     ).toBeInTheDocument();
     expect(
+      screen.getByRole("heading", { name: "Underdog", level: 3 }),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("heading", { name: "Nemesis (tactic)", level: 3 }),
     ).toBeInTheDocument();
+  });
+
+  it("renders the Underdog rank-to-multiplier examples", () => {
+    render(<ScoringDocCard />);
+    expect(screen.getByText("PCS rank 200")).toBeInTheDocument();
+    expect(screen.getByText("×2.0")).toBeInTheDocument();
+    expect(screen.getByText("×3.0")).toBeInTheDocument();
   });
 
   it("renders the daily-classification 2-column table rows", () => {

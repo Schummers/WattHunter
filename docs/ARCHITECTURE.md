@@ -67,7 +67,7 @@ watthunter/
 │   │   │       │   ├── auctions/       # Draft bids + validation des rounds
 │   │   │       │   │   └── rounds/     # Calendrier des rounds (commissioner)
 │   │   │       │   ├── budget/          # Finances equipe (P&L, tresorerie)
-│   │   │       │   └── gt/             # Grand Tour squad builder V2 (cap 8, ou 10 si underdog_eligible — Spec B)
+│   │   │       │   └── gt/             # Grand Tour squad builder V2 (cap 8, ou 10 si underdog_eligible ou mode classic — Spec B)
 │   │   │       │       ├── tactics/    # 5 tactiques in-race (Unleash, Overdrive, Nemesis x2, Call the Bus)
 │   │   │       │       └── rescue/     # GT Rescue (DNF refund/replace)
 │   │   │       ├── achievements/       # Systeme d'achievements
@@ -387,7 +387,7 @@ users ←──── league_members ────→ leagues
        -- contracts.underdog_discount boolean (DEFAULT false) — contrat recruté sous conditions Underdog
        -- rider_xp_daily.underdog_mult NUMERIC(3,2) (DEFAULT 1.0) — boost Underdog séparé de gt_role_mult
 
-       gt_squad                        (cap 8 coureurs par phase ; +race_slug TEXT nullable — Spec A A9 P3b ; partial unique indexes (team_id, race_slug) par rôle mirror celles sur phase_id ; Giro 2026 legacy → race_slug=NULL, Tour+Vuelta backfillés ; cap dynamique 8→10 si underdog_eligible — trigger enforce_gt_squad_cap race_slug-aware)
+       gt_squad                        (cap 8 coureurs par phase ; +race_slug TEXT nullable — Spec A A9 P3b ; partial unique indexes (team_id, race_slug) par rôle mirror celles sur phase_id ; Giro 2026 legacy → race_slug=NULL, Tour+Vuelta backfillés ; cap dynamique 8→10 si underdog_eligible ou mode classic — trigger enforce_gt_squad_cap race_slug-aware)
        gt_role_assignments             (append-only role history, cutoff 11:00 CET ; +race_slug TEXT nullable — Spec A A9 P3b ; idx_gt_role_team_race_slug)
        gt_daily_classifications        (cache GC/sprint/KOM/youth par stage — classification_type accepte désormais 'youth' en plus de gc/points/kom)
        gt_final_classifications        (final Points/KOM/Youth jersey standings — rank-only, Spec A A2 ; dédié scoring uniquement, hors race_results pour éviter pollution sponsor_bonus/goal_evaluator/UI ; migration 20260602130100)
@@ -414,7 +414,7 @@ Jalons majeurs (par date) :
 Second mode de jeu `classic` (vs `manager`), règles dans `docs/GAME_RULES.md` §14. Réutilise le moteur enchère + scoring ; classic = **3 branchements seulement** (slots, RPC payday, affichage budget). Aucune nouvelle table.
 - **DB** : `20260625000000_leagues_mode_column` (colonne `leagues.mode text NOT NULL DEFAULT 'manager' CHECK in ('manager','classic')`) ; `20260625000100_classic_phase_reset_rpc` (RPC `classic_phase_reset(p_team_id, p_phase_id, p_phase_label)` SECURITY DEFINER : treasury→1,5M + archive contrats phase précédente + `phase_confirmed_id`, idempotent ; ajoute type `budget_reset` au CHECK `treasury_log`) ; `20260625000200_place_bid_classic_cap` (copie `place_bid` + branche `IF mode='classic' THEN v_max_slots := 8`).
 - **Seed playtest** : `20260625010000_seed_classic_league_v2` + `20260625020000_fix_classic_league_v2_playable` (ligue V2, voir mémoire). Le seed V2 a un garde local-portabilité (skip si users prod absents) ajouté par PR #54.
-- **TS lib** : `lib/league-mode.ts` (`isClassic`, `CLASSIC_SQUAD_SIZE=8`, `CLASSIC_PHASE_BUDGET=1_500_000`, `classicTeamDefaults`, `phaseResetRpcFor`) ; `lib/classic-phases.ts` (`CLASSIC_PHASE_IDS=[3,4,6,8]`). Payday routé dans `auction/actions.ts` (`triggerPhasePayday`). 1re phase financée à la création (`classicTeamDefaults`), pas par `classic_phase_reset` (qui tourne en fin de phase).
+- **TS lib** : `lib/league-mode.ts` (`isClassic`, `CLASSIC_SQUAD_SIZE=10`, `CLASSIC_PHASE_BUDGET=2_000_000`, `classicTeamDefaults`, `phaseResetRpcFor`) ; `lib/classic-phases.ts` (`CLASSIC_PHASE_IDS=[3,4,6,8]`). Payday routé dans `auction/actions.ts` (`triggerPhasePayday`). 1re phase financée à la création (`classicTeamDefaults`), pas par `classic_phase_reset` (qui tourne en fin de phase).
 - **Front mode-conditionnel** : `sidebar.tsx` / `bottom-nav.tsx` (drop Budget), `team/layout.tsx` (Team = Race Team GT seul), `team/page.tsx` (redirect `/team`→`/team/gt`), `auction/page.tsx` (`maxSlots = isClassic ? 8 : getMaxSlots`), `auction/auctions-client.tsx` (budget `treasury−spent` + section sponsor masquée), `components/budget-summary.tsx` (budget plat), `components/config-cards.tsx` (null en classic), `team-tactics-section.tsx` (drop Call the Bus). Home `lib/get-race-feed-data.ts` : `computeNextPhase` affiche la phase à venir même feed vide (plus de "Season over"). Calendrier Tour 2026 dans `lib/gt-stage-schedule.ts` (Vuelta encore absente).
 
 ### RLS — Architecture

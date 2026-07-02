@@ -652,7 +652,7 @@ league GC ranking**.
 | Tactics | 5 | 4 (**Call the Bus removed** — no bench) |
 | Policies / strategies | Yes | No |
 | Sponsors / GT goals | Yes | No |
-| Underdog | Yes (catch-up for trailing teams) | Reused as 2 **Wildcard** slots per squad (`underdog_eligible` stays false) |
+| Underdog | Yes (catch-up for trailing teams) | Reused as 2 **Underdog** slots per squad (`underdog_eligible` stays false) |
 | Persists between phases | Roster + treasury | **Only cumulative XP + GC** |
 
 ### Classic rules (locked)
@@ -665,10 +665,11 @@ league GC ranking**.
 3. **All teams level 8** → full pool, co-unlock always satisfied, no level differentiation.
 4. **10 riders per phase** (`CLASSIC_SQUAD_SIZE`), single layer: the GT squad **is** the
    roster. Role caps: 1 GC, 1 sprint, 1 climb, 1 TT, 2 stage hunters, 2 domestiques, **2
-   Wildcards = 10**. `place_bid` caps the squad at 10 in classic (vs 12 at level 8 in Manager).
-   **Wildcard** = the `underdog` role reused only for its scoring multiplier (stage points ×
-   clamp(pcs_rank/100, 1, 4), no final-classification bonus); available in classic regardless
-   of `underdog_eligible`. Migration `20260630130000` (reversible via `_rollback/*.down.sql`).
+   Underdogs = 10**. `place_bid` caps the squad at 10 in classic (vs 12 at level 8 in Manager).
+   The 2 **Underdog** slots reuse the `underdog` role only for its scoring multiplier (stage
+   points × clamp(pcs_rank/100, 1, 4), no final-classification bonus) and are available in
+   classic regardless of `underdog_eligible` (kept `false`). Same role name and scoring as
+   Manager, no rename. Migration `20260630130000` (reversible via `_rollback/*.down.sql`).
 5. **3 auction rounds** per phase (unchanged).
 6. **Roster frozen** during a phase: no release/rebid once the phase auction has started.
 7. **No sponsors, no policies, no underdog.**
@@ -678,8 +679,9 @@ league GC ranking**.
 
 ### Budget lifecycle (important nuance)
 
-The per-phase reset is the `classic_phase_reset` RPC (migration `20260625000100`): it sets
-`treasury = 1,500,000`, archives/releases the previous phase's contracts (new auction starts
+The per-phase reset is the `classic_phase_reset` RPC (migration `20260625000100`, budget raised
+to 2M in `20260630130000`): it sets
+`treasury = 2,000,000`, archives/releases the previous phase's contracts (new auction starts
 on an empty squad, full budget), and marks the phase confirmed. It is the classic counterpart
 of `confirm_phase_setup` and runs at the **phase transition** (when the last round of a phase
 closes, via `triggerPhasePayday`).
@@ -695,19 +697,19 @@ it — it is seeded at team creation via `classicTeamDefaults()` (`level 8`, `tr
 |---|---|---|
 | Auctions + 3 rounds, exclusive ownership | Keep | Unchanged (`contracts` unique constraint) |
 | Scoring + cumulative XP + GC | Keep | `scoring.py` is **mode-agnostic** (never reads `mode`) |
-| GT roles + caps (8), tactics (4) | Keep | `gt_squad` reused; Call the Bus removed |
+| GT roles + caps (10 in classic), tactics (4) | Keep | `gt_squad` reused; Call the Bus removed |
 | Level / pool gating / co-unlock | Neutralize | Everyone level 8 (config, not code) |
 | Underdog | Neutralize | `underdog_eligible = false` |
 | Sponsors + bonuses + GT goals | Remove | No sponsor assigned; `sponsor_bonus.py` / `goal_evaluator.py` not run on classic leagues |
 | Policies / strategies | Remove | Not exposed; strategy boost = 0 |
 | Persistent treasury / recurring salaries | Replace | 2M reset per phase |
-| Bench / roster ≤12 / Call the Bus | Remove | Single 8-rider layer |
+| Bench / roster ≤12 / Call the Bus | Remove | Single 10-rider layer |
 
 ### One pipeline, not two
 
 Classic is **not a parallel system**. Round resolution (`forceResolveRound`) and scoring
 (`scoring.py`) are fully shared and never branch on mode. Classic adds only **three shallow
-branch points**: the `place_bid` slot cap (8), the phase-reset RPC choice
+branch points**: the `place_bid` slot cap (10), the phase-reset RPC choice
 (`classic_phase_reset` vs `confirm_phase_setup`), and budget display.
 
 ### Classic UI (mode-conditional rendering)
