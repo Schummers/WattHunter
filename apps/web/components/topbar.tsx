@@ -42,7 +42,7 @@ export function TopBar({
 
   return (
     <header
-      className="relative z-20 flex h-10 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-app)] px-4 lg:hidden"
+      className="relative z-50 flex h-10 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-app)] px-4 lg:hidden"
     >
       <div className="relative" ref={dropdownRef}>
         <button
