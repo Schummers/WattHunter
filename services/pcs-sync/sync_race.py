@@ -635,6 +635,12 @@ async def import_daily_classifications(
     return counts
 
 
+# Purge safety: skip the stale-row purge when the freshly scraped set covers less
+# than this fraction of the rows already stored for the race — a truncated
+# (Cloudflare-interrupted) scrape must never wipe a valid startlist.
+PURGE_MIN_RATIO = 0.5
+
+
 async def import_startlist(
     supabase: Client,
     page,
@@ -688,21 +694,32 @@ async def import_startlist(
 
     # Purge stale entries: riders previously stored for this race but no longer on the
     # PCS startlist (provisional selections get trimmed to the final squad as the race
-    # nears). Only runs when this scrape returned a real startlist, so a failed/empty
-    # fetch never wipes the existing data.
+    # nears). Guards: a failed/empty fetch never wipes existing data (imported_ids
+    # empty), and a PARTIAL scrape (Cloudflare truncation) skips the purge when the
+    # new set covers less than PURGE_MIN_RATIO of the stored rows.
+    # Known limitation: a rider still listed on PCS whose riders.pcs_slug no longer
+    # matches (slug rename between imports) has no rider_id here and would be purged
+    # on an otherwise-valid run.
     if imported_ids:
-        existing = (
-            supabase.table("race_startlists")
+        existing_rows = _fetch_all(
+            lambda: supabase.table("race_startlists")
             .select("rider_id")
             .eq("race_slug", race_slug)
-            .execute()
         )
-        stale_ids = [r["rider_id"] for r in (existing.data or []) if r["rider_id"] not in set(imported_ids)]
-        if stale_ids:
-            supabase.table("race_startlists").delete().eq("race_slug", race_slug).in_(
-                "rider_id", stale_ids
-            ).execute()
-            removed = len(stale_ids)
+        if existing_rows and len(imported_ids) < PURGE_MIN_RATIO * len(existing_rows):
+            logger.warning(
+                "Startlist purge skipped for %s: %d imported vs %d stored — "
+                "partial scrape suspected",
+                race_slug, len(imported_ids), len(existing_rows),
+            )
+        else:
+            imported_set = set(imported_ids)
+            stale_ids = [r["rider_id"] for r in existing_rows if r["rider_id"] not in imported_set]
+            if stale_ids:
+                supabase.table("race_startlists").delete().eq("race_slug", race_slug).in_(
+                    "rider_id", stale_ids
+                ).execute()
+                removed = len(stale_ids)
 
     return {
         "race": race_slug,

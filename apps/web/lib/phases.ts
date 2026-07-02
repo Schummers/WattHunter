@@ -28,6 +28,7 @@ export const AUCTION_PHASES: AuctionPhase[] = [
   { id: 3, label: "Classics Part 2",  startMonth: 4,  startDay: 2,  endMonth: 5,  endDay: 1,  auctionDates: [{ month: 4, day: 2 }, { month: 4, day: 3 }, { month: 4, day: 4 }] },
   { id: 4, label: "Giro d'Italia",    startMonth: 5,  startDay: 2,  endMonth: 6,  endDay: 1,  auctionDates: [{ month: 5, day: 2 }, { month: 5, day: 3 }, { month: 5, day: 4 }] },
   { id: 5, label: "Pre-Tour",         startMonth: 6,  startDay: 2,  endMonth: 6,  endDay: 29, auctionDates: [{ month: 6, day: 2 }, { month: 6, day: 3 }, { month: 6, day: 4 }] },
+  // TODO(playtest): Tour start shifted 07-02 -> 06-30 for the Classic V2 Tour playtest — revert after.
   { id: 6, label: "Tour de France",   startMonth: 6,  startDay: 30, endMonth: 7,  endDay: 27, auctionDates: [{ month: 6, day: 30 }, { month: 7, day: 1 }, { month: 7, day: 2 }] },
   { id: 7, label: "Post-Tour",        startMonth: 7,  startDay: 28, endMonth: 8,  endDay: 18, auctionDates: [{ month: 7, day: 28 }, { month: 7, day: 29 }, { month: 7, day: 30 }] },
   { id: 8, label: "La Vuelta",        startMonth: 8,  startDay: 19, endMonth: 9,  endDay: 15, auctionDates: [{ month: 8, day: 19 }, { month: 8, day: 20 }, { month: 8, day: 21 }] },

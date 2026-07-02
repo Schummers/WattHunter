@@ -74,7 +74,7 @@ export default async function AuctionsPage({
     .single();
   const isCommissioner = league?.commissioner_id === user.id;
   const leagueMode = (league?.mode ?? "manager") as import("@/lib/league-mode").LeagueMode;
-  // Classic mode: fixed 8-rider squad regardless of level (matches the place_bid backend cap).
+  // Classic mode: fixed squad size (CLASSIC_SQUAD_SIZE) regardless of level (matches the place_bid backend cap).
   const maxSlots = isClassic(leagueMode) ? CLASSIC_SQUAD_SIZE : getMaxSlots(level);
 
   // All-rounds query (includes closed — for stepper display)
