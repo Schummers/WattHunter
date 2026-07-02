@@ -26,7 +26,7 @@ export function ScoringDocCard() {
             How scoring works
           </span>
           <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-            Role multipliers, finals, stage hunter, sprinter and Nemesis rules.
+            Role multipliers, finals, stage hunter, sprinter, underdog and Nemesis rules.
           </span>
         </div>
         <ChevronDown
@@ -111,7 +111,28 @@ export function ScoringDocCard() {
           </div>
         </Section>
 
-        {/* Section 5 — Nemesis profile gating */}
+        {/* Section 5 — Underdog scoring by rank */}
+        <Section
+          title="Underdog"
+          subtitle="The cheaper the rider (higher PCS rank), the bigger the stage boost."
+        >
+          <Table2Col
+            rows={[
+              { label: "PCS rank ≤ 100", chips: [], multiplier: "×1.0" },
+              { label: "PCS rank 200", chips: [], multiplier: "×2.0" },
+              { label: "PCS rank 300", chips: [], multiplier: "×3.0" },
+              { label: "PCS rank 400+", chips: [], multiplier: "×4.0" },
+            ]}
+            headers={["PCS rank", "Stage multiplier"]}
+          />
+          <Note>
+            Multiplier = PCS rank ÷ 100, floored at ×1 and capped at ×4. Applies to stage results
+            only, no boost on GC / Points / KOM finals. A rank-350 rider scoring 10 stage points
+            earns 35.
+          </Note>
+        </Section>
+
+        {/* Section 6 — Nemesis profile gating */}
         <Section
           title="Nemesis (tactic)"
           subtitle="Nemesis can only be placed where the duel makes sense."

@@ -78,7 +78,7 @@ const ROLE_ORDER: Array<{
     role: "stage_hunter",
     label: "Stage Hunter",
     max: 2,
-    desc: "×1.5 on stage points only",
+    desc: "×1.5 on stage points only if in the breakaway (≥30 km), +1 pt per 10 km in the break. ×1.0 otherwise.",
   },
   {
     role: "domestique",
@@ -90,7 +90,7 @@ const ROLE_ORDER: Array<{
     role: "underdog",
     label: "Underdog",
     max: 2,
-    desc: "Eligible teams only. Stage points ×(PCS rank ÷ 100), capped ×4. No bonus on final classifications.",
+    desc: "The cheaper the rider (higher PCS rank), the bigger the boost: stage points × (PCS rank ÷ 100), from ×1 (rank ≤100) up to ×4 (rank ≥400). Stage results only, no bonus on final classifications.",
   },
 ];
 
@@ -216,12 +216,8 @@ export function GtTeamClient({
           const showOpenSlots = riders.length < cap;
           const openSlotCount = cap - riders.length;
           const headerCount = `${riders.length} / ${cap}`;
-          // Classic reuses the underdog role purely for its scoring multiplier; surface it as "Wildcard".
-          const isWildcard = block.role === "underdog" && isClassic(mode);
-          const blockLabel = isWildcard ? "Wildcard" : block.label;
-          const blockDesc = isWildcard
-            ? "Cheap riders shine. Stage points ×(PCS rank ÷ 100), capped ×4. No bonus on final classifications."
-            : block.desc;
+          const blockLabel = block.label;
+          const blockDesc = block.desc;
 
           return (
             <div key={block.role} className="flex flex-col">
@@ -276,11 +272,7 @@ export function GtTeamClient({
           open={!!sheetRole}
           onClose={() => setSheetRole(null)}
           role={sheetRole}
-          roleLabel={
-            sheetRole === "underdog" && isClassic(mode)
-              ? "Wildcard"
-              : ROLE_ORDER.find((r) => r.role === sheetRole)!.label
-          }
+          roleLabel={ROLE_ORDER.find((r) => r.role === sheetRole)!.label}
           roleDesc={ROLE_ORDER.find((r) => r.role === sheetRole)!.desc}
           mode={sheetMode}
           currentRiderId={sheetCurrentRiderId}
