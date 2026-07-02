@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { readSignupIntentCookie, clearSignupIntentCookie } from "./oauth-intent";
 import { createLeagueWithTeam } from "@/lib/league-creation";
 import { getLevelByNumber } from "@/lib/levels";
+import { pickDefaultLeagueId } from "@/lib/default-league";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -196,15 +197,17 @@ export async function GET(request: Request) {
   if (isValidNext) {
     redirectTo = `${origin}${next}`;
   } else {
-    const { data: membership } = await supabase
+    const { data: memberships } = await supabase
       .from("league_members")
       .select("league_id")
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle();
+      .eq("user_id", user.id);
 
-    if (membership) {
-      redirectTo = `${origin}/league/${membership.league_id}`;
+    const leagueId = pickDefaultLeagueId(
+      (memberships ?? []).map((m) => m.league_id),
+    );
+
+    if (leagueId) {
+      redirectTo = `${origin}/league/${leagueId}`;
     }
   }
 
