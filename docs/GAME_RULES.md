@@ -687,9 +687,13 @@ of `confirm_phase_setup` and runs at the **phase transition** (when the last rou
 closes, via `triggerPhasePayday`).
 
 Because that reset fires at phase **end**, the **first** phase's budget is **not** funded by
-it — it is seeded at team creation via `classicTeamDefaults()` (`level 8`, `treasury 2M`,
-`underdog_eligible false`, no sponsor). The phase-transition RPC is routed by
-`phaseResetRpcFor(mode)`.
+it — it is seeded when the team is created with `level 8`, `treasury 2M`,
+`underdog_eligible false`, no sponsor. This holds for **every** entry path: the commissioner's
+create action (`classicTeamDefaults()`), and both branches of `join_league_by_code` — the
+standard-join branch when joining a still-`pending` classic league (migration `20260703000200`)
+and the late-join branch when joining an already-`active` one (migration `20260703000000`). A
+classic team therefore **always** starts on 2M / level 8, whatever the moment or path of entry.
+The phase-transition RPC is routed by `phaseResetRpcFor(mode)`.
 
 ### Late join (joining an already-active league)
 
