@@ -1,7 +1,6 @@
 "use client";
 
 import { InfoCard } from "@/components/info-card";
-import { OnboardingCards } from "@/components/onboarding-cards";
 import { getPhaseRaces, formatRaceDate, type UpcomingRace } from "@/lib/calendar";
 import { formatRoundCountdown } from "@/lib/format";
 import { getCurrentPhase, getPhaseRange, getNextPhase } from "@/lib/phases";
@@ -82,9 +81,6 @@ export function HomeFeed({
             </p>
           </div>
         )}
-
-        {/* Game Guide (onboarding) */}
-        <OnboardingCards leagueId={leagueId} />
 
         {/* What's Next */}
         {feedItems.length > 0 && (
