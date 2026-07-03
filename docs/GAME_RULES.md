@@ -173,28 +173,66 @@ At payday, after `treasury += sponsor_budget − salaries`:
 
 ### Daily XP
 
-Outside Grand Tours:
+Outside Grand Tours (classics, 1-week races):
 ```
 Rider XP = daily_PCS_points × (1 + sum of active strategy bonuses)
 ```
 
-Grand Tour stages (squad riders only — non-squad contracted riders score 0):
+**Grand Tour stages** (Giro/Tour/Vuelta, squad riders only — non-squad contracted riders
+score 0). **2026-07 rank-based barème (replaces raw PCS points on GT slugs)** — see
+`docs/adr/2026-07-rank-based-gt-barème.md` for the rationale (custom Velogames-shaped
+curves, WattHunter magnitude):
 ```
-Rider XP = (PCS_points × role_mult × (1 + strategy_bonus)
-            + classif_bonus + breakaway_bonus) × nemesis_modifier
+Rider XP = (rank_points × role_mult × (1 + strategy_bonus)
+            + classif_bonus + breakaway_bonus + assist_bonus) × nemesis_modifier
 ```
-- **role_mult** (Spec A, 2026-06-02): a rider has **exactly one role**, so `role_mult` takes
-  exactly one value — the per-role multipliers never stack. gc_leader / climber ×1.5;
-  tt_specialist ×2.0 on ITT only; sprinter ×1.5 only on flat/hilly stages (profile p1/p2/p3);
-  stage_hunter ×1.5 only in the breakaway (≥30 km); **underdog ×clamp(pcs_rank/100, 1, 4)**
-  (Spec B — mutually exclusive with the roles above; see §14); domestique ×1.0.
-  **GC final → ×1.0 for all roles.**
-- **classif_bonus** (daily gc/points/kom/youth): role-matched only — gc_leader→GC ×2
-  (and Youth ×1.5), sprinter→Points ×2, climber→KOM ×2; all other roles 0.
+- **rank_points**: looked up from the finish `rank` (not PCS points) via a fixed table.
+  Non-GT races still use raw PCS points (unchanged).
+  - **Stage** (top 20): `100, 80, 70, 65, 55, 50, 45, 35, 30, 25, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2`
+  - **GC final** (`/gc`, top 30): `250, 210, 170, 145, 125, 110, 95, 85, 75, 65, 60, 55, 50, 45, 40, 35, 30, 25, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 1`
+  - Ranks beyond the table earn 0 rank_points (but a domestique can still earn `assist_bonus`).
+- **role_mult** (Spec A, 2026-06-02, gating extended 2026-07): a rider has **exactly one
+  role**, so `role_mult` takes exactly one value — the per-role multipliers never stack.
+  - gc_leader ×1.5 on every stage.
+  - **climber ×1.5, gated to hilly/mountain profiles (p3/p4/p5)** — mirrors the sprinter
+    gating; ×1.0 on flat stages (2026-07, was ungated).
+  - sprinter ×1.5 only on flat/hilly stages (profile p1/p2/p3).
+  - tt_specialist ×2.0 on ITT only.
+  - stage_hunter ×1.5 only in the breakaway (≥30 km).
+  - **underdog ×clamp(pcs_rank/100, 1, 4)** (Spec B — mutually exclusive with the roles
+    above; see §14).
+  - domestique ×1.0 (see `assist_bonus` below for its scoring path).
+  - **GC final (`/gc`) → ×1.0 for all roles** (flat, no role mult — same as the secondary
+    finals; roles play in-race, not on finals).
+- **classif_bonus** (daily gc/points/kom/youth) — **2026-07: flat table for every squad
+  rider inside the zone, multiplied when the role matches** (was matched-only, i.e. 0 for
+  non-matching roles):
+  | Classification | Table (all roles, by rank) | Matched role → mult |
+  |---|---|---|
+  | GC (top 10) | 15/12/10/8/7/6/5/4/3/2 | gc_leader ×2 |
+  | Points (top 5) | 6/4/3/2/1 | sprinter ×2 |
+  | KOM (top 5) | 6/4/3/2/1 | climber ×2 |
+  | Youth (top 5) | 4/3/2/1/1 | gc_leader ×1.5 |
+
+  1-week races keep the pre-refonte matched-only mechanism until the post-Tour review
+  (A9 scope unchanged).
 - **breakaway_bonus**: stage_hunter only, +1 XP per 10 km in the break (no cap), additive.
-- **Final jerseys**: GC final = raw PCS points ×1.0. Points/KOM/Youth finals = rank scale
-  80/20/10 (GT) · 40/10/5 (1-week, P3) × role mult (Points→sprinter ×2, KOM→climber ×2,
-  Youth→gc_leader ×1.5; ×1.0 otherwise).
+- **assist_bonus** (2026-07, **domestique role only**, GT stages, not on ITT): rewards a
+  domestique whose **real pro-team** teammate (not his fantasy squad) performs that day.
+  Best teammate position per category only (not summed across teammates); requires the
+  domestique to have started the stage.
+  | Assist | Trigger | Points |
+  |---|---|---|
+  | Stage | real-team teammate finishes stage top 3 | 4/2/1 |
+  | GC daily | real-team teammate holds GC top 3 that evening | 3/2/1 |
+- **Final jerseys — 2026-07: flat for all roles** (no role mult; roles play in-race, not
+  on finals). Points/KOM finals (top 10): `100, 80, 65, 50, 40, 30, 22, 15, 10, 5`. Youth
+  final (top 10, half scale): `50, 40, 32, 25, 20, 15, 11, 8, 5, 2`. 1-week races (A9)
+  keep the legacy 2-value scale (40/10/5) × role match, unchanged.
+
+**Control ratios** (design intent, `docs/adr/2026-07-rank-based-gt-barème.md`): GC final /
+stage win = 2.5:1 (was 5:1 on raw PCS). Points/KOM final = 1 stage win (was 1.6). Youth
+final = half of Points/KOM. 1st→2nd GC final gap = −16% (was −24% on raw PCS).
 
 Team XP = sum of XP from all roster riders
 
@@ -217,10 +255,12 @@ A summary of the rules above is rendered to players on the Race Team page via
 the `<ScoringDocCard />` component (`apps/web/components/scoring-doc-card.tsx`).
 It covers:
 
-- Daily multipliers (gc/points/kom ×2 matched, youth ×1.5) — see §7 + A2.
-- Finals (GC ×1.0, Points/KOM ×2, Youth ×1.5; barème 80/20/10 GT · 40/10/5 1-sem) — see A2.
+- Stage & GC points (rank-based tables, GC win = 2.5× a stage win) — see §7.
+- Daily classifications (flat table for all + matched-role ×2 / youth ×1.5) — see §7.
+- Finals (flat for all roles: GC top 30, Points/KOM top 10 `100…5`, Youth half) — see §7.
+- Domestique assists (real-team teammate stage/GC top 3, 4/2/1 & 3/2/1) — see §7.
 - Stage Hunter (×1.5 in breakaway ≥30 km + 1pt/10 km additive, ×1.0 elsewhere) — see A3.
-- Sprinter profile gating (×1.5 only on p1/p2/p3) — see A4.
+- Sprinter / Climber profile gating (×1.5 on p1/p2/p3 · p3/p4/p5) — see §7 + A4.
 - Nemesis profile gating (Sprint p1-p3, GC p3-p5) — see A7.
 
 The values are not duplicated in the component — constants stay in §11.
@@ -359,10 +399,15 @@ At the start of each phase, the player **confirms** their configuration:
 | GT Tactics per race | Varies by tactic and race kind (see §13 — Tactic usage per race) |
 | Commissioner round dates | Editable at any time before round closes |
 
-- **GT scoring multipliers** (Spec A, 2026-06-02): daily classif matched ×2 (youth ×1.5);
-  GC final ×1.0 for all roles; sprinter gated to profile p1/p2/p3; stage_hunter breakaway
-  threshold 30 km, distance bonus +1 XP / 10 km (no cap, additive); final secondary jersey
-  scale 80/20/10 (GT) · 40/10/5 (1-week, P3).
+- **GT scoring barème** (rank-based, 2026-07 — full tables + rationale in §7 and
+  `docs/adr/2026-07-rank-based-gt-barème.md`). Constants in `services/pcs-sync/scoring.py`:
+  - `GT_STAGE_SCALE` (top 20): `100, 80, 70, 65, 55, 50, 45, 35, 30, 25, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2`
+  - `GT_GC_FINAL_SCALE` (top 30): `250, 210, 170, 145, 125, 110, 95, 85, 75, 65, 60, 55, 50, 45, 40, 35, 30, 25, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 1`
+  - `DAILY_CLASSIF_SCALES` (flat for all squad riders, matched role ×2 / youth ×1.5): GC top 10 `15/12/10/8/7/6/5/4/3/2`, Points/KOM top 5 `6/4/3/2/1`, Youth top 5 `4/3/2/1/1`
+  - `ASSIST_STAGE_SCALE` `4/2/1` + `ASSIST_GC_SCALE` `3/2/1` (domestique real-team assists, GT stages, not ITT)
+  - Role gating: sprinter p1/p2/p3, **climber p3/p4/p5** (2026-07); tt_specialist ×2 ITT;
+    stage_hunter breakaway ≥30 km + 1 XP / 10 km additive; GC/secondary finals flat (no role mult).
+  - Control ratio GC-final / stage-win = 2.5:1.
 
 ### Tactic gating profiles (Spec A A7)
 - `NEMESIS_SPRINT_PROFILES = {p1, p2, p3}` (flat + hilly — anything but mountain).
@@ -370,11 +415,9 @@ At the start of each phase, the player **confirms** their configuration:
 - Profile source : `stage_profiles` table, seeded by `python run_pipeline.py startlists --race "<slug>"`.
 - Source code : `supabase/migrations/20260603000100_place_tactic_profile_gating.sql`.
 
-### Final secondary classifications scale (Spec A A2/A9)
-- GT      : `[80, 20, 10]` (ranks 1 / 2 / 3 base XP, before role multiplier).
-- 1-week  : `[40, 10, 5]`  (half-scale — shorter race, smaller payout).
-- Multiplier on the matching role (×2 for points→sprinter, kom→climber; ×1.5 for youth→gc_leader); ×1.0 otherwise.
-- Source : `services/pcs-sync/scoring.py:FINAL_SECONDARY_SCALE`.
+### Final secondary classifications scale
+- **GT (2026-07 rank-based, flat for all roles, top 10)**: Points/KOM `100, 80, 65, 50, 40, 30, 22, 15, 10, 5`; Youth (half scale) `50, 40, 32, 25, 20, 15, 11, 8, 5, 2`. No role multiplier (`GT_SECONDARY_FINAL_SCALES` in `scoring.py`).
+- **1-week (legacy, Spec A A9, unchanged)**: `[40, 10, 5]` (ranks 1/2/3) × matching role (×2 points→sprinter, kom→climber; ×1.5 youth→gc_leader; ×1.0 otherwise). Source: `FINAL_SECONDARY_SCALE` + `FINAL_ROLE_MATCH`. Kept until the post-Tour review extends the rank-based barème beyond GTs.
 
 ### Sponsor bonus barème (Spec C, 2026-06-03)
 
@@ -506,9 +549,13 @@ Mécanisme anti-rattrapage complémentaire au Co-Unlock Rule et au Level Curve S
 
 - Assignable uniquement par les équipes éligibles au sein de leur squad GT ou Race Team.
 - **`underdog` est un rôle à part entière** (comme gc_leader, sprinter…) : un coureur a UN seul rôle, donc le boost underdog **remplace** le `role_mult` habituel — il ne s'y ajoute pas. Dans la formule §7, c'est la valeur que prend `role_mult` quand le rôle est underdog (pas un facteur séparé). Un underdog ne touche donc jamais aussi le ×1.5 gc_leader/sprinter.
-- **Boost de scoring** : `role_mult = clamp(pcs_rank / 100, 1.0, 4.0)`.
+- **Boost de scoring** : `role_mult = clamp(pcs_rank / 100, 1.0, 4.0)`, appliqué à la base
+  `rank_points` de l'étape (§7, refonte 2026-07 — auparavant les points PCS bruts).
   - Ex. : coureur rang 272 → ×2.72 ; rang 432 → ×4.0 (plafond) ; rang 69 → ×1.0 (plancher).
-- **Pas de bonus sur les classements finaux** (GC, Points, KOM, Youth).
+- **Pas de multiplicateur sur les classements finaux** (GC, Points, KOM, Youth) : depuis
+  la refonte 2026-07, **tous les rôles** (pas seulement underdog) sont plats sur les
+  finaux — cette exclusion est donc maintenant un cas particulier de la règle générale
+  §7, pas une règle spécifique à underdog.
 - Coureur éligible au rôle : `pcs_rank > 100`.
 - **Exclusif avec Nemesis** : si un duel Nemesis affecte le coureur sur l'étape, le boost underdog ne s'applique pas (voir §13).
 
@@ -712,7 +759,7 @@ a classic newcomer (a full member with a flat 2M budget). Manager-mode late-join
 | System | Classic | Mechanism |
 |---|---|---|
 | Auctions + 3 rounds, exclusive ownership | Keep | Unchanged (`contracts` unique constraint) |
-| Scoring + cumulative XP + GC | Keep | `scoring.py` is **mode-agnostic** (never reads `mode`) |
+| Scoring + cumulative XP + GC | Keep | `scoring.py` is **mode-agnostic** (never reads `mode`) — the 2026-07 rank-based GT barème (§7) applies identically in classic |
 | GT roles + caps (10 in classic), tactics (4) | Keep | `gt_squad` reused; Call the Bus removed |
 | Level / pool gating / co-unlock | Neutralize | Everyone level 8 (config, not code) |
 | Underdog | Neutralize | `underdog_eligible = false` |
