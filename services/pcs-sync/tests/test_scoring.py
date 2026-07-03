@@ -395,9 +395,12 @@ def test_role_multiplier_gc_final_is_unboosted():
 
 
 def test_role_multiplier_gc_leader_and_climber_on_stage():
+    """2026-07 refonte: climber is gated to hilly/mountain profiles (p3/p4/p5);
+    without a profile_icon it defaults to ×1.0 (unlike gc_leader, which is ungated)."""
     from scoring import _role_multiplier
     assert _role_multiplier("gc_leader", "race/giro-d-italia/2026/stage-4", False) == 1.5
-    assert _role_multiplier("climber",   "race/giro-d-italia/2026/stage-4", False) == 1.5
+    assert _role_multiplier("climber",   "race/giro-d-italia/2026/stage-4", False, profile_icon="p4") == 1.5
+    assert _role_multiplier("climber",   "race/giro-d-italia/2026/stage-4", False) == 1.0
 
 
 def test_role_multiplier_tt_specialist_itt_only():
@@ -467,21 +470,23 @@ def test_classif_bonus_v2_role_matched_only():
 # --- Final secondary jersey helpers (Spec A A2) -------------------------------
 
 def test_final_secondary_bonus_gt_scale_and_role_match():
-    """GT scale 80/20/10 by rank; matched role doubles (×1.5 youth); else ×1.0 (Spec A A2)."""
+    """2026-07 refonte: GT finals (points/kom/youth) are FLAT top-10 — no role mult
+    (roles play in-race, not on finals). Scale: points/kom [100,80,65,50,40,30,22,15,10,5],
+    youth = half scale [50,40,32,25,20,15,11,8,5,2]."""
     from scoring import _final_secondary_bonus
-    # points, sprinter matches → ×2
-    assert _final_secondary_bonus("points", 1, "sprinter") == 160.0
-    assert _final_secondary_bonus("points", 2, "sprinter") == 40.0
-    assert _final_secondary_bonus("points", 3, "sprinter") == 20.0
-    # kom, climber matches → ×2
-    assert _final_secondary_bonus("kom", 1, "climber") == 160.0
-    # youth, gc_leader matches → ×1.5
-    assert _final_secondary_bonus("youth", 1, "gc_leader") == 120.0
-    # non-matched squad rider → base × 1.0 (still rewarded; Spec A A2 line "×1.0 partout")
-    assert _final_secondary_bonus("points", 1, "domestique") == 80.0
-    assert _final_secondary_bonus("kom", 2, "gc_leader") == 20.0
-    # beyond rank 3 → 0
-    assert _final_secondary_bonus("points", 4, "sprinter") == 0.0
+    # points — same value regardless of role
+    assert _final_secondary_bonus("points", 1, "sprinter") == 100.0
+    assert _final_secondary_bonus("points", 1, "domestique") == 100.0
+    assert _final_secondary_bonus("points", 2, "sprinter") == 80.0
+    # kom — same value regardless of role
+    assert _final_secondary_bonus("kom", 1, "climber") == 100.0
+    assert _final_secondary_bonus("kom", 2, "gc_leader") == 80.0
+    # youth — half scale, still flat
+    assert _final_secondary_bonus("youth", 1, "gc_leader") == 50.0
+    assert _final_secondary_bonus("youth", 1, "domestique") == 50.0
+    # depth top 10, beyond → 0
+    assert _final_secondary_bonus("points", 10, "sprinter") == 5.0
+    assert _final_secondary_bonus("points", 11, "sprinter") == 0.0
 
 
 def test_final_secondary_bonus_one_week_scale():

@@ -5,9 +5,10 @@ import { Tag } from "@/components/pill";
 
 /**
  * "How scoring works" — pedagogical encart on the Race Team page (Spec A A8).
- * Explains role multipliers, finals barème, stage-hunter rules, sprinter
- * profile gating, and Nemesis profile gating. Constants live in
- * `docs/GAME_RULES.md §11` — this component is human-readable text only.
+ * Explains the rank-based barème (2026-07 refonte), role multipliers, finals
+ * barème, stage-hunter rules, sprinter/climber profile gating, domestique
+ * assists, and Nemesis profile gating. Constants live in
+ * `docs/GAME_RULES.md §7/§11` — this component is human-readable text only.
  *
  * Layout follows `docs/mockups/2026-06-02-ui-mockups.html` (Card + Tag +
  * 2-column mini tables). Uses native <details> for keyboard-accessible
@@ -36,44 +37,85 @@ export function ScoringDocCard() {
       </summary>
 
       <div className="flex flex-col gap-5 px-4 pb-4 pt-1">
-        {/* Section 1 — Role multipliers on daily classifications */}
+        {/* Section 0 — Rank-based stage & GC points (2026-07 refonte) */}
         <Section
-          title="Daily classifications"
-          subtitle="Bonus you earn when your rider sits in the top of a daily classification."
+          title="Stage & GC points"
+          subtitle="On Grand Tours, points come from finish rank — not raw PCS points."
         >
           <Table2Col
             rows={[
-              { label: "GC daily (rider in top 10)", chips: ["GC Leader"], multiplier: "×2" },
-              { label: "Points daily (top 5)", chips: ["Sprinter"], multiplier: "×2" },
-              { label: "KOM daily (top 3)", chips: ["Climber"], multiplier: "×2" },
-              { label: "Youth daily (top 5)", chips: ["GC Leader"], multiplier: "×1.5" },
+              { label: "Stage — 1st / 2nd / 3rd", chips: [], multiplier: "100 / 80 / 70" },
+              { label: "Stage — 10th", chips: [], multiplier: "25" },
+              { label: "Stage — 20th (last scoring rank)", chips: [], multiplier: "2" },
+              { label: "GC final — 1st / 2nd / 3rd", chips: [], multiplier: "250 / 210 / 170" },
+              { label: "GC final — 10th", chips: [], multiplier: "65" },
+              { label: "GC final — 30th (last scoring rank)", chips: [], multiplier: "1" },
+            ]}
+            headers={["Result", "Points"]}
+          />
+          <Note>
+            Winning the GC pays <b>2.5×</b> a stage win — down from the old raw-PCS ratio (5×). Non-GT
+            races (classics, 1-week) still use raw PCS points.
+          </Note>
+        </Section>
+
+        {/* Section 1 — Role multipliers on daily classifications */}
+        <Section
+          title="Daily classifications"
+          subtitle="Every squad rider in the top scores — the matching role just multiplies it."
+        >
+          <Table2Col
+            rows={[
+              { label: "GC daily (top 10, 15/12/10/8/7/6/5/4/3/2)", chips: ["GC Leader"], multiplier: "×2" },
+              { label: "Points daily (top 5, 6/4/3/2/1)", chips: ["Sprinter"], multiplier: "×2" },
+              { label: "KOM daily (top 5, 6/4/3/2/1)", chips: ["Climber"], multiplier: "×2" },
+              { label: "Youth daily (top 5, 4/3/2/1/1)", chips: ["GC Leader"], multiplier: "×1.5" },
             ]}
             headers={["Classification", "Role multiplier"]}
           />
           <Note>
-            Multiplier only applies when your rider&apos;s role matches the classification. A non-matched
-            rider in the same top still scores, but at ×1.0.
+            Everyone in the top scores the flat table shown, whatever their role. The listed role just
+            doubles (or ×1.5) it on top — a domestique 3rd on GC still earns 10 points, a GC Leader in
+            the same spot earns 20.
           </Note>
         </Section>
 
         {/* Section 2 — Final classifications */}
         <Section
           title="Final classifications"
-          subtitle="What you earn when the race ends, from each jersey ranking."
+          subtitle="What you earn when the race ends, from each jersey ranking — flat for every role."
         >
           <Table2Col
             rows={[
-              { label: "GC final (PCS points 400/290/240…)", chips: ["GC Leader"], multiplier: "×1.0" },
-              { label: "Points final (custom rank scale)", chips: ["Sprinter"], multiplier: "×2" },
-              { label: "KOM final (custom rank scale)", chips: ["Climber"], multiplier: "×2" },
-              { label: "Youth final (custom rank scale)", chips: ["GC Leader"], multiplier: "×1.5" },
+              { label: "GC final (top 30, 250/210/170…)", chips: [], multiplier: "×1.0" },
+              { label: "Points final (top 10, 100/80/65…)", chips: [], multiplier: "×1.0" },
+              { label: "KOM final (top 10, 100/80/65…)", chips: [], multiplier: "×1.0" },
+              { label: "Youth final (top 10, half scale)", chips: [], multiplier: "×1.0" },
             ]}
             headers={["Final", "Role multiplier"]}
           />
           <Note>
-            Secondary finals (Points / KOM / Youth) use a flat barème by rank: <b>80 / 20 / 10</b> on
-            GTs and Monuments, <b>40 / 10 / 5</b> on 1-week races. The GC final keeps raw PCS points
-            and does not get a role multiplier (it pays the windfall already).
+            Finals no longer carry a role multiplier — roles play in-race, not on the final result. A
+            Points-final win is worth one stage win (100); the Youth final pays half of Points/KOM.
+          </Note>
+        </Section>
+
+        {/* Section 2b — Domestique assists */}
+        <Section
+          title="Domestique assists"
+          subtitle="A Domestique scores when his real pro-team teammate performs — not his fantasy squad."
+        >
+          <Table2Col
+            rows={[
+              { label: "Real-team teammate finishes stage top 3", chips: ["Domestique"], multiplier: "4 / 2 / 1" },
+              { label: "Real-team teammate holds GC top 3 that evening", chips: ["Domestique"], multiplier: "3 / 2 / 1" },
+            ]}
+            headers={["Trigger", "Points"]}
+          />
+          <Note>
+            Only the best-placed teammate counts per category. No assists on individual time-trial
+            stages. Draft a domestique from a strong real team (UAE, Visma…) and he keeps earning even
+            when he never scores himself.
           </Note>
         </Section>
 
@@ -111,6 +153,25 @@ export function ScoringDocCard() {
           </div>
         </Section>
 
+        {/* Section 4b — Climber profile gating (2026-07, mirrors Sprinter) */}
+        <Section
+          title="Climber"
+          subtitle="Since 2026-07, the Climber bonus is gated by stage profile too."
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+              ×1.5 only on profiles
+            </span>
+            <Tag variant="highlighted">p3</Tag>
+            <Tag variant="highlighted">p4</Tag>
+            <Tag variant="highlighted">p5</Tag>
+            <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
+              (hilly + mountain). ×1.0 on p1/p2 (flat) — a top-20 flat finish no longer gets the climber
+              boost.
+            </span>
+          </div>
+        </Section>
+
         {/* Section 5 — Underdog scoring by rank */}
         <Section
           title="Underdog"
@@ -126,9 +187,9 @@ export function ScoringDocCard() {
             headers={["PCS rank", "Stage multiplier"]}
           />
           <Note>
-            Multiplier = PCS rank ÷ 100, floored at ×1 and capped at ×4. Applies to stage results
-            only, no boost on GC / Points / KOM finals. A rank-350 rider scoring 10 stage points
-            earns 35.
+            Multiplier = PCS rank ÷ 100, floored at ×1 and capped at ×4, applied to the stage rank
+            points above (not on GC / Points / KOM finals — those are flat for everyone). A rank-350
+            underdog finishing 15th (12 rank points) earns 42.
           </Note>
         </Section>
 

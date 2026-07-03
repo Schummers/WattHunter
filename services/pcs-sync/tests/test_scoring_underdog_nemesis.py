@@ -22,10 +22,14 @@ BEFORE_CUTOFF = "2026-05-10T09:00:00+02:00"
 
 
 def _mock(*, tactics: list[dict], pcs_rank: int = 200, role: str = "underdog"):
-    """Squad rider with the given role + pcs_rank, 100 pts on a p4 GT stage."""
+    """Squad rider with the given role + pcs_rank, rank 1 on a p4 GT stage.
+
+    2026-07 refonte: base = GT_STAGE_SCALE[rank-1]; rank 1 → 100 (pcs_points is
+    ignored on GT slugs and kept here only as legacy noise the loader tolerates).
+    """
     return make_supabase(
         # 1. race_results
-        [{"rider_id": RIDER_ID, "race_slug": GIRO_SLUG, "pcs_points": 100,
+        [{"rider_id": RIDER_ID, "race_slug": GIRO_SLUG, "pcs_points": 100, "rank": 1,
           "race_date": "2026-05-11", "is_itt": False, "breakaway_kms": None,
           "profile_icon": "p4"}],
         # 2. prev rider_xp_daily

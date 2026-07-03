@@ -62,6 +62,43 @@ GT_RACE_PREFIXES = (
 BREAKAWAY_THRESHOLD_KM = 30.0   # A3 — min km in the break to count as "in the breakaway".
 BREAKAWAY_KM_PER_POINT = 10.0   # A3 — +1 additive XP per 10 km in the break (no cap).
 SPRINT_PROFILES = ("p1", "p2", "p3")  # A4 — flat + hilly (everything but mountain p4/p5).
+CLIMBER_PROFILES = ("p3", "p4", "p5")  # 2026-07 refonte — hilly + mountain, mirror of sprinter gating.
+
+# --- GT rank-based barème (2026-07 refonte — replaces raw PCS points on GT slugs) ----
+# Velogames-shaped curves rescaled to the WattHunter magnitude (stage win = 100,
+# preserving the Manager level curve). Design record: docs/adr/ "rank-based barème".
+# Control ratios: GC final / stage win = 2.5:1; points/kom final = 1 stage win;
+# youth = half; 1st→2nd GC gap = -16% (vs -24% on raw PCS).
+GT_STAGE_SCALE = [100, 80, 70, 65, 55, 50, 45, 35, 30, 25,
+                  20, 18, 16, 14, 12, 10, 8, 6, 4, 2]          # ranks 1-20
+GT_GC_FINAL_SCALE = [250, 210, 170, 145, 125, 110, 95, 85, 75, 65,
+                     60, 55, 50, 45, 40, 35, 30, 25, 22, 20,
+                     18, 16, 14, 12, 10, 8, 6, 4, 2, 1]        # ranks 1-30
+# Final Points/KOM/Youth — FLAT for all roles (roles play in-race, not on finals).
+GT_SECONDARY_FINAL_SCALES = {
+    "points": [100, 80, 65, 50, 40, 30, 22, 15, 10, 5],        # ranks 1-10
+    "kom":    [100, 80, 65, 50, 40, 30, 22, 15, 10, 5],
+    "youth":  [50, 40, 32, 25, 20, 15, 11, 8, 5, 2],           # half scale
+}
+# Daily classifications — flat table for EVERY squad rider in the zone; the
+# matched role multiplies (replaces the V2 matched-only mechanism on GT slugs;
+# 1-week races keep the legacy matched-only path until the post-Tour review).
+DAILY_CLASSIF_SCALES = {
+    "gc":     [15, 12, 10, 8, 7, 6, 5, 4, 3, 2],               # top 10
+    "points": [6, 4, 3, 2, 1],                                 # top 5
+    "kom":    [6, 4, 3, 2, 1],
+    "youth":  [4, 3, 2, 1, 1],
+}
+DAILY_CLASSIF_ROLE_MULT: dict[str, dict[str, float]] = {
+    "gc_leader": {"gc": 2.0, "youth": 1.5},
+    "sprinter":  {"points": 2.0},
+    "climber":   {"kom": 2.0},
+}
+# Domestique assists (Velogames-inspired, halved to our magnitude). Real-team
+# teammate in the stage top 3 / GC top 3 that day. Best position per category
+# only (not summed across teammates). No assists on ITT stages.
+ASSIST_STAGE_SCALE = {1: 4.0, 2: 2.0, 3: 1.0}
+ASSIST_GC_SCALE = {1: 3.0, 2: 2.0, 3: 1.0}
 
 _GT_PHASE_MAP = {
     "giro-d-italia": 4,
@@ -96,24 +133,109 @@ FINAL_ROLE_MATCH = {
 }
 
 
-def _final_secondary_bonus(classif_type: str, rank, role: str, mode: str = "gt") -> float:
-    """XP for a final Points/KOM/Youth placement (Spec A A2).
+def _points_from_rank(rank, race_slug: str) -> float:
+    """Rank → base points on GT slugs (2026-07 refonte).
 
-    Base scale value by rank (mode gt vs one_week) × role multiplier when the role matches
-    (points→sprinter ×2, kom→climber ×2, youth→gc_leader ×1.5); ×1.0 otherwise.
-    Ranks beyond the scale length earn 0.
+    Stage slugs use GT_STAGE_SCALE (top 20); the GC final (…/gc) uses
+    GT_GC_FINAL_SCALE (top 30, flat — no role mult applies downstream).
+    Ranks outside the table (or unparseable: DNF/None) earn 0.
+    Only meaningful for GT slugs — callers gate on _is_gt_slug().
     """
-    scale = FINAL_SECONDARY_SCALE.get(mode, FINAL_SECONDARY_SCALE["gt"])
     try:
         r = int(rank)
     except (TypeError, ValueError):
         return 0.0
+    scale = GT_GC_FINAL_SCALE if race_slug.endswith("/gc") else GT_STAGE_SCALE
+    if r < 1 or r > len(scale):
+        return 0.0
+    return float(scale[r - 1])
+
+
+def _domestique_assist_bonus(
+    rider_id: str,
+    real_team,
+    stage_top3: list[tuple],
+    gc_top3: list[tuple],
+    is_itt: bool,
+) -> float:
+    """Assist XP for a domestique whose REAL pro-team teammate performs (2026-07).
+
+    stage_top3 / gc_top3: lists of (rider_id, real_team, rank) for ranks 1-3.
+    Best teammate position per category only. Self is not a teammate.
+    ITT stages pay no assists (individual effort — Velogames rule).
+    """
+    if is_itt or not real_team:
+        return 0.0
+    total = 0.0
+    for top3, scale in ((stage_top3, ASSIST_STAGE_SCALE), (gc_top3, ASSIST_GC_SCALE)):
+        best = None
+        for other_id, other_team, other_rank in top3:
+            if other_id == rider_id or other_team != real_team:
+                continue
+            try:
+                r = int(other_rank)
+            except (TypeError, ValueError):
+                continue
+            if r in scale and (best is None or r < best):
+                best = r
+        if best is not None:
+            total += scale[best]
+    return total
+
+
+def _final_secondary_bonus(classif_type: str, rank, role: str, mode: str = "gt") -> float:
+    """XP for a final Points/KOM/Youth placement.
+
+    GT mode (2026-07 refonte): flat top-10 scales (GT_SECONDARY_FINAL_SCALES),
+    identical for every role — roles play in-race, not on finals.
+    one_week mode (Spec A A9): legacy 2-value scale × role match preserved
+    until the post-Tour review (points→sprinter ×2, kom→climber ×2,
+    youth→gc_leader ×1.5).
+    Ranks beyond the scale length earn 0.
+    """
+    try:
+        r = int(rank)
+    except (TypeError, ValueError):
+        return 0.0
+    if mode == "gt":
+        scale = GT_SECONDARY_FINAL_SCALES.get(classif_type)
+        if scale is None or r < 1 or r > len(scale):
+            return 0.0
+        return float(scale[r - 1])
+    scale = FINAL_SECONDARY_SCALE.get(mode, FINAL_SECONDARY_SCALE["gt"])
     if r < 1 or r > len(scale):
         return 0.0
     base = scale[r - 1]
     matched_role, mult = FINAL_ROLE_MATCH.get(classif_type, (None, 1.0))
     rate = mult if role == matched_role else 1.0
     return base * rate
+
+
+def _classif_bonus_gt(classif_rows: list[dict], role: str) -> float:
+    """Daily classification bonus on GT slugs (2026-07 refonte).
+
+    Flat table for EVERY squad rider inside the zone (DAILY_CLASSIF_SCALES),
+    multiplied when the rider's role matches the classification
+    (gc_leader→gc ×2 / youth ×1.5, sprinter→points ×2, climber→kom ×2).
+    Replaces the V2 matched-only mechanism (kept in _classif_bonus for
+    1-week races until the post-Tour review).
+    """
+    matched = DAILY_CLASSIF_ROLE_MULT.get(role, {})
+    total = 0.0
+    for row in classif_rows or []:
+        ctype = row.get("classification_type")
+        scale = DAILY_CLASSIF_SCALES.get(ctype)
+        if scale is None:
+            continue
+        rank = row.get("rank")
+        try:
+            r = int(rank)
+        except (TypeError, ValueError):
+            continue
+        if r < 1 or r > len(scale):
+            continue
+        total += scale[r - 1] * matched.get(ctype, 1.0)
+    return total
 
 
 def _classif_bonus(classif_rows: list[dict], role: str) -> float:
@@ -256,11 +378,16 @@ def _role_multiplier(
     """Return the PCS role multiplier for a GT result (Spec A A2/A3/A4/A5)."""
     if not role:
         return 1.0
-    # GC final (slug ends /gc): raw PCS points, no role multiplier (A2).
+    # GC final (slug ends /gc): flat rank-based table, no role multiplier (A2 + 2026-07).
     if race_slug.endswith("/gc"):
         return 1.0
-    if role in ("gc_leader", "climber"):
+    if role == "gc_leader":
         return 1.5
+    if role == "climber":
+        # 2026-07 refonte: gated to hilly/mountain profiles (p3/p4/p5), mirror of
+        # the sprinter gating — the flatter/deeper rank table would otherwise pay
+        # climbers ×1.5 on flat-sprint top-20 placements.
+        return 1.5 if _norm_profile(profile_icon) in CLIMBER_PROFILES else 1.0
     if role == "tt_specialist":
         return 2.0 if is_itt else 1.0
     if role == "sprinter":
@@ -374,13 +501,27 @@ async def calculate_daily_scores(
 
     # --- Step 1: Get race results ---
     # Task 1: filter by race_slugs if provided, else fallback to today's date
+    # 2026-07 refonte: on explicit race_slugs the pcs_points>0 filter moves in-code —
+    # GT slugs need EVERY finisher row (rank-based base, top 20/30 zones, and the
+    # domestique assist "started the stage" signal), not just PCS point scorers.
+    # riders(real_team) is joined for the assist teammate matching (no extra query).
     if race_slugs:
-        history_rows = _fetch_all(lambda: supabase.table("race_results").select(
-            "rider_id, race_slug, pcs_points, race_date, is_itt, breakaway_kms, profile_icon"
-        ).in_("race_slug", race_slugs).gt("pcs_points", 0))
+        raw_rows = _fetch_all(lambda: supabase.table("race_results").select(
+            "rider_id, race_slug, pcs_points, rank, race_date, is_itt, breakaway_kms, "
+            "profile_icon, riders:rider_id(real_team)"
+        ).in_("race_slug", race_slugs))
+        history_rows = [
+            h for h in raw_rows
+            if (h.get("pcs_points") or 0) > 0 or _is_gt_slug(h.get("race_slug") or "")
+        ]
     else:
+        # Legacy by-date fallback: keeps the pcs_points>0 filter and therefore does NOT
+        # support the GT rank-based base or assists (would drop sub-top-20 finishers).
+        # Acceptable because post-race always passes an explicit --race slug (branch above);
+        # widening this unbounded by-date query is deliberately avoided.
         history_rows = _fetch_all(lambda: supabase.table("race_results").select(
-            "rider_id, race_slug, pcs_points, race_date, is_itt, breakaway_kms, profile_icon"
+            "rider_id, race_slug, pcs_points, rank, race_date, is_itt, breakaway_kms, "
+            "profile_icon, riders:rider_id(real_team)"
         ).eq("race_date", today).gt("pcs_points", 0))
 
     if not history_rows:
@@ -408,11 +549,31 @@ async def calculate_daily_scores(
         rider_race_points.setdefault(h["rider_id"], []).append({
             "race_slug": h["race_slug"],
             "pcs_points": h["pcs_points"],
+            "rank": h.get("rank"),
             "race_date": h.get("race_date"),
             "is_itt": bool(h.get("is_itt", False)),
             "breakaway_kms": h.get("breakaway_kms"),
             "profile_icon": h.get("profile_icon"),
         })
+
+    # 2026-07 refonte: stage top 3 per GT stage slug, for domestique assists.
+    # (rider_id, real_team, rank) tuples; real_team from the riders join.
+    stage_top3_by_slug: dict[str, list[tuple]] = {}
+    for h in history_rows:
+        h_slug = h.get("race_slug") or ""
+        if not _is_gt_slug(h_slug) or h_slug.endswith(("/gc", "/points", "/kom", "/youth")):
+            continue
+        try:
+            h_rank = int(h.get("rank"))
+        except (TypeError, ValueError):
+            continue
+        if h_rank <= 3:
+            h_join = h.get("riders") or {}
+            if isinstance(h_join, list):
+                h_join = h_join[0] if h_join else {}
+            stage_top3_by_slug.setdefault(h_slug, []).append(
+                (h["rider_id"], h_join.get("real_team"), h_rank)
+            )
 
     # Build race_slug → race_date mapping for the second pass (classif-only entries).
     race_date_by_slug: dict[str, str] = {}
@@ -526,14 +687,27 @@ async def calculate_daily_scores(
     # --- Step 3c: Daily classifications for the current stage-race stage(s).
     # Indexed by (race_slug, rider_id) so each rider-stage pair gets its own bonus.
     classif_by_key: dict[tuple[str, str], list[dict]] = {}
+    gc_top3_by_slug: dict[str, list[tuple]] = {}   # 2026-07: GC top 3 for assists
     if squad_slugs:
         classif_rows = _fetch_all(lambda: supabase.table("gt_daily_classifications").select(
-            "race_slug, rider_id, classification_type, rank"
+            "race_slug, rider_id, classification_type, rank, riders:rider_id(real_team)"
         ).in_("race_slug", squad_slugs))
         for row in classif_rows:
             classif_by_key.setdefault(
                 (row["race_slug"], row["rider_id"]), []
             ).append(row)
+            if row.get("classification_type") == "gc":
+                try:
+                    c_rank = int(row.get("rank"))
+                except (TypeError, ValueError):
+                    continue
+                if c_rank <= 3:
+                    c_join = row.get("riders") or {}
+                    if isinstance(c_join, list):
+                        c_join = c_join[0] if c_join else {}
+                    gc_top3_by_slug.setdefault(row["race_slug"], []).append(
+                        (row["rider_id"], c_join.get("real_team"), c_rank)
+                    )
 
     # --- Step 3d: Final secondary classifications (Points/KOM/Youth) for completed stage-races.
     # Read from the DEDICATED gt_final_classifications table (kept out of race_results so it
@@ -624,10 +798,15 @@ async def calculate_daily_scores(
                         if race_dt > release_dt:
                             continue
 
-                raw_points = entry["pcs_points"]
                 race_slug = entry["race_slug"]
                 breakaway_kms = entry.get("breakaway_kms")
                 profile_icon = entry.get("profile_icon")
+                # 2026-07 refonte: GT slugs derive the base from the finish rank
+                # (custom barème); non-GT slugs keep raw PCS points.
+                if _is_gt_slug(race_slug):
+                    raw_points = _points_from_rank(entry.get("rank"), race_slug)
+                else:
+                    raw_points = entry["pcs_points"]
 
                 # === Compute role multiplier (squad only) + classif bonus (all squad-race contracted riders).
                 # Spec A A9: extends squad-gating from GT-only to any stage-race (GT + 1-week).
@@ -635,6 +814,7 @@ async def calculate_daily_scores(
                 gt_role_mult = 1.0
                 gt_classif_bonus = 0.0
                 gt_distance_bonus = 0.0
+                assist_bonus = 0.0
                 underdog_mult = 1.0
                 role = "domestique"  # default; overridden for squad members with assigned role
                 if _is_squad_race(race_slug):
@@ -649,13 +829,37 @@ async def calculate_daily_scores(
                         _underdog_multiplier(rider_info.get("pcs_rank"), race_slug)
                         if role == "underdog" else 1.0
                     )
-                    # V2: only role-matched classifications earn a bonus (Spec A A2).
-                    gt_classif_bonus = _classif_bonus(
-                        classif_by_key.get((race_slug, rider_id), []),
-                        role,
-                    )
+                    # 2026-07 refonte: GT dailies are flat-for-all + matched-role mult;
+                    # 1-week races keep the V2 matched-only path (post-Tour review).
+                    if _is_gt_slug(race_slug):
+                        gt_classif_bonus = _classif_bonus_gt(
+                            classif_by_key.get((race_slug, rider_id), []),
+                            role,
+                        )
+                    else:
+                        gt_classif_bonus = _classif_bonus(
+                            classif_by_key.get((race_slug, rider_id), []),
+                            role,
+                        )
                     if role == "stage_hunter" and not race_slug.endswith("/gc"):
                         gt_distance_bonus = _breakaway_distance_bonus(breakaway_kms)
+                    # 2026-07 refonte: domestique assists (GT stage slugs only).
+                    # Gate on a non-null rank: race_results also stores non-classified
+                    # rows (DNF/DNS carry rank=NULL, see sync_race.py), so a bare row is
+                    # NOT proof the rider finished. Requiring a rank means only a
+                    # classified finisher earns assists.
+                    if (
+                        role == "domestique"
+                        and _is_gt_slug(race_slug)
+                        and entry.get("rank") is not None
+                    ):
+                        assist_bonus = _domestique_assist_bonus(
+                            rider_id,
+                            rider_info.get("real_team"),
+                            stage_top3_by_slug.get(race_slug, []),
+                            gc_top3_by_slug.get(race_slug, []),
+                            is_itt=bool(entry.get("is_itt", False)),
+                        )
 
                 # === Apply tactic modifiers (no-op when gt_tactics is empty) ===
                 nemesis_modifier = 1.0
@@ -750,7 +954,7 @@ async def calculate_daily_scores(
                     0,
                     round(
                         (raw_points * gt_role_mult * (1 + bonus)
-                         + gt_classif_bonus + gt_distance_bonus)
+                         + gt_classif_bonus + gt_distance_bonus + assist_bonus)
                         * nemesis_modifier * underdog_mult,
                         2,
                     ),
@@ -763,7 +967,7 @@ async def calculate_daily_scores(
                         "rider_id": rider_id,
                         "contract_id": contract["id"],
                         "date": entry.get("race_date", today),
-                        "raw_pcs_points": raw_points,
+                        "raw_pcs_points": int(raw_points),
                         "strategy_bonus": bonus,
                         # SC-5: role_mult/classif_bonus are the legacy columns; gt_role_mult/
                         # gt_classif_bonus are the current ones. They are written with identical
@@ -774,6 +978,7 @@ async def calculate_daily_scores(
                         "gt_role_mult": gt_role_mult,
                         "gt_classif_bonus": gt_classif_bonus,
                         "gt_distance_bonus": gt_distance_bonus,
+                        "assist_bonus": assist_bonus,
                         "nemesis_modifier": nemesis_modifier,
                         "underdog_mult": underdog_mult,
                         "tactic_applied": tactic_applied,
@@ -804,7 +1009,11 @@ async def calculate_daily_scores(
                     continue
 
                 c_role = gt_roles.get((team_id, c_rider_id), "domestique")
-                c_classif_bonus = _classif_bonus(classif_rows, c_role)
+                # 2026-07 refonte: GT dailies flat-for-all; 1-week keeps V2 matched-only.
+                if _is_gt_slug(c_race_slug):
+                    c_classif_bonus = _classif_bonus_gt(classif_rows, c_role)
+                else:
+                    c_classif_bonus = _classif_bonus(classif_rows, c_role)
                 if c_classif_bonus == 0:
                     continue
 
@@ -824,6 +1033,7 @@ async def calculate_daily_scores(
                         "gt_role_mult": 1.0,
                         "gt_classif_bonus": c_classif_bonus,
                         "gt_distance_bonus": 0.0,
+                        "assist_bonus": 0.0,
                         "nemesis_modifier": 1.0,
                         "tactic_applied": None,
                         "xp_gained": c_xp,
@@ -872,6 +1082,7 @@ async def calculate_daily_scores(
                             "gt_role_mult": 1.0,
                             "gt_classif_bonus": f_bonus,
                             "gt_distance_bonus": 0.0,
+                            "assist_bonus": 0.0,
                             "nemesis_modifier": 1.0,
                             "tactic_applied": None,
                             "xp_gained": f_xp,
