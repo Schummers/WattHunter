@@ -691,6 +691,18 @@ it — it is seeded at team creation via `classicTeamDefaults()` (`level 8`, `tr
 `underdog_eligible false`, no sponsor). The phase-transition RPC is routed by
 `phaseResetRpcFor(mode)`.
 
+### Late join (joining an already-active league)
+
+`join_league_by_code` has a mode-aware late-join branch (migration `20260703000000`). A player
+joining an **active** classic league is seeded on the same flat footing as everyone else:
+`level 8`, `treasury 2,000,000`, `underdog_eligible false`. Only `cumulative_xp` is set to the
+league **average**, dropping them into the middle of the standings rather than dead last.
+Their `teams.created_at` is anchored to `leagues.created_at` on purpose: `place_bid`'s
+late-joiner gate (migration `20260518000002`) excludes a team whose `created_at` is after the
+current phase's Round 1 close, but that penalty is a manager-mode concept and must not apply to
+a classic newcomer (a full member with a flat 2M budget). Manager-mode late-join is unchanged
+(averaged level + treasury).
+
 ### What classic keeps / neutralizes / removes
 
 | System | Classic | Mechanism |
