@@ -16,6 +16,7 @@ import { useDemoSafeAction } from "@/contexts/demo-context";
 import { ReleaseConfirmModal } from "@/components/release-confirm-modal";
 import { computeAvailableBudget } from "@/lib/budget";
 import { type LeagueMode, isClassic } from "@/lib/league-mode";
+import { ScoringDocCard } from "@/components/scoring-doc-card";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -288,6 +289,11 @@ export function AuctionsClient({
             </p>
           </section>
         )}
+
+        {/* Section: How scoring works (between rounds and roster) */}
+        <section>
+          <ScoringDocCard />
+        </section>
 
         {/* Section: Roster */}
         <section>

@@ -54,19 +54,19 @@ const ROLE_ORDER: Array<{
     role: "gc_leader",
     label: "GC Leader",
     max: 1,
-    desc: "×1.5 stage points · ×1.5 final GC points · top 10 GC daily bonus",
+    desc: "×1.5 stage points · ×2 GC daily bonus (top 10) · ×1.5 Youth daily",
   },
   {
     role: "sprinter",
     label: "Sprinter",
     max: 1,
-    desc: "×1.5 stage points · ×1.5 final points classif · top 5 points daily bonus",
+    desc: "×1.5 stage points on flat/hilly stages (p1–p3) · ×2 Points daily bonus (top 5)",
   },
   {
     role: "climber",
     label: "Climber",
     max: 1,
-    desc: "×1.5 stage points · ×1.5 final KOM classif · top 3 KOM daily bonus",
+    desc: "×1.5 stage points on hilly/mountain stages (p3–p5) · ×2 KOM daily bonus (top 5)",
   },
   {
     role: "tt_specialist",
@@ -84,13 +84,13 @@ const ROLE_ORDER: Array<{
     role: "domestique",
     label: "Domestiques",
     max: 2,
-    desc: "No stage bonus or daily bonus. Base PCS points only.",
+    desc: "No stage multiplier, but earns assists when a real-team teammate finishes stage top 3 (4/2/1) or GC top 3 (3/2/1). Also earns the flat daily bonus like everyone. None on ITT stages.",
   },
   {
     role: "underdog",
     label: "Underdog",
     max: 2,
-    desc: "The cheaper the rider (higher PCS rank), the bigger the boost: stage points × (PCS rank ÷ 100), from ×1 (rank ≤100) up to ×4 (rank ≥400). Stage results only, no bonus on final classifications.",
+    desc: "The cheaper the rider (higher PCS rank), the bigger the boost: stage points × (PCS rank ÷ 100), from ×1 (rank ≤100) up to ×4 (rank ≥400). Applies to stage points only.",
   },
 ];
 

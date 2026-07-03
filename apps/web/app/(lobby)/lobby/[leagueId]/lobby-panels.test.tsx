@@ -28,9 +28,6 @@ vi.mock("./_components/player-list", () => ({
 vi.mock("./_components/rider-pool-list", () => ({
   RiderPoolList: () => <div>RiderPoolList</div>,
 }));
-vi.mock("./_components/rules-tab", () => ({
-  RulesTab: () => <div>RulesTab</div>,
-}));
 vi.mock("./actions", () => ({
   setStartingLevel: vi.fn(async () => ({ ok: true })),
 }));

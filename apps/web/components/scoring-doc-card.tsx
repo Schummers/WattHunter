@@ -4,22 +4,19 @@ import { ChevronDown } from "lucide-react";
 import { Tag } from "@/components/pill";
 
 /**
- * "How scoring works" — pedagogical encart on the Race Team page (Spec A A8).
- * Explains the rank-based barème (2026-07 refonte), role multipliers, finals
- * barème, stage-hunter rules, sprinter/climber profile gating, domestique
- * assists, and Nemesis profile gating. Constants live in
- * `docs/GAME_RULES.md §7/§11` — this component is human-readable text only.
+ * "How scoring works" — pedagogical encart shown on the Race Team page and the
+ * Auction page. Grand Tour scoring, rank-based barème (2026-07 refonte).
+ * Four blocks: stage points, daily bonus, final classifications, and how roles
+ * change the points. Constants live in `docs/GAME_RULES.md §7/§11` — this
+ * component is human-readable text only.
  *
- * Layout follows `docs/mockups/2026-06-02-ui-mockups.html` (Card + Tag +
- * 2-column mini tables). Uses native <details> for keyboard-accessible
- * collapse with no JS.
+ * Uses native <details> for keyboard-accessible collapse with no JS.
  */
 export function ScoringDocCard() {
   return (
     <details className="group rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)]">
       <summary
         className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3"
-        // Hide the default ::-webkit-details-marker triangle.
         style={{ listStyle: "none" }}
       >
         <div className="flex min-w-0 flex-1 flex-col">
@@ -27,7 +24,7 @@ export function ScoringDocCard() {
             How scoring works
           </span>
           <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-            Role multipliers, finals, stage hunter, sprinter, underdog and Nemesis rules.
+            Stage points, daily bonuses, final classifications, and how roles change them.
           </span>
         </div>
         <ChevronDown
@@ -37,187 +34,102 @@ export function ScoringDocCard() {
       </summary>
 
       <div className="flex flex-col gap-5 px-4 pb-4 pt-1">
-        {/* Section 0 — Rank-based stage & GC points (2026-07 refonte) */}
+        {/* 1 — Stage points */}
         <Section
-          title="Stage & GC points"
-          subtitle="On Grand Tours, points come from finish rank — not raw PCS points."
+          title="1 · Stage points"
+          subtitle="On a Grand Tour, a rider scores from his finish position, not from PCS points."
         >
           <Table2Col
+            headers={["Stage finish", "Points"]}
             rows={[
-              { label: "Stage — 1st / 2nd / 3rd", chips: [], multiplier: "100 / 80 / 70" },
-              { label: "Stage — 10th", chips: [], multiplier: "25" },
-              { label: "Stage — 20th (last scoring rank)", chips: [], multiplier: "2" },
-              { label: "GC final — 1st / 2nd / 3rd", chips: [], multiplier: "250 / 210 / 170" },
-              { label: "GC final — 10th", chips: [], multiplier: "65" },
-              { label: "GC final — 30th (last scoring rank)", chips: [], multiplier: "1" },
+              { label: "1st", multiplier: "100" },
+              { label: "2nd / 3rd", multiplier: "80 / 70" },
+              { label: "5th", multiplier: "55" },
+              { label: "10th", multiplier: "25" },
+              { label: "20th (last scoring place)", multiplier: "2" },
             ]}
-            headers={["Result", "Points"]}
           />
           <Note>
-            Winning the GC pays <b>2.5×</b> a stage win — down from the old raw-PCS ratio (5×). Non-GT
-            races (classics, 1-week) still use raw PCS points.
+            <b>Example:</b> a rider finishing 3rd scores <b>70</b> base points. His role multiplier
+            (below) then applies: a sprinter winning a flat stage scores 100 × 1.5 = <b>150</b>.
           </Note>
         </Section>
 
-        {/* Section 1 — Role multipliers on daily classifications */}
+        {/* 2 — Daily bonus */}
         <Section
-          title="Daily classifications"
-          subtitle="Every squad rider in the top scores — the matching role just multiplies it."
+          title="2 · Daily bonus"
+          subtitle="Each day, every rider placed high in a classification earns a flat bonus. His matching role doubles it."
         >
           <Table2Col
+            headers={["Daily classification", "Bonus (all roles)"]}
             rows={[
-              { label: "GC daily (top 10, 15/12/10/8/7/6/5/4/3/2)", chips: ["GC Leader"], multiplier: "×2" },
-              { label: "Points daily (top 5, 6/4/3/2/1)", chips: ["Sprinter"], multiplier: "×2" },
-              { label: "KOM daily (top 5, 6/4/3/2/1)", chips: ["Climber"], multiplier: "×2" },
-              { label: "Youth daily (top 5, 4/3/2/1/1)", chips: ["GC Leader"], multiplier: "×1.5" },
+              { label: "GC — top 10", multiplier: "15→2" },
+              { label: "Points — top 5", multiplier: "6→1" },
+              { label: "KOM — top 5", multiplier: "6→1" },
+              { label: "Youth — top 5", multiplier: "4→1" },
             ]}
-            headers={["Classification", "Role multiplier"]}
           />
           <Note>
-            Everyone in the top scores the flat table shown, whatever their role. The listed role just
-            doubles (or ×1.5) it on top — a domestique 3rd on GC still earns 10 points, a GC Leader in
-            the same spot earns 20.
+            <b>Example:</b> your GC Leader leading the GC that evening earns 15 × 2 = <b>30</b>. A
+            domestique sitting 3rd on GC still earns <b>10</b> (flat, no role match). Match:
+            GC Leader→GC, Sprinter→Points, Climber→KOM (all ×2); GC Leader→Youth (×1.5).
           </Note>
         </Section>
 
-        {/* Section 2 — Final classifications */}
+        {/* 3 — Final classifications */}
         <Section
-          title="Final classifications"
-          subtitle="What you earn when the race ends, from each jersey ranking — flat for every role."
+          title="3 · Final classifications"
+          subtitle="When the Grand Tour ends, final standings pay a one-off — flat for every role, no multiplier."
         >
           <Table2Col
+            headers={["Final jersey", "Winner → depth"]}
             rows={[
-              { label: "GC final (top 30, 250/210/170…)", chips: [], multiplier: "×1.0" },
-              { label: "Points final (top 10, 100/80/65…)", chips: [], multiplier: "×1.0" },
-              { label: "KOM final (top 10, 100/80/65…)", chips: [], multiplier: "×1.0" },
-              { label: "Youth final (top 10, half scale)", chips: [], multiplier: "×1.0" },
+              { label: "GC (top 30)", multiplier: "250 → 1" },
+              { label: "Points / KOM (top 10)", multiplier: "100 → 5" },
+              { label: "Youth (top 10, half)", multiplier: "50 → 2" },
             ]}
-            headers={["Final", "Role multiplier"]}
           />
           <Note>
-            Finals no longer carry a role multiplier — roles play in-race, not on the final result. A
-            Points-final win is worth one stage win (100); the Youth final pays half of Points/KOM.
+            <b>Example:</b> winning the GC is worth <b>250</b> (≈ 2.5 stage wins). Winning the green
+            or KOM jersey is worth <b>100</b> (one stage win). The Youth jersey pays half. Roles do
+            not multiply finals — they play during the race, not on the final result.
           </Note>
         </Section>
 
-        {/* Section 2b — Domestique assists */}
+        {/* 4 — How roles change the points */}
         <Section
-          title="Domestique assists"
-          subtitle="A Domestique scores when his real pro-team teammate performs — not his fantasy squad."
+          title="4 · Roles"
+          subtitle="Every rider has one role. It multiplies his stage points and doubles his matching daily bonus."
         >
-          <Table2Col
-            rows={[
-              { label: "Real-team teammate finishes stage top 3", chips: ["Domestique"], multiplier: "4 / 2 / 1" },
-              { label: "Real-team teammate holds GC top 3 that evening", chips: ["Domestique"], multiplier: "3 / 2 / 1" },
-            ]}
-            headers={["Trigger", "Points"]}
-          />
-          <Note>
-            Only the best-placed teammate counts per category. No assists on individual time-trial
-            stages. Draft a domestique from a strong real team (UAE, Visma…) and he keeps earning even
-            when he never scores himself.
-          </Note>
-        </Section>
-
-        {/* Section 3 — Stage Hunter */}
-        <Section
-          title="Stage Hunter"
-          subtitle="Rewards riders who animate the race from the breakaway."
-        >
-          <Bullet>
-            <b>×1.5 on the stage result</b> if your rider was in the breakaway (≥ 30 km).
-          </Bullet>
-          <Bullet>
-            <b>+1 pt every 10 km</b> spent in the breakaway, added on top (not multiplied).
-          </Bullet>
-          <Bullet>
-            <b>×1.0</b> on every other stage — Stage Hunter is no longer a free ×1.5.
-          </Bullet>
-        </Section>
-
-        {/* Section 4 — Sprinter profile gating */}
-        <Section
-          title="Sprinter"
-          subtitle="The Sprinter bonus is gated by stage profile."
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-              ×1.5 only on profiles
-            </span>
-            <Tag variant="highlighted">p1</Tag>
-            <Tag variant="highlighted">p2</Tag>
-            <Tag variant="highlighted">p3</Tag>
-            <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-              (flat + hilly). ×1.0 on p4/p5 (mountain) — your sprinter is just a domestique there.
-            </span>
+          <div className="flex flex-col gap-2.5">
+            <RoleLine role="GC Leader">
+              ×1.5 on every stage · doubles GC (and ×1.5 Youth) daily bonus.
+            </RoleLine>
+            <RoleLine role="Sprinter">
+              ×1.5 on flat/hilly stages (p1–p3) · doubles Points daily bonus. ×1.0 in the mountains.
+            </RoleLine>
+            <RoleLine role="Climber">
+              ×1.5 on hilly/mountain stages (p3–p5) · doubles KOM daily bonus. ×1.0 on the flat.
+            </RoleLine>
+            <RoleLine role="TT Specialist">
+              ×2 on individual time-trial stages only.
+            </RoleLine>
+            <RoleLine role="Stage Hunter">
+              ×1.5 only when in the breakaway (≥30 km), + 1 pt per 10 km in the break. ×1.0 otherwise.
+            </RoleLine>
+            <RoleLine role="Underdog">
+              The cheaper the rider (higher PCS rank), the bigger the boost: stage points × (rank ÷ 100),
+              from ×1 (rank ≤100) up to ×4 (rank ≥400).
+            </RoleLine>
+            <RoleLine role="Domestique">
+              No multiplier, but earns <b>assists</b> when a teammate from his real pro team finishes
+              stage top 3 (4/2/1) or holds GC top 3 that day (3/2/1). None on time-trials.
+            </RoleLine>
           </div>
-        </Section>
-
-        {/* Section 4b — Climber profile gating (2026-07, mirrors Sprinter) */}
-        <Section
-          title="Climber"
-          subtitle="Since 2026-07, the Climber bonus is gated by stage profile too."
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-              ×1.5 only on profiles
-            </span>
-            <Tag variant="highlighted">p3</Tag>
-            <Tag variant="highlighted">p4</Tag>
-            <Tag variant="highlighted">p5</Tag>
-            <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-              (hilly + mountain). ×1.0 on p1/p2 (flat) — a top-20 flat finish no longer gets the climber
-              boost.
-            </span>
-          </div>
-        </Section>
-
-        {/* Section 5 — Underdog scoring by rank */}
-        <Section
-          title="Underdog"
-          subtitle="The cheaper the rider (higher PCS rank), the bigger the stage boost."
-        >
-          <Table2Col
-            rows={[
-              { label: "PCS rank ≤ 100", chips: [], multiplier: "×1.0" },
-              { label: "PCS rank 200", chips: [], multiplier: "×2.0" },
-              { label: "PCS rank 300", chips: [], multiplier: "×3.0" },
-              { label: "PCS rank 400+", chips: [], multiplier: "×4.0" },
-            ]}
-            headers={["PCS rank", "Stage multiplier"]}
-          />
           <Note>
-            Multiplier = PCS rank ÷ 100, floored at ×1 and capped at ×4, applied to the stage rank
-            points above (not on GC / Points / KOM finals — those are flat for everyone). A rank-350
-            underdog finishing 15th (12 rank points) earns 42.
+            <b>Nemesis</b> (a tactic, not a role) can multiply a rider&apos;s whole stage total when he
+            wins his duel. Finals stay flat for everyone, whatever the role.
           </Note>
-        </Section>
-
-        {/* Section 6 — Nemesis profile gating */}
-        <Section
-          title="Nemesis (tactic)"
-          subtitle="Nemesis can only be placed where the duel makes sense."
-        >
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
-                Nemesis Sprint
-              </span>
-              <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">→</span>
-              <Tag variant="highlighted">p1</Tag>
-              <Tag variant="highlighted">p2</Tag>
-              <Tag variant="highlighted">p3</Tag>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
-                Nemesis GC
-              </span>
-              <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">→</span>
-              <Tag variant="highlighted">p3</Tag>
-              <Tag variant="highlighted">p4</Tag>
-              <Tag variant="highlighted">p5</Tag>
-            </div>
-          </div>
         </Section>
       </div>
     </details>
@@ -256,12 +168,11 @@ function Table2Col({
   rows,
   headers,
 }: {
-  rows: Array<{ label: string; chips: string[]; multiplier: string }>;
+  rows: Array<{ label: string; multiplier: string }>;
   headers: [string, string];
 }) {
   return (
     <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-app)]">
-      {/* Header row */}
       <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 border-b border-[var(--border-subtle)] px-3 py-2">
         <span className="text-[length:var(--type-micro)] font-bold uppercase tracking-wide text-[var(--text-low)]">
           {headers[0]}
@@ -275,16 +186,9 @@ function Table2Col({
           key={`${r.label}-${i}`}
           className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-[var(--border-subtle)] px-3 py-2.5 last:border-b-0"
         >
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
-              {r.label}
-            </span>
-            {r.chips.map((c) => (
-              <Tag key={c} variant="highlighted">
-                {c}
-              </Tag>
-            ))}
-          </div>
+          <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
+            {r.label}
+          </span>
           <span className="font-mono text-[length:var(--type-stat-small)] font-bold tabular-nums text-[var(--text-high)]">
             {r.multiplier}
           </span>
@@ -294,18 +198,19 @@ function Table2Col({
   );
 }
 
+function RoleLine({ role, children }: { role: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <Tag variant="highlighted">{role}</Tag>
+      <p className="text-[length:var(--type-caption)] text-[var(--text-mid)]">{children}</p>
+    </div>
+  );
+}
+
 function Note({ children }: { children: React.ReactNode }) {
   return (
     <p className="rounded-[var(--radius-md)] border border-[var(--border-default)] border-l-2 border-l-[var(--accent-label)] bg-[var(--bg-surface)] px-3 py-2 text-[length:var(--type-caption)] text-[var(--text-mid)]">
       {children}
-    </p>
-  );
-}
-
-function Bullet({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="flex gap-2 text-[length:var(--type-caption)] text-[var(--text-mid)] before:mt-1.5 before:size-1 before:shrink-0 before:rounded-full before:bg-[var(--text-low)] before:content-['']">
-      <span>{children}</span>
     </p>
   );
 }

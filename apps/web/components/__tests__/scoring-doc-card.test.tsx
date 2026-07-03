@@ -8,60 +8,54 @@ describe("ScoringDocCard", () => {
     render(<ScoringDocCard />);
     expect(screen.getByText("How scoring works")).toBeInTheDocument();
     expect(
-      screen.getByText(/Role multipliers, finals, stage hunter/i),
+      screen.getByText(/Stage points, daily bonuses, final classifications/i),
     ).toBeInTheDocument();
   });
 
-  it("renders all 6 section titles", () => {
+  it("renders the 4 block headings", () => {
     render(<ScoringDocCard />);
-    expect(
-      screen.getByRole("heading", { name: "Daily classifications", level: 3 }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Final classifications", level: 3 }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Stage Hunter", level: 3 }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Sprinter", level: 3 }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Underdog", level: 3 }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Nemesis (tactic)", level: 3 }),
-    ).toBeInTheDocument();
+    for (const name of [
+      "1 · Stage points",
+      "2 · Daily bonus",
+      "3 · Final classifications",
+      "4 · Roles",
+    ]) {
+      expect(screen.getByRole("heading", { name, level: 3 })).toBeInTheDocument();
+    }
   });
 
-  it("renders the Underdog rank-to-multiplier examples", () => {
+  it("renders the stage points scale", () => {
     render(<ScoringDocCard />);
-    expect(screen.getByText("PCS rank 200")).toBeInTheDocument();
-    expect(screen.getByText("×2.0")).toBeInTheDocument();
-    expect(screen.getByText("×3.0")).toBeInTheDocument();
+    expect(screen.getByText("1st")).toBeInTheDocument();
+    expect(screen.getByText("80 / 70")).toBeInTheDocument();
+    expect(screen.getByText("20th (last scoring place)")).toBeInTheDocument();
   });
 
-  it("renders the daily-classification 2-column table rows", () => {
+  it("renders the GC final winner value", () => {
     render(<ScoringDocCard />);
-    expect(screen.getByText("GC daily (rider in top 10)")).toBeInTheDocument();
-    expect(screen.getByText("Points daily (top 5)")).toBeInTheDocument();
-    expect(screen.getByText("KOM daily (top 3)")).toBeInTheDocument();
-    expect(screen.getByText("Youth daily (top 5)")).toBeInTheDocument();
+    expect(screen.getByText("GC (top 30)")).toBeInTheDocument();
+    expect(screen.getByText("250 → 1")).toBeInTheDocument();
   });
 
-  it("renders the final-classification multipliers", () => {
+  it("renders every role", () => {
     render(<ScoringDocCard />);
-    // ×1.0 on GC final + ×2 / ×1.5 on the secondaries
-    expect(screen.getAllByText("×2").length).toBeGreaterThanOrEqual(4);
-    expect(screen.getAllByText("×1.5").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText("×1.0").length).toBeGreaterThanOrEqual(1);
+    for (const role of [
+      "GC Leader",
+      "Sprinter",
+      "Climber",
+      "TT Specialist",
+      "Stage Hunter",
+      "Underdog",
+      "Domestique",
+    ]) {
+      expect(screen.getByText(role)).toBeInTheDocument();
+    }
   });
 
-  it("renders the Nemesis profile chips", () => {
+  it("mentions domestique assists and Nemesis", () => {
     render(<ScoringDocCard />);
-    // The chips appear in both sprinter and nemesis sections; assert presence.
-    expect(screen.getAllByText("p1").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText("p4").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("p5").length).toBeGreaterThanOrEqual(1);
+    // "assists" and "Nemesis" are wrapped in <b>, so match those exact nodes.
+    expect(screen.getByText("assists")).toBeInTheDocument();
+    expect(screen.getByText("Nemesis")).toBeInTheDocument();
   });
 });

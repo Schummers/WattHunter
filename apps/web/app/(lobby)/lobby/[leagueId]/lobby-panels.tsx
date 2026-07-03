@@ -10,7 +10,6 @@ import { LevelSelector } from "./_components/level-selector";
 import { LevelStatsCards } from "./_components/level-stats-cards";
 import { PlayerList } from "./_components/player-list";
 import { RiderPoolList } from "./_components/rider-pool-list";
-import { RulesTab } from "./_components/rules-tab";
 import { setStartingLevel } from "./actions";
 import { type LeagueMode, isClassic } from "@/lib/league-mode";
 
@@ -80,7 +79,6 @@ export function LobbyPanels({
       <TabsList variant="line">
         <TabsTrigger value="lobby">Lobby</TabsTrigger>
         {!classicMode && <TabsTrigger value="pool">Level &amp; Pool</TabsTrigger>}
-        <TabsTrigger value="rules">Rules</TabsTrigger>
       </TabsList>
 
       <TabsContent value="lobby" className="space-y-6 pt-2">
@@ -91,7 +89,7 @@ export function LobbyPanels({
           maxPlayers={league.max_players}
           commissionerId={league.commissioner_id}
         />
-        <AuctionExplainer leagueId={league.id} />
+        <AuctionExplainer />
         <LaunchButton
           leagueId={league.id}
           isCommissioner={isCommissioner}
@@ -126,10 +124,6 @@ export function LobbyPanels({
           />
         </TabsContent>
       )}
-
-      <TabsContent value="rules" className="space-y-6 pt-2">
-        <RulesTab leagueId={league.id} />
-      </TabsContent>
     </Tabs>
   );
 }
