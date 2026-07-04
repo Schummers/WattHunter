@@ -28,3 +28,21 @@ export function computeAvailableBudget(
   }
   return treasury + sponsorIncome - activeSalaries - draftBidsTotal;
 }
+
+/**
+ * Available budget for bidding in Classic mode.
+ *
+ * Classic treasury is a flat per-phase ceiling that is never decremented on
+ * purchase — roster spend lives in `contracts.locked_salary` and pending picks
+ * in draft/auction bids. Spendable is therefore the ceiling minus payroll minus
+ * pending bids. Mirrors the place_bid solvency rule
+ * (contracts + active bids <= treasury). Unlike manager mode there is no sponsor
+ * income and no phase-confirmation gating.
+ */
+export function computeClassicBudget(
+  treasury: number,
+  activeSalaries: number,
+  draftBidsTotal: number,
+): number {
+  return treasury - activeSalaries - draftBidsTotal;
+}

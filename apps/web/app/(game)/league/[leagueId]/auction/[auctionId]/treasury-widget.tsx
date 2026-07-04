@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { computeAvailableBudget } from "@/lib/budget";
+import { computeAvailableBudget, computeClassicBudget } from "@/lib/budget";
+import { type LeagueMode, isClassic } from "@/lib/league-mode";
 import { formatMoney } from "@/lib/format";
 
 interface TreasuryWidgetProps {
@@ -8,6 +9,7 @@ interface TreasuryWidgetProps {
   activeSalaries: number;
   activeBidsTotal: number;
   phaseConfirmed?: boolean;
+  mode?: LeagueMode;
 }
 
 export function TreasuryWidget({
@@ -16,14 +18,17 @@ export function TreasuryWidget({
   activeSalaries,
   activeBidsTotal,
   phaseConfirmed = false,
+  mode,
 }: TreasuryWidgetProps) {
-  const available = computeAvailableBudget(
-    treasury,
-    sponsorIncome,
-    activeSalaries,
-    activeBidsTotal,
-    phaseConfirmed
-  );
+  const available = isClassic(mode)
+    ? computeClassicBudget(treasury, activeSalaries, activeBidsTotal)
+    : computeAvailableBudget(
+        treasury,
+        sponsorIncome,
+        activeSalaries,
+        activeBidsTotal,
+        phaseConfirmed
+      );
 
   return (
     <div className="sticky top-0 z-10 flex items-center gap-8 border-b border-[var(--border-default)] bg-[var(--bg-surface)] py-3">

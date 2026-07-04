@@ -10,7 +10,8 @@ import { addDraft } from "@/app/(game)/league/[leagueId]/auction/actions";
 import { useDemoSafeAction } from "@/contexts/demo-context";
 import { formatThousands, countryCodeToFlag, calcMinSalary, formatMoney } from "@/lib/format";
 import { RiderPrice } from "@/components/rider-price";
-import { computeAvailableBudget } from "@/lib/budget";
+import { computeAvailableBudget, computeClassicBudget } from "@/lib/budget";
+import { type LeagueMode, isClassic } from "@/lib/league-mode";
 
 interface Rider {
   id: string;
@@ -61,6 +62,7 @@ interface MarketClientProps {
   phaseConfirmed?: boolean;
   draftBids?: DraftBid[];
   tdfRiderIds?: string[];
+  mode?: LeagueMode;
 }
 
 const BASE_FILTER_OPTIONS = [
@@ -138,6 +140,7 @@ export function MarketClient({
   phaseConfirmed = false,
   draftBids: initialDraftBids = [],
   tdfRiderIds = [],
+  mode,
 }: MarketClientProps) {
   const router = useRouter();
   const addDraftSafe = useDemoSafeAction(addDraft);
@@ -321,13 +324,15 @@ export function MarketClient({
   // Stats for sticky bar
   const totalBidCount = currentSlots + Object.keys(bids).length;
   const allDraftTotal = Object.values(bids).reduce((s, v) => s + v, 0);
-  const remainingBudget = computeAvailableBudget(
-    treasury,
-    sponsorIncome,
-    activeSalaries,
-    allDraftTotal,
-    phaseConfirmed
-  );
+  const remainingBudget = isClassic(mode)
+    ? computeClassicBudget(treasury, activeSalaries, allDraftTotal)
+    : computeAvailableBudget(
+        treasury,
+        sponsorIncome,
+        activeSalaries,
+        allDraftTotal,
+        phaseConfirmed
+      );
 
   // Paginated flat list
   const paginatedFlatRiders = useMemo(() => {

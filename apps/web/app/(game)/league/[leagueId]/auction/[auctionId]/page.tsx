@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 import { getLevelByNumber } from "@/lib/levels";
+import { type LeagueMode } from "@/lib/league-mode";
 import { TreasuryWidget } from "./treasury-widget";
 import { AuctionClient } from "./auction-client";
 import {
@@ -41,6 +42,7 @@ export default async function AuctionDetailPage({
     { data: cooldownContracts },
     { data: teamContracts },
     { data: teamSponsors },
+    { data: league },
   ] = await Promise.all([
     supabase
       .from("auctions")
@@ -67,7 +69,10 @@ export default async function AuctionDetailPage({
       .gt("available_from", new Date().toISOString()) as unknown as Promise<{ data: { rider_id: string; available_from: string }[] | null; error: unknown }>,
     supabase.from("contracts").select("locked_salary").eq("status", "active").eq("team_id", team?.id ?? ""),
     supabase.from("team_sponsors").select("sponsors(monthly_budget)").eq("team_id", team?.id ?? "").maybeSingle(),
+    supabase.from("leagues").select("mode").eq("id", leagueId).single(),
   ]);
+
+  const leagueMode = (league?.mode ?? "manager") as LeagueMode;
 
   if (!auction || !team) {
     return <p className="text-[var(--text-mid)]">Auction not found.</p>;
@@ -124,11 +129,12 @@ export default async function AuctionDetailPage({
         </div>
       </div>
 
-      <TreasuryWidget 
-        treasury={team.treasury} 
+      <TreasuryWidget
+        treasury={team.treasury}
         sponsorIncome={sponsorIncome}
         activeSalaries={activeSalaries}
-        activeBidsTotal={activeBidsTotal} 
+        activeBidsTotal={activeBidsTotal}
+        mode={leagueMode}
       />
 
       <AuctionClient
@@ -139,6 +145,7 @@ export default async function AuctionDetailPage({
         activeSalaries={activeSalaries}
         auctionId={auctionId}
         currentRound={currentRound}
+        mode={leagueMode}
       />
     </div>
   );
@@ -253,6 +260,7 @@ async function renderDemoAuctionDetail(auctionId: string) {
         sponsorIncome={sponsorIncome}
         activeSalaries={activeSalaries}
         activeBidsTotal={activeBidsTotal}
+        mode="manager"
       />
 
       <AuctionClient
@@ -263,6 +271,7 @@ async function renderDemoAuctionDetail(auctionId: string) {
         activeSalaries={activeSalaries}
         auctionId={auctionId}
         currentRound={currentRound}
+        mode="manager"
       />
     </div>
   );
