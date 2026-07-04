@@ -51,6 +51,31 @@ function yearFromSlug(slug: string): number | null {
   return m ? parseInt(m[1]) : null
 }
 
+// ── Hardcoded palmarès transfer: Classic V2 (…c1a551c2026e) ──────────────────
+// The V2 seed cloned only cumulative XP, not race history, so the achievements
+// grid computes empty for V2 teams. We manually carry over the badges these
+// three teams earned in Classic V1, minus the dynamic (league-relative) titles.
+// Ugly-but-works stopgap keyed by V2 team_id; revisit when achievements get a
+// real grant table. See MEMORY: classic_league_v2_seed / palmares V1→V2.
+const HARDCODED_GRANTS: Record<string, string[]> = {
+  // Klimax
+  "00000000-0000-4000-8000-c1a551c00001": [
+    "flandres-top10",
+    "lbl-top10",
+    "paris-roubaix-top10",
+    "giro-gc-podium",
+  ],
+  // Leopard_Trek
+  "00000000-0000-4000-8000-c1a551c00002": [
+    "paris-roubaix-podium",
+    "paris-roubaix-top10",
+    "flandres-top10",
+    "giro-gc-podium",
+  ],
+  // Dixon Hormous
+  "00000000-0000-4000-8000-c1a551c00005": ["giro-kom-victory"],
+}
+
 export default async function AchievementsPage({
   params,
 }: {
@@ -264,6 +289,9 @@ export default async function AchievementsPage({
     if (classicRank > 0) dynamicRanks["classic-man"] = classicRank;
     if (classicRank === 1) unlockedSlugs.push("classic-man");
   }
+
+  // Hardcoded Classic V1→V2 palmarès transfer (stopgap, see HARDCODED_GRANTS).
+  unlockedSlugs.push(...(HARDCODED_GRANTS[myTeamId] ?? []));
 
   return (
     <AchievementsClient
