@@ -127,21 +127,13 @@ export default async function PelotonPage({
   }
 
   return (
-    <div className="pb-8">
-      {teams.map((team, teamIndex) => {
+    <div className="flex flex-col gap-4 pt-2 pb-8">
+      {teams.map((team) => {
         const riders = ridersByTeam.get(team.id) ?? [];
         const isMe = team.id === myTeamId;
-        // Alternate the team block background so teams read as distinct groups.
-        const blockBg =
-          teamIndex % 2 === 0 ? "bg-[var(--bg-surface)]" : "bg-[var(--bg-subtle)]";
 
         return (
-          <section
-            key={team.id}
-            className={`border-b border-[var(--border-default)] ${blockBg} ${
-              isMe ? "border-l-2 border-l-[var(--accent-default)]" : ""
-            }`}
-          >
+          <section key={team.id}>
             {/* Team header */}
             <div className="flex items-center justify-between gap-3 px-4 py-2">
               <span className="flex items-center gap-2 min-w-0">
@@ -155,7 +147,7 @@ export default async function PelotonPage({
                 )}
               </span>
               <span className="shrink-0 text-[length:var(--type-caption)] font-mono tabular-nums text-[var(--text-mid)]">
-                Lv.{team.level} · {formatXp(team.cumulative_xp ?? 0)}
+                {formatXp(team.cumulative_xp ?? 0)} XP
               </span>
             </div>
 
