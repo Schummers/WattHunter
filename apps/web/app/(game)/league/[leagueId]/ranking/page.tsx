@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { getAchievementBySlug } from "@/lib/achievements";
+import { getTourJerseyHolders, mapJerseysToTeams, TOUR_JERSEY_SLUG } from "@/lib/tour-jerseys";
 import { getParentRaceSlug } from "@/lib/race-feed-helpers";
 import { RankingClient } from "./ranking-client";
 import {
@@ -248,9 +249,21 @@ export default async function RankingPage({
     }
   }
 
+  // Live Tour jersey overlay: the team owning the rider who currently wears a
+  // jersey shows that jersey badge/banner during the Tour, without overwriting
+  // their equipped_achievement_slug. Empty outside the Tour phase.
+  const riderTeamMap = new Map<string, string>();
+  for (const c of dedupedContracts) {
+    if (c.status === "active" && c.team_id) riderTeamMap.set(c.rider_id, c.team_id);
+  }
+  const jerseyByTeam = mapJerseysToTeams(await getTourJerseyHolders(supabase), riderTeamMap);
+
   // Build serializable data for client
   const teamsData = teams.map((t, i) => {
-    const equippedSlug = (t as { equipped_achievement_slug?: string | null }).equipped_achievement_slug ?? null;
+    const provisionalJersey = jerseyByTeam.get(t.id) ?? null;
+    const equippedSlug = provisionalJersey
+      ? TOUR_JERSEY_SLUG[provisionalJersey]
+      : ((t as { equipped_achievement_slug?: string | null }).equipped_achievement_slug ?? null);
     const achievement = equippedSlug ? getAchievementBySlug(equippedSlug) : undefined;
     return {
       id: t.id,
@@ -266,6 +279,7 @@ export default async function RankingPage({
       equippedBannerUrl: achievement?.bannerUrl ?? null,
       equippedAchievementName: achievement?.name ?? null,
       equippedAchievementTier: achievement?.tier ?? null,
+      isProvisional: provisionalJersey != null,
     };
   });
 

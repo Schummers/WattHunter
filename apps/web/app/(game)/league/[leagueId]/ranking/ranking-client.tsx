@@ -26,6 +26,7 @@ interface TeamRow {
   equippedBannerUrl: string | null;
   equippedAchievementName: string | null;
   equippedAchievementTier: AchievementTier | null;
+  isProvisional?: boolean;
 }
 
 interface RiderRow {
@@ -203,6 +204,11 @@ export function RankingClient({
                       <span className="text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] truncate">
                         {team.name}
                       </span>
+                      {team.isProvisional && (
+                        <span className="shrink-0 rounded-[var(--radius-lg)] bg-[var(--accent-subtle-bg)] px-1.5 text-[length:var(--type-micro)] font-semibold uppercase tracking-wide text-[var(--accent-label)]">
+                          Live
+                        </span>
+                      )}
                       {isAllRaces && <MovementTag movement={team.movement} />}
                     </div>
                     <div className="flex items-baseline gap-1 shrink-0">

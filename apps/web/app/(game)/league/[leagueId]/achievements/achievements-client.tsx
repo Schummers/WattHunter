@@ -107,6 +107,7 @@ export function AchievementsClient({
 
         {activeFilter === 1 && (
           <>
+            {renderGroup("Tour de France", "tour-")}
             {renderGroup("Giro d'Italia", "giro-")}
           </>
         )}

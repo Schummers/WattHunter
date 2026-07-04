@@ -107,6 +107,11 @@ export const ACHIEVEMENTS: Achievement[] = [
   gt("giro-gc-podium",      "Rosa Podium",       "A rider from your team finishes top 3 GC at the Giro d'Italia", "podium",  "#ed5298", "giro", "badge-giro-gc",     "banner-giro-gc-podium"),
   gt("giro-kom-victory",    "Maglia Azzurra",    "A rider from your team wins the KOM jersey at the Giro d'Italia",    "victory", "#4a90e2", "giro", "badge-giro-kom",    "banner-giro-kom-victory"),
   gt("giro-points-victory", "Maglia Ciclamino",  "A rider from your team wins the Points jersey at the Giro d'Italia", "victory", "#d83cab", "giro", "badge-giro-points", "banner-giro-points-victory"),
+
+  // ── Group 4 — Tour de France ─────────────────────────────────────────────
+  gt("tour-gc-victory",     "Maillot Jaune",  "A rider from your team holds the Tour de France yellow jersey (GC leader)",       "victory", "#facc15", "Tour", "badge-tour-gc",     "banner-tour-gc-victory"),
+  gt("tour-points-victory", "Maillot Vert",   "A rider from your team holds the Tour de France green jersey (points leader)",    "victory", "#22c55e", "Tour", "badge-tour-points", "banner-tour-points-victory"),
+  gt("tour-kom-victory",    "Maillot à Pois", "A rider from your team holds the Tour de France polka-dot jersey (KOM leader)",   "victory", "#ef4444", "Tour", "badge-tour-kom",    "banner-tour-kom-victory"),
 ]
 
 export function getAchievementBySlug(slug: string): Achievement | undefined {
