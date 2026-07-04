@@ -291,7 +291,7 @@ export function AuctionsClient({
         )}
 
         {/* Section: How scoring works (between rounds and roster) */}
-        <section>
+        <section className="px-4">
           <ScoringDocCard />
         </section>
 
