@@ -17,7 +17,10 @@ export function TeamSubTabs({ leagueId, mode }: TeamSubTabsProps) {
   if (isClassic(mode)) {
     return (
       <SubTabs
-        tabs={[{ label: gtLabel, href: `/league/${leagueId}/team/gt` }]}
+        tabs={[
+          { label: gtLabel, href: `/league/${leagueId}/team/gt` },
+          { label: "Peloton", href: `/league/${leagueId}/team/peloton` },
+        ]}
       />
     );
   }
@@ -27,6 +30,7 @@ export function TeamSubTabs({ leagueId, mode }: TeamSubTabsProps) {
       tabs={[
         { label: "My Team", href: `/league/${leagueId}/team` },
         { label: gtLabel, href: `/league/${leagueId}/team/gt` },
+        { label: "Peloton", href: `/league/${leagueId}/team/peloton` },
         { label: "Budget", href: `/league/${leagueId}/team/budget` },
       ]}
     />

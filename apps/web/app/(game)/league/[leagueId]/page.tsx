@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { RaceFeed } from "@/components/race-feed";
 import { getRaceFeedData } from "@/lib/get-race-feed-data";
@@ -48,12 +47,6 @@ export default async function LeagueDashboardPage({
 
   // --- Active league: load race feed ---
 
-  const { count: closedCount } = await supabase
-    .from("auctions")
-    .select("id", { count: "exact", head: true })
-    .eq("league_id", leagueId)
-    .eq("status", "closed");
-
   const { data: memberRow } = await supabase
     .from("league_members")
     .select("team_id")
@@ -62,16 +55,6 @@ export default async function LeagueDashboardPage({
     .maybeSingle();
 
   const teamId = memberRow?.team_id ?? null;
-
-  const { data: teamSponsorRow } = teamId
-    ? await supabase
-        .from("team_sponsors")
-        .select("id")
-        .eq("team_id", teamId)
-        .maybeSingle()
-    : { data: null };
-
-  const isLateJoinPending = teamSponsorRow === null && (closedCount ?? 0) > 0;
 
   const raceFeedPayload = teamId
     ? await getRaceFeedData(supabase, { leagueId, myTeamId: teamId })
@@ -287,14 +270,6 @@ export default async function LeagueDashboardPage({
 
   return (
     <>
-      {isLateJoinPending && (
-        <div className="mx-4 mt-4 flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3">
-          <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-mid)]" />
-          <p className="text-[length:var(--type-body)] text-[var(--text-mid)]">
-            You joined mid-season. You can select your sponsor and start bidding at the next auction phase.
-          </p>
-        </div>
-      )}
       <RaceFeed leagueId={leagueId} payload={raceFeedPayload} tacticContext={tacticContext} dnfRiders={dnfRiders} />
     </>
   );
