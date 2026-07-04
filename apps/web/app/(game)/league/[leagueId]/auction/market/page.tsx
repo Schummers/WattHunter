@@ -217,6 +217,7 @@ export default async function MarketPage({
       phaseConfirmed={phaseConfirmed}
       draftBids={draftBidMap}
       tdfRiderIds={tdfRiderIds}
+      mode={leagueMode}
     />
   );
 }

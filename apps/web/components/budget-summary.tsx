@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMoney } from "@/lib/format";
-import { computeAvailableBudget } from "@/lib/budget";
+import { computeAvailableBudget, computeClassicBudget } from "@/lib/budget";
 import { type LeagueMode, isClassic } from "@/lib/league-mode";
 
 interface BudgetSummaryProps {
@@ -23,9 +23,10 @@ export function BudgetSummary({
   phaseConfirmed = false,
   mode,
 }: BudgetSummaryProps) {
-  // Classic mode: flat per-phase budget, no sponsor income, no salary rows
+  // Classic mode: flat per-phase ceiling. Treasury is never decremented on
+  // purchase, so remaining = ceiling minus roster payroll minus pending drafts.
   if (isClassic(mode)) {
-    const remaining = treasury - draftBidsTotal;
+    const remaining = computeClassicBudget(treasury, activeSalaries, draftBidsTotal);
     const isDeficit = remaining < 0;
 
     return (
@@ -44,10 +45,22 @@ export function BudgetSummary({
           </span>
         </div>
 
-        {/* Spent */}
+        {/* Roster payroll — recurring salaries of the active squad */}
+        {activeSalaries > 0 && (
+          <div className="flex items-center justify-between py-[3px]">
+            <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+              Roster payroll
+            </span>
+            <span className="font-mono text-[length:var(--type-caption)] text-red-400">
+              −{formatMoney(activeSalaries)}
+            </span>
+          </div>
+        )}
+
+        {/* Spent — pending draft bids */}
         <div className="flex items-center justify-between py-[3px]">
           <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-            Spent
+            Draft bids ({draftCount})
           </span>
           <span className="font-mono text-[length:var(--type-caption)] text-red-400">
             −{formatMoney(draftBidsTotal)}

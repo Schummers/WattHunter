@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { BID_INCREMENT, computeAvailableBudget } from "./budget";
+import { BID_INCREMENT, computeAvailableBudget, computeClassicBudget } from "./budget";
 
 describe("BID_INCREMENT", () => {
   it("matches the design rule: bids step by 1000€", () => {
@@ -60,5 +60,29 @@ describe("computeAvailableBudget", () => {
       const omitted = computeAvailableBudget(200_000, 300_000, 100_000, 50_000);
       expect(omitted).toBe(explicitFalse);
     });
+  });
+});
+
+describe("computeClassicBudget", () => {
+  it("subtracts roster payroll AND pending draft bids from the flat ceiling", () => {
+    // Real V2 scenario: 2M ceiling − 1.106M roster − 607K drafts = 287K
+    expect(computeClassicBudget(2_000_000, 1_106_000, 607_000)).toBe(287_000);
+  });
+
+  it("equals treasury minus payroll before any draft (matches League view ~894K)", () => {
+    expect(computeClassicBudget(2_000_000, 1_106_000, 0)).toBe(894_000);
+  });
+
+  it("returns the full ceiling for an empty team (Round 1, no roster, no drafts)", () => {
+    expect(computeClassicBudget(2_000_000, 0, 0)).toBe(2_000_000);
+  });
+
+  it("goes negative when commitments exceed the ceiling (deficit state)", () => {
+    expect(computeClassicBudget(2_000_000, 1_800_000, 500_000)).toBe(-300_000);
+  });
+
+  it("never injects sponsor income (no sponsor param)", () => {
+    // Same inputs, sponsor irrelevant — result is purely ceiling − payroll − drafts
+    expect(computeClassicBudget(2_000_000, 500_000, 200_000)).toBe(1_300_000);
   });
 });

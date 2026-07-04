@@ -14,7 +14,8 @@ import { countryCodeToFlag, formatMoney } from "@/lib/format";
 import { RiderPrice } from "@/components/rider-price";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 import { placeBid, cancelBid } from "./actions";
-import { computeAvailableBudget } from "@/lib/budget";
+import { computeAvailableBudget, computeClassicBudget } from "@/lib/budget";
+import { type LeagueMode, isClassic } from "@/lib/league-mode";
 import { useDemoSafeAction } from "@/contexts/demo-context";
 
 interface Rider {
@@ -43,6 +44,7 @@ interface RiderDialogProps {
   activeSalaries: number;
   activeBidsTotal: number;
   phaseConfirmed?: boolean;
+  mode?: LeagueMode;
   auctionId: string;
   currentRound: number;
   onClose: () => void;
@@ -65,6 +67,7 @@ export function RiderDialog({
   activeSalaries,
   activeBidsTotal,
   phaseConfirmed = false,
+  mode,
   auctionId,
   currentRound,
   onClose,
@@ -80,13 +83,16 @@ export function RiderDialog({
   if (!rider) return null;
 
   const numAmount = parseInt(amount) || 0;
-  const budgetAfter = computeAvailableBudget(
-    treasury,
-    sponsorIncome,
-    activeSalaries,
-    activeBidsTotal + numAmount - (existingBid?.amount ?? 0),
-    phaseConfirmed
-  );
+  const projectedBids = activeBidsTotal + numAmount - (existingBid?.amount ?? 0);
+  const budgetAfter = isClassic(mode)
+    ? computeClassicBudget(treasury, activeSalaries, projectedBids)
+    : computeAvailableBudget(
+        treasury,
+        sponsorIncome,
+        activeSalaries,
+        projectedBids,
+        phaseConfirmed
+      );
   const isValid =
     numAmount >= rider.monthly_salary &&
     numAmount % 1000 === 0 &&

@@ -5,6 +5,7 @@ import { RiderTable } from "./rider-table";
 import { RiderDialog } from "./rider-dialog";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/format";
+import { type LeagueMode } from "@/lib/league-mode";
 import { cancelBid } from "./actions";
 
 interface Rider {
@@ -41,6 +42,7 @@ interface AuctionClientProps {
   activeSalaries: number;
   auctionId: string;
   currentRound: number;
+  mode?: LeagueMode;
 }
 
 export function AuctionClient({
@@ -51,6 +53,7 @@ export function AuctionClient({
   activeSalaries,
   auctionId,
   currentRound,
+  mode,
 }: AuctionClientProps) {
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
 
@@ -123,6 +126,7 @@ export function AuctionClient({
         sponsorIncome={sponsorIncome}
         activeSalaries={activeSalaries}
         activeBidsTotal={activeBidsTotal}
+        mode={mode}
         auctionId={auctionId}
         currentRound={currentRound}
         onClose={() => setSelectedRider(null)}

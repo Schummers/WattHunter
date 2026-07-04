@@ -14,7 +14,7 @@ import { removeDraft, updateDraftAmount, validateRound } from "./actions";
 import { releaseRider } from "@/app/(game)/league/[leagueId]/rider/[riderId]/actions";
 import { useDemoSafeAction } from "@/contexts/demo-context";
 import { ReleaseConfirmModal } from "@/components/release-confirm-modal";
-import { computeAvailableBudget } from "@/lib/budget";
+import { computeAvailableBudget, computeClassicBudget } from "@/lib/budget";
 import { type LeagueMode, isClassic } from "@/lib/league-mode";
 import { ScoringDocCard } from "@/components/scoring-doc-card";
 
@@ -133,10 +133,10 @@ export function AuctionsClient({
   const totalCount = rosterCount + draftCount;
 
   const draftBidsTotal = drafts.reduce((s, d) => s + d.amount, 0);
-  // Classic mode: flat budget, no sponsor income / salaries. Keep the sticky footer and
-  // deficit check consistent with the BudgetSummary card (treasury minus spent).
+  // Classic mode: flat ceiling minus roster payroll minus pending drafts. Keep the
+  // sticky footer and deficit check consistent with the BudgetSummary card.
   const remaining = isClassic(mode)
-    ? treasury - draftBidsTotal
+    ? computeClassicBudget(treasury, activeSalaries, draftBidsTotal)
     : computeAvailableBudget(
         treasury,
         sponsorIncome,
