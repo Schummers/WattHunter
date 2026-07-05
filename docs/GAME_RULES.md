@@ -202,6 +202,10 @@ Rider XP = (rank_points × role_mult × (1 + strategy_bonus)
   - **underdog ×clamp(pcs_rank/100, 1, 4)** (Spec B — mutually exclusive with the roles
     above; see §14).
   - domestique ×1.0 (see `assist_bonus` below for its scoring path).
+  - **ITT stages (`is_itt`, individual OR team time trial) → only gc_leader (×1.5) and
+    tt_specialist (×2.0) earn a role bonus; sprinter/climber/stage_hunter/domestique are
+    ×1.0** (a time trial is not their terrain — the flat/mountain profile gating would
+    otherwise hand a sprinter ×1.5 on a flat ITT). No domestique assists on ITT either.
   - **GC final (`/gc`) → ×1.0 for all roles** (flat, no role mult — same as the secondary
     finals; roles play in-race, not on finals).
 - **classif_bonus** (daily gc/points/kom/youth) — **2026-07: flat table for every squad

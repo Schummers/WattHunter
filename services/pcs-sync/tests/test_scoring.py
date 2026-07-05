@@ -410,6 +410,22 @@ def test_role_multiplier_tt_specialist_itt_only():
     assert _role_multiplier("tt_specialist", s, False) == 1.0
 
 
+def test_role_multiplier_itt_only_gc_leader_and_tt_specialist():
+    """On an ITT stage only gc_leader (×1.5) and tt_specialist (×2.0) earn a bonus;
+    sprinter/climber/stage_hunter/domestique get ×1.0 regardless of profile/breakaway
+    (a time trial is not their terrain — TdF 2026 S1 rule)."""
+    from scoring import _role_multiplier
+    s = "race/tour-de-france/2026/stage-1"
+    assert _role_multiplier("gc_leader", s, True) == 1.5
+    assert _role_multiplier("tt_specialist", s, True) == 2.0
+    # sprinter on a flat ITT profile would be ×1.5 on a road stage — must be ×1.0 here.
+    assert _role_multiplier("sprinter", s, True, profile_icon="p1") == 1.0
+    # climber on a mountain ITT profile would be ×1.5 on a road stage — must be ×1.0 here.
+    assert _role_multiplier("climber", s, True, profile_icon="p5") == 1.0
+    assert _role_multiplier("stage_hunter", s, True, breakaway_kms=120.0) == 1.0
+    assert _role_multiplier("domestique", s, True) == 1.0
+
+
 def test_role_multiplier_sprinter_gated_by_profile():
     """Sprinter ×1.5 only on p1/p2/p3; ×1.0 on p4/p5/unknown (Spec A A4)."""
     from scoring import _role_multiplier
