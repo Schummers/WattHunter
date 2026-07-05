@@ -70,9 +70,9 @@ export function ScoringDocCard() {
             ]}
           />
           <Note>
-            <b>Example:</b> your GC Leader leading the GC that evening earns 15 × 2 = <b>30</b>. A
-            domestique sitting 3rd on GC still earns <b>10</b> (flat, no role match). Match:
-            GC Leader→GC, Sprinter→Points, Climber→KOM (all ×2); GC Leader→Youth (×1.5).
+            <b>Example:</b> your GC Leader leading the GC that evening earns 15 × 1.5 = <b>22.5</b>.
+            A domestique sitting 3rd on GC still earns <b>10</b> (flat, no role match). Match:
+            GC Leader→GC (×1.5), Sprinter→Points and Climber→KOM (×2), GC Leader→Youth (×1.5).
           </Note>
         </Section>
 

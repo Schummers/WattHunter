@@ -88,8 +88,8 @@ def test_daily_classif_flat_for_all_roles():
 def test_daily_classif_matched_role_multiplies():
     import scoring
 
-    # gc_leader ×2 on GC, ×1.5 on youth
-    assert scoring._classif_bonus_gt([_c("gc", 1)], "gc_leader") == 30.0
+    # gc_leader ×1.5 on GC, ×1.5 on youth
+    assert scoring._classif_bonus_gt([_c("gc", 1)], "gc_leader") == 22.5
     assert scoring._classif_bonus_gt([_c("youth", 1)], "gc_leader") == 6.0
     # sprinter ×2 on points
     assert scoring._classif_bonus_gt([_c("points", 1)], "sprinter") == 12.0
@@ -107,7 +107,7 @@ def test_daily_classif_zones_and_sum():
     # Multiple classifications sum (gc_leader 1st GC + 2nd youth)
     assert scoring._classif_bonus_gt(
         [_c("gc", 1), _c("youth", 2)], "gc_leader"
-    ) == 30.0 + 4.5
+    ) == 22.5 + 4.5
 
 
 # ---------------------------------------------------------------------------
