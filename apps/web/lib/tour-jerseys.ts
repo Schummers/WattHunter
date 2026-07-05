@@ -78,3 +78,21 @@ export function mapJerseysToTeams(
   }
   return best;
 }
+
+/**
+ * Like mapJerseysToTeams but keyed by jersey type instead of team — for
+ * displaying "who currently holds each jersey" (e.g. a league-wide jersey
+ * board), where a single team holding several jerseys should show under
+ * every jersey it holds rather than collapsing to just one.
+ */
+export function mapJerseysByType(
+  holders: Map<string, TourJerseyType>,
+  riderTeam: Map<string, string>,
+): Map<TourJerseyType, string> {
+  const byType = new Map<TourJerseyType, string>();
+  for (const [riderId, jersey] of holders) {
+    const teamId = riderTeam.get(riderId);
+    if (teamId) byType.set(jersey, teamId);
+  }
+  return byType;
+}

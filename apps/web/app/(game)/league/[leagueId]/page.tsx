@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RaceFeed } from "@/components/race-feed";
-import { TourJerseyCallout } from "@/components/tour-jersey-callout";
+import { TourJerseyBoard } from "@/components/tour-jersey-board";
 import { getRaceFeedData } from "@/lib/get-race-feed-data";
 import type { TacticContextForFeed } from "@/lib/race-feed-types";
-import { getAchievementBySlug } from "@/lib/achievements";
-import { getTourJerseyHolders, mapJerseysToTeams, TOUR_JERSEY_SLUG } from "@/lib/tour-jerseys";
+import { getAchievementBySlug, type AchievementTier } from "@/lib/achievements";
+import { getTourJerseyHolders, mapJerseysByType, TOUR_JERSEY_SLUG, type TourJerseyType } from "@/lib/tour-jerseys";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   DEMO_LEAGUE_SLUG,
@@ -13,30 +13,70 @@ import {
   DEMO_VISITOR_TEAM_ID,
 } from "@/lib/demo-constants";
 
+interface JerseyRow {
+  jerseyType: string;
+  teamName: string;
+  isMe: boolean;
+  badgeUrl: string;
+  tier: AchievementTier;
+  achievementName: string;
+}
+
+const JERSEY_DISPLAY_ORDER: TourJerseyType[] = ["gc", "points", "kom"];
+
 /**
- * Resolves the live Grand Tour jersey (if any) the given team currently wears,
- * via a targeted contracts lookup scoped to just the 2-3 current jersey
- * holders — cheap enough to run on every home page load. See lib/tour-jerseys.ts.
+ * Resolves who currently holds each live Grand Tour jersey across the whole
+ * league (not just the viewer's own team) — mirrors the ranking page overlay
+ * but summarized as a compact board for the home page. See lib/tour-jerseys.ts.
  */
-async function getMyTourJerseyAchievement(supabase: SupabaseClient, teamId: string) {
+async function getLeagueTourJerseys(
+  supabase: SupabaseClient,
+  leagueId: string,
+  myTeamId: string | null,
+): Promise<JerseyRow[]> {
   const holders = await getTourJerseyHolders(supabase);
-  if (holders.size === 0) return undefined;
+  if (holders.size === 0) return [];
+
+  const { data: teamsRows } = await supabase
+    .from("teams")
+    .select("id, name")
+    .eq("league_id", leagueId);
+  const teams = teamsRows ?? [];
+  const teamIds = teams.map((t) => t.id);
+  if (teamIds.length === 0) return [];
 
   const holderRiderIds = [...holders.keys()];
-  const { data: myHolderContracts } = await supabase
+  const { data: contractsRows } = await supabase
     .from("contracts")
-    .select("rider_id")
-    .eq("team_id", teamId)
+    .select("team_id, rider_id")
+    .in("team_id", teamIds)
     .eq("status", "active")
     .in("rider_id", holderRiderIds);
 
   const riderTeamMap = new Map<string, string>();
-  for (const c of (myHolderContracts ?? []) as Array<{ rider_id: string }>) {
-    riderTeamMap.set(c.rider_id, teamId);
+  for (const c of (contractsRows ?? []) as Array<{ team_id: string; rider_id: string }>) {
+    riderTeamMap.set(c.rider_id, c.team_id);
   }
 
-  const jersey = mapJerseysToTeams(holders, riderTeamMap).get(teamId) ?? null;
-  return jersey ? getAchievementBySlug(TOUR_JERSEY_SLUG[jersey]) : undefined;
+  const teamNameById = new Map(teams.map((t) => [t.id, t.name]));
+  const jerseyByType = mapJerseysByType(holders, riderTeamMap);
+
+  const rows: JerseyRow[] = [];
+  for (const jerseyType of JERSEY_DISPLAY_ORDER) {
+    const teamId = jerseyByType.get(jerseyType);
+    if (!teamId) continue;
+    const achievement = getAchievementBySlug(TOUR_JERSEY_SLUG[jerseyType]);
+    if (!achievement) continue;
+    rows.push({
+      jerseyType,
+      teamName: teamNameById.get(teamId) ?? "Unknown",
+      isMe: teamId === myTeamId,
+      badgeUrl: achievement.badgeUrl,
+      tier: achievement.tier,
+      achievementName: achievement.name,
+    });
+  }
+  return rows;
 }
 
 
@@ -86,9 +126,7 @@ export default async function LeagueDashboardPage({
 
   const teamId = memberRow?.team_id ?? null;
 
-  const myJerseyAchievement = teamId
-    ? await getMyTourJerseyAchievement(supabase, teamId)
-    : undefined;
+  const jerseyRows = await getLeagueTourJerseys(supabase, leagueId, teamId);
 
   const raceFeedPayload = teamId
     ? await getRaceFeedData(supabase, { leagueId, myTeamId: teamId })
@@ -304,14 +342,7 @@ export default async function LeagueDashboardPage({
 
   return (
     <>
-      {myJerseyAchievement && (
-        <TourJerseyCallout
-          badgeUrl={myJerseyAchievement.badgeUrl}
-          bannerUrl={myJerseyAchievement.bannerUrl}
-          tier={myJerseyAchievement.tier}
-          achievementName={myJerseyAchievement.name}
-        />
-      )}
+      <TourJerseyBoard rows={jerseyRows} />
       <RaceFeed leagueId={leagueId} payload={raceFeedPayload} tacticContext={tacticContext} dnfRiders={dnfRiders} />
     </>
   );
@@ -347,18 +378,11 @@ async function renderDemoHome() {
     myTeamId: DEMO_VISITOR_TEAM_ID,
   });
 
-  const myJerseyAchievement = await getMyTourJerseyAchievement(supabase, DEMO_VISITOR_TEAM_ID);
+  const jerseyRows = await getLeagueTourJerseys(supabase, DEMO_LEAGUE_ID, DEMO_VISITOR_TEAM_ID);
 
   return (
     <>
-      {myJerseyAchievement && (
-        <TourJerseyCallout
-          badgeUrl={myJerseyAchievement.badgeUrl}
-          bannerUrl={myJerseyAchievement.bannerUrl}
-          tier={myJerseyAchievement.tier}
-          achievementName={myJerseyAchievement.name}
-        />
-      )}
+      <TourJerseyBoard rows={jerseyRows} />
       <RaceFeed
         leagueId={DEMO_LEAGUE_SLUG}
         payload={raceFeedPayload}
