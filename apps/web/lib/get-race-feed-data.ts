@@ -13,6 +13,7 @@ import {
   teamInitials,
 } from "./race-feed-helpers";
 import { getAchievementBySlug } from "./achievements";
+import { getLeagueTourJerseyRows } from "./tour-jerseys";
 import type {
   NemesisData,
   RaceCardStatus,
@@ -189,6 +190,10 @@ export async function getRaceFeedData(
     agg.set(k, cur);
   }
 
+  // 3b) Live Tour jersey holders (league-wide) — attached only to the race
+  // card matching the latest synced Tour stage (see lib/tour-jerseys.ts).
+  const tourJerseys = await getLeagueTourJerseyRows(supabase, opts.leagueId);
+
   // 4) Build per-race breakdown helper
   const buildBreakdown = (raceSlug: string): {
     teams: TeamRaceResult[];
@@ -199,6 +204,7 @@ export async function getRaceFeedData(
     winnerTeamBannerUrl: string | null;
     winnerTeamAchievementName: string | null;
     winnerTeamAchievementTier: import("./achievements").AchievementTier | null;
+    jerseys: import("./race-feed-types").StageJerseyBadge[];
   } => {
     const byTeam = new Map<string, RiderRaceResult[]>();
     for (const [k, v] of agg.entries()) {
@@ -233,6 +239,17 @@ export async function getRaceFeedData(
     const winner = teams[0] ?? null;
     const winnerEquippedSlug = winner ? (teamEquippedSlugById.get(winner.teamId) ?? null) : null;
     const winnerAchievement = winnerEquippedSlug ? getAchievementBySlug(winnerEquippedSlug) : undefined;
+    const jerseys =
+      tourJerseys && tourJerseys.raceSlug === raceSlug
+        ? tourJerseys.rows.map((row) => ({
+            jerseyType: row.jerseyType,
+            teamName: row.teamName,
+            isMyTeam: row.teamId === opts.myTeamId,
+            badgeUrl: row.badgeUrl,
+            tier: row.tier,
+            achievementName: row.achievementName,
+          }))
+        : [];
     return {
       teams,
       winnerTeamId: winner?.teamId ?? null,
@@ -241,6 +258,7 @@ export async function getRaceFeedData(
       winnerTeamBadgeUrl: winnerAchievement?.badgeUrl ?? null,
       winnerTeamBannerUrl: winnerAchievement?.bannerUrl ?? null,
       winnerTeamAchievementName: winnerAchievement?.name ?? null,
+      jerseys,
       winnerTeamAchievementTier: winnerAchievement?.tier ?? null,
     };
   };

@@ -80,6 +80,20 @@ export function RaceCardPast({ race, leagueId, defaultExpanded }: Props) {
           </div>
         </button>
 
+        {race.jerseys.length > 0 && (
+          <div className="flex items-center gap-3 border-t border-[var(--border-subtle)] px-3.5 py-2">
+            {race.jerseys.map((j) => (
+              <div key={j.jerseyType} className="flex items-center gap-1.5 min-w-0">
+                <AchievementBadge badgeUrl={j.badgeUrl} tier={j.tier} size={22} />
+                <span className="text-[length:var(--type-micro)] text-[var(--text-mid)] truncate">
+                  {j.teamName}
+                  {j.isMyTeam && " (You)"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {expanded && (
           <div className="border-t border-[var(--border-subtle)] px-3.5 py-3 flex flex-col gap-3">
             <RaceTeamBreakdown teams={race.teams} isGtPhase={race.isGtPhase} />

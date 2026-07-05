@@ -22,6 +22,7 @@ function buildSupabase(rows: RowSet) {
       lt: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
       like: vi.fn().mockReturnThis(),
+      ilike: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
       maybeSingle: vi.fn().mockResolvedValue({ data: data[0] ?? null, error: null }),

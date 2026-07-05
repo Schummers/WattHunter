@@ -31,6 +31,15 @@ export type RaceData = {
   isGtPhase: boolean;
 };
 
+export type StageJerseyBadge = {
+  jerseyType: "gc" | "points" | "kom";
+  teamName: string;
+  isMyTeam: boolean;
+  badgeUrl: string;
+  tier: import("./achievements").AchievementTier;
+  achievementName: string;
+};
+
 export type RaceDataWithBreakdown = RaceData & {
   teams: TeamRaceResult[];
   winnerTeamId: string | null;
@@ -40,6 +49,8 @@ export type RaceDataWithBreakdown = RaceData & {
   winnerTeamBannerUrl: string | null;
   winnerTeamAchievementName: string | null;
   winnerTeamAchievementTier: import("./achievements").AchievementTier | null;
+  /** Live Tour jerseys as of THIS stage — only set on the latest synced Tour stage's card. */
+  jerseys: StageJerseyBadge[];
 };
 
 export type NemesisData = {
