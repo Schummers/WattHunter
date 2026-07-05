@@ -90,7 +90,7 @@ DAILY_CLASSIF_SCALES = {
     "youth":  [4, 3, 2, 1, 1],
 }
 DAILY_CLASSIF_ROLE_MULT: dict[str, dict[str, float]] = {
-    "gc_leader": {"gc": 2.0, "youth": 1.5},
+    "gc_leader": {"gc": 1.5, "youth": 1.5},
     "sprinter":  {"points": 2.0},
     "climber":   {"kom": 2.0},
 }
@@ -216,7 +216,7 @@ def _classif_bonus_gt(classif_rows: list[dict], role: str) -> float:
 
     Flat table for EVERY squad rider inside the zone (DAILY_CLASSIF_SCALES),
     multiplied when the rider's role matches the classification
-    (gc_leader→gc ×2 / youth ×1.5, sprinter→points ×2, climber→kom ×2).
+    (gc_leader→gc ×1.5 / youth ×1.5, sprinter→points ×2, climber→kom ×2).
     Replaces the V2 matched-only mechanism (kept in _classif_bonus for
     1-week races until the post-Tour review).
     """
@@ -381,6 +381,16 @@ def _role_multiplier(
     # GC final (slug ends /gc): flat rank-based table, no role multiplier (A2 + 2026-07).
     if race_slug.endswith("/gc"):
         return 1.0
+    # ITT stages (individual OR team time trial): only the GC leader (×1.5) and the
+    # TT specialist (×2.0) earn a bonus. Sprinter/climber/stage_hunter/domestique get
+    # nothing — a time trial is not their terrain, and the flat/mountain profile
+    # gating would otherwise hand a sprinter ×1.5 on a flat ITT (2026-07 TdF S1 rule).
+    if is_itt:
+        if role == "gc_leader":
+            return 1.5
+        if role == "tt_specialist":
+            return 2.0
+        return 1.0
     if role == "gc_leader":
         return 1.5
     if role == "climber":
@@ -484,6 +494,7 @@ async def calculate_daily_scores(
     supabase: Client,
     race_slugs: list[str] | None = None,
     ignore_role_cutoff: bool = False,
+    role_cutoff: "datetime | None" = None,
 ) -> dict:
     """
     For each contracted rider with pcs_points > 0 in race_results:
@@ -648,7 +659,12 @@ async def calculate_daily_scores(
         # Compute cutoff from the first stage-race slug's date (all slugs in one call share a date)
         _cutoff_date_str = _slug_dates.get(squad_slugs[0], today)
         _cutoff_dt = date.fromisoformat(str(_cutoff_date_str))
-        if ignore_role_cutoff:
+        if role_cutoff is not None:
+            # Explicit as-of cutoff (retroactive rescore): lock squad + roles to the
+            # state at a chosen instant, so later edits (e.g. next-stage role changes)
+            # don't retroactively re-score an earlier stage. Overrides ignore_role_cutoff.
+            gt_cutoff = role_cutoff
+        elif ignore_role_cutoff:
             # Retroactive scoring: accept all role/squad assignments regardless of time
             from datetime import timezone as _tz
             gt_cutoff = datetime(9999, 12, 31, 23, 59, 59, tzinfo=_tz.utc)

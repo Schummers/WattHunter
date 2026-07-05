@@ -54,7 +54,7 @@ const ROLE_ORDER: Array<{
     role: "gc_leader",
     label: "GC Leader",
     max: 1,
-    desc: "×1.5 stage points · ×2 GC daily bonus (top 10) · ×1.5 Youth daily",
+    desc: "×1.5 stage points · ×1.5 GC daily bonus (top 10) · ×1.5 Youth daily",
   },
   {
     role: "sprinter",

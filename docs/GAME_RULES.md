@@ -209,7 +209,7 @@ Rider XP = (rank_points × role_mult × (1 + strategy_bonus)
   non-matching roles):
   | Classification | Table (all roles, by rank) | Matched role → mult |
   |---|---|---|
-  | GC (top 10) | 15/12/10/8/7/6/5/4/3/2 | gc_leader ×2 |
+  | GC (top 10) | 15/12/10/8/7/6/5/4/3/2 | gc_leader ×1.5 |
   | Points (top 5) | 6/4/3/2/1 | sprinter ×2 |
   | KOM (top 5) | 6/4/3/2/1 | climber ×2 |
   | Youth (top 5) | 4/3/2/1/1 | gc_leader ×1.5 |
@@ -256,7 +256,7 @@ the `<ScoringDocCard />` component (`apps/web/components/scoring-doc-card.tsx`).
 It covers:
 
 - Stage & GC points (rank-based tables, GC win = 2.5× a stage win) — see §7.
-- Daily classifications (flat table for all + matched-role ×2 / youth ×1.5) — see §7.
+- Daily classifications (flat table for all + matched role: Points/KOM ×2, GC and Youth ×1.5) — see §7.
 - Finals (flat for all roles: GC top 30, Points/KOM top 10 `100…5`, Youth half) — see §7.
 - Domestique assists (real-team teammate stage/GC top 3, 4/2/1 & 3/2/1) — see §7.
 - Stage Hunter (×1.5 in breakaway ≥30 km + 1pt/10 km additive, ×1.0 elsewhere) — see A3.
@@ -403,7 +403,7 @@ At the start of each phase, the player **confirms** their configuration:
   `docs/adr/2026-07-rank-based-gt-barème.md`). Constants in `services/pcs-sync/scoring.py`:
   - `GT_STAGE_SCALE` (top 20): `100, 80, 70, 65, 55, 50, 45, 35, 30, 25, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2`
   - `GT_GC_FINAL_SCALE` (top 30): `250, 210, 170, 145, 125, 110, 95, 85, 75, 65, 60, 55, 50, 45, 40, 35, 30, 25, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 1`
-  - `DAILY_CLASSIF_SCALES` (flat for all squad riders, matched role ×2 / youth ×1.5): GC top 10 `15/12/10/8/7/6/5/4/3/2`, Points/KOM top 5 `6/4/3/2/1`, Youth top 5 `4/3/2/1/1`
+  - `DAILY_CLASSIF_SCALES` (flat for all squad riders; matched role mult: gc ×1.5, points ×2, kom ×2, youth ×1.5): GC top 10 `15/12/10/8/7/6/5/4/3/2`, Points/KOM top 5 `6/4/3/2/1`, Youth top 5 `4/3/2/1/1`
   - `ASSIST_STAGE_SCALE` `4/2/1` + `ASSIST_GC_SCALE` `3/2/1` (domestique real-team assists, GT stages, not ITT)
   - Role gating: sprinter p1/p2/p3, **climber p3/p4/p5** (2026-07); tt_specialist ×2 ITT;
     stage_hunter breakaway ≥30 km + 1 XP / 10 km additive; GC/secondary finals flat (no role mult).
