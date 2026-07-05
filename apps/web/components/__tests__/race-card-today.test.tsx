@@ -21,7 +21,6 @@ const baseRace: RaceDataWithBreakdown = {
   winnerTeamBannerUrl: null,
   winnerTeamAchievementName: null,
   winnerTeamAchievementTier: null,
-  jerseys: [],
   teams: [
     {
       teamId: "t1",

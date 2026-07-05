@@ -45,22 +45,6 @@ export function RaceCardToday({ race, leagueId }: Props) {
           tier={race.winnerTeamAchievementTier}
         />
       </div>
-      {race.jerseys.length > 0 && (
-        <>
-          <div className="my-3 h-px bg-[var(--border-subtle)]" />
-          <div className="flex items-center gap-3">
-            {race.jerseys.map((j) => (
-              <div key={j.jerseyType} className="flex items-center gap-1.5 min-w-0">
-                <AchievementBadge badgeUrl={j.badgeUrl} tier={j.tier} size={22} />
-                <span className="text-[length:var(--type-micro)] text-[var(--text-mid)] truncate">
-                  {j.teamName}
-                  {j.isMyTeam && " (You)"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
       {/* Divider */}
       <div className="my-3 h-px bg-[var(--border-subtle)]" />
       {/* Breakdown */}

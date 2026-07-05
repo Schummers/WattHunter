@@ -279,7 +279,6 @@ export default async function RankingPage({
       equippedBannerUrl: achievement?.bannerUrl ?? null,
       equippedAchievementName: achievement?.name ?? null,
       equippedAchievementTier: achievement?.tier ?? null,
-      isProvisional: provisionalJersey != null,
     };
   });
 

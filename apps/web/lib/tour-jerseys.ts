@@ -15,8 +15,6 @@ export const TOUR_JERSEY_SLUG: Record<TourJerseyType, string> = {
 
 // When a team holds several jerseys at once, the most prestigious wins the slot.
 const JERSEY_PRIORITY: TourJerseyType[] = ["gc", "kom", "points"];
-// Display order for jersey boards/strips (Yellow, Green, Polka — Tour convention).
-const JERSEY_DISPLAY_ORDER: TourJerseyType[] = ["gc", "points", "kom"];
 
 function stageNum(slug: string): number {
   const m = slug.match(/\/stage-(\d+)$/);
@@ -102,53 +100,34 @@ export function mapJerseysToTeams(
   return best;
 }
 
-/**
- * Like mapJerseysToTeams but keyed by jersey type instead of team — for
- * displaying "who currently holds each jersey", where a single team holding
- * several jerseys should show under every jersey it holds rather than
- * collapsing to just one.
- */
-export function mapJerseysByType(
-  holders: Map<string, TourJerseyType>,
-  riderTeam: Map<string, string>,
-): Map<TourJerseyType, string> {
-  const byType = new Map<TourJerseyType, string>();
-  for (const [riderId, jersey] of holders) {
-    const teamId = riderTeam.get(riderId);
-    if (teamId) byType.set(jersey, teamId);
-  }
-  return byType;
-}
-
-export interface TourJerseyRow {
+export interface TourJerseyBadge {
   jerseyType: TourJerseyType;
-  teamId: string;
-  teamName: string;
   badgeUrl: string;
+  bannerUrl: string;
   tier: AchievementTier;
   achievementName: string;
 }
 
 /**
- * Resolves who currently holds each live Tour jersey across the whole league,
- * with the achievement (badge/name/tier) already looked up — used to render
- * jersey badges wherever the app shows race-result badges (e.g. inline in the
- * matching stage's race feed card, via `raceSlug`).
+ * team_id -> live Tour jersey it currently holds (achievement already looked
+ * up, highest-priority jersey when a team holds several), plus the race_slug
+ * of the stage those standings belong to. Used to overlay the jersey on top
+ * of a team's normal equipped badge/banner — exactly like the ranking page,
+ * but here scoped to a race-result card via `raceSlug`. Null outside the Tour.
  */
-export async function getLeagueTourJerseyRows(
+export async function getTourJerseyOverrides(
   supabase: SupabaseClient,
   leagueId: string,
-): Promise<{ raceSlug: string; rows: TourJerseyRow[] } | null> {
+): Promise<{ raceSlug: string; byTeam: Map<string, TourJerseyBadge> } | null> {
   const current = await getCurrentTourStage(supabase);
   if (!current) return null;
 
   const { data: teamsRows } = await supabase
     .from("teams")
-    .select("id, name")
+    .select("id")
     .eq("league_id", leagueId);
-  const teams = teamsRows ?? [];
-  const teamIds = teams.map((t) => t.id);
-  if (teamIds.length === 0) return { raceSlug: current.raceSlug, rows: [] };
+  const teamIds = (teamsRows ?? []).map((t) => t.id as string);
+  if (teamIds.length === 0) return { raceSlug: current.raceSlug, byTeam: new Map() };
 
   const holderRiderIds = [...current.holders.keys()];
   const { data: contractsRows } = await supabase
@@ -163,23 +142,18 @@ export async function getLeagueTourJerseyRows(
     riderTeamMap.set(c.rider_id, c.team_id);
   }
 
-  const teamNameById = new Map(teams.map((t) => [t.id, t.name]));
-  const jerseyByType = mapJerseysByType(current.holders, riderTeamMap);
-
-  const rows: TourJerseyRow[] = [];
-  for (const jerseyType of JERSEY_DISPLAY_ORDER) {
-    const teamId = jerseyByType.get(jerseyType);
-    if (!teamId) continue;
+  const teamJersey = mapJerseysToTeams(current.holders, riderTeamMap);
+  const byTeam = new Map<string, TourJerseyBadge>();
+  for (const [teamId, jerseyType] of teamJersey) {
     const achievement = getAchievementBySlug(TOUR_JERSEY_SLUG[jerseyType]);
     if (!achievement) continue;
-    rows.push({
+    byTeam.set(teamId, {
       jerseyType,
-      teamId,
-      teamName: teamNameById.get(teamId) ?? "Unknown",
       badgeUrl: achievement.badgeUrl,
+      bannerUrl: achievement.bannerUrl,
       tier: achievement.tier,
       achievementName: achievement.name,
     });
   }
-  return { raceSlug: current.raceSlug, rows };
+  return { raceSlug: current.raceSlug, byTeam };
 }

@@ -21,7 +21,6 @@ const pastRace: RaceDataWithBreakdown = {
   winnerTeamBannerUrl: null,
   winnerTeamAchievementName: null,
   winnerTeamAchievementTier: null,
-  jerseys: [],
   teams: [],
 };
 
