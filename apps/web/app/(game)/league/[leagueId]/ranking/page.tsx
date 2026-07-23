@@ -5,6 +5,7 @@ import { getAchievementBySlug } from "@/lib/achievements";
 import { getTourJerseyHolders, mapJerseysToTeams, TOUR_JERSEY_SLUG } from "@/lib/tour-jerseys";
 import { getParentRaceSlug } from "@/lib/race-feed-helpers";
 import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
+import { getRankingRaceName } from "@/lib/ranking-race-name";
 import { RankingClient } from "./ranking-client";
 import {
   DEMO_LEAGUE_SLUG,
@@ -141,9 +142,7 @@ export default async function RankingPage({
     const meta = raceMeta[slug] || { name: slug, date: "" };
     const detectedParent = getParentRaceSlug(slug);
     const parentSlug = detectedParent ?? slug;
-    const parentName = detectedParent
-      ? meta.name.replace(/\s*\|?\s*Stage\s+\d+.*$/i, "") || meta.name
-      : meta.name;
+    const parentName = getRankingRaceName({ raceSlug: slug, raceName: meta.name });
 
     const existing = parentRaceMap.get(parentSlug);
     if (existing) {
@@ -418,9 +417,7 @@ async function renderDemoRanking(initialRace?: string) {
     const meta = raceMeta[slug] || { name: slug, date: "" };
     const detectedParent = getParentRaceSlug(slug);
     const parentSlug = detectedParent ?? slug;
-    const parentName = detectedParent
-      ? meta.name.replace(/\s*\|?\s*Stage\s+\d+.*$/i, "") || meta.name
-      : meta.name;
+    const parentName = getRankingRaceName({ raceSlug: slug, raceName: meta.name });
     const existing = parentRaceMap.get(parentSlug);
     if (existing) {
       if (!existing.childSlugs.includes(slug)) existing.childSlugs.push(slug);
