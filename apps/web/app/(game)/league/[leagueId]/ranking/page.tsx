@@ -4,6 +4,7 @@ import { getUser } from "@/lib/supabase/get-user";
 import { getAchievementBySlug } from "@/lib/achievements";
 import { getTourJerseyHolders, mapJerseysToTeams, TOUR_JERSEY_SLUG } from "@/lib/tour-jerseys";
 import { getParentRaceSlug } from "@/lib/race-feed-helpers";
+import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
 import { RankingClient } from "./ranking-client";
 import {
   DEMO_LEAGUE_SLUG,
@@ -58,7 +59,7 @@ export default async function RankingPage({
   const teamIds = teams.map((t) => t.id);
 
   // Parallelize: members, contracts, xpData all depend only on teamIds
-  const [{ data: membersRaw }, { data: contractsRaw }, { data: xpDataRaw }] =
+  const [{ data: membersRaw }, { data: contractsRaw }, xpData] =
     await Promise.all([
       supabase
         .from("league_members")
@@ -70,10 +71,14 @@ export default async function RankingPage({
         .select("id, team_id, rider_id, status, released_at, riders:rider_id(id, full_name, nationality, photo_url, pcs_rank)")
         .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"])
         .in("status", ["active", "released"]),
-      supabase
-        .from("rider_xp_daily")
-        .select("rider_id, team_id, race_slug, xp_gained, date")
-        .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]),
+      fetchAllSupabasePages((from, to) =>
+        supabase
+          .from("rider_xp_daily")
+          .select("rider_id, team_id, race_slug, xp_gained, date")
+          .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"])
+          .order("id")
+          .range(from, to),
+      ),
     ]);
 
   const ownerByTeamId: Record<string, string> = {};
@@ -105,8 +110,6 @@ export default async function RankingPage({
 
   // Get all rider IDs in league
   const riderIds = dedupedContracts.map((c) => c.rider_id);
-
-  const xpData = xpDataRaw ?? [];
 
   // Compute per-rider total XP (game XP, not raw PCS)
   const riderXpTotal: Record<string, number> = {};
@@ -345,7 +348,7 @@ async function renderDemoRanking(initialRace?: string) {
   const teams = teamsRaw ?? [];
   const teamIds = teams.map((t) => t.id);
 
-  const [{ data: membersRaw }, { data: contractsRaw }, { data: xpDataRaw }] =
+  const [{ data: membersRaw }, { data: contractsRaw }, xpData] =
     await Promise.all([
       supabase
         .from("league_members")
@@ -357,10 +360,14 @@ async function renderDemoRanking(initialRace?: string) {
         .select("id, team_id, rider_id, status, released_at, riders:rider_id(id, full_name, nationality, photo_url, pcs_rank)")
         .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"])
         .in("status", ["active", "released"]),
-      supabase
-        .from("rider_xp_daily")
-        .select("rider_id, team_id, race_slug, xp_gained, date")
-        .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"]),
+      fetchAllSupabasePages((from, to) =>
+        supabase
+          .from("rider_xp_daily")
+          .select("rider_id, team_id, race_slug, xp_gained, date")
+          .in("team_id", teamIds.length > 0 ? teamIds : ["__none__"])
+          .order("id")
+          .range(from, to),
+      ),
     ]);
 
   const ownerByTeamId: Record<string, string> = {};
@@ -387,8 +394,6 @@ async function renderDemoRanking(initialRace?: string) {
   }
   const dedupedContracts = [...contractByRider.values()];
   const riderIds = dedupedContracts.map((c) => c.rider_id);
-  const xpData = xpDataRaw ?? [];
-
   const riderXpTotal: Record<string, number> = {};
   for (const r of xpData) {
     riderXpTotal[r.rider_id] = (riderXpTotal[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
