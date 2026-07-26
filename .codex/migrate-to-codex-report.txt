@@ -1,0 +1,37 @@
+Migration inventory:
+  active: instruction files - 2 found
+    - CLAUDE.md
+    - AGENTS.md
+  inactive: skills - none found
+  inactive: command sources - none found
+  active: subagents - 7 found
+    - architecture-reviewer
+    - business-rules-reviewer
+    - data-reviewer
+    - frontend-ds-reviewer
+    - performance-reviewer
+    - security-reviewer
+    - techdebt-reviewer
+Migration surfaces:
+  active: AGENTS.md - 1 instruction file(s) found.
+  inactive: skills - No skills found.
+  active: MCP config - 0 MCP server(s) converted into config.toml.
+  active: subagents - 7 subagent(s) converted.
+Migration report:
+  symlinked: AGENTS.md - Linked to CLAUDE.md.
+  rewritten: .codex/hooks.json - Rewritten for Codex hooks; review behavior before relying on it. Codex hooks require `[features].codex_hooks = true`, only execute `command` handlers, skip `async` / `prompt` / `agent` handlers, ignore `matcher` for `UserPromptSubmit` and `Stop`, and `PreToolUse` / `PostToolUse` currently run for shell commands only.
+  rewritten: .codex/config.toml - Converted 0 MCP server entries.
+  manual_fix_required: .codex/agents/architecture-reviewer.toml - Manual review required for Claude subagent fields: `tools`.
+  manual_fix_required: .codex/agents/business-rules-reviewer.toml - Manual review required for Claude subagent fields: `tools`.
+  manual_fix_required: .codex/agents/data-reviewer.toml - Manual review required for Claude subagent fields: `tools`.
+  manual_fix_required: .codex/agents/frontend-ds-reviewer.toml - Manual review required for Claude subagent fields: `tools`.
+  manual_fix_required: .codex/agents/performance-reviewer.toml - Manual review required for Claude subagent fields: `tools`.
+  manual_fix_required: .codex/agents/security-reviewer.toml - Manual review required for Claude subagent fields: `tools`.
+  manual_fix_required: .codex/agents/techdebt-reviewer.toml - Manual review required for Claude subagent fields: `tools`.
+  overwritten: .codex/agents/business-rules-reviewer.toml - Existing Codex subagent will be replaced.
+  overwritten: .codex/agents/architecture-reviewer.toml - Existing Codex subagent will be replaced.
+  overwritten: .codex/agents/performance-reviewer.toml - Existing Codex subagent will be replaced.
+  overwritten: .codex/agents/security-reviewer.toml - Existing Codex subagent will be replaced.
+  overwritten: .codex/agents/data-reviewer.toml - Existing Codex subagent will be replaced.
+  overwritten: .codex/agents/frontend-ds-reviewer.toml - Existing Codex subagent will be replaced.
+  overwritten: .codex/agents/techdebt-reviewer.toml - Existing Codex subagent will be replaced.

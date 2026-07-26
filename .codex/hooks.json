@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys,json; d=json.load(sys.stdin); f=d.get('tool_input',{}).get('file_path',''); sys.exit(1 if '.env' in f else 0)\""
+          }
+        ],
+        "matcher": "Edit|Write"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/jonathanschummers/Documents/WattHunter/apps/web && pnpm typecheck 2>&1 | tail -5"
+          }
+        ],
+        "matcher": "Edit|Write"
+      }
+    ]
+  }
+}
