@@ -543,6 +543,18 @@ Le visiteur ne peut rien muter — les RPCs rejettent via `auth.uid() IS NULL`. 
 
 ---
 
+## Pagination PostgREST côté front (cap 1000 lignes)
+
+Le pendant front de `services/pcs-sync/db_utils._fetch_all` : `apps/web/lib/supabase-pagination.ts` → `fetchAllSupabasePages((from, to) => query.order("id").range(from, to))`. **Toute lecture league-wide ou saison-wide de `rider_xp_daily` / `race_results` doit passer par là** — sans quoi PostgREST tronque à 1000 lignes *sans erreur* et l'UI affiche des scores partiels.
+
+`.order("id")` est obligatoire : sans ordre stable la pagination duplique et perd des lignes.
+
+Surfaces paginées (2026-07-26, audit scores Tour) : `lib/get-race-feed-data.ts` (race_results, race_startlists, riders, rider_xp_daily, sponsor_bonuses, sponsor_goal_completions), `ranking/page.tsx` (rider_xp_daily + race_results métadonnées), `ranking/team/[teamId]/page.tsx`, `team/page.tsx`, `auction/page.tsx`, `achievements/page.tsx`, `team/gt/tactics/actions.ts`. Chaque page a un doublon démo (`DEMO_LEAGUE_ID`) : corriger les deux.
+
+Restent sous le cap mais non bornés (à surveiller) : lectures `riders` sans plafond `pcs_rank` dans `team/strategies/`, et les agrégats multi-saisons de `achievements/page.tsx` (aucun filtre d'année).
+
+---
+
 ## Decisions d'architecture (ADRs)
 
 ### ADR-001 : Pas de minimum de joueurs pour lancer une ligue

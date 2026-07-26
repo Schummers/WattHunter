@@ -4,6 +4,12 @@
 import { z } from "zod/v4";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
+
+type StageDateRow = {
+  race_slug: string;
+  race_date: string;
+};
 
 const PlaceTacticInput = z.object({
   teamId: z.uuid(),
@@ -172,12 +178,16 @@ export async function getIncomingNemesis(opts: {
   if (!data || data.length === 0) return [];
 
   const slugs = Array.from(new Set(data.map((d) => d.stage_slug)));
-  const { data: stageRows } = await supabase
-    .from("race_results")
-    .select("race_slug, race_date")
-    .in("race_slug", slugs);
+  const stageRows = await fetchAllSupabasePages<StageDateRow>((rangeFrom, rangeTo) =>
+    supabase
+      .from("race_results")
+      .select("race_slug, race_date")
+      .in("race_slug", slugs)
+      .order("id")
+      .range(rangeFrom, rangeTo),
+  );
   const dateBySlug = new Map<string, string>(
-    (stageRows ?? []).map((r) => [r.race_slug, r.race_date])
+    stageRows.map((r) => [r.race_slug, r.race_date])
   );
 
   const cutoff = Date.now() - 24 * 3600 * 1000;

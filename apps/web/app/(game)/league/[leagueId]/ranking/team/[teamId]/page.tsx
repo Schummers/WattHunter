@@ -13,6 +13,13 @@ import {
   DEMO_LEAGUE_SLUG,
   DEMO_LEAGUE_ID,
 } from "@/lib/demo-constants";
+import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
+
+type RiderXpRow = {
+  rider_id: string;
+  xp_gained: number;
+  race_slug: string;
+};
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -88,11 +95,15 @@ export default async function TeamDetailPage({
   const allRiderIds = contracts.map((c) => c.rider_id);
 
   // Parallelize: XP data for this team's riders + league teams list
-  const [{ data: teamXpRaw }, { data: leagueTeamsRaw }] = await Promise.all([
-    supabase
-      .from("rider_xp_daily")
-      .select("rider_id, xp_gained, race_slug")
-      .eq("team_id", teamId),
+  const [teamXpRaw, { data: leagueTeamsRaw }] = await Promise.all([
+    fetchAllSupabasePages<RiderXpRow>((rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("rider_id, xp_gained, race_slug")
+        .eq("team_id", teamId)
+        .order("id")
+        .range(rangeFrom, rangeTo),
+    ),
     supabase
       .from("teams")
       .select("id")
@@ -100,23 +111,27 @@ export default async function TeamDetailPage({
   ]);
 
   const riderXpTotal: Record<string, number> = {};
-  for (const r of teamXpRaw ?? []) {
+  for (const r of teamXpRaw) {
     riderXpTotal[r.rider_id] = (riderXpTotal[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
   }
 
   // Per-rider ranking in league: need all league riders' XP from rider_xp_daily
   const leagueTeamIds = (leagueTeamsRaw ?? []).map((t) => t.id);
 
-  const [{ data: leagueContractsRaw }, { data: leagueXpRaw }] = await Promise.all([
+  const [{ data: leagueContractsRaw }, leagueXpRaw] = await Promise.all([
     supabase
       .from("contracts")
       .select("rider_id, status, released_at")
       .in("team_id", leagueTeamIds.length > 0 ? leagueTeamIds : ["__none__"])
       .in("status", ["active", "released"]),
-    supabase
-      .from("rider_xp_daily")
-      .select("rider_id, xp_gained, race_slug")
-      .in("team_id", leagueTeamIds.length > 0 ? leagueTeamIds : ["__none__"]),
+    fetchAllSupabasePages<RiderXpRow>((rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("rider_id, xp_gained, race_slug")
+        .in("team_id", leagueTeamIds.length > 0 ? leagueTeamIds : ["__none__"])
+        .order("id")
+        .range(rangeFrom, rangeTo),
+    ),
   ]);
 
   // Deduplicate: active beats released; latest released_at wins among released
@@ -136,7 +151,7 @@ export default async function TeamDetailPage({
   const leagueRiderIds = [...leagueContractByRider.keys()];
 
   const leagueRiderXp: Record<string, number> = {};
-  for (const r of leagueXpRaw ?? []) {
+  for (const r of leagueXpRaw) {
     leagueRiderXp[r.rider_id] = (leagueRiderXp[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
   }
 
@@ -149,7 +164,7 @@ export default async function TeamDetailPage({
   sortedLeagueRiders.forEach((r, i) => { riderGameRank[r.id] = i + 1; });
 
   // Movement — compute from latest race using rider_xp_daily
-  const allRaceSlugs = [...new Set((teamXpRaw ?? []).map((x) => x.race_slug).filter(Boolean))];
+  const allRaceSlugs = [...new Set(teamXpRaw.map((x) => x.race_slug).filter(Boolean))];
   // Find latest race slug by checking race_results dates
   const { data: latestRaceMeta } = allRaceSlugs.length > 0
     ? await supabase
@@ -165,7 +180,7 @@ export default async function TeamDetailPage({
   if (latestRaceMeta) {
     // XP from the latest race per rider (from rider_xp_daily)
     const latestXp: Record<string, number> = {};
-    for (const r of leagueXpRaw ?? []) {
+    for (const r of leagueXpRaw) {
       if (r.race_slug === latestRaceMeta.race_slug) {
         latestXp[r.rider_id] = (latestXp[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
       }
@@ -380,11 +395,15 @@ async function renderDemoTeamRanking(teamId: string, from?: string) {
   const formerContracts = contracts.filter((c) => c.status === "released");
   const allRiderIds = contracts.map((c) => c.rider_id);
 
-  const [{ data: teamXpRaw }, { data: leagueTeamsRaw }] = await Promise.all([
-    supabase
-      .from("rider_xp_daily")
-      .select("rider_id, xp_gained, race_slug")
-      .eq("team_id", teamId),
+  const [teamXpRaw, { data: leagueTeamsRaw }] = await Promise.all([
+    fetchAllSupabasePages<RiderXpRow>((rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("rider_id, xp_gained, race_slug")
+        .eq("team_id", teamId)
+        .order("id")
+        .range(rangeFrom, rangeTo),
+    ),
     supabase
       .from("teams")
       .select("id")
@@ -392,22 +411,26 @@ async function renderDemoTeamRanking(teamId: string, from?: string) {
   ]);
 
   const riderXpTotal: Record<string, number> = {};
-  for (const r of teamXpRaw ?? []) {
+  for (const r of teamXpRaw) {
     riderXpTotal[r.rider_id] = (riderXpTotal[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
   }
 
   const leagueTeamIds = (leagueTeamsRaw ?? []).map((t) => t.id);
 
-  const [{ data: leagueContractsRaw }, { data: leagueXpRaw }] = await Promise.all([
+  const [{ data: leagueContractsRaw }, leagueXpRaw] = await Promise.all([
     supabase
       .from("contracts")
       .select("rider_id, status, released_at")
       .in("team_id", leagueTeamIds.length > 0 ? leagueTeamIds : ["__none__"])
       .in("status", ["active", "released"]),
-    supabase
-      .from("rider_xp_daily")
-      .select("rider_id, xp_gained, race_slug")
-      .in("team_id", leagueTeamIds.length > 0 ? leagueTeamIds : ["__none__"]),
+    fetchAllSupabasePages<RiderXpRow>((rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("rider_id, xp_gained, race_slug")
+        .in("team_id", leagueTeamIds.length > 0 ? leagueTeamIds : ["__none__"])
+        .order("id")
+        .range(rangeFrom, rangeTo),
+    ),
   ]);
 
   const leagueContractByRider = new Map<string, { rider_id: string; status: string; released_at?: string | null }>();
@@ -426,7 +449,7 @@ async function renderDemoTeamRanking(teamId: string, from?: string) {
   const leagueRiderIds = [...leagueContractByRider.keys()];
 
   const leagueRiderXp: Record<string, number> = {};
-  for (const r of leagueXpRaw ?? []) {
+  for (const r of leagueXpRaw) {
     leagueRiderXp[r.rider_id] = (leagueRiderXp[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
   }
 
@@ -437,7 +460,7 @@ async function renderDemoTeamRanking(teamId: string, from?: string) {
   const riderGameRank: Record<string, number> = {};
   sortedLeagueRiders.forEach((r, i) => { riderGameRank[r.id] = i + 1; });
 
-  const allRaceSlugs = [...new Set((teamXpRaw ?? []).map((x) => x.race_slug).filter(Boolean))];
+  const allRaceSlugs = [...new Set(teamXpRaw.map((x) => x.race_slug).filter(Boolean))];
   const { data: latestRaceMeta } = allRaceSlugs.length > 0
     ? await supabase
         .from("race_results")
@@ -451,7 +474,7 @@ async function renderDemoTeamRanking(teamId: string, from?: string) {
   const riderMovement: Record<string, number> = {};
   if (latestRaceMeta) {
     const latestXp: Record<string, number> = {};
-    for (const r of leagueXpRaw ?? []) {
+    for (const r of leagueXpRaw) {
       if (r.race_slug === latestRaceMeta.race_slug) {
         latestXp[r.rider_id] = (latestXp[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
       }
