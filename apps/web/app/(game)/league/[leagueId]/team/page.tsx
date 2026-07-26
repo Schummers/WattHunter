@@ -16,6 +16,12 @@ import {
   DEMO_LEAGUE_ID,
   DEMO_VISITOR_TEAM_ID,
 } from "@/lib/demo-constants";
+import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
+
+type TeamRiderXpRow = {
+  rider_id: string;
+  xp_gained: number;
+};
 
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -118,15 +124,17 @@ export default async function MyTeamPage({
   const riderIds = (teamRiders ?? []).map((tr) => tr.rider_id);
 
   // Group 2: parallel queries — depend on Group 1 results
-  const [{ data: xpData }] = await Promise.all([
-    riderIds.length > 0
-      ? supabase
+  const xpData: TeamRiderXpRow[] = riderIds.length > 0
+    ? await fetchAllSupabasePages<TeamRiderXpRow>((rangeFrom, rangeTo) =>
+        supabase
           .from("rider_xp_daily")
           .select("rider_id, xp_gained")
           .eq("team_id", team?.id)
           .in("rider_id", riderIds)
-      : Promise.resolve({ data: [] as never[] }),
-  ]);
+          .order("id")
+          .range(rangeFrom, rangeTo),
+      )
+    : [];
 
   const rank = (teamsAbove ?? 0) + 1;
   const teamCount = totalTeams ?? 0;
@@ -175,7 +183,7 @@ export default async function MyTeamPage({
   }
 
   const xpByRider: Record<string, number> = {};
-  for (const row of xpData ?? []) {
+  for (const row of xpData) {
     xpByRider[row.rider_id] = (xpByRider[row.rider_id] ?? 0) + row.xp_gained;
   }
 
@@ -387,15 +395,17 @@ async function renderDemoTeam() {
   const level = teamRow?.level ?? 1;
   const riderIds = (teamRiders ?? []).map((tr) => tr.rider_id);
 
-  const [{ data: xpData }] = await Promise.all([
-    riderIds.length > 0
-      ? supabase
+  const xpData: TeamRiderXpRow[] = riderIds.length > 0
+    ? await fetchAllSupabasePages<TeamRiderXpRow>((rangeFrom, rangeTo) =>
+        supabase
           .from("rider_xp_daily")
           .select("rider_id, xp_gained")
           .eq("team_id", teamId)
           .in("rider_id", riderIds)
-      : Promise.resolve({ data: [] as never[] }),
-  ]);
+          .order("id")
+          .range(rangeFrom, rangeTo),
+      )
+    : [];
 
   const rank = (teamsAbove ?? 0) + 1;
   const teamCount = totalTeams ?? 0;
@@ -440,7 +450,7 @@ async function renderDemoTeam() {
   }
 
   const xpByRider: Record<string, number> = {};
-  for (const row of xpData ?? []) {
+  for (const row of xpData) {
     xpByRider[row.rider_id] = (xpByRider[row.rider_id] ?? 0) + row.xp_gained;
   }
 

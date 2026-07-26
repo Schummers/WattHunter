@@ -11,8 +11,14 @@ type RowSet = Record<string, any[]>;
 
 function buildSupabase(rows: RowSet) {
   const builder = (table: string) => {
-    const data = rows[table] ?? [];
+    const allRows = rows[table] ?? [];
+    // `range` slices like PostgREST does, so tests exercise the real pagination loop.
+    let data = allRows;
     const chain: any = {
+      range: vi.fn((from: number, to: number) => {
+        data = allRows.slice(from, to + 1);
+        return chain;
+      }),
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       neq: vi.fn().mockReturnThis(),
@@ -25,7 +31,7 @@ function buildSupabase(rows: RowSet) {
       ilike: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({ data: data[0] ?? null, error: null }),
+      maybeSingle: vi.fn().mockResolvedValue({ data: allRows[0] ?? null, error: null }),
       then: (resolve: any) => resolve({ data, error: null }),
     };
     return chain;
@@ -185,5 +191,51 @@ describe("getRaceFeedData", () => {
     if (nemesis?.type !== "nemesis") return;
     expect(nemesis.data.outcome).toBe("attacker_won");
     expect(nemesis.data.isMyTeamAttacker).toBe(true);
+  });
+
+  it("pages past the PostgREST 1000-row cap on rider_xp_daily", async () => {
+    // A full Tour phase exceeds 1000 XP rows for a league. Without pagination the
+    // feed silently loses rows spread across every stage, so stage winners vanish.
+    const stageSlug = "race/giro-d-italia/2026/stage-2";
+    const filler = Array.from({ length: 1200 }, (_, i) => ({
+      race_slug: stageSlug,
+      team_id: "T_other",
+      rider_id: `filler-${i}`,
+      xp_gained: 1,
+    }));
+
+    const supabase = buildSupabase({
+      race_results: [
+        { race_slug: stageSlug, race_name: "Giro - Stage 2", race_date: "2026-05-05" },
+      ],
+      race_startlists: [],
+      rider_xp_daily: [
+        ...filler,
+        { race_slug: stageSlug, team_id: "T1", rider_id: "r_late", xp_gained: 176.5 },
+      ],
+      teams: [
+        { id: "T1", name: "Mon équipe" },
+        { id: "T_other", name: "Team Astrid" },
+      ],
+      riders: [{ id: "r_late", full_name: "Tadej Pogacar" }],
+      sponsor_bonuses: [],
+      gt_tactic_activations: [],
+      auctions: [],
+    });
+
+    const result = await getRaceFeedData(supabase, {
+      leagueId: "L1",
+      myTeamId: "T1",
+      referenceDate: new Date("2026-05-05T08:00:00Z"),
+    });
+
+    const todayCard = result.groups
+      .find((g) => g.date === "2026-05-05")!
+      .cards.find((c) => c.type === "today");
+    expect(todayCard?.type).toBe("today");
+    if (todayCard?.type !== "today") return;
+    const myTeam = todayCard.race.teams.find((t) => t.isMyTeam);
+    expect(myTeam?.riders.map((r) => r.riderShortName)).toContain("T. Pogacar");
+    expect(myTeam?.totalXp).toBe(176.5);
   });
 });

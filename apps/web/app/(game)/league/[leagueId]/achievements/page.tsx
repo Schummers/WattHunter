@@ -11,6 +11,12 @@ import {
   completedGrandTourYears,
   GT_FINAL_STAGE,
 } from "@/lib/grand-tour-completion";
+import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
+
+type TeamXpRow = {
+  team_id: string;
+  xp_gained: number | null;
+};
 
 // One-day WT races for Classic Man (monuments + other WT one-day classics)
 const ONE_DAY_WT_PATTERNS = [
@@ -258,14 +264,18 @@ export default async function AchievementsPage({
 
   if (leagueTeamIds.length > 0) {
     // Monument Man: cumulative XP on monument races per team
-    const { data: monumentXpAll } = await supabase
-      .from("rider_xp_daily")
-      .select("team_id, xp_gained")
-      .in("team_id", leagueTeamIds)
-      .or(MONUMENT_BASES.map(({ ilike }) => `race_slug.ilike.${ilike}`).join(","));
+    const monumentXpAll = await fetchAllSupabasePages<TeamXpRow>((rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("team_id, xp_gained")
+        .in("team_id", leagueTeamIds)
+        .or(MONUMENT_BASES.map(({ ilike }) => `race_slug.ilike.${ilike}`).join(","))
+        .order("id")
+        .range(rangeFrom, rangeTo),
+    );
 
     const monumentXpByTeam = new Map<string, number>();
-    for (const row of monumentXpAll ?? []) {
+    for (const row of monumentXpAll) {
       monumentXpByTeam.set(row.team_id, (monumentXpByTeam.get(row.team_id) ?? 0) + (row.xp_gained ?? 0));
     }
     const monumentRanking = [...monumentXpByTeam.entries()].sort((a, b) => b[1] - a[1]);
@@ -274,14 +284,18 @@ export default async function AchievementsPage({
     if (monumentRank === 1) unlockedSlugs.push("monument-man");
 
     // Classic Man: cumulative XP on all one-day WT races per team
-    const { data: classicXpAll } = await supabase
-      .from("rider_xp_daily")
-      .select("team_id, xp_gained")
-      .in("team_id", leagueTeamIds)
-      .or(ONE_DAY_WT_PATTERNS.map((p) => `race_slug.ilike.${p}`).join(","));
+    const classicXpAll = await fetchAllSupabasePages<TeamXpRow>((rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("team_id, xp_gained")
+        .in("team_id", leagueTeamIds)
+        .or(ONE_DAY_WT_PATTERNS.map((p) => `race_slug.ilike.${p}`).join(","))
+        .order("id")
+        .range(rangeFrom, rangeTo),
+    );
 
     const classicXpByTeam = new Map<string, number>();
-    for (const row of classicXpAll ?? []) {
+    for (const row of classicXpAll) {
       classicXpByTeam.set(row.team_id, (classicXpByTeam.get(row.team_id) ?? 0) + (row.xp_gained ?? 0));
     }
     const classicRanking = [...classicXpByTeam.entries()].sort((a, b) => b[1] - a[1]);
@@ -449,14 +463,18 @@ async function renderDemoAchievements() {
   const leagueTeamIds = (leagueMembers ?? []).map((m) => m.team_id).filter((id): id is string => id !== null);
 
   if (leagueTeamIds.length > 0) {
-    const { data: monumentXpAll } = await supabase
-      .from("rider_xp_daily")
-      .select("team_id, xp_gained")
-      .in("team_id", leagueTeamIds)
-      .or(MONUMENT_BASES.map(({ ilike }) => `race_slug.ilike.${ilike}`).join(","));
+    const monumentXpAll = await fetchAllSupabasePages<TeamXpRow>((rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("team_id, xp_gained")
+        .in("team_id", leagueTeamIds)
+        .or(MONUMENT_BASES.map(({ ilike }) => `race_slug.ilike.${ilike}`).join(","))
+        .order("id")
+        .range(rangeFrom, rangeTo),
+    );
 
     const monumentXpByTeam = new Map<string, number>();
-    for (const row of monumentXpAll ?? []) {
+    for (const row of monumentXpAll) {
       monumentXpByTeam.set(row.team_id, (monumentXpByTeam.get(row.team_id) ?? 0) + (row.xp_gained ?? 0));
     }
     const monumentRanking = [...monumentXpByTeam.entries()].sort((a, b) => b[1] - a[1]);
@@ -464,14 +482,18 @@ async function renderDemoAchievements() {
     if (monumentRank > 0) dynamicRanks["monument-man"] = monumentRank;
     if (monumentRank === 1) unlockedSlugs.push("monument-man");
 
-    const { data: classicXpAll } = await supabase
-      .from("rider_xp_daily")
-      .select("team_id, xp_gained")
-      .in("team_id", leagueTeamIds)
-      .or(ONE_DAY_WT_PATTERNS.map((p) => `race_slug.ilike.${p}`).join(","));
+    const classicXpAll = await fetchAllSupabasePages<TeamXpRow>((rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("team_id, xp_gained")
+        .in("team_id", leagueTeamIds)
+        .or(ONE_DAY_WT_PATTERNS.map((p) => `race_slug.ilike.${p}`).join(","))
+        .order("id")
+        .range(rangeFrom, rangeTo),
+    );
 
     const classicXpByTeam = new Map<string, number>();
-    for (const row of classicXpAll ?? []) {
+    for (const row of classicXpAll) {
       classicXpByTeam.set(row.team_id, (classicXpByTeam.get(row.team_id) ?? 0) + (row.xp_gained ?? 0));
     }
     const classicRanking = [...classicXpByTeam.entries()].sort((a, b) => b[1] - a[1]);

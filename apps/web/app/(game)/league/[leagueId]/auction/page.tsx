@@ -12,6 +12,12 @@ import {
   DEMO_LEAGUE_ID,
   DEMO_VISITOR_TEAM_ID,
 } from "@/lib/demo-constants";
+import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
+
+type AuctionRiderXpRow = {
+  rider_id: string;
+  xp_gained: number;
+};
 
 function formatName(fullName: string): string {
   const parts = fullName.split(" ").filter(Boolean);
@@ -128,18 +134,21 @@ export default async function AuctionsPage({
 
   // Rider XP data
   const rosterRiderIds = (activeContracts ?? []).map((c) => c.rider_id);
-  const { data: xpData } =
-    rosterRiderIds.length > 0
-      ? await supabase
+  const xpData: AuctionRiderXpRow[] = rosterRiderIds.length > 0
+    ? await fetchAllSupabasePages<AuctionRiderXpRow>((rangeFrom, rangeTo) =>
+        supabase
           .from("rider_xp_daily")
           .select("rider_id, xp_gained")
           .eq("team_id", team?.id)
           .in("rider_id", rosterRiderIds)
-      : { data: [] as { rider_id: string; xp_gained: number }[] };
+          .order("id")
+          .range(rangeFrom, rangeTo),
+      )
+    : [];
 
   // Build XP map
   const xpByRider: Record<string, number> = {};
-  for (const row of xpData ?? []) {
+  for (const row of xpData) {
     xpByRider[row.rider_id] = (xpByRider[row.rider_id] ?? 0) + row.xp_gained;
   }
 
@@ -434,17 +443,20 @@ async function renderDemoAuction() {
   ]);
 
   const rosterRiderIds = (activeContracts ?? []).map((c) => c.rider_id);
-  const { data: xpData } =
-    rosterRiderIds.length > 0
-      ? await supabase
+  const xpData: AuctionRiderXpRow[] = rosterRiderIds.length > 0
+    ? await fetchAllSupabasePages<AuctionRiderXpRow>((rangeFrom, rangeTo) =>
+        supabase
           .from("rider_xp_daily")
           .select("rider_id, xp_gained")
           .eq("team_id", teamId)
           .in("rider_id", rosterRiderIds)
-      : { data: [] as { rider_id: string; xp_gained: number }[] };
+          .order("id")
+          .range(rangeFrom, rangeTo),
+      )
+    : [];
 
   const xpByRider: Record<string, number> = {};
-  for (const row of xpData ?? []) {
+  for (const row of xpData) {
     xpByRider[row.rider_id] = (xpByRider[row.rider_id] ?? 0) + row.xp_gained;
   }
 

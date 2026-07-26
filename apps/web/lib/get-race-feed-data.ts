@@ -14,6 +14,7 @@ import {
 } from "./race-feed-helpers";
 import { getAchievementBySlug } from "./achievements";
 import { getTourJerseyOverrides } from "./tour-jerseys";
+import { fetchAllSupabasePages } from "./supabase-pagination";
 import type {
   NemesisData,
   RaceCardStatus,
@@ -48,19 +49,36 @@ export async function getRaceFeedData(
   const cutoffPassed = isCutoffPassedCET();
 
   // 1) Fetch past+today races via race_results, future races via race_startlists
-  const { data: pastRows = [] } = await supabase
-    .from("race_results")
-    .select("race_slug, race_name, race_date")
-    .gte("race_date", phaseStartIso)
-    .lte("race_date", phaseEndIso);
+  const pastRows = await fetchAllSupabasePages<{
+    race_slug: string;
+    race_name: string;
+    race_date: string;
+  }>((from, to) =>
+    supabase
+      .from("race_results")
+      .select("race_slug, race_name, race_date")
+      .gte("race_date", phaseStartIso)
+      .lte("race_date", phaseEndIso)
+      .order("id")
+      .range(from, to)
+  );
 
   const scoredSlugs = new Set((pastRows ?? []).map((r) => r.race_slug));
 
-  const { data: futureRows = [] } = await supabase
-    .from("race_startlists")
-    .select("race_slug, race_name, race_date")
-    .gte("race_date", todayIso)
-    .lte("race_date", phaseEndIso);
+  const futureRows = await fetchAllSupabasePages<{
+    race_slug: string;
+    race_name: string;
+    race_date: string;
+  }>((from, to) =>
+    supabase
+      .from("race_startlists")
+      .select("race_slug, race_name, race_date")
+      .gte("race_date", todayIso)
+      .lte("race_date", phaseEndIso)
+      .order("race_slug")
+      .order("rider_id")
+      .range(from, to)
+  );
 
   // Deduplicate races by slug (race_results can have multiple rows per race from different riders)
   const racesBySlug = new Map<string, { slug: string; name: string; date: string }>();
@@ -128,9 +146,9 @@ export async function getRaceFeedData(
   }
   const leagueTeamIds = Array.from(teamById.keys());
 
-  const { data: riderRows = [] } = await supabase
-    .from("riders")
-    .select("id, full_name");
+  const riderRows = await fetchAllSupabasePages<{ id: string; full_name: string }>((from, to) =>
+    supabase.from("riders").select("id, full_name").order("id").range(from, to)
+  );
   const riderById = new Map<string, string>();
   for (const r of riderRows ?? []) riderById.set(r.id, r.full_name);
 
@@ -139,32 +157,58 @@ export async function getRaceFeedData(
     .filter((r) => r.date <= todayIso)
     .map((r) => r.slug);
 
-  const { data: xpRows = [] } =
-    slugsForXp.length === 0 || leagueTeamIds.length === 0
-      ? { data: [] as any[] }
-      : await supabase
+  const hasScoredRaces = slugsForXp.length > 0 && leagueTeamIds.length > 0;
+
+  const xpRows = hasScoredRaces
+    ? await fetchAllSupabasePages<{
+        race_slug: string;
+        team_id: string;
+        rider_id: string;
+        xp_gained: number;
+      }>((from, to) =>
+        supabase
           .from("rider_xp_daily")
           .select("race_slug, team_id, rider_id, xp_gained")
           .in("race_slug", slugsForXp)
-          .in("team_id", leagueTeamIds);
+          .in("team_id", leagueTeamIds)
+          .order("id")
+          .range(from, to)
+      )
+    : [];
 
-  const { data: bonusRows = [] } =
-    slugsForXp.length === 0 || leagueTeamIds.length === 0
-      ? { data: [] as any[] }
-      : await supabase
+  const bonusRows = hasScoredRaces
+    ? await fetchAllSupabasePages<{
+        race_slug: string;
+        team_id: string;
+        rider_id: string;
+        final_bonus: number;
+      }>((from, to) =>
+        supabase
           .from("sponsor_bonuses")
           .select("race_slug, team_id, rider_id, final_bonus")
           .in("race_slug", slugsForXp)
-          .in("team_id", leagueTeamIds);
+          .in("team_id", leagueTeamIds)
+          .order("id")
+          .range(from, to)
+      )
+    : [];
 
-  const { data: goalRows = [] } =
-    slugsForXp.length === 0 || leagueTeamIds.length === 0
-      ? { data: [] as any[] }
-      : await (supabase as any)
+  const goalRows = hasScoredRaces
+    ? await fetchAllSupabasePages<{
+        stage_slug: string | null;
+        team_id: string;
+        rider_id: string | null;
+        final_reward: number;
+      }>((from, to) =>
+        (supabase as any)
           .from("sponsor_goal_completions")
           .select("stage_slug, team_id, rider_id, final_reward")
           .in("stage_slug", slugsForXp)
-          .in("team_id", leagueTeamIds);
+          .in("team_id", leagueTeamIds)
+          .order("id")
+          .range(from, to)
+      )
+    : [];
 
   // Aggregate XP + bonus by (race_slug, team_id, rider_id)
   type Agg = { xp: number; bonus: number };

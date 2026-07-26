@@ -121,10 +121,18 @@ export default async function RankingPage({
   // Build race list from rider_xp_daily race_slugs
   // We also need race names/dates — fetch from race_results for metadata
   const allRaceSlugs = [...new Set(xpData.map((x) => x.race_slug).filter(Boolean))];
-  const { data: raceMetaRaw } = await supabase
-    .from("race_results")
-    .select("race_slug, race_name, race_date")
-    .in("race_slug", allRaceSlugs.length > 0 ? allRaceSlugs : ["__none__"]);
+  const raceMetaRaw = await fetchAllSupabasePages<{
+    race_slug: string;
+    race_name: string;
+    race_date: string | null;
+  }>((from, to) =>
+    supabase
+      .from("race_results")
+      .select("race_slug, race_name, race_date")
+      .in("race_slug", allRaceSlugs.length > 0 ? allRaceSlugs : ["__none__"])
+      .order("id")
+      .range(from, to)
+  );
 
   const raceMeta: Record<string, { name: string; date: string }> = {};
   for (const r of raceMetaRaw ?? []) {
@@ -399,10 +407,18 @@ async function renderDemoRanking(initialRace?: string) {
   }
 
   const allRaceSlugs = [...new Set(xpData.map((x) => x.race_slug).filter(Boolean))];
-  const { data: raceMetaRaw } = await supabase
-    .from("race_results")
-    .select("race_slug, race_name, race_date")
-    .in("race_slug", allRaceSlugs.length > 0 ? allRaceSlugs : ["__none__"]);
+  const raceMetaRaw = await fetchAllSupabasePages<{
+    race_slug: string;
+    race_name: string;
+    race_date: string | null;
+  }>((from, to) =>
+    supabase
+      .from("race_results")
+      .select("race_slug, race_name, race_date")
+      .in("race_slug", allRaceSlugs.length > 0 ? allRaceSlugs : ["__none__"])
+      .order("id")
+      .range(from, to)
+  );
 
   const raceMeta: Record<string, { name: string; date: string }> = {};
   for (const r of raceMetaRaw ?? []) {
