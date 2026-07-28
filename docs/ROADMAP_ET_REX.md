@@ -105,6 +105,11 @@
   - Les communautés et créateurs deviennent alors le canal de **marketing & growth**.
 - Grande question à trancher avant de foncer : **quel type de jeu, pour qui, avec ou sans objectif financier**.
 
+### 2.5 Idées scoring & achievements à explorer
+
+- **Rééquilibrer les points du classement final (GC)** : passer de 250 à **300 points**, et **150** pour le maillot vert et le KOM (au lieu de leurs valeurs actuelles). Raison : avec les multiplicateurs de rôle, une victoire d'étape vaut souvent déjà **150 points** (pas 100) — le classement final doit rester proportionnellement valorisé par rapport à une victoire d'étape boostée par un rôle. À creuser avec un vrai comparatif barème actuel vs proposé avant d'implémenter (voir refonte scoring GT rank-based).
+- **Badge "Lanterne Rouge"** : nouvel achievement pour le coureur classé **dernier** au classement général. Clin d'œil à la tradition du Tour. À ajouter au chantier achievements (§2.2).
+
 ---
 
 ## 3. Directive de maintenance (immédiate, dès maintenant)
