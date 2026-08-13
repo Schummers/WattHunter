@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/jonathanschummers/AI OS/cycling/watthunter/apps/web && pnpm typecheck 2>&1 | tail -5"
+            "command": "cd \"$(git rev-parse --show-toplevel)/apps/web\" && pnpm typecheck 2>&1 | tail -5"
           }
         ],
         "matcher": "Edit|Write"
