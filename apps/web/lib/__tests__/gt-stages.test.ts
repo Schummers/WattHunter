@@ -166,11 +166,11 @@ describe("getGtStages — GT mode", () => {
       throw new Error("from() should not be called when schedule is empty");
     });
 
-    // phaseId=8 (Vuelta) not in GT_SCHEDULES → []
+    // 2027 has no schedule in GT_SCHEDULES (only 2026 GTs are configured) → []
     const stages = await getGtStages(makeSupabase(mockFrom), {
       teamId: TEAM_ID,
       phaseId: 8,
-      year: 2026,
+      year: 2027,
     });
 
     expect(stages).toEqual([]);

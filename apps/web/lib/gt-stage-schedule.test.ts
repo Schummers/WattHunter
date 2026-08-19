@@ -16,9 +16,16 @@ describe("getReplaceWindowClosesAt", () => {
     expect(closesAt!.toISOString()).toBe("2026-07-13T21:59:59.000Z");
   });
 
+  it("returns end of 1st rest day Europe/Paris for Vuelta 2026", () => {
+    const closesAt = getReplaceWindowClosesAt("vuelta-a-espana", 2026);
+    expect(closesAt).not.toBeNull();
+    // 2026-08-31 23:59:59 +02:00 = 2026-08-31 21:59:59 UTC
+    expect(closesAt!.toISOString()).toBe("2026-08-31T21:59:59.000Z");
+  });
+
   it("returns null for an unconfigured GT", () => {
-    // Vuelta 2026 schedule is not yet configured.
-    expect(getReplaceWindowClosesAt("vuelta-a-espana", 2026)).toBeNull();
+    // Only 2026 GTs are configured — a future season has no schedule yet.
+    expect(getReplaceWindowClosesAt("vuelta-a-espana", 2027)).toBeNull();
     expect(getReplaceWindowClosesAt("unknown-gt", 2099)).toBeNull();
   });
 });

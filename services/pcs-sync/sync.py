@@ -54,8 +54,8 @@ def get_supabase() -> Client:
 
 
 def calculate_monthly_salary(pcs_points_1yr: int) -> int:
-    """Salary = pcs_points × 2500 / 12, floored to nearest 1000. No upper cap."""
-    annual = pcs_points_1yr * 2_500
+    """Salary = pcs_points × 2700 / 12, floored to nearest 1000. No upper cap."""
+    annual = pcs_points_1yr * 2_700
     monthly = annual / 12
     return max(SALARY_FLOOR, int(monthly // 1000 * 1000))
 
