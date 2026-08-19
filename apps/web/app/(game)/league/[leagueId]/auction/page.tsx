@@ -13,6 +13,7 @@ import {
   DEMO_VISITOR_TEAM_ID,
 } from "@/lib/demo-constants";
 import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
+import { getOpenAuction } from "@/lib/supabase/get-open-auction";
 
 type AuctionRiderXpRow = {
   rider_id: string;
@@ -82,6 +83,10 @@ export default async function AuctionsPage({
   const leagueMode = (league?.mode ?? "manager") as import("@/lib/league-mode").LeagueMode;
   // Classic mode: fixed squad size (CLASSIC_SQUAD_SIZE) regardless of level (matches the place_bid backend cap).
   const maxSlots = isClassic(leagueMode) ? CLASSIC_SQUAD_SIZE : getMaxSlots(level);
+
+  // Open a due round before reading any of them, otherwise a round whose opens_at
+  // has passed stays 'scheduled' and the page renders a dead "No Open Round" button.
+  await getOpenAuction(supabase, leagueId);
 
   // All-rounds query (includes closed — for stepper display)
   const { data: allRoundsRaw } = await supabase

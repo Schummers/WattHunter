@@ -5,6 +5,7 @@ import { getLevelByNumber, getMaxSlots } from "@/lib/levels";
 import { isClassic, CLASSIC_SQUAD_SIZE, type LeagueMode } from "@/lib/league-mode";
 import { getNextAuctionDate, formatAuctionDate, getCurrentPhase } from "@/lib/phases";
 import { buildCoUnlockChecker } from "@/lib/co-unlock";
+import { getOpenAuction } from "@/lib/supabase/get-open-auction";
 import {
   DEMO_LEAGUE_SLUG,
   DEMO_LEAGUE_ID,
@@ -74,6 +75,11 @@ export default async function MarketPage({
     .single();
   const leagueMode = (league?.mode ?? "manager") as LeagueMode;
   const maxSlots = isClassic(leagueMode) ? CLASSIC_SQUAD_SIZE : getMaxSlots(level);
+
+  // Open a due round before reading the round state below, otherwise the bid footer
+  // renders a dead "No Open Round" while a round whose opens_at has passed sits
+  // in 'scheduled'.
+  await getOpenAuction(supabase, leagueId);
 
   const [
     { data: riders },

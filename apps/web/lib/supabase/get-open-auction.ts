@@ -1,40 +1,32 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
+interface OpenDueAuctionResult {
+  ok?: boolean;
+  id?: string | null;
+  name?: string | null;
+  opened?: boolean;
+  error?: string;
+}
+
+/**
+ * Returns the league's open auction round, opening a due 'scheduled' one if needed.
+ *
+ * The flip lives in the `open_due_auction` RPC (SECURITY DEFINER) rather than here:
+ * doing it from the client meant an UPDATE on `auctions` under RLS, and the only
+ * UPDATE policy is commissioner-only, so it silently failed for every other player.
+ */
 export async function getOpenAuction(
   supabase: SupabaseClient,
   leagueId: string
 ): Promise<{ id: string; name: string } | null> {
-  // 1. Check for already-open round
-  const { data: openRound, error: openError } = await supabase
-    .from("auctions")
-    .select("id, name")
-    .eq("league_id", leagueId)
-    .eq("status", "open")
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("open_due_auction", {
+    p_league_id: leagueId,
+  });
 
-  if (openError) return null;
-  if (openRound) return openRound;
+  if (error) return null;
 
-  // 2. Check for a scheduled round whose opens_at is in the past (lazy-open)
-  const { data: dueRound, error: dueError } = await supabase
-    .from("auctions")
-    .select("id, name")
-    .eq("league_id", leagueId)
-    .eq("status", "scheduled")
-    .lte("opens_at", new Date().toISOString())
-    .order("opens_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const result = data as OpenDueAuctionResult | null;
+  if (!result?.ok || !result.id) return null;
 
-  if (dueError || !dueRound) return null;
-
-  // 3. Open it
-  const { error: updateError } = await supabase
-    .from("auctions")
-    .update({ status: "open" })
-    .eq("id", dueRound.id);
-
-  if (updateError) return null;
-
-  return dueRound;
+  return { id: result.id, name: result.name ?? "" };
 }
