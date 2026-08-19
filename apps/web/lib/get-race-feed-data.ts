@@ -113,6 +113,17 @@ export async function getRaceFeedData(
     const year = referenceDate.getFullYear();
     const schedule = GT_SCHEDULES[`${gtSlug}/${year}`] ?? [];
     const gtName = GT_NAME_MAP[gtSlug];
+
+    // During a GT phase only the GT itself is played — drop the WT races that
+    // overlap it (Tour de Pologne, Bretagne Classic, GP Québec… during the
+    // Vuelta) so the feed stays the GT's own stage-by-stage timeline.
+    const gtParent = `race/${gtSlug}/${year}`;
+    for (const slug of Array.from(racesBySlug.keys())) {
+      if ((getParentRaceSlug(slug) ?? slug) !== gtParent) {
+        racesBySlug.delete(slug);
+      }
+    }
+
     for (const entry of schedule) {
       if (entry.date < phaseStartIso || entry.date > phaseEndIso) continue;
       const slug = `race/${gtSlug}/${year}/stage-${entry.number}`;

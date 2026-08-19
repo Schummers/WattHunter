@@ -11,6 +11,13 @@ import {
   DEMO_VISITOR_TEAM_ID,
 } from "@/lib/demo-constants";
 
+/**
+ * Race whose startlist powers the market's "in this race" filter chip.
+ * Hardcoded to the GT currently being played — update both this slug and
+ * MARKET_RACE_FILTER_LABEL (market-client.tsx) when the played GT changes.
+ */
+const MARKET_RACE_SLUG = "race/vuelta-a-espana/2026";
+
 export default async function MarketPage({
   params,
 }: {
@@ -71,7 +78,7 @@ export default async function MarketPage({
   const [
     { data: riders },
     { data: leagueTeams },
-    { data: tdfStartlist },
+    { data: raceStartlist },
   ] = await Promise.all([
     supabase
       .from("riders")
@@ -86,7 +93,7 @@ export default async function MarketPage({
     supabase
       .from("race_startlists")
       .select("rider_id")
-      .eq("race_slug", "race/tour-de-france/2026"),
+      .eq("race_slug", MARKET_RACE_SLUG),
   ]);
 
   const leagueTeamIds = (leagueTeams ?? []).map((t) => t.id);
@@ -200,7 +207,7 @@ export default async function MarketPage({
     }
   }
 
-  const tdfRiderIds = (tdfStartlist ?? []).map((s) => s.rider_id);
+  const raceRiderIds = (raceStartlist ?? []).map((s) => s.rider_id);
 
   return (
     <MarketClient
@@ -216,7 +223,7 @@ export default async function MarketPage({
       activeSalaries={activeSalaries}
       phaseConfirmed={phaseConfirmed}
       draftBids={draftBidMap}
-      tdfRiderIds={tdfRiderIds}
+      raceRiderIds={raceRiderIds}
       mode={leagueMode}
     />
   );
@@ -245,7 +252,7 @@ async function renderDemoAuctionMarket() {
   const [
     { data: riders },
     { data: leagueTeams },
-    { data: tdfStartlist },
+    { data: raceStartlist },
   ] = await Promise.all([
     supabase
       .from("riders")
@@ -260,7 +267,7 @@ async function renderDemoAuctionMarket() {
     supabase
       .from("race_startlists")
       .select("rider_id")
-      .eq("race_slug", "race/tour-de-france/2026"),
+      .eq("race_slug", MARKET_RACE_SLUG),
   ]);
 
   const leagueTeamIds = (leagueTeams ?? []).map((t) => t.id);
@@ -350,7 +357,7 @@ async function renderDemoAuctionMarket() {
     sponsorIncome = (sp as { monthly_budget: number }).monthly_budget ?? 0;
   }
 
-  const tdfRiderIds = (tdfStartlist ?? []).map((s) => s.rider_id);
+  const raceRiderIds = (raceStartlist ?? []).map((s) => s.rider_id);
 
   return (
     <MarketClient
@@ -366,7 +373,7 @@ async function renderDemoAuctionMarket() {
       activeSalaries={activeSalaries}
       phaseConfirmed={phaseConfirmed}
       draftBids={draftBidMap}
-      tdfRiderIds={tdfRiderIds}
+      raceRiderIds={raceRiderIds}
     />
   );
 }

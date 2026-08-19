@@ -61,9 +61,15 @@ interface MarketClientProps {
   activeSalaries: number;
   phaseConfirmed?: boolean;
   draftBids?: DraftBid[];
-  tdfRiderIds?: string[];
+  raceRiderIds?: string[];
   mode?: LeagueMode;
 }
+
+/**
+ * Label of the filter chip that narrows the market to the played GT's
+ * startlist. Kept in sync with MARKET_RACE_SLUG (page.tsx).
+ */
+const MARKET_RACE_FILTER_LABEL = "Vuelta";
 
 const BASE_FILTER_OPTIONS = [
   { label: "All" },
@@ -139,7 +145,7 @@ export function MarketClient({
   activeSalaries,
   phaseConfirmed = false,
   draftBids: initialDraftBids = [],
-  tdfRiderIds = [],
+  raceRiderIds = [],
   mode,
 }: MarketClientProps) {
   const router = useRouter();
@@ -147,17 +153,17 @@ export function MarketClient({
   const [search, setSearch] = useState("");
   const [activeFilterIndex, setActiveFilterIndex] = useState(0);
 
-  const tdfRiderSet = useMemo(() => new Set(tdfRiderIds), [tdfRiderIds]);
-  const hasTdf = tdfRiderIds.length > 0;
+  const raceRiderSet = useMemo(() => new Set(raceRiderIds), [raceRiderIds]);
+  const hasRaceStartlist = raceRiderIds.length > 0;
 
   const filterOptions = useMemo(() => {
-    if (!hasTdf) return BASE_FILTER_OPTIONS;
+    if (!hasRaceStartlist) return BASE_FILTER_OPTIONS;
     return [
       { label: "All" },
-      { label: "TdF" },
+      { label: MARKET_RACE_FILTER_LABEL },
       ...BASE_FILTER_OPTIONS.slice(1),
     ];
-  }, [hasTdf]);
+  }, [hasRaceStartlist]);
 
   const activeFilter = filterOptions[activeFilterIndex]?.label ?? "All";
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -188,8 +194,8 @@ export function MarketClient({
   const filteredRiders = useMemo(() => {
     let result = riders;
 
-    if (activeFilter === "TdF") {
-      result = result.filter((r) => tdfRiderSet.has(r.id));
+    if (activeFilter === MARKET_RACE_FILTER_LABEL) {
+      result = result.filter((r) => raceRiderSet.has(r.id));
     }
 
     if (search.trim()) {
@@ -216,10 +222,10 @@ export function MarketClient({
     }
 
     return result;
-  }, [riders, search, activeFilter, tdfRiderSet]);
+  }, [riders, search, activeFilter, raceRiderSet]);
 
   const groupedRiders = useMemo(() => {
-    if (activeFilter === "All" || activeFilter === "TdF") return null;
+    if (activeFilter === "All" || activeFilter === MARKET_RACE_FILTER_LABEL) return null;
 
     const groups: Record<string, Rider[]> = {};
     for (const r of filteredRiders) {

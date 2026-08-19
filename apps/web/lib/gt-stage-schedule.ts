@@ -52,11 +52,35 @@ export const GT_SCHEDULES: Record<string, GtStageEntry[]> = {
     { number: 20, date: "2026-07-25", name: "Le Bourg d'Oisans - Alpe d'Huez" },
     { number: 21, date: "2026-07-26", name: "Thoiry - Paris" },
   ],
+  "vuelta-a-espana/2026": [
+    { number: 1, date: "2026-08-22", name: "Monaco - Monaco", isItt: true },
+    { number: 2, date: "2026-08-23", name: "Monaco - Manosque" },
+    { number: 3, date: "2026-08-24", name: "Gruissan - Aude - Font Romeu" },
+    { number: 4, date: "2026-08-25", name: "Andorra la Vella - Andorra la Vella" },
+    { number: 5, date: "2026-08-26", name: "Falset. Costa Daurada - Roquetes. Terres de l'Ebre" },
+    { number: 6, date: "2026-08-27", name: "Alcossebre - Castelló" },
+    { number: 7, date: "2026-08-28", name: "Vall d'Alba - Aramón Valdelinares" },
+    { number: 8, date: "2026-08-29", name: "Puçol - Xeraco" },
+    { number: 9, date: "2026-08-30", name: "La Vila Joiosa/Villajoyosa - Alto de Aitana. Costa Blanca" },
+    { number: 10, date: "2026-09-01", name: "Alcaraz - Elche de la Sierra" },
+    { number: 11, date: "2026-09-02", name: "Cartagena - Lorca" },
+    { number: 12, date: "2026-09-03", name: "Vera - Calar Alto" },
+    { number: 13, date: "2026-09-04", name: "Almuñécar - Loja" },
+    { number: 14, date: "2026-09-05", name: "Jaén - Sierra de la Pandera" },
+    { number: 15, date: "2026-09-06", name: "Palma del Río - Córdoba" },
+    { number: 16, date: "2026-09-08", name: "Cortegana - La Rábida. Palos de la Frontera" },
+    { number: 17, date: "2026-09-09", name: "Dos Hermanas - Sevilla" },
+    { number: 18, date: "2026-09-10", name: "El Puerto de Santa María - Jerez de la Frontera", isItt: true },
+    { number: 19, date: "2026-09-11", name: "Vélez-Málaga - Peñas Blancas. Estepona" },
+    { number: 20, date: "2026-09-12", name: "La Calahorra - Collado del Alguacil" },
+    { number: 21, date: "2026-09-13", name: "Carrefour Granada - Granada" },
+  ],
 };
 
 export const GT_REST_DAYS: Record<string, string[]> = {
   "giro-d-italia/2026": ["2026-05-11", "2026-05-18", "2026-05-25"],
   "tour-de-france/2026": ["2026-07-13", "2026-07-20"],
+  "vuelta-a-espana/2026": ["2026-08-31", "2026-09-07"],
 };
 
 /**

@@ -50,8 +50,11 @@ export function formatShortDate(date: Date | string): string {
   });
 }
 
-/** Salary coefficient: pts_PCS × SALARY_COEFFICIENT / 12, floor at SALARY_FLOOR. */
-export const SALARY_COEFFICIENT = 2500;
+/** Salary coefficient: pts_PCS × SALARY_COEFFICIENT / 12, floor at SALARY_FLOOR.
+ *  MUST stay in sync with `calculate_monthly_salary` (services/pcs-sync/sync.py),
+ *  which writes `riders.monthly_salary` — the value `place_bid` validates bids
+ *  against. A mismatch makes the UI advertise a minimum bid the RPC rejects. */
+export const SALARY_COEFFICIENT = 2700;
 export const SALARY_FLOOR = 5000;
 
 /** Calculate minimum monthly salary for a rider based on PCS points (floored to nearest 1000). */
