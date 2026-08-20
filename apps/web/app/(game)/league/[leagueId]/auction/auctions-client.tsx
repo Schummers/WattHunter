@@ -163,9 +163,15 @@ export function AuctionsClient({
   }
 
   const alreadyValidatedRound = existingAuctionBids.length > 0 || validateSuccess;
-  
+
+  // Classic: the squad must be exactly full to validate, not merely under the cap.
+  // Mirrors the server rule in validate_round; the server stays the authority, this
+  // just avoids letting the player click into a refusal.
+  const slotsToFill = isClassic(mode) ? Math.max(0, maxSlots - totalCount) : 0;
+  const squadIncomplete = slotsToFill > 0;
+
   const validateDisabled =
-    !hasOpenRound || isDeficit || totalCount > maxSlots || (alreadyValidatedRound && !hasModifications);
+    !hasOpenRound || isDeficit || totalCount > maxSlots || squadIncomplete || (alreadyValidatedRound && !hasModifications);
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -364,9 +370,10 @@ export function AuctionsClient({
             <span className="text-[length:var(--type-section)] font-semibold text-[var(--text-high)]">
               Draft Bids
             </span>
-            <span className={`text-[length:var(--type-caption)] font-semibold ${totalCount > maxSlots ? 'text-[var(--danger)]' : 'text-[var(--text-low)]'}`}>
+            <span className={`text-[length:var(--type-caption)] font-semibold ${totalCount > maxSlots ? 'text-[var(--danger)]' : squadIncomplete ? 'text-[var(--warning)]' : 'text-[var(--text-low)]'}`}>
               <span className="font-mono tabular-nums">{totalCount}/{maxSlots}</span> slots
-              {totalCount > maxSlots && <span className="font-normal"> — over limit</span>}
+              {totalCount > maxSlots && <span className="font-normal"> · over limit</span>}
+              {squadIncomplete && <span className="font-normal"> · {slotsToFill} to fill</span>}
             </span>
           </div>
 
@@ -450,7 +457,13 @@ export function AuctionsClient({
         budgetInfo={`${isDeficit ? "−" : ""}${formatMoney(Math.abs(remaining))}`}
         isDeficit={isDeficit}
         deficitMessage={isDeficit ? "Budget deficit — lower your bids to validate." : undefined}
-        warningMessage={totalCount > maxSlots ? "Too many riders — remove some to validate." : undefined}
+        warningMessage={
+          totalCount > maxSlots
+            ? "Too many riders — remove some to validate."
+            : squadIncomplete
+              ? `Fill your squad — ${slotsToFill} more rider${slotsToFill > 1 ? "s" : ""} to validate.`
+              : undefined
+        }
         buttonLabel={
           alreadyValidatedRound
             ? (hasModifications ? `Re-validate Round ${activeRound}` : "No modifications")

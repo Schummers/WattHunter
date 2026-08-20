@@ -897,6 +897,7 @@ export type Database = {
       }
       rider_xp_daily: {
         Row: {
+          assist_bonus: number
           classif_bonus: number
           contract_id: string
           created_at: string
@@ -917,6 +918,7 @@ export type Database = {
           xp_gained: number
         }
         Insert: {
+          assist_bonus?: number
           classif_bonus?: number
           contract_id: string
           created_at?: string
@@ -937,6 +939,7 @@ export type Database = {
           xp_gained?: number
         }
         Update: {
+          assist_bonus?: number
           classif_bonus?: number
           contract_id?: string
           created_at?: string
@@ -1740,6 +1743,10 @@ export type Database = {
         }
         Returns: number
       }
+      classic_phase_reset: {
+        Args: { p_phase_id: number; p_phase_label: string; p_team_id: string }
+        Returns: Json
+      }
       compute_level: { Args: { xp: number }; Returns: number }
       confirm_phase_setup: {
         Args: {
@@ -1750,6 +1757,7 @@ export type Database = {
         }
         Returns: Json
       }
+      credit_goal_reward: { Args: { p_completion: Json }; Returns: Json }
       credit_sponsor_bonuses: {
         Args: { p_bonuses: Json; p_team_id: string }
         Returns: Json
@@ -1833,7 +1841,12 @@ export type Database = {
         Returns: Json
       }
       launch_first_auction: { Args: { p_league_id: string }; Returns: Json }
+      league_all_teams_complete: {
+        Args: { p_league_id: string }
+        Returns: boolean
+      }
       leave_league: { Args: { p_league_id: string }; Returns: Json }
+      open_due_auction: { Args: { p_league_id: string }; Returns: Json }
       place_bid: {
         Args: {
           p_amount: number
@@ -1872,6 +1885,12 @@ export type Database = {
         Args: { p_league_id: string; p_level: number }
         Returns: Json
       }
+      submit_conforming_drafts: {
+        Args: { p_auction_id: string; p_league_id: string }
+        Returns: number
+      }
+      team_is_complete: { Args: { p_team_id: string }; Returns: boolean }
+      team_max_slots: { Args: { p_team_id: string }; Returns: number }
       validate_round: {
         Args: { p_current_phase_id: number; p_league_id: string }
         Returns: Json

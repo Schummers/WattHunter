@@ -400,6 +400,62 @@ describe("forceResolveRound", () => {
     expect(result).toMatchObject({ ok: true, resolved: 0, next_auction_id: NEXT_AUCTION_ID });
   });
 
+  it("closes the remaining rounds instead of opening one when every squad is full", async () => {
+    mockGetCurrentPhase.mockReturnValue({ id: PHASE_ID, label: "Giro d'Italia", startMonth: 5, startDay: 2 });
+
+    // 1. Membership check
+    mockAnonFrom.mockReturnValueOnce(
+      chainable({ data: { team_id: TEAM_A }, error: null })
+    );
+    // 2. Optimistic lock
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({
+        data: [{ id: AUCTION_ID, name: "Round 3", league_id: LEAGUE_ID }],
+        error: null,
+      })
+    );
+    // 3. Active bids: empty
+    mockAdminFrom.mockReturnValueOnce(chainable({ data: [], error: null }));
+    // 4. Cleanup: SELECT contracts (empty)
+    mockAdminFrom.mockReturnValueOnce(chainable({ data: [], error: null }));
+    // 5. A next scheduled round DOES exist...
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({ data: { id: NEXT_AUCTION_ID }, error: null })
+    );
+    // 6. ...but every squad is full, so the leftovers get closed instead
+    mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
+    // 7. SELECT leagues.mode for the payday cascade
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({ data: { mode: "classic" }, error: null })
+    );
+    // 8. league_members + 9. teams
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({ data: [{ team_id: TEAM_A }], error: null })
+    );
+    mockAdminFrom.mockReturnValueOnce(
+      chainable({ data: [{ id: TEAM_A, name: "Alpha" }], error: null })
+    );
+
+    // RPC 1: submit_conforming_drafts
+    mockAdminRpc.mockResolvedValueOnce({ data: 0, error: null });
+    // RPC 2: league_all_teams_complete → true
+    mockAdminRpc.mockResolvedValueOnce({ data: true, error: null });
+    // RPC 3: classic_phase_reset
+    mockAdminRpc.mockResolvedValueOnce({
+      data: { ok: true, skipped: false },
+      error: null,
+    });
+
+    const result = await forceResolveRound({ leagueId: LEAGUE_ID });
+
+    // The next round was never opened: the phase ended instead.
+    expect(result).toMatchObject({ ok: true, next_auction_id: null });
+    expect(mockAdminRpc).toHaveBeenCalledWith("league_all_teams_complete", {
+      p_league_id: LEAGUE_ID,
+    });
+    expect(result).toHaveProperty("payday");
+  });
+
   it("triggers payday cascade when last round of phase closes", async () => {
     mockGetCurrentPhase.mockReturnValue({ id: PHASE_ID, label: "Giro d'Italia", startMonth: 5, startDay: 2 });
 
@@ -445,7 +501,9 @@ describe("forceResolveRound", () => {
       })
     );
 
-    // RPC: confirm_phase_setup × 2 (one per team)
+    // RPC 1: submit_conforming_drafts (runs right after the optimistic lock)
+    mockAdminRpc.mockResolvedValueOnce({ data: 0, error: null });
+    // RPC 2-3: confirm_phase_setup × 2 (one per team)
     mockAdminRpc.mockResolvedValueOnce({
       data: { ok: true, skippedLateJoiner: false, sponsorIncome: 750000, totalSalary: 600000 },
       error: null,
@@ -463,7 +521,11 @@ describe("forceResolveRound", () => {
       next_auction_id: null,
       payday: { paid: 1, skippedLateJoiners: 1, errors: [] },
     });
-    expect(mockAdminRpc).toHaveBeenCalledTimes(2);
+    expect(mockAdminRpc).toHaveBeenCalledTimes(3);
+    expect(mockAdminRpc).toHaveBeenCalledWith("submit_conforming_drafts", {
+      p_auction_id: AUCTION_ID,
+      p_league_id: LEAGUE_ID,
+    });
     expect(mockAdminRpc).toHaveBeenCalledWith("confirm_phase_setup", expect.objectContaining({
       p_team_id: TEAM_A,
       p_current_phase_id: PHASE_ID,
