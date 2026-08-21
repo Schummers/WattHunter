@@ -4,6 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentPhase } from "@/lib/phases";
 import { formatMoney } from "@/lib/format";
 import { getLevelByNumber } from "@/lib/levels";
+import {
+  isClassic,
+  CLASSIC_SQUAD_SIZE,
+  ROUNDS_PER_PHASE,
+  type LeagueMode,
+} from "@/lib/league-mode";
 import { Tag } from "@/components/pill";
 import { RoundStepper } from "@/components/round-stepper";
 import { StatusClient } from "./status-client";
@@ -21,7 +27,13 @@ interface TeamRow {
   slots_max: number;
   budget: number;
   purchasing_power: number;
-  status: "validated" | "auto_validated" | "pending" | "not_yet_bid";
+  /**
+   * What this table is for: seeing at a glance who still owes the league their
+   * bids. "Validated" and "auto-validated" both mean the same thing to the reader
+   * (their bids are in), so they collapse into `done` rather than splitting the
+   * eye between two badges that demand the same non-action.
+   */
+  status: "done" | "in_progress" | "not_started";
 }
 
 export default async function StatusPage({
@@ -61,18 +73,28 @@ export default async function StatusPage({
     .limit(1)
     .maybeSingle();
 
-  // All-rounds (3 most recent, includes closed — for stepper)
+  // All-rounds (most recent, includes closed — for stepper). A phase now runs up
+  // to 5 rounds, so a limit of 3 would hide the tail of the stepper.
   const { data: allRoundsRaw } = await supabase
     .from("auctions")
     .select("id, name, status, opens_at")
     .eq("league_id", leagueId)
     .order("opens_at", { ascending: false })
-    .limit(3);
+    .limit(ROUNDS_PER_PHASE);
   const stepperRounds = (allRoundsRaw ?? []).reverse().map((r) => ({
     number: parseInt(r.name.replace("Round ", ""), 10),
     status: r.status as "open" | "scheduled" | "closed" | "resolving",
     opens_at: r.opens_at,
   }));
+
+  // 1b. League mode: classic caps every squad at CLASSIC_SQUAD_SIZE regardless of
+  //     level, so the level-derived ceiling would read 12 where the game allows 10.
+  const { data: league } = await supabase
+    .from("leagues")
+    .select("mode")
+    .eq("id", leagueId)
+    .maybeSingle();
+  const leagueMode = (league?.mode ?? "manager") as LeagueMode;
 
   // 2. All teams in the league
   const { data: teams } = await supabase
@@ -84,20 +106,17 @@ export default async function StatusPage({
   const teamList = teams ?? [];
   const teamIds = teamList.map((t) => t.id);
 
-  // 3. round_validations for this auction (if any)
+  // 3. round_validations for this auction (if any). auto_validated is not
+  //    selected: the status model no longer distinguishes it (see TeamRow.status).
   const validatedTeamIds = new Set<string>();
-  const autoValidatedTeamIds = new Set<string>();
   if (auction && teamIds.length > 0) {
     const { data: validations } = await supabase
       .from("round_validations")
-      .select("team_id, auto_validated")
+      .select("team_id")
       .eq("auction_id", auction.id)
       .in("team_id", teamIds);
     for (const v of validations ?? []) {
       validatedTeamIds.add(v.team_id);
-      if (v.auto_validated) {
-        autoValidatedTeamIds.add(v.team_id);
-      }
     }
   }
 
@@ -135,6 +154,22 @@ export default async function StatusPage({
     }
   }
 
+  // 5b. Bids committed in the open round. Slots filled by a signed contract alone
+  //     read 0/10 for the whole of round 1, which tells the reader nothing about
+  //     who has actually acted. Pending bids are the committed, public part.
+  const activeBidCount = new Map<string, number>();
+  if (auction && teamIds.length > 0) {
+    const { data: bids } = await supabase
+      .from("auction_bids")
+      .select("team_id")
+      .eq("auction_id", auction.id)
+      .eq("status", "active")
+      .in("team_id", teamIds);
+    for (const b of bids ?? []) {
+      activeBidCount.set(b.team_id, (activeBidCount.get(b.team_id) ?? 0) + 1);
+    }
+  }
+
   // 6. Sponsor income per team
   const sponsorIncome = new Map<string, number>();
   if (teamIds.length > 0) {
@@ -164,14 +199,12 @@ export default async function StatusPage({
     const purchasing_power = budget - salaries;
 
     let status: TeamRow["status"];
-    if (autoValidatedTeamIds.has(team.id)) {
-      status = "auto_validated";
-    } else if (validatedTeamIds.has(team.id)) {
-      status = "validated";
+    if (validatedTeamIds.has(team.id)) {
+      status = "done";
     } else if ((draftCount.get(team.id) ?? 0) > 0) {
-      status = "pending";
+      status = "in_progress";
     } else {
-      status = "not_yet_bid";
+      status = "not_started";
     }
 
     return {
@@ -179,8 +212,9 @@ export default async function StatusPage({
       team_name: team.name,
       level: team.level,
       pool_min: levelData.poolMin,
-      slots_used: activeContractCount.get(team.id) ?? 0,
-      slots_max: levelData.slots,
+      slots_used:
+        (activeContractCount.get(team.id) ?? 0) + (activeBidCount.get(team.id) ?? 0),
+      slots_max: isClassic(leagueMode) ? CLASSIC_SQUAD_SIZE : levelData.slots,
       budget,
       purchasing_power,
       status,
@@ -201,7 +235,7 @@ export default async function StatusPage({
           <div className="flex items-center text-[length:var(--type-caption)] text-[var(--text-low)] pb-2">
             <span className="flex-1">Team</span>
             <span className="w-24 text-right">Budget</span>
-            <span className="w-24 text-right">Status</span>
+            <span className="w-28 text-right">Status</span>
             <span className="w-5" />
           </div>
 
@@ -229,7 +263,7 @@ export default async function StatusPage({
                 </div>
 
                 {/* Budget / purchasing power */}
-                <div className="w-24 text-right font-mono flex flex-col justify-center">
+                <div className="w-20 text-right font-mono flex flex-col justify-center shrink-0">
                   {row.purchasing_power === row.budget ? (
                     <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
                       {formatMoney(row.budget)}
@@ -247,18 +281,13 @@ export default async function StatusPage({
                 </div>
 
                 {/* Status */}
-                <div className="w-24 flex items-center justify-end">
-                  {row.status === "validated" && (
-                    <Tag variant="success">Validated</Tag>
+                <div className="w-28 flex items-center justify-end shrink-0">
+                  {row.status === "done" && <Tag variant="success">Done</Tag>}
+                  {row.status === "in_progress" && (
+                    <Tag variant="highlighted">Bidding</Tag>
                   )}
-                  {row.status === "auto_validated" && (
-                    <Tag variant="default">Auto-validated</Tag>
-                  )}
-                  {row.status === "pending" && (
-                    <Tag variant="highlighted">Pending</Tag>
-                  )}
-                  {row.status === "not_yet_bid" && (
-                    <Tag variant="default">Not yet bid</Tag>
+                  {row.status === "not_started" && (
+                    <Tag variant="default">Waiting</Tag>
                   )}
                 </div>
 
@@ -270,7 +299,7 @@ export default async function StatusPage({
           <StatusClient
             leagueId={leagueId}
             unvalidatedTeams={rows
-              .filter((r) => r.status !== "validated" && r.status !== "auto_validated")
+              .filter((r) => r.status !== "done")
               .map((r) => r.team_name)}
           />
         </div>
@@ -309,12 +338,19 @@ async function renderDemoAuctionStatus() {
     .select("id, name, status, opens_at")
     .eq("league_id", leagueId)
     .order("opens_at", { ascending: false })
-    .limit(3);
+    .limit(ROUNDS_PER_PHASE);
   const stepperRounds = (allRoundsRaw ?? []).reverse().map((r) => ({
     number: parseInt(r.name.replace("Round ", ""), 10),
     status: r.status as "open" | "scheduled" | "closed" | "resolving",
     opens_at: r.opens_at,
   }));
+
+  const { data: league } = await supabase
+    .from("leagues")
+    .select("mode")
+    .eq("id", leagueId)
+    .maybeSingle();
+  const leagueMode = (league?.mode ?? "manager") as LeagueMode;
 
   const { data: teams } = await supabase
     .from("teams")
@@ -326,16 +362,14 @@ async function renderDemoAuctionStatus() {
   const teamIds = teamList.map((t) => t.id);
 
   const validatedTeamIds = new Set<string>();
-  const autoValidatedTeamIds = new Set<string>();
   if (auction && teamIds.length > 0) {
     const { data: validations } = await supabase
       .from("round_validations")
-      .select("team_id, auto_validated")
+      .select("team_id")
       .eq("auction_id", auction.id)
       .in("team_id", teamIds);
     for (const v of validations ?? []) {
       validatedTeamIds.add(v.team_id);
-      if (v.auto_validated) autoValidatedTeamIds.add(v.team_id);
     }
   }
 
@@ -348,6 +382,19 @@ async function renderDemoAuctionStatus() {
       .in("team_id", teamIds);
     for (const d of drafts ?? []) {
       draftCount.set(d.team_id, (draftCount.get(d.team_id) ?? 0) + 1);
+    }
+  }
+
+  const activeBidCount = new Map<string, number>();
+  if (auction && teamIds.length > 0) {
+    const { data: bids } = await supabase
+      .from("auction_bids")
+      .select("team_id")
+      .eq("auction_id", auction.id)
+      .eq("status", "active")
+      .in("team_id", teamIds);
+    for (const b of bids ?? []) {
+      activeBidCount.set(b.team_id, (activeBidCount.get(b.team_id) ?? 0) + 1);
     }
   }
 
@@ -386,14 +433,12 @@ async function renderDemoAuctionStatus() {
     const purchasing_power = budget - salaries;
 
     let status: TeamRow["status"];
-    if (autoValidatedTeamIds.has(team.id)) {
-      status = "auto_validated";
-    } else if (validatedTeamIds.has(team.id)) {
-      status = "validated";
+    if (validatedTeamIds.has(team.id)) {
+      status = "done";
     } else if ((draftCount.get(team.id) ?? 0) > 0) {
-      status = "pending";
+      status = "in_progress";
     } else {
-      status = "not_yet_bid";
+      status = "not_started";
     }
 
     return {
@@ -401,8 +446,9 @@ async function renderDemoAuctionStatus() {
       team_name: team.name,
       level: team.level,
       pool_min: levelData.poolMin,
-      slots_used: activeContractCount.get(team.id) ?? 0,
-      slots_max: levelData.slots,
+      slots_used:
+        (activeContractCount.get(team.id) ?? 0) + (activeBidCount.get(team.id) ?? 0),
+      slots_max: isClassic(leagueMode) ? CLASSIC_SQUAD_SIZE : levelData.slots,
       budget,
       purchasing_power,
       status,
@@ -421,7 +467,7 @@ async function renderDemoAuctionStatus() {
           <div className="flex items-center text-[length:var(--type-caption)] text-[var(--text-low)] pb-2">
             <span className="flex-1">Team</span>
             <span className="w-24 text-right">Budget</span>
-            <span className="w-24 text-right">Status</span>
+            <span className="w-28 text-right">Status</span>
             <span className="w-5" />
           </div>
 
@@ -445,7 +491,7 @@ async function renderDemoAuctionStatus() {
                     Pool Top {row.pool_min} · {row.slots_used}/{row.slots_max} slots
                   </span>
                 </div>
-                <div className="w-24 text-right font-mono flex flex-col justify-center">
+                <div className="w-20 text-right font-mono flex flex-col justify-center shrink-0">
                   {row.purchasing_power === row.budget ? (
                     <span className="text-[length:var(--type-caption)] text-[var(--text-high)]">
                       {formatMoney(row.budget)}
@@ -461,11 +507,10 @@ async function renderDemoAuctionStatus() {
                     </>
                   )}
                 </div>
-                <div className="w-24 flex items-center justify-end">
-                  {row.status === "validated" && <Tag variant="success">Validated</Tag>}
-                  {row.status === "auto_validated" && <Tag variant="default">Auto-validated</Tag>}
-                  {row.status === "pending" && <Tag variant="highlighted">Pending</Tag>}
-                  {row.status === "not_yet_bid" && <Tag variant="default">Not yet bid</Tag>}
+                <div className="w-28 flex items-center justify-end shrink-0">
+                  {row.status === "done" && <Tag variant="success">Done</Tag>}
+                  {row.status === "in_progress" && <Tag variant="highlighted">Bidding</Tag>}
+                  {row.status === "not_started" && <Tag variant="default">Waiting</Tag>}
                 </div>
                 <ChevronRight size={16} className="ml-1 shrink-0 self-center text-[var(--text-ghost)]" />
               </Link>
@@ -475,7 +520,7 @@ async function renderDemoAuctionStatus() {
           <StatusClient
             leagueId={DEMO_LEAGUE_SLUG}
             unvalidatedTeams={rows
-              .filter((r) => r.status !== "validated" && r.status !== "auto_validated")
+              .filter((r) => r.status !== "done")
               .map((r) => r.team_name)}
           />
         </div>

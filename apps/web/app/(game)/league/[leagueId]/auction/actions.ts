@@ -279,6 +279,33 @@ export async function validateRound(input: { leagueId: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// closeRemainingRoundsIfComplete — end the phase early once every squad is full
+// ---------------------------------------------------------------------------
+
+/**
+ * If no team has an empty roster slot left, closes every remaining 'scheduled'
+ * round for the league and returns true; otherwise a no-op returning false.
+ *
+ * Delegates to `close_remaining_rounds_if_complete`, which does the completeness
+ * check and the closing UPDATE in one transaction. Splitting those into two round
+ * trips from here would open a window for a concurrent `open_due_auction` call
+ * (triggered by any player loading the auction/market page) to flip a round this
+ * function is about to close from 'scheduled' to 'open' first, leaving it open and
+ * biddable after the phase has already moved on. Returns false on any error:
+ * refusing to end the phase early is the safe failure.
+ */
+async function closeRemainingRoundsIfComplete(
+  admin: SupabaseClient,
+  leagueId: string,
+): Promise<boolean> {
+  const { data, error } = await admin.rpc("close_remaining_rounds_if_complete", {
+    p_league_id: leagueId,
+  });
+  if (error) return false;
+  return data === true;
+}
+
+// ---------------------------------------------------------------------------
 // triggerPhasePayday — cascade payday for all teams when last round closes
 // ---------------------------------------------------------------------------
 
@@ -432,6 +459,19 @@ export async function forceResolveRound(input: { leagueId: string }) {
   }
   // Should only ever be 1 open auction per league; iterate defensively.
   const auction = auctions[0];
+
+  // 4b. Submit the drafts of teams that never validated, when those drafts already
+  //     satisfy the round's rules. Any member can force a resolution, so a player
+  //     holding a conforming squad they simply had not pressed Validate on would
+  //     otherwise forfeit the whole round. Teams that did validate are untouched.
+  const { error: submitErr } = await admin.rpc("submit_conforming_drafts", {
+    p_auction_id: auction.id,
+    p_league_id: leagueId,
+    p_current_phase_id: phase.id,
+  });
+  if (submitErr) {
+    console.error(`[forceResolveRound] submit_conforming_drafts: ${submitErr.message}`);
+  }
 
   // 5. Fetch all active bids for this auction
   const { data: bidsRaw, error: bidsErr } = await admin
@@ -603,7 +643,14 @@ export async function forceResolveRound(input: { leagueId: string }) {
 
   let nextAuctionId: string | null = null;
   let paydayResult: { paid: number; skippedLateJoiners: number; errors: string[] } | null = null;
-  if (nextAuction) {
+  // Rounds are provisioned generously, but a league can fill every squad sooner.
+  // When nobody has a slot left to fill there is nothing to auction, so close the
+  // remaining rounds rather than opening ones that would sit there resolving empty.
+  const everyoneComplete = nextAuction
+    ? await closeRemainingRoundsIfComplete(admin, leagueId)
+    : false;
+
+  if (nextAuction && !everyoneComplete) {
     nextAuctionId = nextAuction.id;
     await admin
       .from("auctions")
