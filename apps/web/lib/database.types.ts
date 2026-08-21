@@ -1747,6 +1747,10 @@ export type Database = {
         Args: { p_phase_id: number; p_phase_label: string; p_team_id: string }
         Returns: Json
       }
+      close_remaining_rounds_if_complete: {
+        Args: { p_league_id: string }
+        Returns: boolean
+      }
       compute_level: { Args: { xp: number }; Returns: number }
       confirm_phase_setup: {
         Args: {
@@ -1886,7 +1890,11 @@ export type Database = {
         Returns: Json
       }
       submit_conforming_drafts: {
-        Args: { p_auction_id: string; p_league_id: string }
+        Args: {
+          p_auction_id: string
+          p_current_phase_id: number
+          p_league_id: string
+        }
         Returns: number
       }
       team_is_complete: { Args: { p_team_id: string }; Returns: boolean }

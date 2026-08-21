@@ -422,13 +422,11 @@ describe("forceResolveRound", () => {
     mockAdminFrom.mockReturnValueOnce(
       chainable({ data: { id: NEXT_AUCTION_ID }, error: null })
     );
-    // 6. ...but every squad is full, so the leftovers get closed instead
-    mockAdminFrom.mockReturnValueOnce(chainable({ data: null, error: null }));
-    // 7. SELECT leagues.mode for the payday cascade
+    // 6. SELECT leagues.mode for the payday cascade
     mockAdminFrom.mockReturnValueOnce(
       chainable({ data: { mode: "classic" }, error: null })
     );
-    // 8. league_members + 9. teams
+    // 7. league_members + 8. teams
     mockAdminFrom.mockReturnValueOnce(
       chainable({ data: [{ team_id: TEAM_A }], error: null })
     );
@@ -438,7 +436,9 @@ describe("forceResolveRound", () => {
 
     // RPC 1: submit_conforming_drafts
     mockAdminRpc.mockResolvedValueOnce({ data: 0, error: null });
-    // RPC 2: league_all_teams_complete → true
+    // RPC 2: close_remaining_rounds_if_complete — every squad is full, so it closes
+    // the leftovers itself (the ...but every squad is full step from the old test
+    // is now inside this one RPC) and returns true.
     mockAdminRpc.mockResolvedValueOnce({ data: true, error: null });
     // RPC 3: classic_phase_reset
     mockAdminRpc.mockResolvedValueOnce({
@@ -450,7 +450,7 @@ describe("forceResolveRound", () => {
 
     // The next round was never opened: the phase ended instead.
     expect(result).toMatchObject({ ok: true, next_auction_id: null });
-    expect(mockAdminRpc).toHaveBeenCalledWith("league_all_teams_complete", {
+    expect(mockAdminRpc).toHaveBeenCalledWith("close_remaining_rounds_if_complete", {
       p_league_id: LEAGUE_ID,
     });
     expect(result).toHaveProperty("payday");
@@ -525,6 +525,7 @@ describe("forceResolveRound", () => {
     expect(mockAdminRpc).toHaveBeenCalledWith("submit_conforming_drafts", {
       p_auction_id: AUCTION_ID,
       p_league_id: LEAGUE_ID,
+      p_current_phase_id: PHASE_ID,
     });
     expect(mockAdminRpc).toHaveBeenCalledWith("confirm_phase_setup", expect.objectContaining({
       p_team_id: TEAM_A,
