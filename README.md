@@ -4,7 +4,7 @@ A cycling fantasy game for friend groups. Players build virtual teams by bidding
 
 The twist: a bid is not a one-off purchase. It sets a **recurring monthly salary** you keep paying out of a limited treasury. Signing a superstar is easy; affording him in three phases is the game.
 
-> **Status: alpha.** Private playtest, no public signup. The schema moves fast and migrations are not guaranteed backward-compatible.
+> **Status: alpha.** Playable at [watthunter.vercel.app](https://watthunter.vercel.app): signup is open, and you either create a league or join an existing one with an invite link. The schema moves fast and migrations are not guaranteed backward-compatible.
 
 ## Stack
 
