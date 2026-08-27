@@ -194,7 +194,8 @@ Rider XP = (rank_points × role_mult × (1 + strategy_bonus)
 - **rank_points**: looked up from the finish `rank` (not PCS points) via a fixed table.
   Non-GT races still use raw PCS points (unchanged).
   - **Stage** (top 20): `100, 80, 70, 65, 55, 50, 45, 35, 30, 25, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2`
-  - **GC final** (`/gc`, top 30): `250, 210, 170, 145, 125, 110, 95, 85, 75, 65, 60, 55, 50, 45, 40, 35, 30, 25, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 1`
+  - **GC final** (`/gc`, top 30 — 2026-08 rehausse, from the Vuelta 2026 closeout on):
+    `450, 360, 300, 255, 220, 190, 165, 145, 130, 115, 100, 90, 80, 72, 64, 56, 48, 40, 34, 28, 24, 20, 16, 13, 10, 8, 6, 4, 2, 1`
   - Ranks beyond the table earn 0 rank_points (but a domestique can still earn `assist_bonus`).
 - **role_mult** (Spec A, 2026-06-02, gating extended 2026-07): a rider has **exactly one
   role**, so `role_mult` takes exactly one value — the per-role multipliers never stack.
@@ -238,14 +239,17 @@ Rider XP = (rank_points × role_mult × (1 + strategy_bonus)
   |---|---|---|
   | Stage | real-team teammate finishes stage top 3 | 4/2/1 |
   | GC daily | real-team teammate holds GC top 3 that evening | 3/2/1 |
-- **Final jerseys — 2026-07: flat for all roles** (no role mult; roles play in-race, not
-  on finals). Points/KOM finals (top 10): `100, 80, 65, 50, 40, 30, 22, 15, 10, 5`. Youth
-  final (top 10, half scale): `50, 40, 32, 25, 20, 15, 11, 8, 5, 2`. 1-week races (A9)
-  keep the legacy 2-value scale (40/10/5) × role match, unchanged.
+- **Final jerseys — flat for all roles** (no role mult; roles play in-race, not on
+  finals). 2026-08 rehausse — Points/KOM finals (top 10): `150, 120, 100, 75, 60, 45,
+  32, 22, 15, 8`. Youth final (top 10, half scale): `75, 60, 50, 38, 30, 22, 16, 11, 8,
+  4`. 1-week races (A9) keep the legacy 2-value scale (40/10/5) × role match, unchanged.
 
-**Control ratios** (design intent, `docs/adr/2026-07-rank-based-gt-barème.md`): GC final /
-stage win = 2.5:1 (was 5:1 on raw PCS). Points/KOM final = 1 stage win (was 1.6). Youth
-final = half of Points/KOM. 1st→2nd GC final gap = −16% (was −24% on raw PCS).
+**Control ratios** (design intent, `docs/adr/2026-07-rank-based-gt-barème.md` +
+`docs/adr/2026-08-finals-baremes-rehausses.md`): GC final / stage win = 3.0:1
+(Velogames 2.73, LRDT 3.33; was 2.5:1 in 2026-07, 5:1 on raw PCS). Points/KOM final =
+1.5 stage win. Youth final = half of Points/KOM. 1st→2nd GC final gap = −20% (deeper
+than the −16% of 2026-07, still softer than the −24% raw-PCS cliff). Giro/Tour 2026
+stay paid at the 2026-07 values ("the past is the past").
 
 Team XP = sum of XP from all roster riders
 
@@ -415,12 +419,12 @@ At the start of each phase, the player **confirms** their configuration:
 - **GT scoring barème** (rank-based, 2026-07 — full tables + rationale in §7 and
   `docs/adr/2026-07-rank-based-gt-barème.md`). Constants in `services/pcs-sync/scoring.py`:
   - `GT_STAGE_SCALE` (top 20): `100, 80, 70, 65, 55, 50, 45, 35, 30, 25, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2`
-  - `GT_GC_FINAL_SCALE` (top 30): `250, 210, 170, 145, 125, 110, 95, 85, 75, 65, 60, 55, 50, 45, 40, 35, 30, 25, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 1`
+  - `GT_GC_FINAL_SCALE` (top 30, 2026-08 rehausse): `450, 360, 300, 255, 220, 190, 165, 145, 130, 115, 100, 90, 80, 72, 64, 56, 48, 40, 34, 28, 24, 20, 16, 13, 10, 8, 6, 4, 2, 1`
   - `DAILY_CLASSIF_SCALES` (flat for all squad riders; matched role mult: gc ×1.5, points ×2, kom ×2, youth ×1.5): GC top 10 `15/12/10/8/7/6/5/4/3/2`, Points/KOM top 5 `6/4/3/2/1`, Youth top 5 `4/3/2/1/1`
   - `ASSIST_STAGE_SCALE` `4/2/1` + `ASSIST_GC_SCALE` `3/2/1` (domestique real-team assists, GT stages, not ITT)
   - Role gating: sprinter p1/p2/p3, **climber p3/p4/p5** (2026-07); tt_specialist ×2 ITT;
     stage_hunter breakaway ≥30 km + 1 XP / 10 km additive; GC/secondary finals flat (no role mult).
-  - Control ratio GC-final / stage-win = 2.5:1.
+  - Control ratio GC-final / stage-win = 3.0:1 (2026-08 rehausse).
 
 ### Tactic gating profiles (Spec A A7)
 - `NEMESIS_SPRINT_PROFILES = {p1, p2, p3}` (flat + hilly — anything but mountain).
@@ -429,7 +433,7 @@ At the start of each phase, the player **confirms** their configuration:
 - Source code : `supabase/migrations/20260603000100_place_tactic_profile_gating.sql`.
 
 ### Final secondary classifications scale
-- **GT (2026-07 rank-based, flat for all roles, top 10)**: Points/KOM `100, 80, 65, 50, 40, 30, 22, 15, 10, 5`; Youth (half scale) `50, 40, 32, 25, 20, 15, 11, 8, 5, 2`. No role multiplier (`GT_SECONDARY_FINAL_SCALES` in `scoring.py`).
+- **GT (rank-based, flat for all roles, top 10 — 2026-08 rehausse)**: Points/KOM `150, 120, 100, 75, 60, 45, 32, 22, 15, 8`; Youth (half scale) `75, 60, 50, 38, 30, 22, 16, 11, 8, 4`. No role multiplier (`GT_SECONDARY_FINAL_SCALES` in `scoring.py`).
 - **1-week (legacy, Spec A A9, unchanged)**: `[40, 10, 5]` (ranks 1/2/3) × matching role (×2 points→sprinter, kom→climber; ×1.5 youth→gc_leader; ×1.0 otherwise). Source: `FINAL_SECONDARY_SCALE` + `FINAL_ROLE_MATCH`. Kept until the post-Tour review extends the rank-based barème beyond GTs.
 
 ### Sponsor bonus barème (Spec C, 2026-06-03)

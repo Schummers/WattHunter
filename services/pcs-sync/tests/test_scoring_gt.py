@@ -215,7 +215,7 @@ async def test_stage_hunter_not_in_breakaway_gets_no_multiplier():
 
 async def test_stage_hunter_no_multiplier_on_gc():
     """Stage hunter: GC slug (ends /gc) → ×1, not ×1.5. Rank 1 on the GC final
-    scale (2026-07 refonte) is 250, not the old raw-points 100."""
+    scale (2026-08 rehausse) is 450, not the old raw-points 100."""
     import scoring
 
     gc_slug = "race/giro-d-italia/2026/gc"
@@ -252,17 +252,17 @@ async def test_stage_hunter_no_multiplier_on_gc():
         [],  # gt_tactic_activations (Task 7 — no activations yet)
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
         [],
-        [{"id": TEAM_ID, "cumulative_xp": 250}],
+        [{"id": TEAM_ID, "cumulative_xp": 450}],
     )
     await scoring.calculate_daily_scores(sb, race_slugs=[gc_slug])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 250.0
+    assert payload["xp_gained"] == 450.0
 
 
 async def test_stage_hunter_breakaway_no_bonus_on_gc():
     """Stage hunter with breakaway_kms on a /gc slug → ×1.0, no distance bonus (Spec A A2/A5).
-    Rank 1 on the GC final scale (2026-07 refonte) is 250."""
+    Rank 1 on the GC final scale (2026-08 rehausse) is 450."""
     import scoring
 
     gc_slug = "race/giro-d-italia/2026/gc"
@@ -299,19 +299,19 @@ async def test_stage_hunter_breakaway_no_bonus_on_gc():
         [],  # gt_tactic_activations
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
         [],
-        [{"id": TEAM_ID, "cumulative_xp": 250}],
+        [{"id": TEAM_ID, "cumulative_xp": 450}],
     )
     await scoring.calculate_daily_scores(sb, race_slugs=[gc_slug])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 250.0
+    assert payload["xp_gained"] == 450.0
     assert payload["gt_distance_bonus"] == 0.0
     assert payload["gt_role_mult"] == 1.0
 
 
 async def test_gc_leader_no_multiplier_on_gc_final():
     """GC final (/gc) → ×1.0 even for gc_leader (Spec A A2, no double-boost).
-    Rank 1 on the GC final scale (2026-07 refonte) is 250."""
+    Rank 1 on the GC final scale (2026-08 rehausse) is 450."""
     import scoring
 
     gc_slug = "race/giro-d-italia/2026/gc"
@@ -330,12 +330,12 @@ async def test_gc_leader_no_multiplier_on_gc_final():
         [],
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
         [],
-        [{"id": TEAM_ID, "cumulative_xp": 250}],
+        [{"id": TEAM_ID, "cumulative_xp": 450}],
     )
     await scoring.calculate_daily_scores(sb, race_slugs=[gc_slug])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 250.0  # rank-1 GC final base (2026-07 refonte), no role mult
+    assert payload["xp_gained"] == 450.0  # rank-1 GC final base (2026-08 rehausse), no role mult
 
 
 async def test_domestique_no_multiplier():
@@ -794,7 +794,7 @@ async def test_scoring_persists_traceability_columns():
 async def test_final_points_jersey_scored_for_sprinter():
     """2026-07 refonte: Points/KOM/Youth GT finals are FLAT (no role mult — roles
     play in-race, not on finals). Sprinter wins the final Points jersey: rank 1
-    on GT_SECONDARY_FINAL_SCALES['points'] = 100 XP flat.
+    on GT_SECONDARY_FINAL_SCALES['points'] = 150 XP flat (2026-08 rehausse).
 
     The finals row carries 0 PCS points (invisible to the main query); a second rider
     scores a stage result (rank 20 → base 2) so calculate_daily_scores does not
@@ -844,7 +844,7 @@ async def test_final_points_jersey_scored_for_sprinter():
         [],
         # 10. rider_xp_daily upsert (RIDER_ID_2, main loop: rank-20 base 2 × 1.0 = 2)
         [],
-        # 11. rider_xp_daily upsert (RIDER_ID, third pass: points jersey = 100, flat)
+        # 11. rider_xp_daily upsert (RIDER_ID, third pass: points jersey = 150, flat)
         [],
         # 12. teams select
         {"id": TEAM_ID, "cumulative_xp": 0.0, "level": 1, "league_id": LEAGUE_ID},
@@ -861,8 +861,8 @@ async def test_final_points_jersey_scored_for_sprinter():
 
     payloads = sb.upserts.get("rider_xp_daily", [])
     points_row = next(p for p in payloads if p["race_slug"] == points_slug)
-    assert points_row["xp_gained"] == 100.0
-    assert points_row["gt_classif_bonus"] == 100.0
+    assert points_row["xp_gained"] == 150.0
+    assert points_row["gt_classif_bonus"] == 150.0
     assert points_row["raw_pcs_points"] == 0
 
 

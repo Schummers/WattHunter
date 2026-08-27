@@ -487,21 +487,21 @@ def test_classif_bonus_v2_role_matched_only():
 
 def test_final_secondary_bonus_gt_scale_and_role_match():
     """2026-07 refonte: GT finals (points/kom/youth) are FLAT top-10 — no role mult
-    (roles play in-race, not on finals). Scale: points/kom [100,80,65,50,40,30,22,15,10,5],
-    youth = half scale [50,40,32,25,20,15,11,8,5,2]."""
+    (roles play in-race, not on finals). 2026-08 rehausse: points/kom
+    [150,120,100,75,60,45,32,22,15,8], youth = half scale [75,60,50,38,30,22,16,11,8,4]."""
     from scoring import _final_secondary_bonus
     # points — same value regardless of role
-    assert _final_secondary_bonus("points", 1, "sprinter") == 100.0
-    assert _final_secondary_bonus("points", 1, "domestique") == 100.0
-    assert _final_secondary_bonus("points", 2, "sprinter") == 80.0
+    assert _final_secondary_bonus("points", 1, "sprinter") == 150.0
+    assert _final_secondary_bonus("points", 1, "domestique") == 150.0
+    assert _final_secondary_bonus("points", 2, "sprinter") == 120.0
     # kom — same value regardless of role
-    assert _final_secondary_bonus("kom", 1, "climber") == 100.0
-    assert _final_secondary_bonus("kom", 2, "gc_leader") == 80.0
+    assert _final_secondary_bonus("kom", 1, "climber") == 150.0
+    assert _final_secondary_bonus("kom", 2, "gc_leader") == 120.0
     # youth — half scale, still flat
-    assert _final_secondary_bonus("youth", 1, "gc_leader") == 50.0
-    assert _final_secondary_bonus("youth", 1, "domestique") == 50.0
+    assert _final_secondary_bonus("youth", 1, "gc_leader") == 75.0
+    assert _final_secondary_bonus("youth", 1, "domestique") == 75.0
     # depth top 10, beyond → 0
-    assert _final_secondary_bonus("points", 10, "sprinter") == 5.0
+    assert _final_secondary_bonus("points", 10, "sprinter") == 8.0
     assert _final_secondary_bonus("points", 11, "sprinter") == 0.0
 
 

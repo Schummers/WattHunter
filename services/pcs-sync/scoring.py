@@ -67,18 +67,21 @@ CLIMBER_PROFILES = ("p3", "p4", "p5")  # 2026-07 refonte — hilly + mountain, m
 # --- GT rank-based barème (2026-07 refonte — replaces raw PCS points on GT slugs) ----
 # Velogames-shaped curves rescaled to the WattHunter magnitude (stage win = 100,
 # preserving the Manager level curve). Design record: docs/adr/ "rank-based barème".
-# Control ratios: GC final / stage win = 2.5:1; points/kom final = 1 stage win;
-# youth = half; 1st→2nd GC gap = -16% (vs -24% on raw PCS).
+# Finals rehaussés 2026-08 (docs/adr/2026-08-finals-baremes-rehausses.md):
+# GC final / stage win = 3.0:1 (Velogames 2.73, LRDT 3.33); Points/KOM final = 1.5
+# stage win; youth = half; 1st→2nd GC gap = -20% (was -16%; raw-PCS cliff is -24%).
+# Applied from the Vuelta 2026 closeout on — Giro/Tour 2026 keep the old values
+# ("the past is the past").
 GT_STAGE_SCALE = [100, 80, 70, 65, 55, 50, 45, 35, 30, 25,
                   20, 18, 16, 14, 12, 10, 8, 6, 4, 2]          # ranks 1-20
-GT_GC_FINAL_SCALE = [250, 210, 170, 145, 125, 110, 95, 85, 75, 65,
-                     60, 55, 50, 45, 40, 35, 30, 25, 22, 20,
-                     18, 16, 14, 12, 10, 8, 6, 4, 2, 1]        # ranks 1-30
+GT_GC_FINAL_SCALE = [450, 360, 300, 255, 220, 190, 165, 145, 130, 115,
+                     100, 90, 80, 72, 64, 56, 48, 40, 34, 28,
+                     24, 20, 16, 13, 10, 8, 6, 4, 2, 1]        # ranks 1-30
 # Final Points/KOM/Youth — FLAT for all roles (roles play in-race, not on finals).
 GT_SECONDARY_FINAL_SCALES = {
-    "points": [100, 80, 65, 50, 40, 30, 22, 15, 10, 5],        # ranks 1-10
-    "kom":    [100, 80, 65, 50, 40, 30, 22, 15, 10, 5],
-    "youth":  [50, 40, 32, 25, 20, 15, 11, 8, 5, 2],           # half scale
+    "points": [150, 120, 100, 75, 60, 45, 32, 22, 15, 8],      # ranks 1-10
+    "kom":    [150, 120, 100, 75, 60, 45, 32, 22, 15, 8],
+    "youth":  [75, 60, 50, 38, 30, 22, 16, 11, 8, 4],          # half scale
 }
 # Daily classifications — flat table for EVERY squad rider in the zone; the
 # matched role multiplies (replaces the V2 matched-only mechanism on GT slugs;

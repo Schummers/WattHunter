@@ -84,14 +84,14 @@ export function ScoringDocCard() {
           <Table2Col
             headers={["Final jersey", "Winner → depth"]}
             rows={[
-              { label: "GC (top 30)", multiplier: "250 → 1" },
-              { label: "Points / KOM (top 10)", multiplier: "100 → 5" },
-              { label: "Youth (top 10, half)", multiplier: "50 → 2" },
+              { label: "GC (top 30)", multiplier: "450 → 1" },
+              { label: "Points / KOM (top 10)", multiplier: "150 → 8" },
+              { label: "Youth (top 10, half)", multiplier: "75 → 4" },
             ]}
           />
           <Note>
-            <b>Example:</b> winning the GC is worth <b>250</b> (≈ 2.5 stage wins). Winning the green
-            or KOM jersey is worth <b>100</b> (one stage win). The Youth jersey pays half. Roles do
+            <b>Example:</b> winning the GC is worth <b>450</b> (3 stage wins). Winning the green
+            or KOM jersey is worth <b>150</b> (1.5 stage win). The Youth jersey pays half. Roles do
             not multiply finals — they play during the race, not on the final result.
           </Note>
         </Section>

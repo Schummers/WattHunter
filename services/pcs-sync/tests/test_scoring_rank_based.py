@@ -45,12 +45,12 @@ def test_points_from_rank_gc_final_table():
     import scoring
 
     slug = f"{TDF}/gc"
-    assert scoring._points_from_rank(1, slug) == 250.0
-    assert scoring._points_from_rank(2, slug) == 210.0   # -16% (softened vs raw-PCS cliff)
-    assert scoring._points_from_rank(3, slug) == 170.0
-    assert scoring._points_from_rank(10, slug) == 65.0
-    assert scoring._points_from_rank(15, slug) == 40.0
-    assert scoring._points_from_rank(20, slug) == 20.0
+    assert scoring._points_from_rank(1, slug) == 450.0
+    assert scoring._points_from_rank(2, slug) == 360.0   # -20% (2026-08 rehausse; raw-PCS cliff is -24%)
+    assert scoring._points_from_rank(3, slug) == 300.0
+    assert scoring._points_from_rank(10, slug) == 115.0
+    assert scoring._points_from_rank(15, slug) == 64.0
+    assert scoring._points_from_rank(20, slug) == 28.0
     assert scoring._points_from_rank(30, slug) == 1.0
     assert scoring._points_from_rank(31, slug) == 0.0
 
@@ -118,18 +118,18 @@ def test_daily_classif_zones_and_sum():
 def test_final_secondary_gt_flat_no_role_mult():
     import scoring
 
-    # Winner of points final = 100 whatever the role
-    assert scoring._final_secondary_bonus("points", 1, "sprinter", mode="gt") == 100.0
-    assert scoring._final_secondary_bonus("points", 1, "domestique", mode="gt") == 100.0
-    assert scoring._final_secondary_bonus("kom", 1, "climber", mode="gt") == 100.0
-    assert scoring._final_secondary_bonus("kom", 2, "domestique", mode="gt") == 80.0
+    # Winner of points final = 150 whatever the role (2026-08 rehausse)
+    assert scoring._final_secondary_bonus("points", 1, "sprinter", mode="gt") == 150.0
+    assert scoring._final_secondary_bonus("points", 1, "domestique", mode="gt") == 150.0
+    assert scoring._final_secondary_bonus("kom", 1, "climber", mode="gt") == 150.0
+    assert scoring._final_secondary_bonus("kom", 2, "domestique", mode="gt") == 120.0
     # Youth = half scale
-    assert scoring._final_secondary_bonus("youth", 1, "gc_leader", mode="gt") == 50.0
-    assert scoring._final_secondary_bonus("youth", 3, "domestique", mode="gt") == 32.0
+    assert scoring._final_secondary_bonus("youth", 1, "gc_leader", mode="gt") == 75.0
+    assert scoring._final_secondary_bonus("youth", 3, "domestique", mode="gt") == 50.0
     # Depth top 10
-    assert scoring._final_secondary_bonus("points", 10, "sprinter", mode="gt") == 5.0
+    assert scoring._final_secondary_bonus("points", 10, "sprinter", mode="gt") == 8.0
     assert scoring._final_secondary_bonus("points", 11, "sprinter", mode="gt") == 0.0
-    assert scoring._final_secondary_bonus("youth", 10, "sprinter", mode="gt") == 2.0
+    assert scoring._final_secondary_bonus("youth", 10, "sprinter", mode="gt") == 4.0
 
 
 def test_final_secondary_one_week_legacy_unchanged():
@@ -294,10 +294,10 @@ async def test_gt_gc_final_flat_for_underdog():
     await _run_gt(sb, slug)
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["raw_pcs_points"] == 125         # GC final rank 5
+    assert payload["raw_pcs_points"] == 220         # GC final rank 5 (2026-08 rehausse)
     assert payload["gt_role_mult"] == 1.0
     assert payload["underdog_mult"] == 1.0          # no clamp on finals
-    assert payload["xp_gained"] == 125.0
+    assert payload["xp_gained"] == 220.0
 
 
 async def test_gt_domestique_earns_assists():
