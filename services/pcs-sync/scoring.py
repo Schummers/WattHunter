@@ -966,12 +966,17 @@ async def calculate_daily_scores(
                 if nemesis_applied:
                     underdog_mult = 1.0
 
+                # Underdog boost applies to the stage rank_points ONLY (GAME_RULES §14:
+                # it is the value role_mult takes for the underdog role) — never to the
+                # additive daily bonuses (fix 2026-08, issue 01-underdog-mult-scope).
+                # Kept as a separate traceability column (option B), multiplied inside
+                # the parenthesis next to gt_role_mult.
                 xp = max(
                     0,
                     round(
-                        (raw_points * gt_role_mult * (1 + bonus)
+                        (raw_points * gt_role_mult * underdog_mult * (1 + bonus)
                          + gt_classif_bonus + gt_distance_bonus + assist_bonus)
-                        * nemesis_modifier * underdog_mult,
+                        * nemesis_modifier,
                         2,
                     ),
                 )

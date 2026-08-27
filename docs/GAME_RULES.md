@@ -205,7 +205,11 @@ Rider XP = (rank_points × role_mult × (1 + strategy_bonus)
   - tt_specialist ×2.0 on ITT only.
   - stage_hunter ×1.5 only in the breakaway (≥30 km).
   - **underdog ×clamp(pcs_rank/100, 1, 4)** (Spec B — mutually exclusive with the roles
-    above; see §14).
+    above; see §14). Like every role multiplier, it applies to the stage `rank_points`
+    ONLY — never to the additive `classif_bonus` / `breakaway_bonus` / `assist_bonus`
+    terms. Worked example (fix 2026-08-28): underdog `pcs_rank=357`, 2nd of a stage
+    (80 pts) with 1 daily classification point worth 6 → `80 × 3.57 + 6 = 291.6` XP,
+    NOT `(80 + 6) × 3.57 = 307.02`.
   - domestique ×1.0 (see `assist_bonus` below for its scoring path).
   - **ITT stages (`is_itt`, individual OR team time trial) → only gc_leader (×1.5) and
     tt_specialist (×2.0) earn a role bonus; sprinter/climber/stage_hunter/domestique are
@@ -560,6 +564,10 @@ Mécanisme anti-rattrapage complémentaire au Co-Unlock Rule et au Level Curve S
 - **`underdog` est un rôle à part entière** (comme gc_leader, sprinter…) : un coureur a UN seul rôle, donc le boost underdog **remplace** le `role_mult` habituel — il ne s'y ajoute pas. Dans la formule §7, c'est la valeur que prend `role_mult` quand le rôle est underdog (pas un facteur séparé). Un underdog ne touche donc jamais aussi le ×1.5 gc_leader/sprinter.
 - **Boost de scoring** : `role_mult = clamp(pcs_rank / 100, 1.0, 4.0)`, appliqué à la base
   `rank_points` de l'étape (§7, refonte 2026-07 — auparavant les points PCS bruts).
+  **Uniquement** à `rank_points` : les bonus additifs (classif daily, échappée, assists)
+  ne sont jamais multipliés par le boost. Ex. chiffré : `pcs_rank=357`, 2e d'étape (80)
+  + 1 daily point de 6 → `80 × 3.57 + 6 = 291.6`, pas `(80 + 6) × 3.57 = 307.02`.
+  (Le code faisait l'inverse jusqu'au fix du 2026-08-28, issue `01-underdog-mult-scope`.)
   - Ex. : coureur rang 272 → ×2.72 ; rang 432 → ×4.0 (plafond) ; rang 69 → ×1.0 (plancher).
 - **Pas de multiplicateur sur les classements finaux** (GC, Points, KOM, Youth) : depuis
   la refonte 2026-07, **tous les rôles** (pas seulement underdog) sont plats sur les

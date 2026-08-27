@@ -21,15 +21,16 @@ GIRO_SLUG = "race/giro-d-italia/2026/stage-4"
 BEFORE_CUTOFF = "2026-05-10T09:00:00+02:00"
 
 
-def _mock(*, tactics: list[dict], pcs_rank: int = 200, role: str = "underdog"):
-    """Squad rider with the given role + pcs_rank, rank 1 on a p4 GT stage.
+def _mock(*, tactics: list[dict], pcs_rank: int = 200, role: str = "underdog",
+          rank: int = 1, classif: list[dict] | None = None):
+    """Squad rider with the given role + pcs_rank, given stage rank on a p4 GT stage.
 
     2026-07 refonte: base = GT_STAGE_SCALE[rank-1]; rank 1 → 100 (pcs_points is
     ignored on GT slugs and kept here only as legacy noise the loader tolerates).
     """
     return make_supabase(
         # 1. race_results
-        [{"rider_id": RIDER_ID, "race_slug": GIRO_SLUG, "pcs_points": 100, "rank": 1,
+        [{"rider_id": RIDER_ID, "race_slug": GIRO_SLUG, "pcs_points": 100, "rank": rank,
           "race_date": "2026-05-11", "is_itt": False, "breakaway_kms": None,
           "profile_icon": "p4"}],
         # 2. prev rider_xp_daily
@@ -47,7 +48,7 @@ def _mock(*, tactics: list[dict], pcs_rank: int = 200, role: str = "underdog"):
         [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": role,
           "applied_at": BEFORE_CUTOFF}],
         # 7. gt_daily_classifications
-        [],
+        classif or [],
         # 8. gt_tactic_activations
         tactics,
         # 9. rider_xp_daily upsert
@@ -68,6 +69,28 @@ async def test_underdog_alone_applies_multiplier():
     payload = sb._last_upsert_payload("rider_xp_daily")
     assert payload["xp_gained"] == 200.0
     assert payload["underdog_mult"] == 2.0
+
+
+async def test_underdog_boost_applies_to_stage_points_only():
+    """Issue 01-underdog-mult-scope (2026-08): the underdog boost multiplies the
+    stage rank_points ONLY — additive daily classification points stay unboosted.
+
+    Reported case (Pau Miquel, pcs_rank 357): 2nd of a stage (80 pts) + 1 daily
+    point of 6 → 80 × 3.57 + 6 = 291.6, NOT (80 + 6) × 3.57 = 307.02. This is the
+    exact hole (underdog WITH a non-zero classif_bonus) the old suite never covered.
+    """
+    sb = _mock(
+        tactics=[],
+        pcs_rank=357,
+        rank=2,  # GT_STAGE_SCALE[1] = 80
+        classif=[{"race_slug": GIRO_SLUG, "rider_id": RIDER_ID,
+                  "classification_type": "points", "rank": 1}],  # daily point = 6
+    )
+    await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
+    payload = sb._last_upsert_payload("rider_xp_daily")
+    assert payload["underdog_mult"] == 3.57
+    assert payload["gt_classif_bonus"] == 6.0
+    assert payload["xp_gained"] == 291.6
 
 
 async def test_underdog_suppressed_when_targeted_by_nemesis():

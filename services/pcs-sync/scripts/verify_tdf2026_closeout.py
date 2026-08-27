@@ -346,10 +346,12 @@ def main() -> int:
                 if nemesis_applied:
                     underdog_mult = 1.0
 
+                # Mirror of scoring.py's formula — underdog_mult applies to the stage
+                # rank_points only (issue 01-underdog-mult-scope, 2026-08).
                 xp = max(0, round(
-                    (raw_points * gt_role_mult * (1 + bonus)
+                    (raw_points * gt_role_mult * underdog_mult * (1 + bonus)
                      + gt_classif_bonus + gt_distance_bonus + assist_bonus)
-                    * nemesis_modifier * underdog_mult, 2,
+                    * nemesis_modifier, 2,
                 ))
 
                 stored = stored_by_key.get((team_id, rider_id, race_slug))
