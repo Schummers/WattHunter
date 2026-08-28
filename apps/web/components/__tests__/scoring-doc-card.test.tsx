@@ -8,17 +8,18 @@ describe("ScoringDocCard", () => {
     render(<ScoringDocCard />);
     expect(screen.getByText("How scoring works")).toBeInTheDocument();
     expect(
-      screen.getByText(/Stage points, daily bonuses, final classifications/i),
+      screen.getByText(/Stage points, daily bonuses, climbs & sprints, final classifications/i),
     ).toBeInTheDocument();
   });
 
-  it("renders the 4 block headings", () => {
+  it("renders the 5 block headings", () => {
     render(<ScoringDocCard />);
     for (const name of [
       "1 · Stage points",
       "2 · Daily bonus",
-      "3 · Final classifications",
-      "4 · Roles",
+      "3 · Climbs & sprints",
+      "4 · Final classifications",
+      "5 · Roles",
     ]) {
       expect(screen.getByRole("heading", { name, level: 3 })).toBeInTheDocument();
     }
@@ -34,7 +35,13 @@ describe("ScoringDocCard", () => {
   it("renders the GC final winner value", () => {
     render(<ScoringDocCard />);
     expect(screen.getByText("GC (top 30)")).toBeInTheDocument();
-    expect(screen.getByText("250 → 1")).toBeInTheDocument();
+    expect(screen.getByText("450 → 1")).toBeInTheDocument();
+  });
+
+  it("renders the in-race events block", () => {
+    render(<ScoringDocCard />);
+    expect(screen.getByText("HC climb — top 8")).toBeInTheDocument();
+    expect(screen.getByText("Intermediate sprint — top 8")).toBeInTheDocument();
   });
 
   it("renders every role", () => {

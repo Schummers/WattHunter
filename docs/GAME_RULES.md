@@ -189,7 +189,8 @@ score 0). **2026-07 rank-based barème (replaces raw PCS points on GT slugs)** �
 curves, WattHunter magnitude):
 ```
 Rider XP = (rank_points × role_mult × (1 + strategy_bonus)
-            + classif_bonus + breakaway_bonus + assist_bonus) × nemesis_modifier
+            + classif_bonus + breakaway_bonus + assist_bonus
+            + kom_event_bonus + sprint_event_bonus) × nemesis_modifier
 ```
 - **rank_points**: looked up from the finish `rank` (not PCS points) via a fixed table.
   Non-GT races still use raw PCS points (unchanged).
@@ -239,6 +240,20 @@ Rider XP = (rank_points × role_mult × (1 + strategy_bonus)
   |---|---|---|
   | Stage | real-team teammate finishes stage top 3 | 4/2/1 |
   | GC daily | real-team teammate holds GC top 3 that evening | 3/2/1 |
+- **kom_event_bonus / sprint_event_bonus** (2026-08, GT stages only): in-race events,
+  scraped per stage into `stage_event_results` (summit finishes included, Velogames/LRDT
+  convention). Additive in the parenthesis — under `nemesis_modifier`, NOT multiplied by
+  `(1 + strategy_bonus)` nor by the underdog boost. ITT stages carry no events.
+  | Event | Barème (by crossing rank) | Role multiplier |
+  |---|---|---|
+  | Climb HC (top 8) | 8/6/5/4/3/2/1/1 | climber ×2 · stage_hunter ×1.5 |
+  | Climb cat 1 (top 5) | 4/3/2/1/1 | climber ×2 · stage_hunter ×1.5 |
+  | Climb cat 2/3/4 | 0 | — |
+  | Intermediate sprint (top 8) | 6/5/4/3/2/2/1/1 | sprinter ×2 · stage_hunter ×1.5 |
+
+  stage_hunter's ×1.5 is unconditional (no breakaway requirement); underdog and every
+  other role get ×1. Examples: climber first over an HC = 16 XP; sprinter winning an
+  intermediate sprint = 12 XP; stage_hunter 2nd of a cat 1 = 4.5 XP.
 - **Final jerseys — flat for all roles** (no role mult; roles play in-race, not on
   finals). 2026-08 rehausse — Points/KOM finals (top 10): `150, 120, 100, 75, 60, 45,
   32, 22, 15, 8`. Youth final (top 10, half scale): `75, 60, 50, 38, 30, 22, 16, 11, 8,
@@ -424,6 +439,10 @@ At the start of each phase, the player **confirms** their configuration:
   - `ASSIST_STAGE_SCALE` `4/2/1` + `ASSIST_GC_SCALE` `3/2/1` (domestique real-team assists, GT stages, not ITT)
   - Role gating: sprinter p1/p2/p3, **climber p3/p4/p5** (2026-07); tt_specialist ×2 ITT;
     stage_hunter breakaway ≥30 km + 1 XP / 10 km additive; GC/secondary finals flat (no role mult).
+  - `KOM_EVENT_SCALES` (2026-08, in-race climbs): HC top 8 `8/6/5/4/3/2/1/1`, cat 1 top 5
+    `4/3/2/1/1`, cat 2/3/4 nothing; `SPRINT_EVENT_SCALE` (intermediate sprints) top 8
+    `6/5/4/3/2/2/1/1`; `EVENT_ROLE_MULT`: climber ×2 (kom), sprinter ×2 (sprint),
+    stage_hunter ×1.5 (both, unconditional).
   - Control ratio GC-final / stage-win = 3.0:1 (2026-08 rehausse).
 
 ### Tactic gating profiles (Spec A A7)

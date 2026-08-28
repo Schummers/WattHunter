@@ -49,7 +49,11 @@ def _mock(*, tactics: list[dict], pcs_rank: int = 200, role: str = "underdog",
           "applied_at": BEFORE_CUTOFF}],
         # 7. gt_daily_classifications
         classif or [],
-        # 8. gt_tactic_activations
+        # 8. stage_event_results (2026-08 events): unrelated-rider KOM row so the
+        # p4/p5 anti-silence guard passes without affecting the scored rider.
+        [{"race_slug": GIRO_SLUG, "rider_id": "ffffffff-ffff-4fff-ffff-fffffffffff1",
+          "event_type": "kom", "category": "1", "rank": 1}],
+        # 9. gt_tactic_activations
         tactics,
         # 9. rider_xp_daily upsert
         [],

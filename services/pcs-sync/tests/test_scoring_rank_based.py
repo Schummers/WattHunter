@@ -257,6 +257,7 @@ async def test_gt_stage_base_is_rank_derived():
         [_squad_row()],           # gt_squad
         [_role_row("gc_leader")], # gt_role_assignments
         [],                       # gt_daily_classifications
+        [],                       # stage_event_results (2026-08 events, p1 stage)
         [],                       # gt_tactic_activations
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 8, "league_id": "lg-1"},
         [],
@@ -319,6 +320,7 @@ async def test_gt_domestique_earns_assists():
         # gt_daily_classifications: teammate leads the GC
         [{"race_slug": slug, "rider_id": TEAMMATE_ID, "classification_type": "gc",
           "rank": 1, "riders": {"real_team": "UAE Team Emirates"}}],
+        [],  # stage_event_results (2026-08 events, p2 stage)
         [],
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 8, "league_id": "lg-1"},
         [],
@@ -353,6 +355,7 @@ async def test_gt_domestique_dnf_earns_no_assist():
         # teammate leads the GC — would trigger the GC assist if the DNF gate failed
         [{"race_slug": slug, "rider_id": TEAMMATE_ID, "classification_type": "gc",
           "rank": 1, "riders": {"real_team": "UAE Team Emirates"}}],
+        [],  # stage_event_results (2026-08 events, p2 stage)
         [],
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 8, "league_id": "lg-1"},
         [],

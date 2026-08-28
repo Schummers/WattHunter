@@ -50,6 +50,7 @@ from sync import get_supabase  # noqa: E402
 from scoring import (  # noqa: E402
     _classif_bonus_gt,
     _domestique_assist_bonus,
+    _event_bonus,
     _breakaway_distance_bonus,
     _final_secondary_bonus,
     _is_gt_slug,
@@ -114,6 +115,15 @@ def main() -> int:
     daily_classif_rows = _fetch_all(lambda: supabase.table("gt_daily_classifications").select(
         "race_slug, rider_id, classification_type, rank, riders:rider_id(real_team)"
     ).eq("race_slug", STAGE_SLUG))
+
+    # In-race events (KOM/sprints, 2026-08 issue 03). Empty for the Tour 2026
+    # closeout (events only collected from the Vuelta on) — the term is then 0.
+    event_rows = _fetch_all(lambda: supabase.table("stage_event_results").select(
+        "race_slug, rider_id, event_type, category, rank"
+    ).eq("race_slug", STAGE_SLUG))
+    events_by_rider: dict[str, list[dict]] = {}
+    for row in event_rows:
+        events_by_rider.setdefault(row["rider_id"], []).append(row)
 
     # Scoped to the target league only — other leagues' teams may hold contracts on the
     # same riders without fielding a Tour squad; including them would make every one of
@@ -285,6 +295,12 @@ def main() -> int:
                 gt_distance_bonus = 0.0
                 if role == "stage_hunter" and race_slug == STAGE_SLUG:
                     gt_distance_bonus = _breakaway_distance_bonus(entry.get("breakaway_kms"))
+                kom_event_bonus = 0.0
+                sprint_event_bonus = 0.0
+                if race_slug == STAGE_SLUG:
+                    kom_event_bonus, sprint_event_bonus = _event_bonus(
+                        events_by_rider.get(rider_id, []), role,
+                    )
                 assist_bonus = 0.0
                 if role == "domestique" and race_slug == STAGE_SLUG and entry.get("rank") is not None:
                     assist_bonus = _domestique_assist_bonus(
@@ -347,10 +363,12 @@ def main() -> int:
                     underdog_mult = 1.0
 
                 # Mirror of scoring.py's formula — underdog_mult applies to the stage
-                # rank_points only (issue 01-underdog-mult-scope, 2026-08).
+                # rank_points only (issue 01, 2026-08); event terms additive in the
+                # parenthesis (issue 03, 2026-08).
                 xp = max(0, round(
                     (raw_points * gt_role_mult * underdog_mult * (1 + bonus)
-                     + gt_classif_bonus + gt_distance_bonus + assist_bonus)
+                     + gt_classif_bonus + gt_distance_bonus + assist_bonus
+                     + kom_event_bonus + sprint_event_bonus)
                     * nemesis_modifier, 2,
                 ))
 

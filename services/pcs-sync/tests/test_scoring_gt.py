@@ -50,11 +50,13 @@ def _base_mocks(
       5. gt_squad select (with created_at, removed_at for cutoff filtering)
       6. gt_role_assignments select
       7. gt_daily_classifications select
-      8. gt_tactic_activations select (Task 7 prefetch — populate-only, no scoring effect)
-      9. rider_xp_daily upsert
-     10. teams select (per-team update)
-     11. teams update
-     12. teams select (league ranking snapshot)
+      8. stage_event_results select (2026-08 events — dummy KOM row satisfies the
+         p4/p5 anti-silence guard without touching any scored rider)
+      9. gt_tactic_activations select (Task 7 prefetch — populate-only, no scoring effect)
+     10. rider_xp_daily upsert
+     11. teams select (per-team update)
+     12. teams update
+     13. teams select (league ranking snapshot)
     """
     normalized_classif = []
     for c in (classif_rows or []):
@@ -107,7 +109,11 @@ def _base_mocks(
         [{"team_id": TEAM_ID, "rider_id": RIDER_ID, "role": role, "applied_at": role_applied_at}],
         # 7. gt_daily_classifications
         normalized_classif,
-        # 8. gt_tactic_activations (Task 7 — populate-only, no activations yet)
+        # 8. stage_event_results (2026-08 events): unrelated-rider KOM row so the
+        # p4/p5 anti-silence guard passes without affecting any scored rider.
+        [{"race_slug": GIRO_SLUG, "rider_id": "ffffffff-ffff-4fff-ffff-fffffffffff1",
+          "event_type": "kom", "category": "1", "rank": 1}],
+        # 9. gt_tactic_activations (Task 7 — populate-only, no activations yet)
         [],
         # 9. rider_xp_daily upsert
         [],
@@ -657,6 +663,9 @@ async def test_rider_not_in_squad_gets_no_xp():
         [],  # gt_squad empty
         [],  # gt_role_assignments empty
         [],  # gt_daily_classifications empty
+        # stage_event_results: unrelated-rider KOM row (p4 anti-silence guard)
+        [{"race_slug": GIRO_SLUG, "rider_id": "ffffffff-ffff-4fff-ffff-fffffffffff1",
+          "event_type": "kom", "category": "1", "rank": 1}],
         [],  # gt_tactic_activations
     )
     result = await scoring.calculate_daily_scores(sb, race_slugs=[GIRO_SLUG])
@@ -709,7 +718,10 @@ async def test_squad_rider_no_stage_points_gets_classif_bonus():
         ],
         # 7. gt_daily_classifications: RIDER_ID rank 3 GC (no stage result, but in classif)
         [{"race_slug": GIRO_SLUG, "rider_id": RIDER_ID, "classification_type": "gc", "rank": 3}],
-        # 8. gt_tactic_activations
+        # 8. stage_event_results: unrelated-rider KOM row (p4 anti-silence guard)
+        [{"race_slug": GIRO_SLUG, "rider_id": "ffffffff-ffff-4fff-ffff-fffffffffff1",
+          "event_type": "kom", "category": "1", "rank": 1}],
+        # 9. gt_tactic_activations
         [],
         # 9. rider_xp_daily upsert (RIDER_ID_2, main loop: rank-2 base 80 × 1.0 = 80)
         [],
@@ -837,12 +849,14 @@ async def test_final_points_jersey_scored_for_sprinter():
         ],
         # 7. gt_daily_classifications
         [],
-        # 8. final-secondary prefetch (gt_final_classifications in_ final slugs): RIDER_ID rank 1 points
+        # 8. stage_event_results (2026-08 events — p1 stage, none)
+        [],
+        # 9. final-secondary prefetch (gt_final_classifications in_ final slugs): RIDER_ID rank 1 points
         [{"rider_id": RIDER_ID, "race_slug": points_slug, "classification_type": "points",
           "rank": 1, "race_date": "2026-05-31"}],
-        # 9. gt_tactic_activations
+        # 10. gt_tactic_activations
         [],
-        # 10. rider_xp_daily upsert (RIDER_ID_2, main loop: rank-20 base 2 × 1.0 = 2)
+        # 11. rider_xp_daily upsert (RIDER_ID_2, main loop: rank-20 base 2 × 1.0 = 2)
         [],
         # 11. rider_xp_daily upsert (RIDER_ID, third pass: points jersey = 150, flat)
         [],

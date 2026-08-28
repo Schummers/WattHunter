@@ -97,6 +97,24 @@ DAILY_CLASSIF_ROLE_MULT: dict[str, dict[str, float]] = {
     "sprinter":  {"points": 2.0},
     "climber":   {"kom": 2.0},
 }
+# --- In-race event terms (2026-08, issue 03) — KOM crossings + intermediate sprints.
+# Data: stage_event_results (issue 02). Additive inside the formula's parenthesis
+# (under nemesis_modifier, NOT multiplied by strategy_bonus nor the underdog boost).
+# Summit finishes included (Velogames/LRDT convention). Categories 2/3/4 pay nothing.
+KOM_EVENT_SCALES = {
+    "HC": [8, 6, 5, 4, 3, 2, 1, 1],   # top 8
+    "1":  [4, 3, 2, 1, 1],            # top 5
+}
+SPRINT_EVENT_SCALE = [6, 5, 4, 3, 2, 2, 1, 1]  # top 8
+# Event multipliers per role — climber ×2 on climbs, sprinter ×2 on sprints,
+# stage_hunter ×1.5 on both (unconditional, no breakaway requirement),
+# underdog and every other role ×1.
+EVENT_ROLE_MULT: dict[str, dict[str, float]] = {
+    "climber":      {"kom": 2.0},
+    "sprinter":     {"sprint": 2.0},
+    "stage_hunter": {"kom": 1.5, "sprint": 1.5},
+}
+
 # Domestique assists (Velogames-inspired, halved to our magnitude). Real-team
 # teammate in the stage top 3 / GC top 3 that day. Best position per category
 # only (not summed across teammates). No assists on ITT stages.
@@ -212,6 +230,34 @@ def _final_secondary_bonus(classif_type: str, rank, role: str, mode: str = "gt")
     matched_role, mult = FINAL_ROLE_MATCH.get(classif_type, (None, 1.0))
     rate = mult if role == matched_role else 1.0
     return base * rate
+
+
+def _event_bonus(event_rows: list[dict], role: str) -> tuple[float, float]:
+    """(kom_bonus, sprint_bonus) for a rider's in-race events on one stage (2026-08).
+
+    KOM: HC top 8 `8/6/5/4/3/2/1/1`, cat 1 top 5 `4/3/2/1/1`, nothing for cat 2/3/4.
+    Sprints: top 8 `6/5/4/3/2/2/1/1`. Role multipliers: climber ×2 (kom),
+    sprinter ×2 (sprint), stage_hunter ×1.5 (both, unconditional), others ×1.
+    """
+    mults = EVENT_ROLE_MULT.get(role, {})
+    kom_total = 0.0
+    sprint_total = 0.0
+    for row in event_rows or []:
+        try:
+            r = int(row.get("rank"))
+        except (TypeError, ValueError):
+            continue
+        etype = row.get("event_type")
+        if etype == "kom":
+            scale = KOM_EVENT_SCALES.get(str(row.get("category") or "").upper())
+            if scale is None or r < 1 or r > len(scale):
+                continue
+            kom_total += scale[r - 1] * mults.get("kom", 1.0)
+        elif etype == "sprint":
+            if r < 1 or r > len(SPRINT_EVENT_SCALE):
+                continue
+            sprint_total += SPRINT_EVENT_SCALE[r - 1] * mults.get("sprint", 1.0)
+    return kom_total, sprint_total
 
 
 def _classif_bonus_gt(classif_rows: list[dict], role: str) -> float:
@@ -728,6 +774,45 @@ async def calculate_daily_scores(
                         (row["rider_id"], c_join.get("real_team"), c_rank)
                     )
 
+    # --- Step 3c-bis: In-race events (KOM crossings + intermediate sprints) for GT
+    # stage slugs (2026-08, issue 03). Data from stage_event_results (issue 02).
+    events_by_key: dict[tuple[str, str], list[dict]] = {}
+    kom_slugs_with_data: set[str] = set()
+    gt_event_stage_slugs = [
+        s for s in squad_slugs if _is_gt_slug(s) and "/stage-" in s
+    ]
+    if gt_event_stage_slugs:
+        event_rows = _fetch_all(lambda: supabase.table("stage_event_results").select(
+            "race_slug, rider_id, event_type, category, rank"
+        ).in_("race_slug", gt_event_stage_slugs))
+        for row in event_rows:
+            events_by_key.setdefault(
+                (row["race_slug"], row["rider_id"]), []
+            ).append(row)
+            if row.get("event_type") == "kom":
+                kom_slugs_with_data.add(row["race_slug"])
+
+        # Anti-silence guard (issue 02, same pattern as SC-4): a mountain stage
+        # (p4/p5, not ITT) with ZERO imported KOM rows means the events import
+        # never ran — scoring it would silently pay 0 event XP. Fail loud instead.
+        # A climb can legitimately be absent on p1/p2/p3 stages.
+        _mountain_missing: list[str] = []
+        for h in history_rows:
+            h_slug = h.get("race_slug") or ""
+            if h_slug not in gt_event_stage_slugs or h.get("is_itt"):
+                continue
+            if _norm_profile(h.get("profile_icon")) in ("p4", "p5") \
+                    and h_slug not in kom_slugs_with_data:
+                if h_slug not in _mountain_missing:
+                    _mountain_missing.append(h_slug)
+        if _mountain_missing:
+            raise ValueError(
+                "No KOM event rows imported for mountain stage(s): "
+                f"{', '.join(sorted(_mountain_missing))}. Run "
+                "`run_pipeline.py import-events --race <stage-slug>` before scoring "
+                "— a p4/p5 stage without KOM data would silently score 0 event XP."
+            )
+
     # --- Step 3d: Final secondary classifications (Points/KOM/Youth) for completed stage-races.
     # Read from the DEDICATED gt_final_classifications table (kept out of race_results so it
     # never pollutes sponsor_bonus / goal_evaluator / UI — see Task 4 storage rationale).
@@ -834,6 +919,8 @@ async def calculate_daily_scores(
                 gt_classif_bonus = 0.0
                 gt_distance_bonus = 0.0
                 assist_bonus = 0.0
+                kom_event_bonus = 0.0
+                sprint_event_bonus = 0.0
                 underdog_mult = 1.0
                 role = "domestique"  # default; overridden for squad members with assigned role
                 if _is_squad_race(race_slug):
@@ -862,6 +949,12 @@ async def calculate_daily_scores(
                         )
                     if role == "stage_hunter" and not race_slug.endswith("/gc"):
                         gt_distance_bonus = _breakaway_distance_bonus(breakaway_kms)
+                    # 2026-08 (issue 03): in-race event terms — KOM crossings +
+                    # intermediate sprints, GT stage slugs only (ITT stores none).
+                    if _is_gt_slug(race_slug) and "/stage-" in race_slug:
+                        kom_event_bonus, sprint_event_bonus = _event_bonus(
+                            events_by_key.get((race_slug, rider_id), []), role
+                        )
                     # 2026-07 refonte: domestique assists (GT stage slugs only).
                     # Gate on a non-null rank: race_results also stores non-classified
                     # rows (DNF/DNS carry rank=NULL, see sync_race.py), so a bare row is
@@ -978,7 +1071,8 @@ async def calculate_daily_scores(
                     0,
                     round(
                         (raw_points * gt_role_mult * underdog_mult * (1 + bonus)
-                         + gt_classif_bonus + gt_distance_bonus + assist_bonus)
+                         + gt_classif_bonus + gt_distance_bonus + assist_bonus
+                         + kom_event_bonus + sprint_event_bonus)
                         * nemesis_modifier,
                         2,
                     ),
@@ -1003,6 +1097,8 @@ async def calculate_daily_scores(
                         "gt_classif_bonus": gt_classif_bonus,
                         "gt_distance_bonus": gt_distance_bonus,
                         "assist_bonus": assist_bonus,
+                        "kom_event_bonus": kom_event_bonus,
+                        "sprint_event_bonus": sprint_event_bonus,
                         "nemesis_modifier": nemesis_modifier,
                         "underdog_mult": underdog_mult,
                         "tactic_applied": tactic_applied,
@@ -1058,6 +1154,8 @@ async def calculate_daily_scores(
                         "gt_classif_bonus": c_classif_bonus,
                         "gt_distance_bonus": 0.0,
                         "assist_bonus": 0.0,
+                        "kom_event_bonus": 0.0,
+                        "sprint_event_bonus": 0.0,
                         "nemesis_modifier": 1.0,
                         "tactic_applied": None,
                         "xp_gained": c_xp,
@@ -1107,6 +1205,8 @@ async def calculate_daily_scores(
                             "gt_classif_bonus": f_bonus,
                             "gt_distance_bonus": 0.0,
                             "assist_bonus": 0.0,
+                            "kom_event_bonus": 0.0,
+                            "sprint_event_bonus": 0.0,
                             "nemesis_modifier": 1.0,
                             "tactic_applied": None,
                             "xp_gained": f_xp,

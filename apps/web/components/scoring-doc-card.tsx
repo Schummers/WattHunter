@@ -6,8 +6,9 @@ import { Tag } from "@/components/pill";
 /**
  * "How scoring works" — pedagogical encart shown on the Race Team page and the
  * Auction page. Grand Tour scoring, rank-based barème (2026-07 refonte).
- * Four blocks: stage points, daily bonus, final classifications, and how roles
- * change the points. Constants live in `docs/GAME_RULES.md §7/§11` — this
+ * Five blocks: stage points, daily bonus, in-race events (climbs & sprints),
+ * final classifications, and how roles change the points.
+ * Constants live in `docs/GAME_RULES.md §7/§11` — this
  * component is human-readable text only.
  *
  * Uses native <details> for keyboard-accessible collapse with no JS.
@@ -24,7 +25,7 @@ export function ScoringDocCard() {
             How scoring works
           </span>
           <span className="text-[length:var(--type-caption)] text-[var(--text-mid)]">
-            Stage points, daily bonuses, final classifications, and how roles change them.
+            Stage points, daily bonuses, climbs & sprints, final classifications, and how roles change them.
           </span>
         </div>
         <ChevronDown
@@ -76,9 +77,29 @@ export function ScoringDocCard() {
           </Note>
         </Section>
 
-        {/* 3 — Final classifications */}
+        {/* 3 — In-race events */}
         <Section
-          title="3 · Final classifications"
+          title="3 · Climbs & sprints"
+          subtitle="Crossing a big col or an intermediate sprint in front pays extra — summit finishes included."
+        >
+          <Table2Col
+            headers={["Event", "Points (1st → last)"]}
+            rows={[
+              { label: "HC climb — top 8", multiplier: "8 → 1" },
+              { label: "Cat 1 climb — top 5", multiplier: "4 → 1" },
+              { label: "Intermediate sprint — top 8", multiplier: "6 → 1" },
+            ]}
+          />
+          <Note>
+            <b>Example:</b> a Climber first over an HC col earns 8 × 2 = <b>16</b>. A Sprinter
+            winning an intermediate sprint earns 6 × 2 = <b>12</b>. The Stage Hunter gets ×1.5 on
+            both. Cat 2/3/4 climbs pay nothing, and time-trials have no events.
+          </Note>
+        </Section>
+
+        {/* 4 — Final classifications */}
+        <Section
+          title="4 · Final classifications"
           subtitle="When the Grand Tour ends, final standings pay a one-off — flat for every role, no multiplier."
         >
           <Table2Col
@@ -96,9 +117,9 @@ export function ScoringDocCard() {
           </Note>
         </Section>
 
-        {/* 4 — How roles change the points */}
+        {/* 5 — How roles change the points */}
         <Section
-          title="4 · Roles"
+          title="5 · Roles"
           subtitle="Every rider has one role. It multiplies his stage points and doubles his matching daily bonus."
         >
           <div className="flex flex-col gap-2.5">
@@ -106,16 +127,16 @@ export function ScoringDocCard() {
               ×1.5 on every stage · doubles GC (and ×1.5 Youth) daily bonus.
             </RoleLine>
             <RoleLine role="Sprinter">
-              ×1.5 on flat/hilly stages (p1–p3) · doubles Points daily bonus. ×1.0 in the mountains.
+              ×1.5 on flat/hilly stages (p1–p3) · doubles Points daily bonus and intermediate sprints. ×1.0 in the mountains.
             </RoleLine>
             <RoleLine role="Climber">
-              ×1.5 on hilly/mountain stages (p3–p5) · doubles KOM daily bonus. ×1.0 on the flat.
+              ×1.5 on hilly/mountain stages (p3–p5) · doubles KOM daily bonus and climb crossings. ×1.0 on the flat.
             </RoleLine>
             <RoleLine role="TT Specialist">
               ×2 on individual time-trial stages only.
             </RoleLine>
             <RoleLine role="Stage Hunter">
-              ×1.5 only when in the breakaway (≥30 km), + 1 pt per 10 km in the break. ×1.0 otherwise.
+              ×1.5 only when in the breakaway (≥30 km), + 1 pt per 10 km in the break · ×1.5 on climbs and sprints (always). ×1.0 otherwise.
             </RoleLine>
             <RoleLine role="Underdog">
               The cheaper the rider (higher PCS rank), the bigger the boost: stage points × (rank ÷ 100),
