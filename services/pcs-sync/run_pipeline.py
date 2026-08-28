@@ -868,6 +868,34 @@ async def run_backfill_photos() -> None:
     print("Done — backfill-photos complete.")
 
 
+async def run_import_events(stage_slug: str) -> None:
+    """Backfill in-race events (KOM crossings + intermediate sprints) for one GT stage.
+
+    Re-fetches the stage page and re-imports events only — no results, no scoring.
+    Idempotent (upsert on race_slug/event_type/event_name/rider_id), re-runnable.
+    """
+    from browser_session import BrowserSession
+    from procyclingstats import Stage
+    from stage_events import import_stage_events
+    from sync import get_supabase, fetch_html
+
+    supabase = get_supabase()
+    print(f"=== Import stage events: {stage_slug} ===")
+    async with BrowserSession() as browser:
+        ctx = await browser.new_context(user_agent=USER_AGENT)
+        page = await ctx.new_page()
+        try:
+            html = await fetch_html(page, stage_slug)
+            stage = Stage(stage_slug, html=html, update_html=False)
+            result = import_stage_events(
+                supabase, stage_slug=stage_slug, stage=stage, html=html
+            )
+            print(json.dumps(result, indent=2))
+        finally:
+            await ctx.close()
+    print("Done — import-events complete.")
+
+
 async def run_evaluate_goals(race_slug: str) -> None:
     """Evaluate sponsor goals (one-time bonuses) for a stage race (GT or 1-week)."""
     from sync import get_supabase
@@ -1014,6 +1042,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Stage number, e.g. 3",
     )
 
+    # import-events
+    import_events_p = subparsers.add_parser(
+        "import-events",
+        help="Backfill KOM/sprint event results for one GT stage (re-fetch + re-import, idempotent).",
+    )
+    import_events_p.add_argument(
+        "--race",
+        required=True,
+        metavar="SLUG",
+        help='GT stage slug, e.g. "race/vuelta-a-espana/2026/stage-2"',
+    )
+
     # evaluate-goals
     eval_goals_p = subparsers.add_parser(
         "evaluate-goals",
@@ -1095,6 +1135,8 @@ async def main() -> None:
         await run_pre_auction()
     elif args.command == "backfill-photos":
         await run_backfill_photos()
+    elif args.command == "import-events":
+        await run_import_events(args.race)
     elif args.command == "evaluate-goals":
         await run_evaluate_goals(args.race)
     elif args.command == "detect-dnfs":

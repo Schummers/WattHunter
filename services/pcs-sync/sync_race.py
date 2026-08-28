@@ -182,12 +182,31 @@ async def import_race_results(
             errors.append(str(exc))
 
     race_result_slug = stage_url if stage_url else f"{race_slug}/result"
+
+    # Issue 02 (2026-08): on GT stages, also import the day's in-race events
+    # (KOM crossings + intermediate sprints) from the SAME html — no extra fetch.
+    events_result = None
+    if stage_url and _classify_race(race_slug) == "grand_tour":
+        from stage_events import import_stage_events
+        try:
+            events_result = import_stage_events(
+                supabase,
+                stage_slug=race_result_slug,
+                stage=stage,
+                html=html,
+                rider_map=rider_map,
+            )
+        except Exception as exc:
+            logger.error("Stage events import failed for %s: %s", race_result_slug, exc)
+            errors.append(f"stage_events: {exc}")
+
     return {
         "race": fetch_url,
         "race_slug": race_result_slug,
         "imported": imported,
         "skipped": skipped,
         "total_in_race": len(results),
+        "events": events_result,
         "errors": errors,
     }
 
