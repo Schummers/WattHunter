@@ -7,7 +7,8 @@ from unittest.mock import MagicMock
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
-def make_chain(data=None, upserts=None, updates=None, inserts=None, table_name=None):
+def make_chain(data=None, upserts=None, updates=None, inserts=None, deletes=None,
+               table_name=None):
     """Return a MagicMock that supports Supabase fluent query chaining.
 
     Every builder method (select, eq, …) returns self so chains work.
@@ -36,7 +37,13 @@ def make_chain(data=None, upserts=None, updates=None, inserts=None, table_name=N
     m.upsert.side_effect = _record(upserts)
     m.update.side_effect = _record(updates)
     m.insert.side_effect = _record(inserts)
-    m.delete.return_value = m
+
+    def _record_delete(*args, **kwargs):
+        if deletes is not None and table_name is not None:
+            deletes.setdefault(table_name, []).append(True)
+        return m
+
+    m.delete.side_effect = _record_delete
     return m
 
 
@@ -51,6 +58,7 @@ def make_supabase(*responses):
       sb.upserts:  dict[table_name, list[payload]]
       sb.updates:  dict[table_name, list[payload]]
       sb.inserts:  dict[table_name, list[payload]]
+      sb.deletes:  dict[table_name, list[True]]  (one entry per .delete() call)
       sb._last_upsert_payload(table)  → last recorded upsert payload for `table`
 
     Usage::
@@ -66,6 +74,7 @@ def make_supabase(*responses):
     sb.upserts = {}
     sb.updates = {}
     sb.inserts = {}
+    sb.deletes = {}
     sb.rpc_calls = []
 
     def _rpc_side_effect(fn_name, params=None):
@@ -93,6 +102,7 @@ def make_supabase(*responses):
             upserts=sb.upserts,
             updates=sb.updates,
             inserts=sb.inserts,
+            deletes=sb.deletes,
             table_name=name,
         )
 

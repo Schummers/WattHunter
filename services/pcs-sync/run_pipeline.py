@@ -872,7 +872,8 @@ async def run_import_events(stage_slug: str) -> None:
     """Backfill in-race events (KOM crossings + intermediate sprints) for one GT stage.
 
     Re-fetches the stage page and re-imports events only — no results, no scoring.
-    Idempotent (upsert on race_slug/event_type/event_name/rider_id), re-runnable.
+    Re-runnable: the stage's existing rows are deleted first, then the fresh set
+    is upserted, so PCS corrections replace stale rows instead of stacking.
     """
     from browser_session import BrowserSession
     from procyclingstats import Stage

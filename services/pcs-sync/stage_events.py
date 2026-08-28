@@ -6,8 +6,10 @@ already fetched (zero extra HTTP requests):
   - intermediate sprints: not exposed by the lib — local parser mirroring the
     climbs() approach on the Points tab (`<h4>Sprint | ...</h4>` + ranking table).
 
-Rows land in `stage_event_results` (migration 20260828000000), upserted on
-(race_slug, event_type, event_name, rider_id) so re-imports are idempotent.
+Rows land in `stage_event_results` (migration 20260828000000). A re-import
+first deletes the stage's existing rows, then upserts the freshly parsed set,
+so PCS corrections (declassed rider, renamed climb) replace stale rows instead
+of piling on top of them.
 """
 from __future__ import annotations
 
@@ -34,9 +36,14 @@ def _normalize_category(raw) -> Optional[str]:
 
 
 def _normalize_rider_url(href: str) -> str:
-    """PCS hrefs are relative ('rider/tadej-pogacar'); riders.pcs_slug uses the
-    same form. Strip a leading slash and any query string."""
-    return (href or "").split("?", 1)[0].lstrip("/")
+    """PCS hrefs are usually relative ('rider/tadej-pogacar'); riders.pcs_slug
+    uses the same form. Strip an absolute-URL prefix (scheme + host), a leading
+    slash and any query string."""
+    url = (href or "").split("?", 1)[0]
+    if "://" in url:
+        url = url.split("://", 1)[1].split("/", 1)
+        url = url[1] if len(url) > 1 else ""
+    return url.lstrip("/")
 
 
 def parse_stage_climbs(stage) -> List[Dict[str, Any]]:
@@ -114,7 +121,8 @@ def import_stage_events(
 ) -> Dict[str, Any]:
     """Upsert every KOM crossing + intermediate sprint of a stage into
     stage_event_results. Riders outside the pool are skipped (counted, no crash).
-    Idempotent — safe to re-run on the same stage.
+    Re-runs reconcile: the stage's existing rows are deleted first (only when the
+    parse produced events), so stale rows can't double-count in scoring.
     """
     if rider_map is None:
         riders_resp = _fetch_all(lambda: supabase.table("riders").select("id, pcs_slug"))
@@ -142,6 +150,16 @@ def import_stage_events(
             "category": None,
             "rank_rows": sprint["rank"],
         })
+
+    # Reconcile before writing: without this, a re-import after a PCS correction
+    # keeps the obsolete rows alongside the new ones and the scoring event terms
+    # double-count. Guarded on `events` so a silently broken parse (missing tab,
+    # lib failure) can't wipe previously imported data. A delete failure raises
+    # to the caller — better to abort than to import on top of stale rows.
+    if events:
+        supabase.table("stage_event_results").delete().eq(
+            "race_slug", stage_slug
+        ).execute()
 
     imported = 0
     skipped_unmapped = 0

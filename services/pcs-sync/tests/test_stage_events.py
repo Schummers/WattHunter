@@ -11,6 +11,7 @@ import stage_events
 STAGE_SLUG = "race/vuelta-a-espana/2026/stage-2"
 RIDER_A = "bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbb1"
 RIDER_B = "bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbb2"
+RIDER_C = "bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbb3"
 
 # Minimal stage-page skeleton mirroring the PCS structure Stage.climbs() relies
 # on: a resultTabs nav whose "Points" link points (data-id) to a resTab holding a
@@ -27,6 +28,7 @@ SPRINT_HTML = """
     <table><tbody>
       <tr><td>1</td><td><a href="rider/mads-pedersen">PEDERSEN Mads</a></td></tr>
       <tr><td>2</td><td><a href="/rider/jasper-philipsen?foo=1">PHILIPSEN Jasper</a></td></tr>
+      <tr><td>3</td><td><a href="https://www.procyclingstats.com/rider/jonas-vingegaard">VINGEGAARD Jonas</a></td></tr>
       <tr><td>xx</td><td><a href="rider/broken-row">BROKEN Row</a></td></tr>
     </tbody></table>
     <h4>KOM Sprint (2) Alto de X (50 km)</h4>
@@ -44,10 +46,12 @@ def test_parse_intermediate_sprints_basic():
     assert len(sprints) == 1  # the KOM h4 in the same tab is ignored
     sprint = sprints[0]
     assert sprint["event_name"] == "Fuente del Maestre (102.6 km)"
-    # Unparseable rank row dropped; hrefs normalized (leading slash + query stripped).
+    # Unparseable rank row dropped; hrefs normalized (leading slash, query
+    # string and absolute scheme+host all stripped).
     assert sprint["rank"] == [
         {"rider_url": "rider/mads-pedersen", "rank": 1},
         {"rider_url": "rider/jasper-philipsen", "rank": 2},
+        {"rider_url": "rider/jonas-vingegaard", "rank": 3},
     ]
 
 
@@ -77,12 +81,18 @@ def test_import_stage_events_upserts_kom_and_sprint_rows():
         stage_slug=STAGE_SLUG,
         stage=stage,
         html=SPRINT_HTML,
-        rider_map={"rider/mads-pedersen": RIDER_A, "rider/jasper-philipsen": RIDER_B},
+        rider_map={
+            "rider/mads-pedersen": RIDER_A,
+            "rider/jasper-philipsen": RIDER_B,
+            # Listed with an absolute href in SPRINT_HTML — maps only if the
+            # scheme+host prefix is stripped.
+            "rider/jonas-vingegaard": RIDER_C,
+        },
     )
 
     assert result["kom_events"] == 2
     assert result["sprint_events"] == 1
-    assert result["imported"] == 4      # 2 kom + 2 sprint mapped rows
+    assert result["imported"] == 5      # 2 kom + 3 sprint mapped rows
     assert result["skipped_unmapped"] == 1
     assert result["errors"] == []
 
@@ -92,6 +102,9 @@ def test_import_stage_events_upserts_kom_and_sprint_rows():
     assert {(p["category"], p["rank"]) for p in koms} == {("HC", 1), ("1", 3)}
     assert all(p["category"] is None for p in sprints)
     assert all(p["race_slug"] == STAGE_SLUG for p in payloads)
+    # Reconcile: the stage's existing rows are wiped before the fresh upserts,
+    # so a re-import after a PCS correction can't double-count stale rows.
+    assert sb.deletes.get("stage_event_results") == [True]
 
 
 def test_import_stage_events_itt_yields_nothing():
@@ -106,6 +119,9 @@ def test_import_stage_events_itt_yields_nothing():
     assert result["sprint_events"] == 0
     assert result["imported"] == 0
     assert "stage_event_results" not in sb.upserts
+    # No events parsed → no delete either: a broken/empty parse must never
+    # wipe previously imported rows.
+    assert "stage_event_results" not in sb.deletes
 
 
 def test_import_stage_events_survives_lib_failure():
@@ -119,4 +135,5 @@ def test_import_stage_events_survives_lib_failure():
     )
     assert result["kom_events"] == 0
     assert result["sprint_events"] == 1
-    assert result["imported"] == 2
+    assert result["imported"] == 2      # vingegaard row unmapped in this test
+    assert result["skipped_unmapped"] == 1
