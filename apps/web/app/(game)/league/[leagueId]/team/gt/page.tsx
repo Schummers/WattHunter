@@ -104,7 +104,7 @@ export default async function GtTeamPage({
 
   return (
     <>
-      <div className="mb-4 px-4">
+      <div className="my-4 px-4">
         <ScoringDocCard />
       </div>
       <GtTeamClient
