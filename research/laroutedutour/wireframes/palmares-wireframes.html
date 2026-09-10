@@ -1,0 +1,821 @@
+<title>Palmarès WattHunter</title>
+<style>
+  :root{
+    /* WattHunter Design System v3 - tokens repris tels quels */
+    --bg-app:#0c1012; --bg-subtle:#111618; --bg-surface:#151b1e;
+    --bg-surface-hover:#1a2226; --bg-surface-active:#1f292e;
+    --border-subtle:#151b1e; --border-default:#273339; --border-hover:#334249;
+    --text-high:#eaeff1; --text-mid:#89a1ad; --text-low:#74919f; --text-ghost:#334249;
+    --cyan-400:#22d3ee; --cyan-500:#06b6d4; --cyan-600:#0891b2; --cyan-950:#083344;
+    --sky-500:#0ea5e9; --badge-bg:rgba(14,165,233,.10);
+    /* semantique, distincte de l'accent */
+    --warn:#d8a657; --warn-bg:rgba(216,166,87,.10);
+    --stop:#e5766b; --stop-bg:rgba(229,118,107,.10);
+    --ok:#6fcf97;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+    --r-md:6px; --r-lg:8px; --r-pill:20px;
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg-app); color:var(--text-high);
+    font:400 15px/1.6 var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1280px;margin:0 auto;padding:var(--s6) var(--s4) 96px}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* ---------- chrome document ---------- */
+  header.doc{border-bottom:1px solid var(--border-default);padding-bottom:var(--s5);margin-bottom:var(--s6)}
+  .eyebrow{font:700 12px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--text-low)}
+  h1{font:800 34px/1.15 var(--sans);margin:var(--s3) 0 var(--s2);text-wrap:balance;letter-spacing:-.02em}
+  .lede{color:var(--text-mid);max-width:66ch;margin:0}
+  .provenance{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s4)}
+  .chip{
+    font:500 12px/1 var(--sans);color:var(--sky-500);background:var(--badge-bg);
+    border-radius:var(--r-pill);padding:6px 12px;white-space:nowrap
+  }
+  h2{font:700 22px/1.2 var(--sans);margin:var(--s6) 0 var(--s2);letter-spacing:-.01em}
+  h2 .idx{color:var(--text-ghost);font-family:var(--mono);margin-right:10px}
+  h3{font:600 16px/1.3 var(--sans);margin:var(--s5) 0 var(--s2)}
+  .section-note{color:var(--text-mid);max-width:72ch;margin:0 0 var(--s4);font-size:14px}
+  section{scroll-margin-top:20px}
+
+  /* ---------- callouts ---------- */
+  .callout{
+    background:var(--bg-surface);border:1px solid var(--border-default);
+    border-left:3px solid var(--warn);border-radius:var(--r-lg);
+    padding:var(--s4);margin:var(--s3) 0;
+  }
+  .callout.stop{border-left-color:var(--stop)}
+  .callout.ok{border-left-color:var(--ok)}
+  .callout .t{font:700 12px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--warn);margin-bottom:var(--s2)}
+  .callout.stop .t{color:var(--stop)}
+  .callout.ok .t{color:var(--ok)}
+  .callout p{margin:0;font-size:14px;color:var(--text-mid)}
+  .callout p + p{margin-top:var(--s2)}
+  .callout strong{color:var(--text-high);font-weight:600}
+
+  /* ---------- tableaux doc ---------- */
+  .tbl-scroll{overflow-x:auto;margin:var(--s3) 0}
+  table.doc{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
+  table.doc th{
+    text-align:left;font:700 11px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;
+    color:var(--text-low);padding:0 var(--s3) var(--s2);border-bottom:1px solid var(--border-default);white-space:nowrap
+  }
+  table.doc td{padding:var(--s2) var(--s3);border-bottom:1px solid var(--border-subtle);color:var(--text-mid);vertical-align:top}
+  table.doc td:first-child{color:var(--text-high)}
+  table.doc td.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--text-high)}
+
+  /* ---------- grille de frames ---------- */
+  .frames{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:var(--s5);margin-top:var(--s4)}
+  .iter{display:flex;flex-direction:column;gap:var(--s2);min-width:0}
+  .iter-head{display:flex;align-items:baseline;gap:var(--s2)}
+  .iter-n{font:700 11px/1 var(--mono);color:var(--bg-app);background:var(--text-low);border-radius:var(--r-md);padding:4px 7px}
+  .iter-name{font:600 14px/1.3 var(--sans);color:var(--text-high)}
+  .iter-q{font-size:12.5px;color:var(--text-low);margin:0;min-height:34px}
+  .verdict{font-size:12.5px;margin:0;padding:var(--s2) var(--s3);border-radius:var(--r-md);background:var(--bg-subtle);border:1px solid var(--border-subtle)}
+  .verdict b{font-weight:600}
+  .verdict.no b{color:var(--stop)} .verdict.yes b{color:var(--ok)} .verdict.mid b{color:var(--warn)}
+
+  /* ---------- device frame ---------- */
+  .frame{
+    background:var(--bg-app);border:1px solid var(--border-default);border-radius:14px;
+    overflow:hidden;display:flex;flex-direction:column;height:520px
+  }
+  .fbar{
+    display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
+    padding:10px var(--s3);border-bottom:1px solid var(--border-subtle);background:var(--bg-subtle);flex:none
+  }
+  .fbar .ttl{font:600 13px/1 var(--sans);color:var(--text-high)}
+  .fbar .act{font:500 11px/1 var(--sans);color:var(--cyan-500)}
+  .fbody{padding:var(--s3);overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:var(--s3)}
+  .fbody::-webkit-scrollbar{width:6px}
+  .fbody::-webkit-scrollbar-thumb{background:var(--border-default);border-radius:3px}
+  .fnav{
+    display:flex;border-top:1px solid var(--border-subtle);background:var(--bg-subtle);flex:none
+  }
+  .fnav span{flex:1;text-align:center;padding:8px 0;font:500 10px/1.4 var(--sans);color:var(--text-low)}
+  .fnav span.on{color:var(--cyan-500);font-weight:600}
+
+  /* tabs underline (DS pattern) */
+  .tabs{display:flex;border-bottom:1px solid var(--border-subtle);flex:none;margin:0 calc(var(--s3) * -1);padding:0 var(--s3)}
+  .tabs b{
+    flex:1;text-align:center;padding:8px 4px;font:600 12px/1 var(--sans);color:var(--text-mid);
+    border-bottom:2px solid transparent
+  }
+  .tabs b.on{color:var(--text-high);border-bottom-color:var(--cyan-500)}
+
+  /* filter chips (DS pattern, 6px) */
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chips i{
+    font:500 11px/1 var(--sans);font-style:normal;padding:6px 9px;border-radius:var(--r-md);
+    border:1px solid var(--border-default);color:var(--text-mid);white-space:nowrap
+  }
+  .chips i.on{background:var(--bg-surface-active);color:var(--text-high);border-color:var(--border-hover)}
+
+  /* tag pill (DS pattern, 20px, non interactif) */
+  .tag{
+    font:500 10px/1 var(--sans);color:var(--sky-500);background:var(--badge-bg);
+    border-radius:var(--r-pill);padding:4px 8px;white-space:nowrap;display:inline-block
+  }
+  .tag.mut{color:var(--text-low);background:transparent;border:1px solid var(--border-default)}
+  .tag.warn{color:var(--warn);background:var(--warn-bg)}
+
+  /* label section dans le frame */
+  .flabel{font:700 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--text-low)}
+
+  /* card + rows */
+  .card{background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--r-lg);padding:var(--s3)}
+  .row{display:flex;align-items:center;gap:var(--s2);padding:7px 0;border-bottom:1px solid var(--border-subtle)}
+  .row:last-child{border-bottom:0}
+  .row .pos{width:18px;font:700 12px/1 var(--mono);color:var(--text-low);flex:none;text-align:right}
+  .row .pos.p1{color:var(--cyan-400)}
+  .row .nm{flex:1;font:600 12.5px/1.3 var(--sans);color:var(--text-high);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .sub{font:400 10.5px/1.3 var(--sans);color:var(--text-low);display:block;font-weight:400}
+  .row .v{font:700 13px/1 var(--mono);color:var(--text-high);flex:none;font-variant-numeric:tabular-nums}
+  .row .v small{display:block;font:400 9.5px/1.3 var(--sans);color:var(--text-low);text-align:right;margin-top:2px}
+  .row.dim .nm,.row.dim .v{color:var(--text-mid)}
+
+  /* hero stat */
+  .hero{text-align:center;padding:var(--s3) 0}
+  .hero .n{font:900 32px/1 var(--mono);color:var(--cyan-400);font-variant-numeric:tabular-nums}
+  .hero .l{font:700 11px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--text-low);margin-top:6px}
+  .statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2)}
+  .statgrid div{background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--r-lg);padding:var(--s2);text-align:center}
+  .statgrid .n{font:800 17px/1 var(--mono);color:var(--text-high);font-variant-numeric:tabular-nums}
+  .statgrid .l{font:700 9px/1.2 var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--text-low);margin-top:4px}
+
+  /* mini bar */
+  .bar{height:5px;background:var(--bg-surface-active);border-radius:3px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:var(--cyan-500);border-radius:3px}
+  .bar>i.mut{background:var(--border-hover)}
+
+  /* trophy grid */
+  .tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .tcell{background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--r-lg);padding:var(--s2);text-align:center}
+  .tcell .c{font:800 16px/1 var(--mono);color:var(--cyan-400)}
+  .tcell .c.z{color:var(--text-ghost)}
+  .tcell .t{font:500 9px/1.2 var(--sans);color:var(--text-low);margin-top:3px}
+
+  /* matrix */
+  .mx{width:100%;border-collapse:collapse;font-size:10.5px}
+  .mx th{font:700 9px/1 var(--sans);color:var(--text-low);padding:0 0 5px;text-transform:uppercase;letter-spacing:.05em}
+  .mx th:first-child{text-align:left}
+  .mx td{padding:4px 2px;text-align:center;font-family:var(--mono);color:var(--text-mid);border-top:1px solid var(--border-subtle);font-variant-numeric:tabular-nums}
+  .mx td:first-child{text-align:left;font-family:var(--sans);color:var(--text-high);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:88px}
+  .mx td.hit{color:var(--cyan-400);font-weight:700}
+  .mx td.zero{color:var(--text-ghost)}
+
+  /* timeline */
+  .tl{display:flex;flex-direction:column;gap:0}
+  .tl .y{display:flex;gap:var(--s3);align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border-subtle)}
+  .tl .y:last-child{border-bottom:0}
+  .tl .yr{font:700 12px/1.3 var(--mono);color:var(--text-low);width:34px;flex:none}
+  .tl .who{font:600 12px/1.3 var(--sans);color:var(--text-high);flex:1;min-width:0}
+  .tl .who em{display:block;font:400 10.5px/1.35 var(--sans);color:var(--text-low);font-style:normal;margin-top:1px}
+
+  /* sparkline */
+  .spark{display:flex;align-items:flex-end;gap:3px;height:52px}
+  .spark div{flex:1;background:var(--border-hover);border-radius:2px 2px 0 0;position:relative}
+  .spark div.hi{background:var(--cyan-500)}
+  .sparkx{display:flex;gap:3px;margin-top:4px}
+  .sparkx span{flex:1;text-align:center;font:500 8px/1 var(--mono);color:var(--text-low)}
+
+  .divider{height:1px;background:var(--border-subtle);margin:var(--s2) 0}
+  .muted-block{background:var(--bg-subtle);border:1px dashed var(--border-default);border-radius:var(--r-lg);padding:var(--s2) var(--s3)}
+  .muted-block p{margin:0;font-size:11px;color:var(--text-low);line-height:1.45}
+
+  footer.doc{margin-top:var(--s6);padding-top:var(--s5);border-top:1px solid var(--border-default);color:var(--text-low);font-size:13px}
+  ul.tight{margin:var(--s2) 0 0;padding-left:18px;color:var(--text-mid);font-size:14px}
+  ul.tight li{margin-bottom:6px}
+  ul.tight strong{color:var(--text-high);font-weight:600}
+  a{color:var(--cyan-500)}
+  @media (max-width:640px){ h1{font-size:27px} .wrap{padding:var(--s5) var(--s3) 72px} }
+</style>
+
+<div class="wrap">
+
+<header class="doc">
+  <div class="eyebrow">Wireframes · exploration</div>
+  <h1>Palmarès WattHunter</h1>
+  <p class="lede">Trois écrans, six itérations chacun, construits sur l'historique réel de votre groupe : 30 tours joués sur La Route du Tour entre 2017 et 2025. Chaque itération répond différemment à la même question, comment comparer des joueurs qui n'ont pas joué le même nombre de tours.</p>
+  <div class="provenance">
+    <span class="chip">30 tours</span>
+    <span class="chip">231 lignes de classement</span>
+    <span class="chip">12 joueurs</span>
+    <span class="chip">2017 → 2025</span>
+    <span class="chip">6 types de course</span>
+    <span class="chip">Aucune écriture en base</span>
+  </div>
+</header>
+
+<section>
+  <h2><span class="idx">01</span>Ce que la donnée impose</h2>
+  <p class="section-note">Trois contraintes sorties de l'analyse du dataset, pas de préférences esthétiques. Elles cadrent tout le reste.</p>
+
+  <div class="callout stop">
+    <div class="t">Contrainte 1 · Ne jamais reclasser l'histoire</div>
+    <p>Convertir les points LRDT en XP WattHunter <strong>change l'ordre d'arrivée dans 13 tours sur 30</strong>, et change carrément le vainqueur sur deux d'entre eux : le Giro 2024 passerait de Marseillais à PeeJee, le Tour de France 2023 de Marino à David Choncoutié.</p>
+    <p>Conséquence directe sur le design : le rang affiché vient toujours du classement d'origine, jamais d'un tri sur XP converti. L'XP sert uniquement aux agrégats de comparaison entre les deux ères, jamais à rejouer un tour passé.</p>
+  </div>
+
+  <div class="callout">
+    <div class="t">Contrainte 2 · Le lissage statistique ne suffit pas seul</div>
+    <p>Un lissage bayésien (moyenne tirée vers la moyenne du groupe, base 12,99% de victoires) ne règle pas le cas des tout petits échantillons. JibsEPAULE, avec <strong>1 victoire en 2 participations</strong>, reste 2e du classement à C=10 et C=20, et encore 3e à C=40.</p>
+    <p>Il faut donc combiner lissage <em>et</em> seuil de participation. L'un sans l'autre laisse passer l'artefact.</p>
+  </div>
+
+  <div class="callout">
+    <div class="t">Contrainte 3 · Jeter les colonnes orphelines biaise par type de course</div>
+    <p>Les sprints intermédiaires, passages au sommet et prix du combatif n'ont pas d'équivalent WattHunter. Ils pèsent <strong>9% des points sur les courses à étapes, mais 0% sur les classiques</strong>. Les supprimer avantagerait mécaniquement les classiques dans tout classement unifié.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="idx">02</span>Partis pris</h2>
+  <p class="section-note">Décisions prises pour ces wireframes. Chacune est réversible, mais aucune n'est implicite.</p>
+  <div class="tbl-scroll">
+  <table class="doc">
+    <thead><tr><th>Sujet</th><th>Décision</th><th>Pourquoi</th></tr></thead>
+    <tbody>
+      <tr><td>Rang historique</td><td>Toujours celui de la source, figé</td><td>La conversion inverserait 13 tours sur 30 (contrainte 1)</td></tr>
+      <tr><td>Conversion en XP</td><td>Ratio approximatif par colonne, ×2,5 sur les catégories dominantes</td><td>Victoire d'étape 40→100 et GC final 100→250 donnent tous deux ×2,5</td></tr>
+      <tr><td>Colonnes mixtes</td><td>GC ×2,0, vert et pois ×1,8, blanc ×0,9</td><td>Quotidien et final sont fusionnés dans une seule colonne, impossible à séparer sans re-scraper 600 pages</td></tr>
+      <tr><td>Colonnes orphelines</td><td>Conservées, converties au ratio étape</td><td>Les jeter biaiserait de 9% les courses à étapes contre 0% les classiques</td></tr>
+      <tr><td>Points bruts</td><td>Stockés à côté des valeurs converties</td><td>Permet de recalibrer le ratio plus tard sans re-scraper</td></tr>
+      <tr><td>Colonne <span class="num">bonus</span></td><td>Ignorée</td><td>Valeurs 0 à 4 et exclue des totaux du site : c'est un compteur de tactiques, pas des points</td></tr>
+      <tr><td>Identités fusionnées</td><td>kli_max = Klimax, Sandy Chazar = David Choncoutié</td><td>Confirmé par vous, et vérifié qu'ils n'apparaissent jamais ensemble dans un même tour</td></tr>
+      <tr><td>Victoire</td><td>Rang 1 au classement combiné, quel que soit le format</td><td>Votre définition</td></tr>
+      <tr><td>Titre de maillot</td><td>Meilleur cumul de la catégorie sur un tour, compté à part</td><td>Gagner le vert n'est pas gagner le Tour</td></tr>
+      <tr><td>Typographie</td><td>Stacks système ici, Geist Sans et Mono dans l'app</td><td>Le CSP des artifacts bloque les CDN de polices</td></tr>
+      <tr><td>Thème</td><td>Sombre uniquement</td><td>Le design system est dark-first, sans classe <span class="num">.dark</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout ok">
+    <div class="t">Portée</div>
+    <p>Aucune migration, aucun schéma, aucune écriture en base. Ces écrans sont des maquettes statiques nourries par le CSV déjà versionné dans <span class="num">research/laroutedutour/</span>.</p>
+  </div>
+</section>
+
+<!-- =========================== ÉCRAN A =========================== -->
+<section>
+  <h2><span class="idx">03</span>Écran A · Palmarès tous temps</h2>
+  <p class="section-note">Le hub historique. Six réponses à la question centrale : David Choncoutié a 7 victoires en 26 tours, Alpaga 2 en 30, JibsEPAULE 1 en 2. Qui affiche-t-on en haut, et selon quelle logique.</p>
+
+  <div class="frames">
+
+    <!-- A1 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">A1</span><span class="iter-name">Titres bruts</span></div>
+      <p class="iter-q">Le classement le plus simple : on compte les victoires, point.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Palmarès</span><span class="act">2017–2025</span></div>
+        <div class="fbody">
+          <div class="tabs"><b class="on">Victoires</b><b>Saisons</b><b>Maillots</b></div>
+          <div class="hero"><div class="n">30</div><div class="l">tours disputés</div></div>
+          <div class="card">
+            <div class="row"><span class="pos p1">1</span><span class="nm">David Choncoutié<span class="sub">26 tours joués</span></span><span class="v">7</span></div>
+            <div class="row"><span class="pos">2</span><span class="nm">Klimax<span class="sub">29 tours joués</span></span><span class="v">5</span></div>
+            <div class="row"><span class="pos">3</span><span class="nm">Marseillais<span class="sub">30 tours joués</span></span><span class="v">5</span></div>
+            <div class="row"><span class="pos">4</span><span class="nm">PeeJee<span class="sub">30 tours joués</span></span><span class="v">5</span></div>
+            <div class="row"><span class="pos">5</span><span class="nm">Marino<span class="sub">25 tours joués</span></span><span class="v">2</span></div>
+            <div class="row"><span class="pos">6</span><span class="nm">Alpaga<span class="sub">30 tours joués</span></span><span class="v">2</span></div>
+            <div class="row dim"><span class="pos">7</span><span class="nm">JibsEPAULE<span class="sub">2 tours joués</span></span><span class="v">1</span></div>
+            <div class="row dim"><span class="pos">8</span><span class="nm">Patron<span class="sub">8 tours joués</span></span><span class="v">1</span></div>
+            <div class="row dim"><span class="pos">9</span><span class="nm">Benny Lee<span class="sub">30 tours joués</span></span><span class="v">1</span></div>
+            <div class="row dim"><span class="pos">10</span><span class="nm">bigdaddy<span class="sub">16 tours joués</span></span><span class="v">1</span></div>
+          </div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict mid"><b>Verdict :</b> lisible et incontestable, mais Benny Lee (1 victoire en 30 tours) et JibsEPAULE (1 en 2) sont à égalité. Le classement ne dit rien de la régularité.</p>
+    </div>
+
+    <!-- A2 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">A2</span><span class="iter-name">Volume et taux, côte à côte</span></div>
+      <p class="iter-q">Deux colonnes assumées plutôt qu'un score unique qui mélange tout.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Palmarès</span><span class="act">2017–2025</span></div>
+        <div class="fbody">
+          <div class="chips"><i class="on">Volume</i><i>Régularité</i><i>Les deux</i></div>
+          <div>
+            <div class="flabel">Au volume</div>
+            <div class="card" style="margin-top:8px">
+              <div class="row"><span class="pos p1">1</span><span class="nm">David Choncoutié</span><span class="v">7<small>victoires</small></span></div>
+              <div class="row"><span class="pos">2</span><span class="nm">Klimax</span><span class="v">5<small>victoires</small></span></div>
+              <div class="row"><span class="pos">3</span><span class="nm">Marseillais</span><span class="v">5<small>victoires</small></span></div>
+            </div>
+          </div>
+          <div>
+            <div class="flabel">À la régularité</div>
+            <div class="card" style="margin-top:8px">
+              <div class="row"><span class="pos p1">1</span><span class="nm">David Choncoutié</span><span class="v">3.50<small>rang moyen</small></span></div>
+              <div class="row"><span class="pos">2</span><span class="nm">Klimax</span><span class="v">3.66<small>rang moyen</small></span></div>
+              <div class="row"><span class="pos">3</span><span class="nm">Marseillais</span><span class="v">3.93<small>rang moyen</small></span></div>
+              <div class="row"><span class="pos">4</span><span class="nm">Marino</span><span class="v">4.36<small>rang moyen</small></span></div>
+              <div class="row"><span class="pos">5</span><span class="nm">PeeJee</span><span class="v">4.40<small>rang moyen</small></span></div>
+            </div>
+          </div>
+          <div class="muted-block"><p>Le rang moyen exclut les joueurs sous 15 tours. JibsEPAULE, Patron, Fangio et JoeDills n'y figurent pas.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict yes"><b>Verdict :</b> honnête, aucune fusion arbitraire. David Choncoutié gagne sur les deux axes, ce qui rend le résultat incontestable. Coût : deux listes à lire au lieu d'une.</p>
+    </div>
+
+    <!-- A3 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">A3</span><span class="iter-name">Seuil de qualification</span></div>
+      <p class="iter-q">Un seul classement, mais les petits échantillons sont sortis dans une zone à part.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Palmarès</span><span class="act">2017–2025</span></div>
+        <div class="fbody">
+          <div class="tabs"><b class="on">Général</b><b>Par course</b><b>Maillots</b></div>
+          <div class="card">
+            <div class="row"><span class="pos p1">1</span><span class="nm">David Choncoutié<span class="sub">7 victoires · 26 tours</span></span><span class="v">3.50</span></div>
+            <div class="row"><span class="pos">2</span><span class="nm">Klimax<span class="sub">5 victoires · 29 tours</span></span><span class="v">3.66</span></div>
+            <div class="row"><span class="pos">3</span><span class="nm">Marseillais<span class="sub">5 victoires · 30 tours</span></span><span class="v">3.93</span></div>
+            <div class="row"><span class="pos">4</span><span class="nm">Marino<span class="sub">2 victoires · 25 tours</span></span><span class="v">4.36</span></div>
+            <div class="row"><span class="pos">5</span><span class="nm">PeeJee<span class="sub">5 victoires · 30 tours</span></span><span class="v">4.40</span></div>
+            <div class="row"><span class="pos">6</span><span class="nm">Alpaga<span class="sub">2 victoires · 30 tours</span></span><span class="v">4.57</span></div>
+            <div class="row"><span class="pos">7</span><span class="nm">Benny Lee<span class="sub">1 victoire · 30 tours</span></span><span class="v">5.53</span></div>
+            <div class="row"><span class="pos">8</span><span class="nm">bigdaddy<span class="sub">1 victoire · 16 tours</span></span><span class="v">5.56</span></div>
+          </div>
+          <div class="divider"></div>
+          <div class="flabel">Hors classement · moins de 15 tours</div>
+          <div class="card">
+            <div class="row dim"><span class="pos">—</span><span class="nm">Patron<span class="sub">1 victoire · 8 tours</span></span><span class="v">4.25</span></div>
+            <div class="row dim"><span class="pos">—</span><span class="nm">JibsEPAULE<span class="sub">1 victoire · 2 tours</span></span><span class="v">1.50</span></div>
+            <div class="row dim"><span class="pos">—</span><span class="nm">Fangio<span class="sub">0 victoire · 3 tours</span></span><span class="v">9.33</span></div>
+            <div class="row dim"><span class="pos">—</span><span class="nm">JoeDills<span class="sub">0 victoire · 2 tours</span></span><span class="v">8.50</span></div>
+          </div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict yes"><b>Verdict :</b> un seul classement à lire, et personne n'est effacé. Le seuil de 15 est visible et donc discutable, ce qui vaut mieux qu'une pondération invisible.</p>
+    </div>
+
+    <!-- A4 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">A4</span><span class="iter-name">Vitrine à trophées</span></div>
+      <p class="iter-q">Et si on refusait carrément de classer, pour montrer qui a gagné quoi.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Palmarès</span><span class="act">Par épreuve</span></div>
+        <div class="fbody">
+          <div class="flabel">Victoires par épreuve</div>
+          <div class="tbl-scroll" style="margin:0">
+          <table class="mx">
+            <thead><tr><th>Joueur</th><th>TDF</th><th>Giro</th><th>Vuel</th><th>Clas</th><th>P-N</th><th>Dau</th></tr></thead>
+            <tbody>
+              <tr><td>D. Choncoutié</td><td class="hit">2</td><td class="hit">2</td><td class="hit">1</td><td class="hit">1</td><td class="hit">1</td><td class="zero">·</td></tr>
+              <tr><td>Klimax</td><td class="zero">·</td><td class="hit">1</td><td class="hit">2</td><td class="zero">·</td><td class="hit">1</td><td class="hit">1</td></tr>
+              <tr><td>Marseillais</td><td class="zero">·</td><td class="hit">2</td><td class="zero">·</td><td class="hit">2</td><td class="hit">1</td><td class="zero">·</td></tr>
+              <tr><td>PeeJee</td><td class="hit">3</td><td class="hit">1</td><td class="hit">1</td><td class="zero">·</td><td class="zero">·</td><td class="zero">·</td></tr>
+              <tr><td>Marino</td><td class="hit">1</td><td class="zero">·</td><td class="zero">·</td><td class="zero">·</td><td class="zero">·</td><td class="hit">1</td></tr>
+              <tr><td>Alpaga</td><td class="zero">·</td><td class="zero">·</td><td class="hit">1</td><td class="hit">1</td><td class="zero">·</td><td class="zero">·</td></tr>
+              <tr><td>Benny Lee</td><td class="zero">·</td><td class="zero">·</td><td class="zero">·</td><td class="hit">1</td><td class="zero">·</td><td class="zero">·</td></tr>
+              <tr><td>bigdaddy</td><td class="zero">·</td><td class="zero">·</td><td class="zero">·</td><td class="zero">·</td><td class="hit">1</td><td class="zero">·</td></tr>
+              <tr><td>Patron</td><td class="zero">·</td><td class="zero">·</td><td class="hit">1</td><td class="zero">·</td><td class="zero">·</td><td class="zero">·</td></tr>
+              <tr><td>JibsEPAULE</td><td class="hit">1</td><td class="zero">·</td><td class="zero">·</td><td class="zero">·</td><td class="zero">·</td><td class="zero">·</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <div class="muted-block"><p>PeeJee est le seul à avoir gagné trois Tours. David Choncoutié est le seul à avoir gagné cinq épreuves différentes.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict yes"><b>Verdict :</b> la seule vue où la participation inégale ne pose aucun problème, puisqu'on n'agrège rien. Fait ressortir des récits que le classement écrase (PeeJee spécialiste du Tour).</p>
+    </div>
+
+    <!-- A5 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">A5</span><span class="iter-name">Score lissé</span></div>
+      <p class="iter-q">La réponse statistique classique : tirer les petits échantillons vers la moyenne.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Palmarès</span><span class="act">Score ajusté</span></div>
+        <div class="fbody">
+          <div class="chips"><i>Brut</i><i class="on">Lissé C=20</i><i>Lissé C=40</i></div>
+          <div class="card">
+            <div class="row"><span class="pos p1">1</span><span class="nm">David Choncoutié<span class="sub">7W / 26 tours</span></span><span class="v">20.9<small>% ajusté</small></span></div>
+            <div class="row"><span class="pos">2</span><span class="nm">JibsEPAULE<span class="sub">1W / 2 tours</span></span><span class="v">16.4<small>% ajusté</small></span></div>
+            <div class="row"><span class="pos">3</span><span class="nm">Klimax<span class="sub">5W / 29 tours</span></span><span class="v">15.5<small>% ajusté</small></span></div>
+            <div class="row"><span class="pos">4</span><span class="nm">PeeJee<span class="sub">5W / 30 tours</span></span><span class="v">15.2<small>% ajusté</small></span></div>
+            <div class="row"><span class="pos">5</span><span class="nm">Marseillais<span class="sub">5W / 30 tours</span></span><span class="v">15.2<small>% ajusté</small></span></div>
+            <div class="row"><span class="pos">6</span><span class="nm">Patron<span class="sub">1W / 8 tours</span></span><span class="v">12.9<small>% ajusté</small></span></div>
+          </div>
+          <div class="callout" style="margin:0;padding:10px 12px">
+            <div class="t" style="font-size:9px;margin-bottom:4px">Le lissage ne suffit pas</div>
+            <p style="font-size:11px;line-height:1.45">JibsEPAULE reste 2e avec 2 tours joués. Même à C=40 il est encore 3e. Il faut un seuil en plus.</p>
+          </div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict no"><b>Verdict :</b> à écarter seul. La maquette sert de preuve : le lissage donne une fausse impression de rigueur alors qu'un joueur à 2 tours reste sur le podium.</p>
+    </div>
+
+    <!-- A6 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">A6</span><span class="iter-name">Frise des saisons</span></div>
+      <p class="iter-q">Pas de classement du tout : une histoire, année par année.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Palmarès</span><span class="act">Chronologie</span></div>
+        <div class="fbody">
+          <div class="flabel">Champion par saison</div>
+          <div class="card">
+            <div class="tl">
+              <div class="y"><span class="yr">2025</span><span class="who">Alpaga<em>1 tour · Vuelta</em></span><span class="tag">1 titre</span></div>
+              <div class="y"><span class="yr">2024</span><span class="who">David Choncoutié<em>2 tours · Giro, Tour</em></span><span class="tag">1 titre</span></div>
+              <div class="y"><span class="yr">2023</span><span class="who">Patron<em>5 tours · saison la plus dense</em></span><span class="tag">1 titre</span></div>
+              <div class="y"><span class="yr">2022</span><span class="who">Klimax<em>4 tours</em></span><span class="tag mut">0 titre</span></div>
+              <div class="y"><span class="yr">2021</span><span class="who">Klimax<em>5 tours</em></span><span class="tag">2 titres</span></div>
+              <div class="y"><span class="yr">2020</span><span class="who">Klimax<em>3 tours</em></span><span class="tag">1 titre</span></div>
+              <div class="y"><span class="yr">2019</span><span class="who">Marseillais<em>5 tours</em></span><span class="tag">2 titres</span></div>
+              <div class="y"><span class="yr">2018</span><span class="who">Alpaga<em>4 tours</em></span><span class="tag">1 titre</span></div>
+              <div class="y"><span class="yr">2017</span><span class="who">Klimax<em>1 tour · Vuelta</em></span><span class="tag">1 titre</span></div>
+            </div>
+          </div>
+          <div class="muted-block"><p>Champion = plus gros cumul XP de l'année. En 2022, Klimax finit meilleur cumul sans gagner un seul tour.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict mid"><b>Verdict :</b> raconte le mieux, compare le moins. Le cas Klimax 2022, champion sans victoire, montre que cumul et titres mesurent deux choses différentes. À garder comme onglet, pas comme vue principale.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- =========================== ÉCRAN B =========================== -->
+<section>
+  <h2><span class="idx">04</span>Écran B · Saison</h2>
+  <p class="section-note">Le détail d'une année. Maquettes sur 2023, la saison la plus dense du dataset avec 5 tours et 5 vainqueurs différents.</p>
+
+  <div class="frames">
+
+    <!-- B1 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">B1</span><span class="iter-name">Les tours de l'année</span></div>
+      <p class="iter-q">L'entrée la plus littérale : la liste des épreuves et qui les a gagnées.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Saison 2023</span><span class="act">◂ ▸</span></div>
+        <div class="fbody">
+          <div class="statgrid">
+            <div><div class="n">5</div><div class="l">tours</div></div>
+            <div><div class="n">5</div><div class="l">vainqueurs</div></div>
+            <div><div class="n">10</div><div class="l">joueurs</div></div>
+          </div>
+          <div class="card">
+            <div class="row"><span class="nm">Classiques<span class="sub">Les Classiques de l'individualisme</span></span><span class="tag">Marseillais</span></div>
+            <div class="row"><span class="nm">Critérium du Dauphiné<span class="sub">Dauphine 2023</span></span><span class="tag">Klimax</span></div>
+            <div class="row"><span class="nm">Giro<span class="sub">Giro de P***</span></span><span class="tag">D. Choncoutié</span></div>
+            <div class="row"><span class="nm">Tour de France<span class="sub">La vengeance de Pogi ?</span></span><span class="tag">Marino</span></div>
+            <div class="row"><span class="nm">Vuelta<span class="sub">Vuelta 2023</span></span><span class="tag">Patron</span></div>
+          </div>
+          <div class="muted-block"><p>Cinq tours, cinq vainqueurs différents. Aucun joueur n'a doublé en 2023.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict yes"><b>Verdict :</b> la vue de référence, sans ambiguïté. Le nom original du tour sous le type conserve la mémoire du groupe.</p>
+    </div>
+
+    <!-- B2 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">B2</span><span class="iter-name">Classement cumulé</span></div>
+      <p class="iter-q">Et si la saison avait son propre classement général, comme un championnat.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Saison 2023</span><span class="act">◂ ▸</span></div>
+        <div class="fbody">
+          <div class="tabs"><b>Épreuves</b><b class="on">Général</b><b>Maillots</b></div>
+          <div class="hero"><div class="n">Patron</div><div class="l">champion 2023</div></div>
+          <div class="card">
+            <div class="row"><span class="pos p1">1</span><span class="nm">Patron<span class="sub">5 tours</span></span><span class="v">12 143</span></div>
+            <div class="row"><span class="pos">2</span><span class="nm">David Choncoutié<span class="sub">5 tours</span></span><span class="v">11 450</span></div>
+            <div class="row"><span class="pos">3</span><span class="nm">Marseillais<span class="sub">5 tours</span></span><span class="v">11 324</span></div>
+            <div class="row"><span class="pos">4</span><span class="nm">Klimax<span class="sub">5 tours</span></span><span class="v">11 087</span></div>
+            <div class="row"><span class="pos">5</span><span class="nm">Alpaga<span class="sub">5 tours</span></span><span class="v">10 180</span></div>
+          </div>
+          <div class="muted-block"><p>Cumul XP converti. Le rang de chaque tour reste celui d'origine, seul le cumul de saison est calculé.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict mid"><b>Verdict :</b> crée un titre qui n'existait pas à l'époque. À assumer comme une lecture rétrospective, jamais à présenter comme un palmarès historique.</p>
+    </div>
+
+    <!-- B3 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">B3</span><span class="iter-name">Grille épreuve × joueur</span></div>
+      <p class="iter-q">Voir toute la saison d'un coup, y compris les absences.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Saison 2023</span><span class="act">◂ ▸</span></div>
+        <div class="fbody">
+          <div class="flabel">Rang par épreuve</div>
+          <div class="tbl-scroll" style="margin:0">
+          <table class="mx">
+            <thead><tr><th>Joueur</th><th>Clas</th><th>Dau</th><th>Giro</th><th>TDF</th><th>Vuel</th></tr></thead>
+            <tbody>
+              <tr><td>Marseillais</td><td class="hit">1</td><td>2</td><td>2</td><td>4</td><td>8</td></tr>
+              <tr><td>Klimax</td><td>6</td><td class="hit">1</td><td>8</td><td>3</td><td>4</td></tr>
+              <tr><td>D. Choncoutié</td><td>7</td><td>4</td><td class="hit">1</td><td>2</td><td>2</td></tr>
+              <tr><td>Marino</td><td>5</td><td>7</td><td>7</td><td class="hit">1</td><td>7</td></tr>
+              <tr><td>Patron</td><td>2</td><td>3</td><td>9</td><td>6</td><td class="hit">1</td></tr>
+              <tr><td>Alpaga</td><td>3</td><td>6</td><td>3</td><td>7</td><td>3</td></tr>
+              <tr><td>Benny Lee</td><td>4</td><td>9</td><td>5</td><td>9</td><td>5</td></tr>
+              <tr><td>PeeJee</td><td>8</td><td>8</td><td>4</td><td>8</td><td>9</td></tr>
+              <tr><td>bigdaddy</td><td>9</td><td>5</td><td>6</td><td>5</td><td>6</td></tr>
+              <tr><td>Fangio</td><td class="zero">·</td><td class="zero">·</td><td class="zero">·</td><td>10</td><td class="zero">·</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <div class="muted-block"><p>Le point signale une absence, pas un zéro. Alpaga est le seul à finir dans le top 3 sur trois épreuves sans en gagner aucune.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict yes"><b>Verdict :</b> la vue la plus dense en information, et la seule qui rend l'absence lisible au lieu de la confondre avec une contre-performance.</p>
+    </div>
+
+    <!-- B4 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">B4</span><span class="iter-name">Densité des saisons</span></div>
+      <p class="iter-q">Comparer les années entre elles avant d'entrer dans l'une d'elles.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Saisons</span><span class="act">2017–2025</span></div>
+        <div class="fbody">
+          <div class="flabel">Tours joués par an</div>
+          <div class="card">
+            <div class="spark">
+              <div style="height:20%"></div><div style="height:80%"></div><div style="height:100%" class="hi"></div>
+              <div style="height:60%"></div><div style="height:100%" class="hi"></div><div style="height:80%"></div>
+              <div style="height:100%" class="hi"></div><div style="height:40%"></div><div style="height:20%"></div>
+            </div>
+            <div class="sparkx">
+              <span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="row"><span class="nm">2023<span class="sub">Patron champion</span></span><span class="v">5<small>tours</small></span></div>
+            <div class="row"><span class="nm">2021<span class="sub">Klimax champion</span></span><span class="v">5<small>tours</small></span></div>
+            <div class="row"><span class="nm">2019<span class="sub">Marseillais champion</span></span><span class="v">5<small>tours</small></span></div>
+            <div class="row"><span class="nm">2022<span class="sub">Klimax champion</span></span><span class="v">4<small>tours</small></span></div>
+            <div class="row"><span class="nm">2018<span class="sub">Alpaga champion</span></span><span class="v">4<small>tours</small></span></div>
+            <div class="row dim"><span class="nm">2025<span class="sub">Alpaga champion</span></span><span class="v">1<small>tour</small></span></div>
+          </div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict mid"><b>Verdict :</b> contexte utile, et explique visuellement pourquoi 2025 ne pèse pas comme 2023. Mais c'est une vue méta, à placer en entrée de section plutôt qu'en écran principal.</p>
+    </div>
+
+    <!-- B5 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">B5</span><span class="iter-name">Titres de maillot de l'année</span></div>
+      <p class="iter-q">La vue qui exploite les colonnes par catégorie plutôt que le seul total.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Saison 2023</span><span class="act">◂ ▸</span></div>
+        <div class="fbody">
+          <div class="tabs"><b>Épreuves</b><b>Général</b><b class="on">Maillots</b></div>
+          <div class="flabel">Meilleur cumul par catégorie</div>
+          <div class="card">
+            <div class="row"><span class="nm">Classement général<span class="sub">points maillot jaune</span></span><span class="tag">Klimax</span></div>
+            <div class="row"><span class="nm">Meilleur sprinteur<span class="sub">points maillot vert</span></span><span class="tag">Alpaga</span></div>
+            <div class="row"><span class="nm">Meilleur grimpeur<span class="sub">points maillot à pois</span></span><span class="tag">Patron</span></div>
+            <div class="row"><span class="nm">Meilleur jeune<span class="sub">points maillot blanc</span></span><span class="tag">Marino</span></div>
+          </div>
+          <div class="muted-block"><p>Quatre catégories, quatre joueurs différents. Alpaga prend le vert sans gagner un seul tour en 2023, Marino le blanc alors qu'il finit 7e sur quatre épreuves sur cinq.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict yes"><b>Verdict :</b> donne une deuxième chance de briller à ceux qui ne gagnent pas au général. Alpaga décroche le vert 2023 sans aucune victoire de tour cette année-là.</p>
+    </div>
+
+    <!-- B6 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">B6</span><span class="iter-name">Podium mis en avant</span></div>
+      <p class="iter-q">Une entrée éditoriale plutôt qu'un tableau, pour l'écran d'ouverture.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Saison 2023</span><span class="act">◂ ▸</span></div>
+        <div class="fbody">
+          <div class="hero" style="padding-bottom:4px"><div class="n">2023</div><div class="l">saison la plus disputée</div></div>
+          <div class="card">
+            <div class="row"><span class="pos p1">1</span><span class="nm">Patron<span class="sub">vainqueur Vuelta · 8 tours en carrière</span></span><span class="v">11 862</span></div>
+            <div class="row"><span class="pos">2</span><span class="nm">David Choncoutié<span class="sub">vainqueur Giro</span></span><span class="v">11 305</span></div>
+            <div class="row"><span class="pos">3</span><span class="nm">Marseillais<span class="sub">vainqueur Classiques</span></span><span class="v">10 786</span></div>
+          </div>
+          <div class="flabel">Le fait de la saison</div>
+          <div class="card">
+            <p style="margin:0;font-size:12px;line-height:1.5;color:var(--text-mid)">Cinq tours, cinq vainqueurs différents. Patron remporte le cumul de la saison alors qu'il n'a disputé que <span class="num" style="color:var(--text-high)">8</span> tours sur l'ensemble de sa carrière, contre 30 pour Alpaga.</p>
+          </div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict mid"><b>Verdict :</b> agréable, mais le texte du fait de la saison devrait être généré à partir de règles, sinon il faudra l'écrire à la main chaque année.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- =========================== ÉCRAN C =========================== -->
+<section>
+  <h2><span class="idx">05</span>Écran C · Profil joueur</h2>
+  <p class="section-note">La carrière d'un joueur. Maquettes sur Alpaga, votre compte : 30 tours sur 30, 2 victoires, 11 podiums, rang moyen 4,57. Le profil du régulier qui gagne peu.</p>
+
+  <div class="frames">
+
+    <!-- C1 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">C1</span><span class="iter-name">Fiche carrière</span></div>
+      <p class="iter-q">Les chiffres essentiels, sans interprétation.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Alpaga</span><span class="act">Jonathan Schummers</span></div>
+        <div class="fbody">
+          <div class="hero"><div class="n">30</div><div class="l">tours disputés sur 30</div></div>
+          <div class="statgrid">
+            <div><div class="n">2</div><div class="l">victoires</div></div>
+            <div><div class="n">11</div><div class="l">podiums</div></div>
+            <div><div class="n">4.57</div><div class="l">rang moyen</div></div>
+          </div>
+          <div class="statgrid">
+            <div><div class="n">9</div><div class="l">maillots</div></div>
+            <div><div class="n">9</div><div class="l">saisons</div></div>
+            <div><div class="n">1</div><div class="l">meilleur rang</div></div>
+          </div>
+          <div class="flabel">Assiduité</div>
+          <div class="card">
+            <div class="bar"><i style="width:100%"></i></div>
+            <p style="margin:8px 0 0;font-size:11px;color:var(--text-low)">Seul joueur présent sur les 30 tours, avec PeeJee, Marseillais et Benny Lee.</p>
+          </div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict yes"><b>Verdict :</b> dense et lisible. L'assiduité en barre pleine valorise une qualité que le classement aux victoires ignore complètement.</p>
+    </div>
+
+    <!-- C2 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">C2</span><span class="iter-name">Vitrine personnelle</span></div>
+      <p class="iter-q">Montrer les trophées plutôt que les moyennes.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Alpaga</span><span class="act">Vitrine</span></div>
+        <div class="fbody">
+          <div class="flabel">Victoires par épreuve</div>
+          <div class="tgrid">
+            <div class="tcell"><div class="c">1</div><div class="t">Vuelta</div></div>
+            <div class="tcell"><div class="c">1</div><div class="t">Classiques</div></div>
+            <div class="tcell"><div class="c z">0</div><div class="t">Tour</div></div>
+            <div class="tcell"><div class="c z">0</div><div class="t">Giro</div></div>
+            <div class="tcell"><div class="c z">0</div><div class="t">Paris-Nice</div></div>
+            <div class="tcell"><div class="c z">0</div><div class="t">Dauphiné</div></div>
+          </div>
+          <div class="flabel">Titres de maillot</div>
+          <div class="tgrid">
+            <div class="tcell"><div class="c">5</div><div class="t">Sprinteur</div></div>
+            <div class="tcell"><div class="c">2</div><div class="t">Général</div></div>
+            <div class="tcell"><div class="c">1</div><div class="t">Grimpeur</div></div>
+            <div class="tcell"><div class="c">1</div><div class="t">Jeune</div></div>
+          </div>
+          <div class="muted-block"><p>Profil sprinteur marqué : 5 titres du maillot vert, plus que ses 2 victoires au général.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict yes"><b>Verdict :</b> les cases vides sont aussi parlantes que les pleines, elles dessinent un objectif. Fait émerger une identité de joueur là où le rang moyen ne dit rien.</p>
+    </div>
+
+    <!-- C3 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">C3</span><span class="iter-name">Courbe de carrière</span></div>
+      <p class="iter-q">La progression dans le temps, pas l'agrégat.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Alpaga</span><span class="act">2017–2025</span></div>
+        <div class="fbody">
+          <div class="flabel">XP par saison</div>
+          <div class="card">
+            <div class="spark">
+              <div style="height:23%"></div><div style="height:69%"></div><div style="height:73%"></div>
+              <div style="height:40%"></div><div style="height:68%"></div><div style="height:56%"></div>
+              <div style="height:100%" class="hi"></div><div style="height:41%"></div><div style="height:40%"></div>
+            </div>
+            <div class="sparkx">
+              <span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="row"><span class="nm">Meilleure saison<span class="sub">2023 · 5 tours</span></span><span class="v">10 180</span></div>
+            <div class="row"><span class="nm">Plus faible<span class="sub">2017 · 1 tour</span></span><span class="v">2 311</span></div>
+            <div class="row"><span class="nm">Moyenne par tour<span class="sub">carrière complète</span></span><span class="v">1 730</span></div>
+          </div>
+          <div class="muted-block"><p>Le pic 2023 reflète surtout une saison à 5 tours. Comparer les totaux annuels favorise les années denses.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict mid"><b>Verdict :</b> attention au piège : la courbe mesure autant l'activité du groupe que la forme du joueur. Il faudrait doubler l'affichage avec l'XP par tour.</p>
+    </div>
+
+    <!-- C4 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">C4</span><span class="iter-name">Face au groupe</span></div>
+      <p class="iter-q">Situer le joueur, plutôt que lui donner des chiffres absolus.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Alpaga</span><span class="act">Comparaison</span></div>
+        <div class="fbody">
+          <div class="flabel">Par rapport aux réguliers</div>
+          <div class="card">
+            <div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px"><span style="color:var(--text-mid)">Assiduité</span><span class="num" style="color:var(--cyan-400);font-weight:700">100%</span></div>
+              <div class="bar"><i style="width:100%"></i></div>
+            </div>
+            <div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px"><span style="color:var(--text-mid)">Podiums</span><span class="num" style="color:var(--text-high);font-weight:700">36,7%</span></div>
+              <div class="bar"><i class="mut" style="width:64%"></i></div>
+            </div>
+            <div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px"><span style="color:var(--text-mid)">Victoires</span><span class="num" style="color:var(--text-high);font-weight:700">6,7%</span></div>
+              <div class="bar"><i class="mut" style="width:25%"></i></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px"><span style="color:var(--text-mid)">XP par tour</span><span class="num" style="color:var(--text-high);font-weight:700">1 730</span></div>
+              <div class="bar"><i class="mut" style="width:77%"></i></div>
+            </div>
+          </div>
+          <div class="muted-block"><p>Barres relatives au meilleur des joueurs qualifiés. Assiduité maximale, conversion en victoires la plus faible du groupe de tête.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict yes"><b>Verdict :</b> raconte un profil en un coup d'œil, ici le régulier qui ne conclut pas. Plus actionnable qu'une position dans un tableau.</p>
+    </div>
+
+    <!-- C5 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">C5</span><span class="iter-name">Terrains de prédilection</span></div>
+      <p class="iter-q">Où ce joueur est-il réellement bon, par type d'épreuve.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Alpaga</span><span class="act">Spécialités</span></div>
+        <div class="fbody">
+          <div class="chips"><i class="on">Rang moyen</i><i>Victoires</i><i>XP/tour</i></div>
+          <div class="card">
+            <div class="row"><span class="nm">Vuelta<span class="sub">6 tours</span></span><span class="v">2.83</span></div>
+            <div class="row"><span class="nm">Classiques<span class="sub">5 tours</span></span><span class="v">3.60</span></div>
+            <div class="row"><span class="nm">Giro<span class="sub">6 tours</span></span><span class="v">4.50</span></div>
+            <div class="row"><span class="nm">Paris-Nice<span class="sub">4 tours</span></span><span class="v">4.50</span></div>
+            <div class="row dim"><span class="nm">Dauphiné<span class="sub">2 tours</span></span><span class="v">5.50</span></div>
+            <div class="row"><span class="nm">Tour de France<span class="sub">7 tours</span></span><span class="v">6.57</span></div>
+          </div>
+          <div class="muted-block"><p>Nettement meilleur sur la Vuelta, sa seule épreuve sous 3 de moyenne. Le Tour de France est son point faible malgré 7 participations, avec une 2e place en 2021 pour seul résultat notable.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict yes"><b>Verdict :</b> la vue la plus utile au joueur lui-même, parce qu'elle est actionnable. Attention à masquer les lignes sous 3 tours, trop bruyantes.</p>
+    </div>
+
+    <!-- C6 -->
+    <div class="iter">
+      <div class="iter-head"><span class="iter-n">C6</span><span class="iter-name">Historique complet</span></div>
+      <p class="iter-q">L'archive brute, tour par tour, avec accès au détail d'origine.</p>
+      <div class="frame">
+        <div class="fbar"><span class="ttl">Alpaga</span><span class="act">30 tours</span></div>
+        <div class="fbody">
+          <div class="chips"><i class="on">Tous</i><i>Victoires</i><i>Podiums</i></div>
+          <div class="card">
+            <div class="row"><span class="pos p1">1</span><span class="nm">Vuelta 2025<span class="sub">Vinaboy</span></span><span class="v">1 803<small>pts LRDT</small></span></div>
+            <div class="row"><span class="pos">4</span><span class="nm">Giro 2024<span class="sub">Leopard_Trek</span></span><span class="v">1 404</span></div>
+            <div class="row"><span class="pos">9</span><span class="nm">Tour de France 2024<span class="sub">Jon</span></span><span class="v">473</span></div>
+            <div class="row"><span class="pos">3</span><span class="nm">Classiques 2023<span class="sub">Leopard_Trek</span></span><span class="v">499</span></div>
+            <div class="row"><span class="pos">6</span><span class="nm">Dauphiné 2023<span class="sub">Saxobank</span></span><span class="v">411</span></div>
+            <div class="row"><span class="pos">3</span><span class="nm">Giro 2023<span class="sub">LuxTeam</span></span><span class="v">1 250</span></div>
+            <div class="row"><span class="pos">7</span><span class="nm">Tour de France 2023<span class="sub">LeopardTank</span></span><span class="v">1 067</span></div>
+            <div class="row"><span class="pos">3</span><span class="nm">Vuelta 2023<span class="sub">JoJo la menace</span></span><span class="v">1 203</span></div>
+          </div>
+          <div class="muted-block"><p>Points bruts LRDT affichés, jamais l'XP converti : le rang et le score d'un tour passé restent ceux d'origine.</p></div>
+        </div>
+        <div class="fnav"><span>Accueil</span><span>Équipe</span><span class="on">Palmarès</span><span>Classement</span></div>
+      </div>
+      <p class="verdict yes"><b>Verdict :</b> indispensable comme source de vérité, et applique la contrainte 1 à la lettre. Les noms d'équipe d'époque sont un plaisir de lecture inattendu.</p>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2><span class="idx">06</span>Ce que je retiens</h2>
+  <p class="section-note">Une combinaison plutôt qu'un gagnant unique, parce que les six itérations ne répondent pas à la même question.</p>
+  <ul class="tight">
+    <li><strong>A3 en vue principale</strong> du palmarès, avec le seuil de 15 tours affiché explicitement. Un seul classement à lire, et les petits échantillons restent visibles sans polluer le haut du tableau.</li>
+    <li><strong>A4 en second onglet.</strong> C'est la seule vue immunisée contre le problème de participation, et elle fait ressortir des récits que les moyennes écrasent.</li>
+    <li><strong>A5 écarté</strong> comme classement, gardé comme preuve documentaire que le lissage seul ne suffit pas.</li>
+    <li><strong>B3 pour la saison</strong>, parce que c'est la seule grille qui distingue une absence d'une contre-performance.</li>
+    <li><strong>C2 et C5 pour le profil</strong>, la vitrine pour l'identité, les terrains de prédilection pour l'actionnable.</li>
+    <li><strong>Contrainte 1 partout</strong> : aucun écran ne trie un tour passé sur l'XP converti.</li>
+  </ul>
+  <div class="callout">
+    <div class="t">Restent à trancher</div>
+    <p>Le seuil à 15 tours (arbitraire, il exclut Patron qui a le 2e meilleur XP par tour) ; le sort de Fangio, 3 tours et aucun compte WattHunter identifié ; et la définition d'une victoire côté WattHunter, où une ligue couvre les 9 phases d'une saison entière au lieu d'une seule épreuve.</p>
+  </div>
+</section>
+
+<footer class="doc">
+  Source : <span class="num">research/laroutedutour/rankings.csv</span>, scrapé le 20 août 2026 depuis laroutedutour.fr.
+  30 tours retenus sur 34, après exclusion de deux tours jamais commencés et de deux tours hors groupe.
+  Aucune donnée n'a été écrite en base pour produire ces maquettes.
+</footer>
+
+</div>

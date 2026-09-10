@@ -1,0 +1,232 @@
+tour_id,tour_name,canonical_name,canonical_type,year,creator,rank,team,user,bonus,combative,mountain,intermediate_sprint,stage_finish,stage_total,gc_points,young_rider,sprinter,climber,general_total,total
+3826,Vuelta 2k25,Vuelta 2025,Vuelta,2025,Marseillais,1,Vinaboy,Alpaga,4,15,133,13,884,1045,446,0,89,223,758,1803
+3826,Vuelta 2k25,Vuelta 2025,Vuelta,2025,Marseillais,2,GoudalEnergies,David Choncoutié,4,0,61,4,919,984,476,191,35,97,799,1783
+3826,Vuelta 2k25,Vuelta 2025,Vuelta,2025,Marseillais,3,Meunier Tudor,PeeJee,3,10,61,68,733,872,464,0,318,84,866,1738
+3826,Vuelta 2k25,Vuelta 2025,Vuelta,2025,Marseillais,4,Muskatel Muskadji,Marseillais,0,10,46,22,353,431,266,190,36,5,497,928
+3826,Vuelta 2k25,Vuelta 2025,Vuelta,2025,Marseillais,5,DE Deceptive Education,Benny Lee,0,0,22,7,445,475,161,44,127,4,336,811
+3826,Vuelta 2k25,Vuelta 2025,Vuelta,2025,Marseillais,6,Pat’ Pat’ rouillé,Patron,0,0,20,8,335,363,296,18,15,2,331,694
+3577,Euro TDF JO Routes du Champ,Tour de France 2024,Tour de France,2024,kli_max,1,GoudalEnergies,David Choncoutié,4,0,69,28,1085,1182,574,200,187,87,1048,2230
+3577,Euro TDF JO Routes du Champ,Tour de France 2024,Tour de France,2024,kli_max,2,PE - Priorité Éducation,bigdaddy,4,5,84,8,867,964,740,0,36,120,896,1860
+3577,Euro TDF JO Routes du Champ,Tour de France 2024,Tour de France,2024,kli_max,3,Les Dauphins libérées,Marino,4,0,30,3,823,857,527,304,46,57,934,1791
+3577,Euro TDF JO Routes du Champ,Tour de France 2024,Tour de France,2024,kli_max,4,Pat,Patron,4,10,226,29,895,1160,265,0,172,91,528,1688
+3577,Euro TDF JO Routes du Champ,Tour de France 2024,Tour de France,2024,kli_max,5,PG Tips,PeeJee,4,10,53,35,614,712,88,116,100,36,340,1052
+3577,Euro TDF JO Routes du Champ,Tour de France 2024,Tour de France,2024,kli_max,6,Muskatel Muskadji,Marseillais,2,40,44,62,491,638,26,25,44,102,197,835
+3577,Euro TDF JO Routes du Champ,Tour de France 2024,Tour de France,2024,kli_max,7,Discoroti Channel,kli_max,3,40,72,78,404,594,28,28,79,29,164,758
+3577,Euro TDF JO Routes du Champ,Tour de France 2024,Tour de France,2024,kli_max,8,The Revenge,Benny Lee,2,0,8,0,525,533,131,0,0,0,131,664
+3577,Euro TDF JO Routes du Champ,Tour de France 2024,Tour de France,2024,kli_max,9,Jon,Alpaga,0,5,45,16,211,277,148,0,0,48,196,473
+3447,Le Giro de Pogi,Giro 2024,Giro,2024,kli_max,1,Muskatel Muskadji,Marseillais,3,0,27,76,960,1063,656,213,10,8,887,1950
+3447,Le Giro de Pogi,Giro 2024,Giro,2024,kli_max,2,Squadra Pi-Giro,PeeJee,4,0,144,77,876,1097,533,30,42,241,846,1943
+3447,Le Giro de Pogi,Giro 2024,Giro,2024,kli_max,3,Groupatron FDJ,Patron,3,0,68,76,651,795,438,15,164,154,771,1566
+3447,Le Giro de Pogi,Giro 2024,Giro,2024,kli_max,4,Leopard_Trek,Alpaga,3,0,40,120,707,868,350,77,81,28,536,1404
+3447,Le Giro de Pogi,Giro 2024,Giro,2024,kli_max,5,Discoroti Channel,kli_max,3,0,3,84,738,825,247,0,223,0,470,1295
+3447,Le Giro de Pogi,Giro 2024,Giro,2024,kli_max,6,GoudalEnergies,David Choncoutié,4,0,111,50,664,826,143,202,1,82,428,1254
+3447,Le Giro de Pogi,Giro 2024,Giro,2024,kli_max,7,Crédit Agricole à bois,Benny Lee,0,0,12,43,681,736,124,0,181,5,310,1046
+3447,Le Giro de Pogi,Giro 2024,Giro,2024,kli_max,8,PE - primo educazione,bigdaddy,1,0,22,25,420,467,15,10,2,61,88,555
+3447,Le Giro de Pogi,Giro 2024,Giro,2024,kli_max,9,Magic Rino,Marino,0,0,1,44,283,328,0,0,26,0,26,354
+3332,Vuelta 2023,Vuelta 2023,Vuelta,2023,kli_max,1,Ineos Patroniers,Patron,4,20,290,57,873,1240,609,111,175,218,1113,2353
+3332,Vuelta 2023,Vuelta 2023,Vuelta,2023,kli_max,2,GoudalEnergies,David Choncoutié,4,0,37,19,774,830,431,333,31,14,809,1639
+3332,Vuelta 2023,Vuelta 2023,Vuelta,2023,kli_max,3,JoJo la menace,Alpaga,2,0,42,16,605,664,460,25,24,30,539,1203
+3332,Vuelta 2023,Vuelta 2023,Vuelta,2023,kli_max,4,Discoroti Channel,kli_max,4,0,81,11,598,690,354,0,79,79,512,1202
+3332,Vuelta 2023,Vuelta 2023,Vuelta,2023,kli_max,5,Dakar Byers Club,Benny Lee,0,5,75,92,531,703,11,0,244,142,397,1100
+3332,Vuelta 2023,Vuelta 2023,Vuelta,2023,kli_max,6,PE - Priorité Éducation,bigdaddy,1,0,11,0,641,652,234,180,20,0,434,1086
+3332,Vuelta 2023,Vuelta 2023,Vuelta,2023,kli_max,7,La Rotunda,Marino,4,5,28,23,532,588,206,15,72,13,306,894
+3332,Vuelta 2023,Vuelta 2023,Vuelta,2023,kli_max,8,Muskatel Muskadji,Marseillais,0,25,79,21,534,660,10,22,8,75,115,775
+3332,Vuelta 2023,Vuelta 2023,Vuelta,2023,kli_max,9,La Team Lidl,PeeJee,3,0,50,16,350,416,58,1,4,52,115,531
+3099,TdF 2023 - La vengeance de Pogi ?,Tour de France 2023,Tour de France,2023,kli_max,1,MarinoStar,Marino,4,0,48,16,725,789,440,262,59,58,819,1608
+3099,TdF 2023 - La vengeance de Pogi ?,Tour de France 2023,Tour de France,2023,kli_max,2,GoudalEnergies,David Choncoutié,4,15,25,3,799,842,535,170,25,13,743,1585
+3099,TdF 2023 - La vengeance de Pogi ?,Tour de France 2023,Tour de France,2023,kli_max,3,Discoroti Channel,kli_max,4,10,52,18,649,730,573,0,40,70,683,1413
+3099,TdF 2023 - La vengeance de Pogi ?,Tour de France 2023,Tour de France,2023,kli_max,4,Muskatel Muskadji,Marseillais,4,5,59,24,592,680,370,22,128,54,574,1254
+3099,TdF 2023 - La vengeance de Pogi ?,Tour de France 2023,Tour de France,2023,kli_max,5,PE - Priorité Éducation,bigdaddy,1,20,124,53,469,667,65,91,156,275,587,1254
+3099,TdF 2023 - La vengeance de Pogi ?,Tour de France 2023,Tour de France,2023,kli_max,6,Ineos Patronier,Patron,3,25,48,27,580,681,317,0,65,22,404,1085
+3099,TdF 2023 - La vengeance de Pogi ?,Tour de France 2023,Tour de France,2023,kli_max,7,LeopardTank,Alpaga,3,0,54,43,695,792,29,0,240,6,275,1067
+3099,TdF 2023 - La vengeance de Pogi ?,Tour de France 2023,Tour de France,2023,kli_max,8,Intermarché - Circus - Piji,PeeJee,3,10,208,26,450,694,52,95,0,135,282,976
+3099,TdF 2023 - La vengeance de Pogi ?,Tour de France 2023,Tour de France,2023,kli_max,9,Abyssal Cycling Team,Benny Lee,2,0,46,3,517,566,132,84,17,35,268,834
+3099,TdF 2023 - La vengeance de Pogi ?,Tour de France 2023,Tour de France,2023,kli_max,10,Les Pédales,Fangio,2,0,12,19,342,373,50,0,36,0,86,459
+3014,Dauphine 2023,Critérium du Dauphiné 2023,Critérium du Dauphiné,2023,kli_max,1,Discoroti Channel,kli_max,3,0,41,15,563,620,142,78,116,17,353,973
+3014,Dauphine 2023,Critérium du Dauphiné 2023,Critérium du Dauphiné,2023,kli_max,2,Muskatel Muskadji,Marseillais,4,15,3,24,441,483,201,53,24,0,278,761
+3014,Dauphine 2023,Critérium du Dauphiné 2023,Critérium du Dauphiné,2023,kli_max,3,Critérium Patronium,Patron,1,0,20,0,322,342,151,0,30,30,211,553
+3014,Dauphine 2023,Critérium du Dauphiné 2023,Critérium du Dauphiné,2023,kli_max,4,GoudalEnergies,David Choncoutié,3,0,27,0,276,303,138,8,15,22,183,486
+3014,Dauphine 2023,Critérium du Dauphiné 2023,Critérium du Dauphiné,2023,kli_max,5,Look-Malongo,bigdaddy,0,20,40,31,163,254,90,0,53,29,172,426
+3014,Dauphine 2023,Critérium du Dauphiné 2023,Critérium du Dauphiné,2023,kli_max,6,Saxobank,Alpaga,1,5,35,0,247,287,61,21,12,30,124,411
+3014,Dauphine 2023,Critérium du Dauphiné 2023,Critérium du Dauphiné,2023,kli_max,7,Les Dauphins et Belles Raies,Marino,4,0,31,4,168,203,90,71,0,32,193,396
+3014,Dauphine 2023,Critérium du Dauphiné 2023,Critérium du Dauphiné,2023,kli_max,8,Intermarché - Circus - Piji,PeeJee,2,15,34,4,140,194,57,20,0,37,114,308
+3014,Dauphine 2023,Critérium du Dauphiné 2023,Critérium du Dauphiné,2023,kli_max,9,LesGrossesGougouttes - Bardiani,Benny Lee,0,0,1,0,75,76,18,14,0,0,32,108
+2953,Giro de P***,Giro 2023,Giro,2023,Marseillais,1,GoudalEnergies,David Choncoutié,4,0,82,35,774,891,154,10,144,178,486,1377
+2953,Giro de P***,Giro 2023,Giro,2023,Marseillais,2,Muskatel Muskadji,Marseillais,4,0,80,16,814,910,275,59,16,75,425,1335
+2953,Giro de P***,Giro 2023,Giro,2023,Marseillais,3,LuxTeam,Alpaga,4,0,6,24,741,771,222,16,241,0,479,1250
+2953,Giro de P***,Giro 2023,Giro,2023,Marseillais,4,Squadra Pi-Giro,PeeJee,3,0,18,30,437,486,490,232,3,17,742,1228
+2953,Giro de P***,Giro 2023,Giro,2023,Marseillais,5,Tour De Tietema,Benny Lee,3,0,76,0,560,636,436,80,34,21,571,1207
+2953,Giro de P***,Giro 2023,Giro,2023,Marseillais,6,PE - Priorité Éducation,bigdaddy,1,0,39,80,518,638,313,173,66,6,558,1196
+2953,Giro de P***,Giro 2023,Giro,2023,Marseillais,7,Los Marginos del Giro,Marino,4,0,33,29,569,631,312,204,12,8,536,1167
+2953,Giro de P***,Giro 2023,Giro,2023,Marseillais,8,Discoroti Channel,kli_max,4,0,20,57,574,651,425,1,1,21,448,1099
+2953,Giro de P***,Giro 2023,Giro,2023,Marseillais,9,Ineos Patroniers,Patron,1,0,96,16,395,507,84,0,89,97,270,777
+2909,Les Classiques de l'individualisme,Classiques 2023,Classiques,2023,kli_max,1,Muskatel Muskadji,Marseillais,1,0,0,0,783,783,0,0,0,0,0,783
+2909,Les Classiques de l'individualisme,Classiques 2023,Classiques,2023,kli_max,2,Ineos Patroniers,Patron,4,0,0,0,597,597,0,0,0,0,0,597
+2909,Les Classiques de l'individualisme,Classiques 2023,Classiques,2023,kli_max,3,Leopard_Trek,Alpaga,1,0,0,0,499,499,0,0,0,0,0,499
+2909,Les Classiques de l'individualisme,Classiques 2023,Classiques,2023,kli_max,4,Aller Alain Philippe,Benny Lee,1,0,0,0,466,466,0,0,0,0,0,466
+2909,Les Classiques de l'individualisme,Classiques 2023,Classiques,2023,kli_max,5,Clásico Marisco,Marino,3,0,0,0,433,433,0,0,0,0,0,433
+2909,Les Classiques de l'individualisme,Classiques 2023,Classiques,2023,kli_max,6,Discoroti Channel,kli_max,1,0,0,0,218,218,0,0,0,0,0,218
+2909,Les Classiques de l'individualisme,Classiques 2023,Classiques,2023,kli_max,7,GoudalEnergies,David Choncoutié,0,0,0,0,202,202,0,0,0,0,0,202
+2909,Les Classiques de l'individualisme,Classiques 2023,Classiques,2023,kli_max,8,Alpecin-Quick-Step-KAMOULOX,PeeJee,2,0,0,0,181,181,0,0,0,0,0,181
+2909,Les Classiques de l'individualisme,Classiques 2023,Classiques,2023,kli_max,9,Priorité Éducation Cycliste Pro,bigdaddy,0,0,0,0,89,89,0,0,0,0,0,89
+2661,Le Tour de LA France,Tour de France 2022,Tour de France,2022,kli_max,1,"Team Attention Philippe, le PARAPET",PeeJee,4,30,78,77,1050,1235,400,167,249,41,857,2092
+2661,Le Tour de LA France,Tour de France 2022,Tour de France,2022,kli_max,2,Discoroti Channel,kli_max,4,0,136,0,837,973,460,304,91,119,974,1947
+2661,Le Tour de LA France,Tour de France 2022,Tour de France,2022,kli_max,3,GoudalEnergies,David Choncoutié,4,20,77,15,856,968,381,0,42,83,506,1474
+2661,Le Tour de LA France,Tour de France 2022,Tour de France,2022,kli_max,4,Sheeeesh Kebab,Benny Lee,4,45,53,22,644,764,597,0,16,95,708,1472
+2661,Le Tour de LA France,Tour de France 2022,Tour de France,2022,kli_max,5,PE - Priorité Éducation,bigdaddy,1,15,70,43,695,823,232,6,124,191,553,1376
+2661,Le Tour de LA France,Tour de France 2022,Tour de France,2022,kli_max,6,Muskatel Muskadji,Marseillais,4,0,15,27,657,699,309,0,108,4,421,1120
+2661,Le Tour de LA France,Tour de France 2022,Tour de France,2022,kli_max,7,Les MaMa Rhinos,Marino,4,15,92,5,501,613,113,196,27,34,370,983
+2661,Le Tour de LA France,Tour de France 2022,Tour de France,2022,kli_max,8,Lulu,Alpaga,1,15,25,29,358,427,85,0,0,10,95,522
+2661,Le Tour de LA France,Tour de France 2022,Tour de France,2022,kli_max,9,Speedy Burger Team,Fangio,2,5,31,21,376,433,12,0,58,11,81,514
+2553,Le Giro de Gino,Giro 2022,Giro,2022,kli_max,1,"Des étapes, des étapes, oui mais des Pantani",PeeJee,4,0,160,60,810,1030,343,84,129,185,741,1771
+2553,Le Giro de Gino,Giro 2022,Giro,2022,kli_max,2,MaGik Rino,Marino,4,0,63,43,803,909,360,276,130,53,819,1728
+2553,Le Giro de Gino,Giro 2022,Giro,2022,kli_max,3,Muskatel Muscadji,Marseillais,4,0,71,47,882,1000,413,77,15,9,514,1514
+2553,Le Giro de Gino,Giro 2022,Giro,2022,kli_max,4,ParisGO,Alpaga,3,0,82,29,632,744,540,0,6,116,662,1406
+2553,Le Giro de Gino,Giro 2022,Giro,2022,kli_max,5,Panenka Cycling Team,David Choncoutié,3,0,33,18,749,800,352,129,35,6,522,1322
+2553,Le Giro de Gino,Giro 2022,Giro,2022,kli_max,6,Discoroti Channel,kli_max,4,0,113,60,660,833,97,0,104,111,312,1145
+2553,Le Giro de Gino,Giro 2022,Giro,2022,kli_max,7,PE - Priorité Éducation,bigdaddy,1,0,8,27,668,703,124,5,265,11,405,1108
+2553,Le Giro de Gino,Giro 2022,Giro,2022,kli_max,8,KC Wao sheesh,Benny Lee,0,0,16,27,339,382,271,6,0,6,283,665
+2536,Classiques Haribo,Classiques 2022,Classiques,2022,Marseillais,1,La zigoune à Marius,Benny Lee,1,0,0,0,723,723,0,0,0,0,0,723
+2536,Classiques Haribo,Classiques 2022,Classiques,2022,Marseillais,2,Discoroti Channel,kli_max,1,0,0,0,639,639,0,0,0,0,0,639
+2536,Classiques Haribo,Classiques 2022,Classiques,2022,Marseillais,3,Muskatel Muscadji,Marseillais,1,0,0,0,483,483,0,0,0,0,0,483
+2536,Classiques Haribo,Classiques 2022,Classiques,2022,Marseillais,4,TotalEnergies,Alpaga,2,0,0,0,382,382,0,0,0,0,0,382
+2536,Classiques Haribo,Classiques 2022,Classiques,2022,Marseillais,5,PE - Priorité Éducation,bigdaddy,1,0,0,0,269,269,0,0,0,0,0,269
+2536,Classiques Haribo,Classiques 2022,Classiques,2022,Marseillais,6,APG2R La Timbale,PeeJee,2,0,0,0,83,83,0,0,0,0,0,83
+2518,C'est encore la reprise - 2022,Paris-Nice 2022,Paris-Nice,2022,kli_max,1,PE - Priorité Éducation,bigdaddy,0,15,28,39,361,443,169,36,51,27,283,726
+2518,C'est encore la reprise - 2022,Paris-Nice 2022,Paris-Nice,2022,kli_max,2,Good Hope Cycling Team,David Choncoutié,4,0,19,16,321,356,146,81,48,25,300,656
+2518,C'est encore la reprise - 2022,Paris-Nice 2022,Paris-Nice,2022,kli_max,3,MarinoStar,Marino,4,0,18,8,308,334,203,6,44,25,278,612
+2518,C'est encore la reprise - 2022,Paris-Nice 2022,Paris-Nice,2022,kli_max,4,Discoroti Channel,kli_max,4,5,35,31,308,379,124,12,22,27,185,564
+2518,C'est encore la reprise - 2022,Paris-Nice 2022,Paris-Nice,2022,kli_max,5,Kelawin,Benny Lee,3,0,23,16,299,338,72,0,62,28,162,500
+2518,C'est encore la reprise - 2022,Paris-Nice 2022,Paris-Nice,2022,kli_max,6,Team BDSM,PeeJee,3,0,0,20,201,221,136,8,18,1,163,384
+2518,C'est encore la reprise - 2022,Paris-Nice 2022,Paris-Nice,2022,kli_max,7,Muskatel Muscadji,Marseillais,0,5,2,18,149,174,75,3,0,28,106,280
+2518,C'est encore la reprise - 2022,Paris-Nice 2022,Paris-Nice,2022,kli_max,8,Leopard_Trek,Alpaga,2,0,0,3,79,82,75,30,0,0,105,187
+2518,C'est encore la reprise - 2022,Paris-Nice 2022,Paris-Nice,2022,kli_max,9,Les dragons Lyonnais,Fangio,0,0,0,0,28,28,0,0,0,0,0,28
+2461,La Vuelta ! Ta couleur et tes mots tout me va,Vuelta 2021,Vuelta,2021,David Choncoutié,1,Discoroti Channel,kli_max,4,0,181,8,571,760,530,34,86,235,885,1645
+2461,La Vuelta ! Ta couleur et tes mots tout me va,Vuelta 2021,Vuelta,2021,David Choncoutié,2,MarinoStar Tritón,Marino,4,10,32,46,380,468,334,499,243,15,1091,1559
+2461,La Vuelta ! Ta couleur et tes mots tout me va,Vuelta 2021,Vuelta,2021,David Choncoutié,3,GoudalEnergies,David Choncoutié,3,20,182,4,537,743,506,1,62,180,749,1492
+2461,La Vuelta ! Ta couleur et tes mots tout me va,Vuelta 2021,Vuelta,2021,David Choncoutié,4,Bahrain Defeatous,PeeJee,4,0,26,0,220,246,404,25,36,42,507,753
+2461,La Vuelta ! Ta couleur et tes mots tout me va,Vuelta 2021,Vuelta,2021,David Choncoutié,5,Groupamamadou Sakho FDJ,Benny Lee,0,10,93,43,231,377,71,0,76,125,272,649
+2461,La Vuelta ! Ta couleur et tes mots tout me va,Vuelta 2021,Vuelta,2021,David Choncoutié,6,Leopard_Trek,Alpaga,0,0,26,8,231,265,317,1,5,17,340,605
+2461,La Vuelta ! Ta couleur et tes mots tout me va,Vuelta 2021,Vuelta,2021,David Choncoutié,7,Ventre Mou Cycling Team,bigdaddy,0,0,9,10,206,225,128,0,106,14,248,473
+2461,La Vuelta ! Ta couleur et tes mots tout me va,Vuelta 2021,Vuelta,2021,David Choncoutié,8,Muskatel Muskadji,Marseillais,1,0,0,5,221,226,9,52,82,0,143,369
+2283,Le Tour de France Beckenbauer,Tour de France 2021,Tour de France,2021,Marseillais,1,INEOS LBD,PeeJee,4,5,67,47,430,549,639,163,108,103,1013,1562
+2283,Le Tour de France Beckenbauer,Tour de France 2021,Tour de France,2021,Marseillais,2,Jeudemot,Alpaga,1,0,37,5,267,309,467,240,17,74,798,1107
+2283,Le Tour de France Beckenbauer,Tour de France 2021,Tour de France,2021,Marseillais,3,MarIneos,Marino,2,5,90,7,388,491,335,86,102,24,547,1038
+2283,Le Tour de France Beckenbauer,Tour de France 2021,Tour de France,2021,Marseillais,4,KCorp,Benny Lee,1,5,102,0,370,477,297,0,27,158,482,959
+2283,Le Tour de France Beckenbauer,Tour de France 2021,Tour de France,2021,Marseillais,5,Ventre Mou Racing Team,bigdaddy,0,5,19,16,337,377,37,150,210,61,458,835
+2283,Le Tour de France Beckenbauer,Tour de France 2021,Tour de France,2021,Marseillais,6,Muskatel Muscadji,Marseillais,2,5,24,5,292,326,456,0,6,19,481,807
+2283,Le Tour de France Beckenbauer,Tour de France 2021,Tour de France,2021,Marseillais,7,Discoroti Channel,kli_max,4,15,105,20,223,363,159,0,100,109,368,731
+2283,Le Tour de France Beckenbauer,Tour de France 2021,Tour de France,2021,Marseillais,8,GoudalEnergies,David Choncoutié,3,0,3,24,195,222,45,108,166,0,319,541
+2143,Olivier Giro d'Italia > Benzema,Giro 2021,Giro,2021,Marseillais,1,"Gris de gris, Solution Cubi",David Choncoutié,4,20,146,11,462,639,411,181,189,273,1054,1693
+2143,Olivier Giro d'Italia > Benzema,Giro 2021,Giro,2021,Marseillais,2,Discoroti Channel,kli_max,4,20,78,111,409,618,448,202,54,143,847,1465
+2143,Olivier Giro d'Italia > Benzema,Giro 2021,Giro,2021,Marseillais,3,Muskatel Muskadji,Marseillais,4,5,61,8,420,494,426,70,248,35,779,1273
+2143,Olivier Giro d'Italia > Benzema,Giro 2021,Giro,2021,Marseillais,4,Bristol.cc,bigdaddy,1,10,18,12,314,354,411,86,7,5,509,863
+2143,Olivier Giro d'Italia > Benzema,Giro 2021,Giro,2021,Marseillais,5,On est pas bien là ?,Benny Lee,2,5,59,31,212,307,330,0,4,91,425,732
+2143,Olivier Giro d'Italia > Benzema,Giro 2021,Giro,2021,Marseillais,6,"Des étapes, des étapes, oui mais des Pantani",PeeJee,4,5,2,30,277,314,210,94,83,1,388,702
+2143,Olivier Giro d'Italia > Benzema,Giro 2021,Giro,2021,Marseillais,7,Bobisoverrated,Alpaga,0,5,26,13,120,164,237,109,2,24,372,536
+2143,Olivier Giro d'Italia > Benzema,Giro 2021,Giro,2021,Marseillais,8,Chau Bello !,Marino,1,5,6,10,288,309,30,8,121,0,159,468
+2083,C'est du classico classique,Classiques 2021,Classiques,2021,kli_max,1,Muskatel Muscadji,Marseillais,2,0,0,0,801,801,0,0,0,0,0,801
+2083,C'est du classico classique,Classiques 2021,Classiques,2021,kli_max,2,Discoroti Channel,kli_max,2,0,0,0,750,750,0,0,0,0,0,750
+2083,C'est du classico classique,Classiques 2021,Classiques,2021,kli_max,3,"Ça t'étonne, c'est les cétones",PeeJee,2,0,0,0,632,632,0,0,0,0,0,632
+2083,C'est du classico classique,Classiques 2021,Classiques,2021,kli_max,4,SchleckCyclingFans,Alpaga,2,0,0,0,566,566,0,0,0,0,0,566
+2083,C'est du classico classique,Classiques 2021,Classiques,2021,kli_max,5,Marino Soudal,Marino,2,0,0,0,535,535,0,0,0,0,0,535
+2083,C'est du classico classique,Classiques 2021,Classiques,2021,kli_max,6,Bristol.cc,bigdaddy,1,0,0,0,319,319,0,0,0,0,0,319
+2083,C'est du classico classique,Classiques 2021,Classiques,2021,kli_max,7,Corinthiens Cosmos Curry,Benny Lee,2,0,0,0,294,294,0,0,0,0,0,294
+2083,C'est du classico classique,Classiques 2021,Classiques,2021,kli_max,8,"Gris de Gris, Solutions Cubis",David Choncoutié,1,0,0,0,234,234,0,0,0,0,0,234
+2067,C'est la reprise,Paris-Nice 2021,Paris-Nice,2021,kli_max,1,Discoroti Channel,kli_max,4,10,68,58,323,459,288,0,75,61,424,883
+2067,C'est la reprise,Paris-Nice 2021,Paris-Nice,2021,kli_max,2,"Gris de Gris, Solutions Cubis",David Choncoutié,4,5,10,38,156,209,279,153,41,16,489,698
+2067,C'est la reprise,Paris-Nice 2021,Paris-Nice,2021,kli_max,3,Quick-Windows,Alpaga,2,0,9,23,240,272,63,0,111,0,174,446
+2067,C'est la reprise,Paris-Nice 2021,Paris-Nice,2021,kli_max,4,Muskatel Muscadji,Marseillais,3,0,0,20,188,208,79,50,34,0,163,371
+2067,C'est la reprise,Paris-Nice 2021,Paris-Nice,2021,kli_max,5,Lotto Goudale,PeeJee,3,5,9,16,68,98,129,48,10,10,197,295
+2067,C'est la reprise,Paris-Nice 2021,Paris-Nice,2021,kli_max,6,Tactical Frisbee Underground,Benny Lee,0,0,0,0,101,101,14,0,12,3,29,130
+2067,C'est la reprise,Paris-Nice 2021,Paris-Nice,2021,kli_max,7,MarinoStar,Marino,2,0,3,8,36,47,21,8,0,5,34,81
+2067,C'est la reprise,Paris-Nice 2021,Paris-Nice,2021,kli_max,8,Bristol.cc,bigdaddy,3,0,9,0,48,57,12,0,3,0,15,72
+1901,Gir'Aulas d'Italia,Giro 2020,Giro,2020,Marino,1,Discoroti Channel,kli_max,4,20,109,131,440,701,417,0,227,82,726,1427
+1901,Gir'Aulas d'Italia,Giro 2020,Giro,2020,Marino,2,Ast'âne Bâté Pro Team,David Choncoutié,4,0,25,20,428,473,596,227,100,5,928,1401
+1901,Gir'Aulas d'Italia,Giro 2020,Giro,2020,Marino,3,MovistAulas,Marino,3,10,96,45,366,519,380,139,6,101,626,1145
+1901,Gir'Aulas d'Italia,Giro 2020,Giro,2020,Marino,4,MakeBobGreatAgain,Alpaga,1,20,14,39,320,393,273,20,109,91,493,886
+1901,Gir'Aulas d'Italia,Giro 2020,Giro,2020,Marino,5,Ineos GrosPaquet,PeeJee,2,5,70,29,234,338,49,114,1,109,273,611
+1901,Gir'Aulas d'Italia,Giro 2020,Giro,2020,Marino,6,Muscatel Muscadji,Marseillais,2,5,5,35,312,357,32,0,204,9,245,602
+1901,Gir'Aulas d'Italia,Giro 2020,Giro,2020,Marino,7,Tandoori Bicycle Club,Benny Lee,0,0,23,3,30,56,30,5,20,11,66,122
+1625,Le Tour des Anes Bâtes,Tour de France 2020,Tour de France,2020,kli_max,1,Bora - Hans Le Malin,PeeJee,4,5,98,51,495,649,387,230,288,255,1160,1809
+1625,Le Tour des Anes Bâtes,Tour de France 2020,Tour de France,2020,kli_max,2,DiscorotiChannel,kli_max,4,10,125,0,426,561,626,104,0,157,887,1448
+1625,Le Tour des Anes Bâtes,Tour de France 2020,Tour de France,2020,kli_max,3,Muscadel Muscadji,Marseillais,4,5,32,51,568,656,147,31,265,12,455,1111
+1625,Le Tour des Anes Bâtes,Tour de France 2020,Tour de France,2020,kli_max,4,MarinoStar Team,Marino,4,10,92,52,336,490,306,0,131,71,508,998
+1625,Le Tour des Anes Bâtes,Tour de France 2020,Tour de France,2020,kli_max,5,Mont Ventoux Cubitainer Challenge,David Choncoutié,4,15,89,8,389,501,299,79,0,67,445,946
+1625,Le Tour des Anes Bâtes,Tour de France 2020,Tour de France,2020,kli_max,6,Bâton Rouge,Benny Lee,3,0,25,0,320,345,402,47,7,10,466,811
+1625,Le Tour des Anes Bâtes,Tour de France 2020,Tour de France,2020,kli_max,7,Schleck4ever,Alpaga,4,5,26,32,182,245,391,92,16,32,531,776
+1597,Le Cri du Dauphin,Critérium du Dauphiné 2020,Critérium du Dauphiné,2020,Marino,1,Le Gratin Dauphinois,Marino,4,0,9,3,184,196,267,131,106,0,504,700
+1597,Le Cri du Dauphin,Critérium du Dauphiné 2020,Critérium du Dauphiné,2020,Marino,2,Mercedes Benzo,Benny Lee,1,0,75,7,91,175,228,2,44,127,401,576
+1597,Le Cri du Dauphin,Critérium du Dauphiné 2020,Critérium du Dauphiné,2020,Marino,3,DiscoRoti Channel,kli_max,4,0,45,0,163,208,203,0,41,56,300,508
+1597,Le Cri du Dauphin,Critérium du Dauphiné 2020,Critérium du Dauphiné,2020,Marino,4,Muscatel Muscadji,Marseillais,2,0,19,0,47,66,96,99,45,5,245,311
+1597,Le Cri du Dauphin,Critérium du Dauphiné 2020,Critérium du Dauphiné,2020,Marino,5,Jeudemot,Alpaga,4,0,54,3,102,159,55,0,6,42,103,262
+1597,Le Cri du Dauphin,Critérium du Dauphiné 2020,Critérium du Dauphiné,2020,Marino,6,Petro L'âne Bâté Cycling Team,PeeJee,1,0,32,8,34,74,95,36,10,34,175,249
+1523,La Vuelta de las cervezas,Vuelta 2019,Vuelta,2019,Klimax,1,Estrella Galicia Equipo Ciclista,Sandy Chazar,4,10,100,28,550,688,482,387,87,74,1030,1718
+1523,La Vuelta de las cervezas,Vuelta 2019,Vuelta,2019,Klimax,2,LamBrecht4eVer,Alpaga,1,0,22,38,522,581,432,0,203,57,692,1273
+1523,La Vuelta de las cervezas,Vuelta 2019,Vuelta,2019,Klimax,3,Los Chulos Pendejos,Marino,4,10,93,11,191,305,378,238,22,238,876,1181
+1523,La Vuelta de las cervezas,Vuelta 2019,Vuelta,2019,Klimax,4,Discoroti Channel,Klimax,4,15,34,25,326,400,470,0,141,0,611,1011
+1523,La Vuelta de las cervezas,Vuelta 2019,Vuelta,2019,Klimax,5,Sco Pa Tu Manaa,PeeJee,0,10,42,16,303,370,348,1,103,8,460,830
+1523,La Vuelta de las cervezas,Vuelta 2019,Vuelta,2019,Klimax,6,Muscatel Muscadji,Marseillais,0,15,75,28,304,422,179,24,26,39,268,690
+1523,La Vuelta de las cervezas,Vuelta 2019,Vuelta,2019,Klimax,7,Borat-Hanz Gros Cul,Benny Lee,0,0,37,0,177,214,89,5,0,17,111,325
+1264,Le Chouffe Tour,Tour de France 2019,Tour de France,2019,Klimax,1,Les Gainés,JibsEPAULE,2,5,13,0,505,523,631,0,121,12,764,1287
+1264,Le Chouffe Tour,Tour de France 2019,Tour de France,2019,Klimax,2,Los Burritos Locos,Marino,4,5,40,8,348,401,415,281,30,61,787,1188
+1264,Le Chouffe Tour,Tour de France 2019,Tour de France,2019,Klimax,3,Gode Save The Gouine,PeeJee,3,0,74,35,296,405,139,212,256,40,647,1052
+1264,Le Chouffe Tour,Tour de France 2019,Tour de France,2019,Klimax,4,Muskatel Muskadji,Marseillais,4,5,108,16,470,598,204,56,69,90,419,1017
+1264,Le Chouffe Tour,Tour de France 2019,Tour de France,2019,Klimax,5,Klituscha,Klimax,3,15,77,26,465,583,183,0,17,108,308,891
+1264,Le Chouffe Tour,Tour de France 2019,Tour de France,2019,Klimax,6,Alkpote-monpote,Benny Lee,2,15,165,42,133,355,31,0,150,235,416,771
+1264,Le Chouffe Tour,Tour de France 2019,Tour de France,2019,Klimax,7,Ninkasi Cycling Team,Sandy Chazar,4,5,26,39,314,383,165,22,115,17,319,702
+1264,Le Chouffe Tour,Tour de France 2019,Tour de France,2019,Klimax,8,Quick Pet,JoeDills,1,0,51,0,171,222,292,111,0,24,427,649
+1264,Le Chouffe Tour,Tour de France 2019,Tour de France,2019,Klimax,9,Colombia,Alpaga,0,0,12,0,97,109,356,3,0,7,366,475
+1173,"Giroti Girosé, Lève la roue et puis CHUTE",Giro 2019,Giro,2019,Marino,1,Muscatel Muscadji,Marseillais,4,0,46,20,682,748,338,106,345,58,847,1595
+1173,"Giroti Girosé, Lève la roue et puis CHUTE",Giro 2019,Giro,2019,Marino,2,Klituscha,Klimax,4,10,28,36,552,626,541,0,181,25,747,1373
+1173,"Giroti Girosé, Lève la roue et puis CHUTE",Giro 2019,Giro,2019,Marino,3,Don Marino,Marino,4,20,179,100,307,605,190,141,41,378,750,1355
+1173,"Giroti Girosé, Lève la roue et puis CHUTE",Giro 2019,Giro,2019,Marino,4,God Save the Gouines,PeeJee,3,33,32,34,421,518,435,15,19,79,548,1066
+1173,"Giroti Girosé, Lève la roue et puis CHUTE",Giro 2019,Giro,2019,Marino,5,BigBLACKbooty,Alpaga,0,0,2,16,291,309,425,138,35,2,600,909
+1173,"Giroti Girosé, Lève la roue et puis CHUTE",Giro 2019,Giro,2019,Marino,6,Moretti Cycling Team,Sandy Chazar,4,10,68,60,191,329,299,94,15,58,466,795
+1173,"Giroti Girosé, Lève la roue et puis CHUTE",Giro 2019,Giro,2019,Marino,7,C'est bon chui al,Benny Lee,0,0,8,40,169,217,23,33,12,0,68,285
+1151,Les Classiques de l'Individualisme,Classiques 2019,Classiques,2019,Klimax,1,Jupiler Cycling Team,Sandy Chazar,1,0,0,0,435,435,0,0,0,0,0,435
+1151,Les Classiques de l'Individualisme,Classiques 2019,Classiques,2019,Klimax,2,Muscatel Muscadji,Marseillais,1,0,0,0,328,328,0,0,0,0,0,328
+1151,Les Classiques de l'Individualisme,Classiques 2019,Classiques,2019,Klimax,3,Klituscha,Klimax,1,0,0,0,253,253,0,0,0,0,0,253
+1151,Les Classiques de l'Individualisme,Classiques 2019,Classiques,2019,Klimax,4,Los Mariachis Cabrones,Marino,2,0,0,0,163,163,0,0,0,0,0,163
+1151,Les Classiques de l'Individualisme,Classiques 2019,Classiques,2019,Klimax,5,God Save the Gouines,PeeJee,2,0,0,0,147,147,0,0,0,0,0,147
+1151,Les Classiques de l'Individualisme,Classiques 2019,Classiques,2019,Klimax,6,Harissa,Alpaga,0,0,0,0,116,116,0,0,0,0,0,116
+1151,Les Classiques de l'Individualisme,Classiques 2019,Classiques,2019,Klimax,7,CasseLaDémarche,Benny Lee,0,0,0,0,97,97,0,0,0,0,0,97
+1134,Cest la reprise,Paris-Nice 2019,Paris-Nice,2019,Klimax,1,Muscatel - Muscadji,Marseillais,4,0,13,8,250,271,291,128,55,29,503,774
+1134,Cest la reprise,Paris-Nice 2019,Paris-Nice,2019,Klimax,2,SucePute,Alpaga,1,0,33,37,148,218,278,0,144,82,504,722
+1134,Cest la reprise,Paris-Nice 2019,Paris-Nice,2019,Klimax,3,Klituscha,Klimax,4,0,145,54,118,317,178,0,57,125,360,677
+1134,Cest la reprise,Paris-Nice 2019,Paris-Nice,2019,Klimax,4,God save the Gouines,PeeJee,3,0,22,21,50,93,228,15,5,39,287,380
+1134,Cest la reprise,Paris-Nice 2019,Paris-Nice,2019,Klimax,5,Los Pistoleros Locos,Marino,2,0,18,13,78,109,99,82,45,27,253,362
+1134,Cest la reprise,Paris-Nice 2019,Paris-Nice,2019,Klimax,6,AG2R La Chance,Benny Lee,0,0,8,8,113,129,0,25,58,8,91,220
+1075,La Vuelta des Grandes Canettes,Vuelta 2018,Vuelta,2018,Klimax,1,"Avec vos shorts de PD, là",PeeJee,4,5,69,30,412,516,656,262,198,74,1190,1706
+1075,La Vuelta des Grandes Canettes,Vuelta 2018,Vuelta,2018,Klimax,2,Youssouf,Alpaga,0,15,164,36,430,645,406,141,152,142,841,1486
+1075,La Vuelta des Grandes Canettes,Vuelta 2018,Vuelta,2018,Klimax,3,Los tacos pedeleandos,Marino,4,15,255,44,256,570,243,144,40,352,779,1349
+1075,La Vuelta des Grandes Canettes,Vuelta 2018,Vuelta,2018,Klimax,4,Muscatel - Muscadi,Marseillais,1,5,52,5,473,535,275,29,166,5,475,1010
+1075,La Vuelta des Grandes Canettes,Vuelta 2018,Vuelta,2018,Klimax,5,"¡ Anda tío, no te revuelvas !",Sandy Chazar,0,5,31,3,118,157,229,44,21,16,310,467
+1075,La Vuelta des Grandes Canettes,Vuelta 2018,Vuelta,2018,Klimax,6,VariationsGoldberg,Benny Lee,0,0,8,3,69,80,285,22,17,0,324,404
+1075,La Vuelta des Grandes Canettes,Vuelta 2018,Vuelta,2018,Klimax,7,DiscoRoti Channel,Klimax,0,5,0,16,107,128,75,2,3,0,80,208
+900,Le Tour de Chouffe,Tour de France 2018,Tour de France,2018,Sandy Chazar,1,"Allez mon petit, ne te retourne pas",Sandy Chazar,4,0,91,11,520,622,462,175,86,85,808,1430
+900,Le Tour de Chouffe,Tour de France 2018,Tour de France,2018,Sandy Chazar,2,Les Grandes Pédales,JibsEPAULE,4,5,374,19,402,800,118,0,132,255,505,1305
+900,Le Tour de Chouffe,Tour de France 2018,Tour de France,2018,Sandy Chazar,3,Ich ich,Benny Lee,2,5,68,69,479,621,234,85,244,59,622,1243
+900,Le Tour de Chouffe,Tour de France 2018,Tour de France,2018,Sandy Chazar,4,Fkj,Alpaga,0,0,40,5,419,464,490,0,74,53,617,1081
+900,Le Tour de Chouffe,Tour de France 2018,Tour de France,2018,Sandy Chazar,5,La Marinade,Marino,4,10,8,0,324,342,209,0,194,0,403,745
+900,Le Tour de Chouffe,Tour de France 2018,Tour de France,2018,Sandy Chazar,6,AP2G Le Mangeur,PeeJee,4,5,8,17,261,291,301,131,5,0,437,728
+900,Le Tour de Chouffe,Tour de France 2018,Tour de France,2018,Sandy Chazar,7,Trek - Fais gaffe minot,Marseillais,3,10,48,20,348,426,154,11,4,71,240,666
+900,Le Tour de Chouffe,Tour de France 2018,Tour de France,2018,Sandy Chazar,8,DiscoRoti Channel,Klimax,3,0,50,16,350,416,105,31,14,11,161,577
+900,Le Tour de Chouffe,Tour de France 2018,Tour de France,2018,Sandy Chazar,9,T-Molly,JoeDills,0,15,10,18,148,191,251,0,1,0,252,443
+822,L'Enfer des classiques,Classiques 2018,Classiques,2018,Klimax,1,Respectemonautorité,Alpaga,3,0,0,0,386,386,0,0,0,0,0,386
+822,L'Enfer des classiques,Classiques 2018,Classiques,2018,Klimax,2,Guépard-Randonnée,Benny Lee,2,0,0,0,377,377,0,0,0,0,0,377
+822,L'Enfer des classiques,Classiques 2018,Classiques,2018,Klimax,3,Tchi mobile,Marseillais,1,0,0,0,288,288,0,0,0,0,0,288
+822,L'Enfer des classiques,Classiques 2018,Classiques,2018,Klimax,4,DiscoRoti Channel,Klimax,0,0,0,0,185,185,0,0,0,0,0,185
+822,L'Enfer des classiques,Classiques 2018,Classiques,2018,Klimax,5,"Allez mon petit, ne te retourne pas",Sandy Chazar,2,0,0,0,84,84,0,0,0,0,0,84
+822,L'Enfer des classiques,Classiques 2018,Classiques,2018,Klimax,6,Les Petites Pédales,PeeJee,0,0,0,0,46,46,0,0,0,0,0,46
+806,C'est la reprise,Paris-Nice 2018,Paris-Nice,2018,Klimax,1,"Allez mon petit, ne te retourne pas",Sandy Chazar,4,0,121,29,287,437,251,5,167,120,543,980
+806,C'est la reprise,Paris-Nice 2018,Paris-Nice,2018,Klimax,2,DiscoRoti Channel,Klimax,3,0,59,45,134,238,408,106,90,68,672,910
+806,C'est la reprise,Paris-Nice 2018,Paris-Nice,2018,Klimax,3,Tchi-Mobile,Marseillais,2,0,58,11,178,247,236,49,45,65,395,642
+806,C'est la reprise,Paris-Nice 2018,Paris-Nice,2018,Klimax,4,El Comedor de gatas,PeeJee,1,0,7,18,165,190,61,0,52,21,134,324
+806,C'est la reprise,Paris-Nice 2018,Paris-Nice,2018,Klimax,5,Jean-Claude juncker,Alpaga,0,0,5,5,123,133,130,0,30,1,161,294
+806,C'est la reprise,Paris-Nice 2018,Paris-Nice,2018,Klimax,6,Freelance Armstrong,Benny Lee,0,0,6,15,70,91,61,26,3,0,90,181
+790,Vuelta Gueule 2017,Vuelta 2017,Vuelta,2017,Benny Lee,1,DiscoRoti Channel,Klimax,4,20,123,31,482,656,629,282,147,162,1220,1876
+790,Vuelta Gueule 2017,Vuelta 2017,Vuelta,2017,Benny Lee,2,Team Sky-Coca,PeeJee,3,0,80,11,383,473,598,154,112,93,957,1430
+790,Vuelta Gueule 2017,Vuelta 2017,Vuelta,2017,Benny Lee,3,Quick-Fuck,Alpaga,2,15,88,75,339,517,336,67,144,15,562,1079
+790,Vuelta Gueule 2017,Vuelta 2017,Vuelta,2017,Benny Lee,4,AG2R La Chancla,Benny Lee,1,10,43,62,237,352,397,128,11,0,536,888
+790,Vuelta Gueule 2017,Vuelta 2017,Vuelta,2017,Benny Lee,5,Tchi-Mobile,Marseillais,0,5,32,0,216,253,322,38,39,32,431,684
