@@ -45,12 +45,12 @@ def test_points_from_rank_gc_final_table():
     import scoring
 
     slug = f"{TDF}/gc"
-    assert scoring._points_from_rank(1, slug) == 450.0
-    assert scoring._points_from_rank(2, slug) == 360.0   # -20% (2026-08 rehausse; raw-PCS cliff is -24%)
-    assert scoring._points_from_rank(3, slug) == 300.0
-    assert scoring._points_from_rank(10, slug) == 115.0
-    assert scoring._points_from_rank(15, slug) == 64.0
-    assert scoring._points_from_rank(20, slug) == 28.0
+    assert scoring._points_from_rank(1, slug) == 400.0
+    assert scoring._points_from_rank(2, slug) == 320.0   # -20% (2026-08 rehausse; raw-PCS cliff is -24%)
+    assert scoring._points_from_rank(3, slug) == 265.0
+    assert scoring._points_from_rank(10, slug) == 100.0
+    assert scoring._points_from_rank(15, slug) == 56.0
+    assert scoring._points_from_rank(20, slug) == 25.0
     assert scoring._points_from_rank(30, slug) == 1.0
     assert scoring._points_from_rank(31, slug) == 0.0
 
@@ -295,10 +295,10 @@ async def test_gt_gc_final_flat_for_underdog():
     await _run_gt(sb, slug)
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["raw_pcs_points"] == 220         # GC final rank 5 (2026-08 rehausse)
+    assert payload["raw_pcs_points"] == 195         # GC final rank 5 (400 curve, 2026-09)
     assert payload["gt_role_mult"] == 1.0
     assert payload["underdog_mult"] == 1.0          # no clamp on finals
-    assert payload["xp_gained"] == 220.0
+    assert payload["xp_gained"] == 195.0
 
 
 async def test_gt_domestique_earns_assists():

@@ -1,6 +1,6 @@
 # ADR: Rehausse des barèmes des classements finaux de Grand Tour
 
-- **Status**: Accepted
+- **Status**: Accepted (amendé le 2026-09-12 : GC final 450 → 400, courbe rescalée ×0.89, avant la clôture de la Vuelta 2026 ; le 450 n'a jamais été payé)
 - **Date**: 2026-08-28 (décision de design actée le 2026-08-27, session benchmark
   Velogames / La Route du Tour)
 - **Scope**: classements finaux de GT uniquement (GC / Points / KOM / Youth).
@@ -18,15 +18,15 @@ le général d'un GT de trois semaines payait à peine plus qu'une bonne échapp
 
 Nouveaux barèmes, appliqués à partir de la clôture de la Vuelta 2026 :
 
-- **GC final (top 30)** : `450, 360, 300, 255, 220, 190, 165, 145, 130, 115, 100,
-  90, 80, 72, 64, 56, 48, 40, 34, 28, 24, 20, 16, 13, 10, 8, 6, 4, 2, 1`.
+- **GC final (top 30)** : `400, 320, 265, 225, 195, 170, 145, 130, 115, 100,
+  90, 80, 70, 64, 56, 50, 42, 35, 30, 25, 21, 18, 14, 12, 9, 7, 5, 4, 2, 1`.
   Écarts de tête −20% / −16.7% / −15% : creuser le 1er→2e au-delà des −16% de
   2026-07 sans retomber sur la falaise PCS de −24%.
 - **Points final et KOM final (top 10)** : `150, 120, 100, 75, 60, 45, 32, 22, 15, 8`.
 - **Youth final (top 10, demi-échelle)** : `75, 60, 50, 38, 30, 22, 16, 11, 8, 4`.
 
-Ratios de contrôle : GC final / victoire d'étape = 3.0 (2.25 vs victoire ×2
-tactique) ; Points/KOM = 1.5 victoire ; Youth = moitié de Points/KOM. Toujours flat
+Ratios de contrôle : GC final / victoire d'étape = 2.67 à 400 (2.0 vs victoire ×2
+tactique ; 3.0 avec le 450 initial, abandonné le 2026-09-12 pour se caler sur Velogames 2.73 après vérification que les finaux LRDT sont flat, ratio 1.67, et non 3.33) ; Points/KOM = 1.5 victoire ; Youth = moitié de Points/KOM. Toujours flat
 pour tous les rôles (règle 2026-07 inchangée : les rôles jouent en course, pas sur
 les finaux).
 
