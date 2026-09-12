@@ -196,7 +196,7 @@ Rider XP = (rank_points × role_mult × (1 + strategy_bonus)
   Non-GT races still use raw PCS points (unchanged).
   - **Stage** (top 20): `100, 80, 70, 65, 55, 50, 45, 35, 30, 25, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2`
   - **GC final** (`/gc`, top 30 — 2026-08 rehausse, from the Vuelta 2026 closeout on):
-    `450, 360, 300, 255, 220, 190, 165, 145, 130, 115, 100, 90, 80, 72, 64, 56, 48, 40, 34, 28, 24, 20, 16, 13, 10, 8, 6, 4, 2, 1`
+    `400, 320, 265, 225, 195, 170, 145, 130, 115, 100, 90, 80, 70, 64, 56, 50, 42, 35, 30, 25, 21, 18, 14, 12, 9, 7, 5, 4, 2, 1`
   - Ranks beyond the table earn 0 rank_points (but a domestique can still earn `assist_bonus`).
 - **role_mult** (Spec A, 2026-06-02, gating extended 2026-07): a rider has **exactly one
   role**, so `role_mult` takes exactly one value — the per-role multipliers never stack.
@@ -260,7 +260,7 @@ Rider XP = (rank_points × role_mult × (1 + strategy_bonus)
   4`. 1-week races (A9) keep the legacy 2-value scale (40/10/5) × role match, unchanged.
 
 **Control ratios** (design intent, `docs/adr/2026-07-rank-based-gt-barème.md` +
-`docs/adr/2026-08-finals-baremes-rehausses.md`): GC final / stage win = 3.0:1
+`docs/adr/2026-08-finals-baremes-rehausses.md`): GC final / stage win = 2.67:1 (400 since 2026-09-12; 450 = 3.0 from 2026-08 to 2026-09)
 (Velogames 2.73, LRDT 3.33; was 2.5:1 in 2026-07, 5:1 on raw PCS). Points/KOM final =
 1.5 stage win. Youth final = half of Points/KOM. 1st→2nd GC final gap = −20% (deeper
 than the −16% of 2026-07, still softer than the −24% raw-PCS cliff). Giro/Tour 2026
@@ -434,7 +434,7 @@ At the start of each phase, the player **confirms** their configuration:
 - **GT scoring barème** (rank-based, 2026-07 — full tables + rationale in §7 and
   `docs/adr/2026-07-rank-based-gt-barème.md`). Constants in `services/pcs-sync/scoring.py`:
   - `GT_STAGE_SCALE` (top 20): `100, 80, 70, 65, 55, 50, 45, 35, 30, 25, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2`
-  - `GT_GC_FINAL_SCALE` (top 30, 2026-08 rehausse): `450, 360, 300, 255, 220, 190, 165, 145, 130, 115, 100, 90, 80, 72, 64, 56, 48, 40, 34, 28, 24, 20, 16, 13, 10, 8, 6, 4, 2, 1`
+  - `GT_GC_FINAL_SCALE` (top 30, 2026-08 rehausse): `400, 320, 265, 225, 195, 170, 145, 130, 115, 100, 90, 80, 70, 64, 56, 50, 42, 35, 30, 25, 21, 18, 14, 12, 9, 7, 5, 4, 2, 1`
   - `DAILY_CLASSIF_SCALES` (flat for all squad riders; matched role mult: gc ×1.5, points ×2, kom ×2, youth ×1.5): GC top 10 `15/12/10/8/7/6/5/4/3/2`, Points/KOM top 5 `6/4/3/2/1`, Youth top 5 `4/3/2/1/1`
   - `ASSIST_STAGE_SCALE` `4/2/1` + `ASSIST_GC_SCALE` `3/2/1` (domestique real-team assists, GT stages, not ITT)
   - Role gating: sprinter p1/p2/p3, **climber p3/p4/p5** (2026-07); tt_specialist ×2 ITT;
@@ -443,7 +443,7 @@ At the start of each phase, the player **confirms** their configuration:
     `4/3/2/1/1`, cat 2/3/4 nothing; `SPRINT_EVENT_SCALE` (intermediate sprints) top 8
     `6/5/4/3/2/2/1/1`; `EVENT_ROLE_MULT`: climber ×2 (kom), sprinter ×2 (sprint),
     stage_hunter ×1.5 (both, unconditional).
-  - Control ratio GC-final / stage-win = 3.0:1 (2026-08 rehausse).
+  - Control ratio GC-final / stage-win = 2.67:1 (400, 2026-09-12; was 450 = 3.0 at the 2026-08 rehausse, never paid).
 
 ### Tactic gating profiles (Spec A A7)
 - `NEMESIS_SPRINT_PROFILES = {p1, p2, p3}` (flat + hilly — anything but mountain).

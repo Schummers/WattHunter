@@ -35,7 +35,7 @@ describe("ScoringDocCard", () => {
   it("renders the GC final winner value", () => {
     render(<ScoringDocCard />);
     expect(screen.getByText("GC (top 30)")).toBeInTheDocument();
-    expect(screen.getByText("450 → 1")).toBeInTheDocument();
+    expect(screen.getByText("400 → 1")).toBeInTheDocument();
   });
 
   it("renders the in-race events block", () => {

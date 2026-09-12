@@ -68,15 +68,15 @@ CLIMBER_PROFILES = ("p3", "p4", "p5")  # 2026-07 refonte — hilly + mountain, m
 # Velogames-shaped curves rescaled to the WattHunter magnitude (stage win = 100,
 # preserving the Manager level curve). Design record: docs/adr/ "rank-based barème".
 # Finals rehaussés 2026-08 (docs/adr/2026-08-finals-baremes-rehausses.md):
-# GC final / stage win = 3.0:1 (Velogames 2.73, LRDT 3.33); Points/KOM final = 1.5
-# stage win; youth = half; 1st→2nd GC gap = -20% (was -16%; raw-PCS cliff is -24%).
+# GC final / stage win = 2.67:1 (Velogames 2.73; LRDT 1.67, its finals are flat); Points/KOM final = 1.5
+# stage win; youth = half; 1st→2nd GC gap = -20% (400→320, set 2026-09-12) (was -16%; raw-PCS cliff is -24%).
 # Applied from the Vuelta 2026 closeout on — Giro/Tour 2026 keep the old values
 # ("the past is the past").
 GT_STAGE_SCALE = [100, 80, 70, 65, 55, 50, 45, 35, 30, 25,
                   20, 18, 16, 14, 12, 10, 8, 6, 4, 2]          # ranks 1-20
-GT_GC_FINAL_SCALE = [450, 360, 300, 255, 220, 190, 165, 145, 130, 115,
-                     100, 90, 80, 72, 64, 56, 48, 40, 34, 28,
-                     24, 20, 16, 13, 10, 8, 6, 4, 2, 1]        # ranks 1-30
+GT_GC_FINAL_SCALE = [400, 320, 265, 225, 195, 170, 145, 130, 115, 100,
+                     90, 80, 70, 64, 56, 50, 42, 35, 30, 25,
+                     21, 18, 14, 12, 9, 7, 5, 4, 2, 1]        # ranks 1-30
 # Final Points/KOM/Youth — FLAT for all roles (roles play in-race, not on finals).
 GT_SECONDARY_FINAL_SCALES = {
     "points": [150, 120, 100, 75, 60, 45, 32, 22, 15, 8],      # ranks 1-10

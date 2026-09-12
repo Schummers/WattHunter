@@ -221,7 +221,7 @@ async def test_stage_hunter_not_in_breakaway_gets_no_multiplier():
 
 async def test_stage_hunter_no_multiplier_on_gc():
     """Stage hunter: GC slug (ends /gc) → ×1, not ×1.5. Rank 1 on the GC final
-    scale (2026-08 rehausse) is 450, not the old raw-points 100."""
+    scale (2026-08 rehausse, 400 since 2026-09) is 400, not the old raw-points 100."""
     import scoring
 
     gc_slug = "race/giro-d-italia/2026/gc"
@@ -258,17 +258,17 @@ async def test_stage_hunter_no_multiplier_on_gc():
         [],  # gt_tactic_activations (Task 7 — no activations yet)
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
         [],
-        [{"id": TEAM_ID, "cumulative_xp": 450}],
+        [{"id": TEAM_ID, "cumulative_xp": 400}],
     )
     await scoring.calculate_daily_scores(sb, race_slugs=[gc_slug])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 450.0
+    assert payload["xp_gained"] == 400.0
 
 
 async def test_stage_hunter_breakaway_no_bonus_on_gc():
     """Stage hunter with breakaway_kms on a /gc slug → ×1.0, no distance bonus (Spec A A2/A5).
-    Rank 1 on the GC final scale (2026-08 rehausse) is 450."""
+    Rank 1 on the GC final scale (2026-08 rehausse, 400 since 2026-09) is 400."""
     import scoring
 
     gc_slug = "race/giro-d-italia/2026/gc"
@@ -305,19 +305,19 @@ async def test_stage_hunter_breakaway_no_bonus_on_gc():
         [],  # gt_tactic_activations
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
         [],
-        [{"id": TEAM_ID, "cumulative_xp": 450}],
+        [{"id": TEAM_ID, "cumulative_xp": 400}],
     )
     await scoring.calculate_daily_scores(sb, race_slugs=[gc_slug])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 450.0
+    assert payload["xp_gained"] == 400.0
     assert payload["gt_distance_bonus"] == 0.0
     assert payload["gt_role_mult"] == 1.0
 
 
 async def test_gc_leader_no_multiplier_on_gc_final():
     """GC final (/gc) → ×1.0 even for gc_leader (Spec A A2, no double-boost).
-    Rank 1 on the GC final scale (2026-08 rehausse) is 450."""
+    Rank 1 on the GC final scale (2026-08 rehausse, 400 since 2026-09) is 400."""
     import scoring
 
     gc_slug = "race/giro-d-italia/2026/gc"
@@ -336,12 +336,12 @@ async def test_gc_leader_no_multiplier_on_gc_final():
         [],
         {"id": TEAM_ID, "cumulative_xp": 0, "level": 1, "league_id": LEAGUE_ID},
         [],
-        [{"id": TEAM_ID, "cumulative_xp": 450}],
+        [{"id": TEAM_ID, "cumulative_xp": 400}],
     )
     await scoring.calculate_daily_scores(sb, race_slugs=[gc_slug])
 
     payload = sb._last_upsert_payload("rider_xp_daily")
-    assert payload["xp_gained"] == 450.0  # rank-1 GC final base (2026-08 rehausse), no role mult
+    assert payload["xp_gained"] == 400.0  # rank-1 GC final base (2026-08 rehausse), no role mult
 
 
 async def test_domestique_no_multiplier():
