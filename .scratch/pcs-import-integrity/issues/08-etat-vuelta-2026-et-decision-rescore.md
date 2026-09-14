@@ -1,6 +1,6 @@
 # 08 — État de la Vuelta 2026 après correctif, et décision de rescore
 
-Status: `ready-for-human`
+Status: `done` (option A executee le 2026-09-14, runbook `docs/runbooks/vuelta2026-closeout-2026-09-14.md`)
 Created: 2026-09-14
 Dépend de : `01` (verdict), `03` (correctif livré)
 Remplace le travail prévu aux tickets `05` (chiffrage XP) et `06` (étendue), qui
@@ -241,3 +241,12 @@ m'être trompé :
    distribué.
 
 ## Comments
+
+**2026-09-14, clôture exécutée (option A).** Preuve en trois couches, toutes
+vertes : base vs Wikipedia 0/200 (était 31/193), barème 0/1352, dérive 0 ligne
+inexpliquée. Maillots distribués (points 79, kom 48, youth 38). Incident
+pendant l'exécution : `race_date` de fin de course passée aux 20 étapes →
+rôles du 13/09 appliqués partout, −561 XP sur Las Chivas avant réparation.
+Détail et règles dans le runbook. Points 1 et 2 « à contre-vérifier » : la
+source indépendante (Wikipedia) rend la correspondance CSS secondaire ; aucun
+cycle de 3 n'a été rencontré sur 25 pages.
