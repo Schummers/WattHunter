@@ -62,12 +62,15 @@ export default async function AchievementsPage({
   const supabase = await createClient();
 
   // Team membership + equipped slug
-  const { data: membership } = await supabase
-    .from("league_members")
-    .select("team_id, teams:team_id(equipped_achievement_slug)")
-    .eq("league_id", leagueId)
-    .eq("user_id", user.id)
-    .single();
+  const [{ data: membership }, { data: viewedLeague }] = await Promise.all([
+    supabase
+      .from("league_members")
+      .select("team_id, teams:team_id(equipped_achievement_slug)")
+      .eq("league_id", leagueId)
+      .eq("user_id", myUserId)
+      .single(),
+    supabase.from("leagues").select("season_year").eq("id", leagueId).single(),
+  ]);
 
   const team = membership?.teams as { equipped_achievement_slug: string | null } | null;
   const equippedSlug = team?.equipped_achievement_slug ?? null;
@@ -79,19 +82,32 @@ export default async function AchievementsPage({
   // two classic leagues (V1 carried the Classics and the Giro, V2 the Tour and
   // the Vuelta): reading a single team hides half of what was won, which is why
   // three teams used to receive their badges by hand, keyed on their UUID.
+  //
+  // The season is the one of the league being viewed, never the current year: a
+  // page opened on 1 January would otherwise find no league at all and drop the
+  // badges — the exact failure the hardcoded table was papering over.
+  //
+  // RLS keeps this to the leagues the caller belongs to, which is what we want:
+  // these are the player's own teams.
+  const seasonYear = viewedLeague?.season_year ?? new Date().getFullYear();
   const { data: seasonLeagues } = await supabase
     .from("leagues")
     .select("id")
-    .eq("season_year", new Date().getFullYear())
+    .eq("season_year", seasonYear)
     .eq("is_demo", false)
     .neq("status", "pending");
 
   const seasonLeagueIds = (seasonLeagues ?? []).map((l) => l.id as string);
-  const { data: myMemberships } = await supabase
-    .from("league_members")
-    .select("team_id")
-    .eq("user_id", myUserId)
-    .in("league_id", seasonLeagueIds.length > 0 ? seasonLeagueIds : ["__none__"]);
+
+  // No `["__none__"]` sentinel: `league_id` is a uuid column, so a non-uuid
+  // value raises 22P02 and the error would be swallowed by `?? []`.
+  const { data: myMemberships } = seasonLeagueIds.length > 0
+    ? await supabase
+        .from("league_members")
+        .select("team_id")
+        .eq("user_id", myUserId)
+        .in("league_id", seasonLeagueIds)
+    : { data: [] };
 
   const myTeamIds = [
     ...new Set(
@@ -113,14 +129,19 @@ export default async function AchievementsPage({
 
   // ── Block 1 & 2: Monument Individual + Combined ──────────────────────────
   // Single query across ALL years (fix year-lock)
-  const { data: monumentXpRows } = await supabase
-    .from("rider_xp_daily")
-    .select("race_slug, rider_id")
-    .in("team_id", myTeamIds)
-    .or(MONUMENT_BASES.map(({ ilike }) => `race_slug.ilike.${ilike}`).join(","))
+  const monumentXpRows = await fetchAllSupabasePages<{ race_slug: string; rider_id: string }>(
+    (rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("race_slug, rider_id")
+        .in("team_id", myTeamIds)
+        .or(MONUMENT_BASES.map(({ ilike }) => `race_slug.ilike.${ilike}`).join(","))
+        .order("id")
+        .range(rangeFrom, rangeTo),
+  );
 
   const teamRiderByRace = new Map<string, string[]>();
-  for (const row of monumentXpRows ?? []) {
+  for (const row of monumentXpRows) {
     const list = teamRiderByRace.get(row.race_slug) ?? [];
     list.push(row.rider_id);
     teamRiderByRace.set(row.race_slug, list);
@@ -177,13 +198,18 @@ export default async function AchievementsPage({
 
   // ── Block 3: Giro GC ────────────────────────────────────────────────────
   // Find riders who scored XP for this team on any Giro stage (ownership proof)
-  const { data: giroXpRows } = await supabase
-    .from("rider_xp_daily")
-    .select("race_slug, rider_id")
-    .in("team_id", myTeamIds)
-    .ilike("race_slug", "race/giro-d-italia/%/stage-%")
+  const giroXpRows = await fetchAllSupabasePages<{ race_slug: string; rider_id: string }>(
+    (rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("race_slug, rider_id")
+        .in("team_id", myTeamIds)
+        .ilike("race_slug", "race/giro-d-italia/%/stage-%")
+        .order("id")
+        .range(rangeFrom, rangeTo),
+  );
 
-  const giroRiderIds = [...new Set((giroXpRows ?? []).map((r) => r.rider_id))];
+  const giroRiderIds = [...new Set(giroXpRows.map((r) => r.rider_id))];
 
   if (giroRiderIds.length > 0) {
     // ── Giro completion gate (shared by Blocks 3 & 4) ─────────────────────
@@ -191,10 +217,22 @@ export default async function AchievementsPage({
     // Without this gate the *current* jersey holder on the latest synced stage
     // is wrongly awarded. Both signals are computed globally (across every
     // rider), not scoped to this team. See lib/grand-tour-completion.ts.
-    const { data: allGiroStages } = await supabase
-      .from("gt_daily_classifications")
-      .select("race_slug, stage")
-      .ilike("race_slug", "race/giro-d-italia/%/stage-%");
+    // Paginated: a single Giro carries ~1400 daily classification rows, so an
+    // unpaginated read stops at 1000 in an arbitrary order and the "highest
+    // synced stage" signal reports whatever the cut happened to leave — stage 14
+    // instead of 20, measured in production. This table has no `id` column, so
+    // the order is its natural key.
+    const allGiroStages = await fetchAllSupabasePages<{ race_slug: string; stage: string | null }>(
+      (rangeFrom, rangeTo) =>
+        supabase
+          .from("gt_daily_classifications")
+          .select("race_slug, stage")
+          .ilike("race_slug", "race/giro-d-italia/%/stage-%")
+          .order("race_slug")
+          .order("rider_id")
+          .order("classification_type")
+          .range(rangeFrom, rangeTo),
+    );
 
     const { data: scoredGiroGc } = await supabase
       .from("race_results")
@@ -212,7 +250,7 @@ export default async function AchievementsPage({
 
     const completedYears = completedGrandTourYears(
       "giro-d-italia",
-      allGiroStages ?? [],
+      allGiroStages,
       scoredGiroGc ?? [],
       giroFinals ?? [],
     );
@@ -259,10 +297,12 @@ export default async function AchievementsPage({
   // Every team of the season, with the player who owns it: the leaderboards rank
   // players, not teams. Someone holding a team in each league of the season would
   // otherwise compete against himself, his XP split across two rows.
-  const { data: seasonMembers } = await supabase
-    .from("league_members")
-    .select("team_id, user_id")
-    .in("league_id", seasonLeagueIds.length > 0 ? seasonLeagueIds : ["__none__"]);
+  const { data: seasonMembers } = seasonLeagueIds.length > 0
+    ? await supabase
+        .from("league_members")
+        .select("team_id, user_id")
+        .in("league_id", seasonLeagueIds)
+    : { data: [] };
 
   const userByTeam = new Map<string, string>();
   for (const member of seasonMembers ?? []) {

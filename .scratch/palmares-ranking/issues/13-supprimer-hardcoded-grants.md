@@ -73,3 +73,40 @@ endroit.
 Le commentaire du code annonçait l'équipe `…c1a551c00002` comme « Leopard_Trek ».
 Elle appartient en réalité à **Jonathan Schummers**. Personne ne pouvait le voir :
 c'est précisément ce que coûte un tableau indexé par UUID.
+
+## Corrections issues de la revue
+
+**La pagination manquait sur trois lectures, et l'une faussait le gate.**
+`gt_daily_classifications` porte ~1400 lignes pour un seul Giro. Sans pagination,
+la requête s'arrête à 1000 dans un ordre arbitraire, et le signal « étape la plus
+avancée » rapportait **l'étape 14** au lieu de 20 (mesuré en prod). Le diagnostic
+« le Giro s'arrête à l'étape 20 » a été revérifié en lecture paginée et tient,
+mais le code, lui, lisait n'importe quoi. Les deux lectures de preuve de
+propriété sont paginées aussi, maintenant qu'elles couvrent plusieurs équipes.
+
+**La saison venait de l'horloge.** `new Date().getFullYear()` au lieu du
+`season_year` de la ligue consultée : le 1er janvier suivant, la liste des ligues
+devenait vide et les badges disparaissaient. Le même bug à retardement que celui
+qu'on supprimait.
+
+**Deux sentinelles `["__none__"]` sur une colonne uuid.** Postgres lève 22P02 et
+le `?? []` avalait l'erreur. Remplacées par une garde explicite.
+
+### Impact du classement par joueur sur Monument Man et Classic Man
+
+Le passage d'un rang par équipe à un rang par joueur peut, en théorie, retirer un
+badge à quelqu'un. Mesuré en prod :
+
+| Badge | Avant (par équipe, ligue V1) | Après (par joueur, saison) |
+|---|---|---|
+| monument-man | Jonathan Schummers 494.6 | **Jonathan Schummers** 494.6 |
+| classic-man | Jonathan Schummers 727.2 | **Jonathan Schummers** 727.2 |
+
+Aucun changement de détenteur : seule V1 porte des classiques et des monuments,
+V2 ayant couvert le Tour et la Vuelta.
+
+### Reste ouvert, non traité ici
+
+`giroRiderIds` n'est pas scopé à l'année : posséder un coureur sur le Giro 2025
+peut débloquer un maillot 2026. Bug préexistant, amplifié par l'élargissement aux
+équipes de la saison, mais hors du périmètre de ce ticket.
