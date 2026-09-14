@@ -1,0 +1,235 @@
+{
+  "race": "race/tour-de-france/2026",
+  "per_target": {
+    "stage-2": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-3": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-4": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-5": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-6": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-7": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-8": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-9": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-10": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-11": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-12": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-13": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-14": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-15": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-16": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-17": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-18": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-19": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-20": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-21": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "gc": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "points": {
+      "wiki_ranks": 0,
+      "pcs_compared": 0,
+      "pcs_vs_wiki": [],
+      "base_compared": 0,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "kom": {
+      "wiki_ranks": 0,
+      "pcs_compared": 0,
+      "pcs_vs_wiki": [],
+      "base_compared": 0,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "youth": {
+      "wiki_ranks": 0,
+      "pcs_compared": 0,
+      "pcs_vs_wiki": [],
+      "base_compared": 0,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    }
+  },
+  "totaux_etapes": {
+    "pcs_repare_vs_wikipedia": {
+      "compares": 200,
+      "ecarts": 0
+    },
+    "base_vs_wikipedia": {
+      "compares": 200,
+      "ecarts": 0
+    },
+    "base_vs_pcs_top15": {
+      "compares": 300,
+      "ecarts": 0
+    }
+  }
+}
