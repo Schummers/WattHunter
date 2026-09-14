@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
 import { getAchievementBySlug, type AchievementTier } from "@/lib/achievements";
 
 export interface EquippedEmblem {
@@ -6,6 +7,18 @@ export interface EquippedEmblem {
   bannerUrl: string | null;
   tier: AchievementTier;
   name: string;
+}
+
+interface TeamRow {
+  id: string;
+  league_id: string;
+  name: string | null;
+  equipped_achievement_slug: string | null;
+}
+
+interface MemberRow {
+  team_id: string | null;
+  users: { display_name?: string } | { display_name?: string }[] | null;
 }
 
 /** How a player is presented today, whatever season is on screen. */
@@ -60,19 +73,30 @@ export async function loadPlayerIdentities(
     leagueRank.set(options.preferLeagueId, ordered.length);
   }
 
-  const [{ data: teamRows }, { data: memberRows }] = await Promise.all([
-    supabase
-      .from("teams")
-      .select("id, league_id, name, equipped_achievement_slug")
-      .in("league_id", leagueIds),
-    supabase
-      .from("league_members")
-      .select("team_id, users(display_name)")
-      .in("league_id", leagueIds),
+  // Paginated, like every read of the repo that can grow: PostgREST truncates at
+  // 1000 rows in silence, and a league count is exactly the kind of number that
+  // stays small until it does not.
+  const [teamRows, memberRows] = await Promise.all([
+    fetchAllSupabasePages<TeamRow>((from, to) =>
+      supabase
+        .from("teams")
+        .select("id, league_id, name, equipped_achievement_slug")
+        .in("league_id", leagueIds)
+        .order("id")
+        .range(from, to),
+    ),
+    fetchAllSupabasePages<MemberRow>((from, to) =>
+      supabase
+        .from("league_members")
+        .select("team_id, users(display_name)")
+        .in("league_id", leagueIds)
+        .order("id")
+        .range(from, to),
+    ),
   ]);
 
   const accountByTeam = new Map<string, string>();
-  for (const member of memberRows ?? []) {
+  for (const member of memberRows) {
     const teamId = member.team_id as string | null;
     if (!teamId) continue;
     const user = Array.isArray(member.users) ? member.users[0] : member.users;
@@ -83,7 +107,7 @@ export async function loadPlayerIdentities(
   // One team per player: the one from the preferred league, otherwise the one
   // from the most recently created league of the season.
   const chosen = new Map<string, { rank: number; name: string; slug: string | null }>();
-  for (const team of teamRows ?? []) {
+  for (const team of teamRows) {
     const account = accountByTeam.get(team.id as string);
     if (!account) continue;
     const rank = leagueRank.get(team.league_id as string) ?? -1;

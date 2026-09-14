@@ -29,12 +29,15 @@ function relabel<T extends Player>(player: T, identities: Map<string, PlayerIden
 
 export async function loadPalmares(
   supabase: SupabaseClient,
-  options: { seasonYear: number; viewerKey?: string | null } ,
+  options: { seasonYear: number; viewerKey?: string | null; preferLeagueId?: string | null },
 ): Promise<PalmaresData> {
   const [historical, current, identities] = await Promise.all([
     loadHistoricalPalmares(supabase),
     loadCurrentSeason(supabase, options.seasonYear),
-    loadPlayerIdentities(supabase, { seasonYear: options.seasonYear }),
+    loadPlayerIdentities(supabase, {
+      seasonYear: options.seasonYear,
+      preferLeagueId: options.preferLeagueId,
+    }),
   ]);
 
   const events = [...current.events, ...historical.events].map((event) => {

@@ -312,8 +312,7 @@ export default async function RankingPage({
             displayName: identity?.label ?? player.displayName,
             isFormerPlayer: player.isFormerPlayer,
             score: player.score,
-            badgeUrl: identity?.emblem?.badgeUrl ?? null,
-            badgeTier: identity?.emblem?.tier ?? null,
+            emblem: identity?.emblem ?? null,
           };
         }),
       }))}

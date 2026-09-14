@@ -2,7 +2,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { RankingClient } from "../ranking-client";
-import { formatThousands } from "@/lib/format";
 
 /**
  * The archived line must read as a line of the live ranking: rank, badge, the
@@ -31,16 +30,16 @@ function renderArchived() {
               displayName: "GoudalEnergies",
               isFormerPlayer: false,
               score: 2230,
-              badgeUrl: null,
-              badgeTier: null,
+              emblem: null,
             },
             {
-              key: "Fangio",
-              displayName: "Fangio",
+              // A former player who is displayed, unlike the two of
+              // HIDDEN_PLAYERS which never reach the screen at all.
+              key: "JibsEPAULE",
+              displayName: "JibsEPAULE",
               isFormerPlayer: true,
               score: 940,
-              badgeUrl: null,
-              badgeTier: null,
+              emblem: null,
             },
           ],
         },
@@ -75,6 +74,6 @@ describe("archived season row", () => {
 
   it("keeps a former player in italics", () => {
     renderArchived();
-    expect(screen.getByText("Fangio").className).toContain("italic");
+    expect(screen.getByText("JibsEPAULE").className).toContain("italic");
   });
 });

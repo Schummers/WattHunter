@@ -1,6 +1,6 @@
 "use client";
 
-import { AchievementBadge } from "@/components/achievement-badge";
+import { PlayerEmblem } from "@/components/player-emblem";
 import { RACE_GROUP_IDS } from "@/lib/race-groups";
 import { abbreviateName, abbreviateNameShort } from "@/lib/palmares/format";
 import { EVENT_CODE, type PalmaresEvent, type Player, type SeasonStanding } from "@/lib/palmares/types";
@@ -16,15 +16,6 @@ const EMPTY_LABEL: Record<Exclude<PalmaresEvent["status"], "played">, string> = 
   upcoming: "upcoming",
   "not-played": "not played",
 };
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 function PlayerName({ player, short }: { player: Player; short?: boolean }) {
   const label = short ? abbreviateNameShort(player.displayName) : player.displayName;
@@ -71,18 +62,12 @@ function ChampionRow({
       )}
 
       <div className="relative shrink-0">
-        {emblem ? (
-          <AchievementBadge badgeUrl={emblem.badgeUrl} tier={emblem.tier} size={EMBLEM_SIZE} locked={false} />
-        ) : (
-          <div
-            className={`flex items-center justify-center rounded-md border text-[length:var(--type-micro)] text-[var(--text-low)] ${
-              season.isCurrent ? "border-dashed" : ""
-            } border-[var(--border-default)] bg-[var(--bg-surface)]`}
-            style={{ width: EMBLEM_SIZE, height: EMBLEM_SIZE }}
-          >
-            {initials(champion.displayName)}
-          </div>
-        )}
+        <PlayerEmblem
+          emblem={emblem}
+          name={champion.displayName}
+          size={EMBLEM_SIZE}
+          dashed={season.isCurrent}
+        />
       </div>
 
       <div className="relative min-w-0 flex-1">

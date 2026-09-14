@@ -6,11 +6,13 @@ import { ChevronRight } from "lucide-react";
 import { SegmentedControl } from "@/components/segmented-control";
 import { MovementTag } from "@/components/movement-tag";
 import { AchievementBadge } from "@/components/achievement-badge";
+import { PlayerEmblem } from "@/components/player-emblem";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatThousands, countryCodeToFlag } from "@/lib/format";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 import type { AchievementTier } from "@/lib/achievements";
+import type { EquippedEmblem } from "@/lib/palmares/identity";
 
 interface TeamRow {
   id: string;
@@ -53,8 +55,8 @@ interface ArchivedPlayer {
   isFormerPlayer: boolean;
   /** Raw points of that season. Not XP, and never compared to one. */
   score: number;
-  badgeUrl: string | null;
-  badgeTier: AchievementTier | null;
+  /** The badge equipped today, or null. Same shape the Palmares uses. */
+  emblem: EquippedEmblem | null;
 }
 
 interface ArchivedSeason {
@@ -101,21 +103,11 @@ function ArchivedRow({ player, rank }: { player: ArchivedPlayer; rank: number })
       </span>
 
       <div className="shrink-0">
-        {player.badgeUrl && player.badgeTier ? (
-          <AchievementBadge
-            badgeUrl={player.badgeUrl}
-            tier={player.badgeTier}
-            size={ARCHIVED_BADGE_SIZE}
-            locked={false}
-          />
-        ) : (
-          <div
-            className="flex items-center justify-center rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[length:var(--type-micro)] text-[var(--text-low)]"
-            style={{ width: ARCHIVED_BADGE_SIZE, height: ARCHIVED_BADGE_SIZE }}
-          >
-            {getInitials(player.displayName)}
-          </div>
-        )}
+        <PlayerEmblem
+          emblem={player.emblem}
+          name={player.displayName}
+          size={ARCHIVED_BADGE_SIZE}
+        />
       </div>
 
       <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
