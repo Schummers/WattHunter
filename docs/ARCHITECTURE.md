@@ -219,6 +219,16 @@ Le modèle est dans `lib/palmares/` et c'est lui qui porte la logique :
   joueur** (deux ligues classic en 2026, un seul groupe de personnes). Maillots :
   colonnes séparées du ticket 08, plus les lignes de classement final attribuées
   par leur slug.
+- `status.ts` — statut d'une épreuve (`played` / `ongoing` / `upcoming` /
+  `not-played`), fonction pure testée (`status.test.ts`). Un groupe est clos soit
+  parce que sa fenêtre calendaire est passée (le seul cas dont un Grand Tour ait
+  besoin), soit parce que **la dernière course du groupe déjà courue n'a produit
+  aucune XP** : c'est ce qui distingue une ligue qui a arrêté de jouer d'une
+  saison encore en cours. Sans cette seconde clause les classiques 2026, stoppées
+  à Liège le 26/04, restaient « ongoing » jusqu'au Lombardia du 10/10, sans
+  podium, et la saison 2026 entière restait « en cours ». Limite assumée et
+  testée : une classique sautée **au milieu** de la saison fait basculer le groupe
+  en `played` jusqu'à la suivante.
 - `aggregate.ts` — victoires, maillots, carrière, rangs de saison, face à face.
   Pures fonctions, testées (`aggregate.test.ts`).
 - `format.ts` — abréviation des noms par règle explicite, jamais par ellipse CSS.

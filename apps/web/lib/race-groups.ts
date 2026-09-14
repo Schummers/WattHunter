@@ -24,7 +24,7 @@ const TYPE_BY_RACE_KEY = new Map<string, WtRaceType>(
  * calendar file is written per season, the race groups must hold for every
  * season of the historical archive.
  */
-function raceKey(raceSlug: string): string {
+export function raceKey(raceSlug: string): string {
   return raceSlug.split("/")[1] ?? raceSlug;
 }
 
@@ -153,16 +153,57 @@ export function getRaceGroupWindow(
   let start: string | null = null;
   let end: string | null = null;
 
+  for (const race of racesOfGroup(groupId, year)) {
+    if (start === null || race.start < start) start = race.start;
+    if (end === null || race.end > end) end = race.end;
+  }
+
+  return start && end ? { start, end } : null;
+}
+
+/**
+ * The calendar races of a group, each shifted to `year`. A one-day race carries
+ * `date` alone, a stage race `start_date`/`end_date`.
+ */
+function racesOfGroup(
+  groupId: RaceGroupId,
+  year: number,
+): { key: string; start: string; end: string }[] {
+  const races: { key: string; start: string; end: string }[] = [];
   for (const race of calendarData as CalendarRace[]) {
     if (getRaceGroupId(race.slug) !== groupId) continue;
     const rawStart = race.start_date ?? race.date;
     const rawEnd = race.end_date ?? race.date;
     if (!rawStart || !rawEnd) continue;
-    const shiftedStart = `${year}${rawStart.slice(4)}`;
-    const shiftedEnd = `${year}${rawEnd.slice(4)}`;
-    if (start === null || shiftedStart < start) start = shiftedStart;
-    if (end === null || shiftedEnd > end) end = shiftedEnd;
+    races.push({
+      key: raceKey(race.slug),
+      start: `${year}${rawStart.slice(4)}`,
+      end: `${year}${rawEnd.slice(4)}`,
+    });
   }
+  return races;
+}
 
-  return start && end ? { start, end } : null;
+/**
+ * The most recent race of the group that is already over on `today`, or null if
+ * none is. Year-agnostic like the rest of this module: the calendar is written
+ * for one season and shifted to `year`.
+ *
+ * This is what tells a season the league has stopped playing from one still
+ * running: if the last finished race of the group produced no XP, the group is
+ * over for this league even though the World Tour calendar goes on. The 2026
+ * classics stopped at Liège-Bastogne-Liège while the calendar runs to Il
+ * Lombardia in October.
+ */
+export function getLastFinishedRaceKey(
+  groupId: RaceGroupId,
+  year: number,
+  today: string,
+): string | null {
+  let last: { key: string; end: string } | null = null;
+  for (const race of racesOfGroup(groupId, year)) {
+    if (race.end >= today) continue;
+    if (last === null || race.end > last.end) last = { key: race.key, end: race.end };
+  }
+  return last?.key ?? null;
 }
