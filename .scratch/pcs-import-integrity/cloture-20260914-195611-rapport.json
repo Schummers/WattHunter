@@ -1,0 +1,280 @@
+{
+  "stamp": "20260914-195611",
+  "pages_servies_depuis_le_cache": {
+    "race/vuelta-a-espana/2026/stage-1": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-1.html",
+    "race/vuelta-a-espana/2026/stage-2": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-2.html",
+    "race/vuelta-a-espana/2026/stage-4": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-4.html",
+    "race/vuelta-a-espana/2026/stage-5": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-5.html",
+    "race/vuelta-a-espana/2026/stage-6": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-6.html",
+    "race/vuelta-a-espana/2026/stage-7": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-7.html",
+    "race/vuelta-a-espana/2026/stage-8": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-8.html",
+    "race/vuelta-a-espana/2026/stage-9": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-9.html",
+    "race/vuelta-a-espana/2026/stage-10": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-10.html",
+    "race/vuelta-a-espana/2026/stage-11": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-11.html",
+    "race/vuelta-a-espana/2026/stage-12": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-12.html",
+    "race/vuelta-a-espana/2026/stage-13": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-13.html",
+    "race/vuelta-a-espana/2026/stage-14": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-14.html",
+    "race/vuelta-a-espana/2026/stage-15": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-15.html",
+    "race/vuelta-a-espana/2026/stage-16": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-16.html",
+    "race/vuelta-a-espana/2026/stage-17": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-17.html",
+    "race/vuelta-a-espana/2026/stage-18": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-18.html",
+    "race/vuelta-a-espana/2026/stage-19": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-19.html",
+    "race/vuelta-a-espana/2026/stage-20": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-20.html",
+    "race/vuelta-a-espana/2026/stage-21": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/sweep/stage-21.html",
+    "race/vuelta-a-espana/2026/gc": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/closing/gc.html",
+    "race/vuelta-a-espana/2026/points": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/closing/points.html",
+    "race/vuelta-a-espana/2026/kom": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/closing/kom.html",
+    "race/vuelta-a-espana/2026/youth": "/Users/jonathanschummers/AI OS/cycling/watthunter/.scratch/pcs-import-integrity/fixtures/closing/youth.html"
+  },
+  "import": {
+    "stage-1": {
+      "results": 136,
+      "daily": {
+        "gc": 41,
+        "points": 13,
+        "kom": 0,
+        "youth": 16
+      }
+    },
+    "stage-2": {
+      "results": 136,
+      "daily": {
+        "gc": 46,
+        "points": 18,
+        "kom": 1,
+        "youth": 18
+      }
+    },
+    "stage-4": {
+      "results": 135,
+      "daily": {
+        "gc": 45,
+        "points": 20,
+        "kom": 9,
+        "youth": 17
+      }
+    },
+    "stage-5": {
+      "results": 135,
+      "daily": {
+        "gc": 46,
+        "points": 20,
+        "kom": 9,
+        "youth": 18
+      }
+    },
+    "stage-6": {
+      "results": 134,
+      "daily": {
+        "gc": 45,
+        "points": 20,
+        "kom": 9,
+        "youth": 18
+      }
+    },
+    "stage-7": {
+      "results": 132,
+      "daily": {
+        "gc": 45,
+        "points": 20,
+        "kom": 9,
+        "youth": 17
+      }
+    },
+    "stage-8": {
+      "results": 132,
+      "daily": {
+        "gc": 44,
+        "points": 20,
+        "kom": 9,
+        "youth": 17
+      }
+    },
+    "stage-9": {
+      "results": 128,
+      "daily": {
+        "gc": 43,
+        "points": 20,
+        "kom": 10,
+        "youth": 17
+      }
+    },
+    "stage-10": {
+      "results": 126,
+      "daily": {
+        "gc": 44,
+        "points": 20,
+        "kom": 10,
+        "youth": 17
+      }
+    },
+    "stage-11": {
+      "results": 124,
+      "daily": {
+        "gc": 43,
+        "points": 20,
+        "kom": 10,
+        "youth": 17
+      }
+    },
+    "stage-12": {
+      "results": 123,
+      "daily": {
+        "gc": 44,
+        "points": 20,
+        "kom": 10,
+        "youth": 17
+      }
+    },
+    "stage-13": {
+      "results": 120,
+      "daily": {
+        "gc": 45,
+        "points": 20,
+        "kom": 10,
+        "youth": 16
+      }
+    },
+    "stage-14": {
+      "results": 116,
+      "daily": {
+        "gc": 42,
+        "points": 20,
+        "kom": 10,
+        "youth": 16
+      }
+    },
+    "stage-15": {
+      "results": 113,
+      "daily": {
+        "gc": 43,
+        "points": 20,
+        "kom": 10,
+        "youth": 16
+      }
+    },
+    "stage-16": {
+      "results": 113,
+      "daily": {
+        "gc": 42,
+        "points": 20,
+        "kom": 10,
+        "youth": 16
+      }
+    },
+    "stage-17": {
+      "results": 113,
+      "daily": {
+        "gc": 43,
+        "points": 20,
+        "kom": 10,
+        "youth": 16
+      }
+    },
+    "stage-18": {
+      "results": 113,
+      "daily": {
+        "gc": 42,
+        "points": 20,
+        "kom": 10,
+        "youth": 16
+      }
+    },
+    "stage-19": {
+      "results": 112,
+      "daily": {
+        "gc": 43,
+        "points": 20,
+        "kom": 10,
+        "youth": 16
+      }
+    },
+    "stage-20": {
+      "results": 109,
+      "daily": {
+        "gc": 43,
+        "points": 20,
+        "kom": 10,
+        "youth": 16
+      }
+    },
+    "stage-21": {
+      "results": 106,
+      "daily": {
+        "gc": 43,
+        "points": 20,
+        "kom": 10,
+        "youth": 16
+      }
+    },
+    "gc": {
+      "imported": 106
+    },
+    "finals": {
+      "points": 79,
+      "kom": 48,
+      "youth": 38
+    }
+  },
+  "scoring": {
+    "status": "completed",
+    "teams_processed": 7,
+    "errors": []
+  },
+  "diff_equipes": [
+    {
+      "team": "Leopard_Trek",
+      "xp_avant": 9885.1,
+      "xp_apres": 9885.09,
+      "delta": -0.01
+    },
+    {
+      "team": "Peejee",
+      "xp_avant": 7615.95,
+      "xp_apres": 7892.96,
+      "delta": 277.01
+    },
+    {
+      "team": "Klimax",
+      "xp_avant": 7705.54,
+      "xp_apres": 7783.54,
+      "delta": 78.0
+    },
+    {
+      "team": "GoudalEnergies",
+      "xp_avant": 7586.86,
+      "xp_apres": 7780.76,
+      "delta": 193.9
+    },
+    {
+      "team": "Muskatel Muskadji",
+      "xp_avant": 7371.88,
+      "xp_apres": 7537.38,
+      "delta": 165.5
+    },
+    {
+      "team": "Las Chivas Pendejas",
+      "xp_avant": 6755.73,
+      "xp_apres": 6264.93,
+      "delta": -490.8
+    },
+    {
+      "team": "bigdaddy",
+      "xp_avant": 4766.18,
+      "xp_apres": 4914.18,
+      "delta": 148.0
+    },
+    {
+      "team": "Dixon Hormous",
+      "xp_avant": 3742.63,
+      "xp_apres": 3742.63,
+      "delta": 0.0
+    },
+    {
+      "team": "TheAussieMate",
+      "xp_avant": 2102.61,
+      "xp_apres": 2102.61,
+      "delta": 0.0
+    }
+  ]
+}

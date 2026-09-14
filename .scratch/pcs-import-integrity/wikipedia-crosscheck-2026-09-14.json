@@ -1,0 +1,154 @@
+{
+  "per_stage": {
+    "1": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 8,
+      "base_vs_wiki": []
+    },
+    "2": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "4": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "5": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "6": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "7": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 9,
+      "base_vs_wiki": []
+    },
+    "8": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "9": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "10": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 9,
+      "base_vs_wiki": []
+    },
+    "11": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "12": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "13": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 9,
+      "base_vs_wiki": []
+    },
+    "14": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "15": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "16": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "17": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "18": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 9,
+      "base_vs_wiki": []
+    },
+    "19": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 9,
+      "base_vs_wiki": []
+    },
+    "20": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    },
+    "21": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": []
+    }
+  },
+  "totaux": {
+    "pcs_repare_vs_wikipedia": {
+      "compares": 200,
+      "ecarts": 0
+    },
+    "base_vs_wikipedia": {
+      "compares": 193,
+      "ecarts": 0
+    }
+  }
+}
