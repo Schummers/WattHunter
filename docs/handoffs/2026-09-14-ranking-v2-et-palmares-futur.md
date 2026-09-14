@@ -462,3 +462,39 @@ avoir gagné les quatre au moins une fois).
 - **Six pistes de plus pour la fiche joueur** : terrains de prédilection, palmarès
   personnel, la disette, le meilleur jour, la collection des quatre épreuves, et la
   liste des noms d'équipe portés au fil des ans.
+
+### 9.6 Amendements (v3 des wireframes, même URL)
+
+**Validés : Ranking et l'onglet Frise.**
+
+- **Ranking** : le contrôle Teams / Riders désactivé n'a plus de phrase
+  d'explication. L'état grisé se suffit.
+- **Frise** : passée en **cartes non dépliables**, une par saison. L'intitulé de la
+  carte est « 2023 · CHAMPION », le nom du champion suit à 16 px (taille de titre de
+  section du design system, au lieu de 24 px), puis les quatre vainqueurs. Une seule
+  ligne sous la liste explique le calcul du champion. Le soulignement marque le
+  doublé épreuve + titre.
+- **Victoires** : colonnes inversées, **1er à l'extrême droite en primaire**, 2e et
+  3e à sa gauche en secondaire.
+- **Maillots** : la règle de calcul passe **sous** le tableau.
+- **Règle générale posée** : les règles de calcul vont sous les tableaux, jamais
+  au-dessus, et **aucun commentaire éditorial** (« X est le seul à… »). Un
+  commentaire se périme à chaque saison, une règle non.
+- **Joueurs** : le face à face avait un visuel cassé (barre et score sur deux lignes).
+  Refait en une ligne par adversaire, tri du plus favorable au moins favorable, avec
+  un repère d'égalité. Le « rang de saison » est conservé et renommé **« ta place au
+  classement de chaque saison »**.
+- **Noms** : partout les comptes WattHunter, jamais les pseudos LRDT. Les wireframes
+  utilisent désormais Muscat Romain, TheAussieMate, Dixon Hormous, Jonathan
+  Schummers, Marino Alex, Peejee.
+
+**Question ouverte n°1, importante** : Fangio et JoeDills n'ont jamais rien gagné,
+les exclure ne coûte rien. **JibsEPAULE a gagné le Tour de France 2019 et deux
+maillots.** L'exclure des compteurs tout en le montrant dans la frise casse
+l'arithmétique : la colonne TDF totalisera 9 victoires pour 10 Tours joués.
+Recommandation : le garder partout, en italique, avec la mention d'ancien joueur.
+
+Trois autres questions ouvertes : le rattachement Classic V1 → saison 2026 bloque le
+champion 2026 de la frise ; l'onglet par défaut (recommandation : Frise) ; et
+lesquelles des six pistes de la fiche joueur entrent en V1 (recommandation : terrains
+de prédilection et palmarès personnel).
