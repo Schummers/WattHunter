@@ -432,3 +432,33 @@ avoir gagné les quatre au moins une fois).
   fausses ligues ou de fausses équipes.
 - Corriger l'achievement Classic Man, qui compte Paris-Nice et Tirreno-Adriatico
   comme des classiques.
+
+### 9.5 Amendements (v2 des wireframes, même URL)
+
+- **Le segmented control Teams / Riders est conservé**, contrairement à la décision
+  de la passe 3. Il est **désactivé sur les saisons antérieures à 2026**, avec une
+  ligne d'explication : La Route du Tour n'a aucune donnée coureur, seulement des
+  classements d'équipes. Le masquer ferait sauter la mise en page d'une année à
+  l'autre. **Ranking est validé en l'état.**
+- **Noms affichés** : toujours le compte WattHunter actuel, y compris pour un titre
+  gagné sous un ancien pseudo. Le mapping couvre 9 joueurs. **Trois n'ont aucun
+  compte** : Fangio, JibsEPAULE et JoeDills. À trancher, garder leur pseudo d'époque
+  ou les exclure.
+- **Frise redessinée.** La v1 empilait des cases et noyait le champion. Deux
+  variantes proposées, F1 retenue : rail chronologique sans aucune boîte, champion
+  en gros dans la police de titrage, quatre vainqueurs en ligne sous lui, et un
+  soulignement quand le vainqueur d'une épreuve est aussi le champion de l'année.
+- **Onglet Victoires** : le triplet 6·4·2 devient trois colonnes chiffrées avec
+  en-têtes (1er en primaire, 2e et 3e en gris à droite). **Un commentaire de la v1
+  était faux** : David Choncoutié a bien gagné les quatre épreuves, il est même le
+  seul du groupe.
+- **Onglet Maillots** : la règle de calcul est écrite sur l'écran (le maillot va à
+  l'équipe qui cumule le plus de points de la catégorie, pas à celle qui possède le
+  coureur classé premier). Le bloc « sur 19 grands tours » est supprimé.
+- **Onglet Joueurs** : la règle du duel est écrite sur l'écran (seules comptent les
+  épreuves disputées par les deux). Ajout du **rang de saison année par année**, une
+  barre par année dont la hauteur est la place au classement de l'année, jamais les
+  points : la seule façon honnête de tracer une trajectoire à travers deux barèmes.
+- **Six pistes de plus pour la fiche joueur** : terrains de prédilection, palmarès
+  personnel, la disette, le meilleur jour, la collection des quatre épreuves, et la
+  liste des noms d'équipe portés au fil des ans.
