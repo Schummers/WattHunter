@@ -127,12 +127,20 @@ entre +2 et +258 XP par équipe pour des raisons qui n'ont aucun rapport avec
 l'incident : GC finale 250 → 400, maillots 100 → 150, Youth 50 → 75. C'est
 l'argument contre le rescore, et il est chiffré.
 
-Le drift ci-dessus ne couvre que les finaux. Le barème d'étape n'a pas bougé ;
-le fix underdog (`0a0b106`) et les termes côtes/sprints (`844cae8`) ne jouent pas
-non plus sur le Tour : **`stage_event_results` est vide pour le Tour 2026**, donc
-un rescore y ajouterait 0 XP d'événements tout en en ayant ajouté sur la Vuelta.
-Autrement dit, un rescore du Tour au code actuel ne le rendrait pas comparable à
-la Vuelta, il creuserait un autre écart.
+Le drift ci-dessus ne couvre que les finaux, et **c'est exhaustif** : les trois
+autres changements de scoring depuis juillet valent 0 XP sur le Tour, vérifié en
+base et non pas supposé.
+
+| Commit | Changement | Effet réel sur le Tour |
+|---|---|---|
+| `0a0b106` | underdog sur les rank_points seuls | **0** — 236 lignes Tour ont `underdog_mult ≠ 1`, **aucune** n'a de terme additif, donc le fix ne déplace rien |
+| `844cae8` | termes côtes et sprints | **0** — `stage_event_results` est vide pour le Tour 2026 |
+| `3583af0` + `92dbf19` | finaux GC 250 → 400, maillots 100 → 150, Youth 50 → 75 | **tout le drift** |
+| — | barème d'étape | inchangé depuis juillet |
+
+Conséquence secondaire : un rescore du Tour au code actuel n'ajouterait aucun XP
+d'événements alors qu'il en a ajouté sur la Vuelta. Il ne rendrait pas les deux
+Grands Tours comparables, il creuserait un autre écart.
 
 Détail ligne par ligne : `impact-tdf2026-2026-09-14.json`.
 
@@ -183,6 +191,64 @@ pas été appliquées.
 
 **Conclusion sur les classements : le Tour n'est pas le problème. La Vuelta
 l'est.**
+
+### Les trois scénarios de correction, chiffrés
+
+Le drift étant exhaustif (tableau ci-dessus), on peut projeter le classement
+général résultant de chaque option. `A` = corriger les rangs sans toucher à l'XP,
+`B` = corriger les rangs et rescorer au barème de juillet, `C` = corriger les
+rangs et rescorer au code d'aujourd'hui.
+
+| # | A. rangs seuls | B. rescore juillet | C. rescore code actuel |
+|---|---|---|---|
+| 1 | Leopard_Trek 9936.1 | Leopard_Trek 9965.1 | Leopard_Trek 10223.1 |
+| 2 | Peejee 7813.6 | Peejee 7814.6 | **Klimax 7929.5** |
+| 3 | Klimax 7770.0 | Klimax 7781.5 | **GoudalEnergies 7922.9** |
+| 4 | GoudalEnergies 7761.4 | GoudalEnergies 7747.9 | **Peejee 7896.6** |
+| 5 | Muskatel Muskadji 7446.9 | Muskatel Muskadji 7460.4 | Muskatel Muskadji 7715.4 |
+
+**C renverse le podium** : Peejee passe 2e → 4e. Et ce renversement ne vient
+**pas** du bug d'import (option B, qui le corrige, garde l'ordre intact) : il
+vient entièrement de la rehausse des barèmes finaux d'août. Rescorer le Tour au
+code actuel, c'est rejouer juillet avec les règles de septembre et déplacer un
+podium pour une raison qui n'a rien à voir avec l'incident.
+
+**C est donc exclu.** Entre A et B, l'enjeu est de 29 XP au maximum et l'ordre
+est le même ; le choix se joue sur la cohérence interne de la base, pas sur le
+classement.
+
+### Le garde-fou qui manque, et qui est un piège actif
+
+`scoring.py` **dit** déjà la bonne règle :
+
+```python
+# Applied from the Vuelta 2026 closeout on — Giro/Tour 2026 keep the old values
+# ("the past is the past").
+```
+
+C'est un **commentaire**. `_points_from_rank` et `_secondary_final_points` lisent
+une constante unique, sans aucun gating par course ni par année. N'importe quel
+rescore des slugs Tour 2026, aujourd'hui, applique le barème de septembre et
+produit le classement C ci-dessus — sans avertissement.
+
+Ajouter une ligne de doc « ne jamais rescorer le Tour 2026 » ne corrige pas ça,
+elle reproduit exactement le mode de défaillance de tout cet incident : une
+garantie qui repose sur le fait que quelqu'un se souvienne. Le geste utile est de
+rendre le barème **daté dans le code** (sélection du barème par slug ou par date
+de course), ce qui transforme l'intention déjà écrite en mécanisme et rend
+l'option B rejouable sans risque.
+
+### Piège du ré-import : l'étape 1 ne doit PAS être ré-importée
+
+`race_results` pour `stage-1` contient les **positions individuelles au général**
+après l'étape 1 (contournement GC-as-stage-1, mémoire `tdf2026_stage1_ttt_via_gc`),
+soit 1, 2, 3, 4, 5, 6, 8, 9, 10, 12… La page PCS `stage-1`, elle, donne un
+classement **par équipes** : huit coureurs au rang 1, huit au rang 2. Un ré-import
+« des 21 étapes » écraserait donc des rangs justes par des rangs d'équipe et
+casserait le scoring de l'étape 1 (951,5 XP distribués).
+
+Le ré-import doit porter sur les **étapes 2 à 21 + `gc` + `points` / `kom` /
+`youth`**, jamais sur `stage-1`, qui est déjà vérifiée exacte.
 
 ## 5. Ce qui reste ouvert
 
@@ -238,9 +304,9 @@ SCRAPER_BACKEND=playwright .venv/bin/python \
    top 10. Relever le CSS d'une étape du Tour fermerait la boucle.
 2. **Les alias de nommage.** Un seul a été nécessaire (`Josh Tarling`). Un alias
    manquant se présenterait comme un faux écart, pas comme un silence.
-3. **La colonne drift ne couvre que les finaux.** C'est justifié (barème d'étape
-   inchangé, `stage_event_results` vide sur le Tour), mais c'est une hypothèse à
-   relire plutôt qu'un calcul exhaustif.
+3. **La projection des scénarios A/B/C** suppose que le drift mesuré est
+   exhaustif. Les trois composantes sont vérifiées en base une par une, mais
+   c'est une reconstruction analytique, pas un rescore à blanc.
 4. **`teams.cumulative_xp` est pris comme classement général**, pas la somme de
    `rider_xp_daily` — qui ne contient que Tour et Vuelta pour cette ligue, le
    Giro ayant été cloné au seed de la V2.
