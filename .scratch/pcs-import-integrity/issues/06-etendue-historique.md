@@ -1,6 +1,6 @@
 # 06 — Mesurer l'étendue du problème sur le Giro et le Tour 2026
 
-Status: `needs-info`
+Status: `ready-for-agent`
 Created: 2026-09-14
 Bloqué par: `01-tester-origine-decalage.md`
 
@@ -33,3 +33,7 @@ probablement plus fiables que les données scrapées, pas moins. À distinguer d
 l'échantillonnage.
 
 ## Comments
+
+### 2026-09-14
+
+Débloqué par le verdict du ticket 01 (H1). L'étendue sur la Vuelta est mesurée : voir `08-etat-vuelta-2026-et-decision-rescore.md`. Giro et Tour restent non mesurés, et le correctif rend désormais la mesure automatisable sans captures.

@@ -2,3 +2,5 @@
 # (services/pcs-sync/tests/fixtures/). On garde ici les releves CSS seulement.
 *.html
 probe/
+sweep/
+closing/

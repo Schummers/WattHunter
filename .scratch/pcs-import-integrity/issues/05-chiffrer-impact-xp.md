@@ -1,6 +1,6 @@
 # 05 — Chiffrer l'impact XP des erreurs de rang, puis décider du rattrapage
 
-Status: `ready-for-agent`
+Status: `superseded`
 Created: 2026-09-14
 
 ## Problème
@@ -38,3 +38,7 @@ backfill Giro (Rubio/Arrieta, 2026-06-04). Toute option de rattrapage doit diffu
 un diff avant/après sur **toutes** les équipes, pas seulement celles visées.
 
 ## Comments
+
+### 2026-09-14
+
+Le chiffrage est fait et il est **mesuré, pas extrapolé** : voir `08-etat-vuelta-2026-et-decision-rescore.md`. 54 rangs faux sur 16 étapes, 31 touchant un contrat, places 3/4/5/7 de la Vuelta en jeu.
