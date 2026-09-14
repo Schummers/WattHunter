@@ -33,7 +33,7 @@ Le brouillage **tourne dans le temps** : une étape brouillée en août peut êt
 propre aujourd'hui, et l'inverse. C'est pourquoi un ré-import aveugle répare une
 étape et en casse une autre.
 
-### 2. Le correctif (ticket 03, livré, branche `fix/pcs-dom-obfuscation`)
+### 2. Le correctif (ticket 03, livré et **mergé sur `main`**, PR #74, commit `25db233`)
 
 `services/pcs-sync/pcs_deobfuscate.py`, branché dans `fetch_html` et dans
 `import_race_results` / `import_gc_results`. Répare, ou refuse l'import.
