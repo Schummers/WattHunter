@@ -549,3 +549,19 @@ initiale en réserve comme le fait déjà l'avatar coureur quand la photo manque
 Maillots et Joueurs validés en v3/v4. Restent les quatre questions de la section 06
 des wireframes, dont la plus structurante est le sort de JibsEPAULE dans les
 compteurs.
+
+### 9.9 Amendements (v6) et découpage en tickets
+
+- **Sous-titre du champion** : format arrêté, `champion · ahead of X (2nd) and
+  Y (3rd)`, avec le rang entre parenthèses.
+- **Toute l'interface est en anglais** (règle n°1 du CLAUDE.md projet). Onglets
+  Seasons, Wins, Jerseys, Players. Codes d'épreuve CLS, GIR, TDF, VTA. Maillots
+  YEL, GRN, POL, WHT. Seules les annotations des wireframes restent en français.
+- **JibsEPAULE est conservé partout, en italique**, avec la mention d'ancien
+  joueur. Fangio et JoeDills sont exclus, ils n'ont jamais rien gagné. Question
+  ouverte n°1 close.
+
+**Tickets publiés** : `.scratch/palmares-ranking/`, un PRD et douze issues en ordre
+de dépendance. Tickets 01, 02, 03, 07 et 08 démarrables immédiatement ; 04 attend
+03 ; 05 et 06 attendent 01 ; 09 attend 01, 06 et 07 ; 10, 11 et 12 attendent 09,
+et 11 attend aussi 08.
