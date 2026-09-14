@@ -10,11 +10,14 @@ refuses to write a split it cannot prove:
   - A final classification row (`.../gc`, `.../points`, `.../kom`, `.../youth`)
     carries exactly one jersey. Its split is read off the slug — exact, no guess.
 
-  - A daily row is split from `gt_daily_classifications`. The role that was in
-    force at scoring time is NOT re-derived (a role cutoff replayed months later
-    is its own source of error). Every candidate role is tried instead, and the
-    split is written only when the candidates that reproduce the stored total all
-    agree on the same split. Anything else is reported and left untouched.
+  - A daily row is split from `gt_daily_classifications`. Neither the role nor
+    the scale in force at scoring time is re-derived: a role cutoff replayed
+    months later is its own source of error, and the scale itself changed twice
+    in 2026 (the Giro was scored under the V2 matched-only rule, the Vuelta under
+    the flat-for-all one). Every combination of scale and role is tried instead,
+    and the split is written only when the combinations that reproduce the stored
+    total all agree on the same split. Anything else is reported and left
+    untouched.
 
 This is the whole point of the check: a split that does not add back up to what
 was credited is a wrong split, and a rescore is not what is wanted here.
@@ -45,7 +48,6 @@ from scoring import (  # noqa: E402
     _classif_breakdown,
     _classif_breakdown_gt,
     _empty_breakdown,
-    _is_gt_slug,
 )
 
 TOLERANCE = 0.01
@@ -54,6 +56,12 @@ TOLERANCE = 0.01
 # absent from the multiplier tables all behave the same (flat scale), so one
 # representative is enough for them.
 CANDIDATE_ROLES = ("domestique", "gc_leader", "sprinter", "climber")
+
+# Both scales that ever produced a stored bonus: the 2026-07 flat-for-all refonte
+# and the V2 matched-only rule it replaced. The Giro 2026 was scored under the
+# second, the Vuelta under the first, and neither is re-derived from the slug —
+# whichever reproduces what was actually credited is the right one.
+CANDIDATE_SCALES = (_classif_breakdown_gt, _classif_breakdown)
 
 COLUMN_BY_TYPE = {
     "gc": "gc_classif_bonus",
@@ -90,16 +98,16 @@ def resolve_split(
     if not classif_rows:
         return None, "no classification row for a non-zero bonus"
 
-    compute = _classif_breakdown_gt if _is_gt_slug(race_slug) else _classif_breakdown
-    matching = {
-        _rounded(compute(classif_rows, role))
-        for role in CANDIDATE_ROLES
-        if abs(sum(compute(classif_rows, role).values()) - stored_bonus) < TOLERANCE
-    }
+    matching = set()
+    for compute in CANDIDATE_SCALES:
+        for role in CANDIDATE_ROLES:
+            breakdown = compute(classif_rows, role)
+            if abs(sum(breakdown.values()) - stored_bonus) < TOLERANCE:
+                matching.add(_rounded(breakdown))
     if not matching:
-        return None, "no candidate role reproduces the stored bonus"
+        return None, "no candidate scale or role reproduces the stored bonus"
     if len(matching) > 1:
-        return None, "candidate roles disagree on the split"
+        return None, "candidates disagree on the split"
 
     values = matching.pop()
     return dict(zip(CLASSIF_TYPES, values)), "reconstructed"
