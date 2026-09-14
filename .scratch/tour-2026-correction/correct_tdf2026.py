@@ -161,14 +161,33 @@ def install_cache_fetch() -> None:
 
 
 # --- Baseline / snapshots --------------------------------------------------
-def _fetch_all(sb, table: str, select: str, apply=None, order: str = "id"):
+# Cle de tri stable, obligatoire : sans `order`, PostgREST pagine sur un ordre
+# non garanti et `_fetch_all` peut rendre deux fois la meme ligne et en sauter
+# une autre. Toutes ces tables n'ont pas de colonne `id` — `stage_profiles`,
+# `gt_final_classifications` et `stage_event_results` sont clefees autrement.
+ORDER_KEY = {
+    "teams": ["id"],
+    "race_results": ["id"],
+    "rider_xp_daily": ["id"],
+    "team_ranking_daily": ["id"],
+    "stage_profiles": ["race_slug"],
+    "gt_final_classifications": ["race_slug", "rider_id"],
+    "stage_event_results": ["race_slug", "rider_id", "event_type", "rank"],
+}
+
+
+def _fetch_all(sb, table: str, select: str, apply=None):
     from db_utils import _fetch_all as fa
+
+    keys = ORDER_KEY[table]
 
     def factory():
         q = sb.table(table).select(select)
         if apply:
             q = apply(q)
-        return q.order(order)
+        for k in keys:
+            q = q.order(k)
+        return q
 
     return fa(factory)
 
@@ -242,7 +261,7 @@ def stage_dates(sb) -> dict[str, str]:
     """
     rows = _fetch_all(
         sb, "stage_profiles", "race_slug,race_date",
-        lambda q: q.in_("race_slug", STAGE_SLUGS), order="race_slug",
+        lambda q: q.in_("race_slug", STAGE_SLUGS),
     )
     dates = {r["race_slug"]: str(r["race_date"]) for r in rows if r.get("race_date")}
     missing = [s for s in STAGE_SLUGS if s not in dates]

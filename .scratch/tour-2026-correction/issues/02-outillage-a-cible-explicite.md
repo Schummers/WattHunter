@@ -7,7 +7,7 @@ ticket 5 (local) et au ticket 6 (prod) : ce qui a été validé est ce qui est r
 
 **Blocked by:** None — can start immediately (parallèle au 01).
 
-**Status:** ready-for-human (7/8 — le dry-run local attend le ticket 01)
+**Status:** ready-for-human
 
 - [x] Paramètre de cible obligatoire ; la prod exige en plus un flag d'écriture explicite, sinon le script s'arrête après le baseline (dry-run)
 - [x] Baseline : snapshot daté de `race_results`, `gt_final_classifications`, `stage_event_results`, `rider_xp_daily`, `teams` (cumulative_xp, level) et `team_ranking_daily`, restreint aux slugs Tour et aux 9 équipes de la ligue Classic V2, écrit sur disque avant toute écriture
@@ -16,7 +16,7 @@ ticket 5 (local) et au ticket 6 (prod) : ce qui a été validé est ce qui est r
 - [x] `race_date` de chaque étape lue dans `stage_profiles`, jamais la date de clôture (incident Vuelta, runbook `vuelta2026-closeout-2026-09-14.md`)
 - [x] Étapes séparées et appelables une à une : `baseline`, `reimport`, `import-events`, `rescore`, `diff`, pour que les tickets 3, 4, 5 les enchaînent sans code supplémentaire
 - [x] Le diff compare deux snapshots et sort, par équipe, les deltas de `cumulative_xp`, `level`, du total `rider_xp_daily` par slug, et le nombre de lignes de `team_ranking_daily` réécrites
-- [ ] Dry-run exécuté contre le local (une fois le 01 livré) : s'arrête après le baseline, aucune écriture
+- [x] Dry-run exécuté contre le local (une fois le 01 livré) : s'arrête après le baseline, aucune écriture
 
 ## Livré
 
@@ -56,6 +56,27 @@ Snapshots datés dans `.scratch/tour-2026-correction/snapshots/`.
   première. Un enchaînement 3 → 4 → 5 laisse donc un couple `avant-` / `après-`
   par étape, et `diff` accepte n'importe quel couple de snapshots.
 
-### Reste ouvert
+### Le baseline exécuté contre le local
 
-La dernière case, le dry-run contre le local, attend que le ticket 01 ait une base.
+```
+[cible] local -> http://127.0.0.1:54321
+[baseline] .scratch/tour-2026-correction/snapshots/20260914-170211-baseline.json
+           slugs                          25
+           teams                           9
+           race_results                 3207
+           gt_final_classifications      200
+           stage_event_results             0
+           rider_xp_daily               1539
+           team_ranking_daily            261
+```
+
+`stage_event_results` à 0 confirme le diagnostic : aucun événement côte ou
+sprint n'a jamais été importé sur le Tour 2026. C'est le ticket 04.
+
+### Un bug trouvé par cette exécution
+
+La pagination triait sur `id` pour toutes les tables. `gt_final_classifications`,
+`stage_event_results` et `stage_profiles` n'ont pas de colonne `id` : le baseline
+échouait en `42703`. Corrigé par une table de clés de tri explicite. Le tri n'est
+pas cosmétique — sans `order`, PostgREST pagine sur un ordre non garanti et
+`_fetch_all` peut rendre deux fois la même ligne tout en en sautant une autre.
