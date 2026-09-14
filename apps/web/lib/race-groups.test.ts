@@ -5,6 +5,7 @@ import {
   getWtRaceType,
   isOneDayRace,
   isStageRace,
+  oneDayRaceSlugPatterns,
   resolveRaceGroupParam,
 } from "./race-groups";
 
@@ -123,5 +124,28 @@ describe("resolveRaceGroupParam", () => {
     expect(resolveRaceGroupParam("race/paris-nice/2026")).toBeNull();
     expect(resolveRaceGroupParam(null)).toBeNull();
     expect(resolveRaceGroupParam(undefined)).toBeNull();
+  });
+});
+
+describe("oneDayRaceSlugPatterns", () => {
+  const patterns = oneDayRaceSlugPatterns();
+
+  it("matches the monuments across every year", () => {
+    expect(patterns).toContain("race/paris-roubaix/%");
+    expect(patterns).toContain("race/ronde-van-vlaanderen/%");
+    expect(patterns).toContain("race/liege-bastogne-liege/%");
+    expect(patterns).toContain("race/il-lombardia/%");
+    expect(patterns).toContain("race/milano-sanremo/%");
+  });
+
+  it("never lets a stage race in", () => {
+    // The bug this replaces: Paris-Nice and Tirreno-Adriatico counted as classics.
+    expect(patterns).not.toContain("race/paris-nice/%");
+    expect(patterns).not.toContain("race/tirreno-adriatico/%");
+    expect(patterns).not.toContain("race/dauphine/%");
+    for (const pattern of patterns) {
+      const slug = pattern.replace("%", "2026");
+      expect(isStageRace(slug)).toBe(false);
+    }
   });
 });

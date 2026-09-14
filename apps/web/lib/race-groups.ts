@@ -115,3 +115,17 @@ export function resolveRaceGroupParam(value: string | null | undefined): RaceGro
   if ((RACE_GROUP_IDS as readonly string[]).includes(value)) return value as RaceGroupId;
   return getRaceGroupId(value);
 }
+
+/**
+ * PostgREST `ilike` patterns matching every one-day race of the World Tour
+ * calendar, across all years (`race/<name>/%`).
+ *
+ * Exists so a server query can filter on one-day races without a hand-written
+ * list of slugs. The hand-written one drifted: it carried Paris-Nice and
+ * Tirreno-Adriatico, two stage races, inside the "Classic Man" achievement.
+ */
+export function oneDayRaceSlugPatterns(): string[] {
+  return (calendarData as { slug: string; type: WtRaceType }[])
+    .filter((race) => race.type === "one-day")
+    .map((race) => `race/${raceKey(race.slug)}/%`);
+}

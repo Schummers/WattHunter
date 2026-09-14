@@ -12,28 +12,17 @@ import {
   GT_FINAL_STAGE,
 } from "@/lib/grand-tour-completion";
 import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
+import { oneDayRaceSlugPatterns } from "@/lib/race-groups";
 
 type TeamXpRow = {
   team_id: string;
   xp_gained: number | null;
 };
 
-// One-day WT races for Classic Man (monuments + other WT one-day classics)
-const ONE_DAY_WT_PATTERNS = [
-  "race/paris-roubaix/%",
-  "race/ronde-van-vlaanderen/%",
-  "race/liege-bastogne-liege/%",
-  "race/il-lombardia/%",
-  "race/milano-sanremo/%",
-  "race/amstel-gold-race/%",
-  "race/la-fleche-wallonne/%",
-  "race/strade-bianche/%",
-  "race/e3-saxo-bank-classic/%",
-  "race/gent-wevelgem/%",
-  "race/dwars-door-vlaanderen/%",
-  "race/paris-nice/%",
-  "race/tirreno-adriatico/%",
-]
+// One-day WT races for Classic Man. Derived from the World Tour calendar, never
+// hand-written: the hand-written list carried Paris-Nice and Tirreno-Adriatico,
+// two stage races, so the achievement did not reward what it announced (issue 04).
+const ONE_DAY_WT_PATTERNS = oneDayRaceSlugPatterns()
 
 // Monument race bases — used to match slugs across all years
 const MONUMENT_BASES = [
