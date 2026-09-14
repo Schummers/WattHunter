@@ -64,10 +64,17 @@ TARGETS = STAGE_TARGETS + ["gc"] + SECONDARY_TARGETS
 STAGE_SLUGS = [f"{RACE}/{t}" for t in STAGE_TARGETS]
 GC_SLUG = f"{RACE}/gc"
 SECONDARY_SLUGS = [f"{RACE}/{t}" for t in SECONDARY_TARGETS]
+STAGE_1_SLUG = f"{RACE}/stage-1"
 # stage-1 entre dans le baseline et dans le diff (on veut voir si elle bouge,
 # elle ne doit pas), jamais dans le reimport ni dans le rescore.
-ALL_SLUGS = [f"{RACE}/stage-1"] + STAGE_SLUGS + [GC_SLUG] + SECONDARY_SLUGS
+ALL_SLUGS = [STAGE_1_SLUG] + STAGE_SLUGS + [GC_SLUG] + SECONDARY_SLUGS
 SCORED_SLUGS = STAGE_SLUGS + [GC_SLUG] + SECONDARY_SLUGS
+# Les EVENEMENTS, eux, couvrent bien les 21 etapes. L'exclusion de stage-1 porte
+# sur `race_results` (rangs par equipes contre positions au general stockees) ;
+# `import_stage_events` n'ecrit que dans `stage_event_results` et ne touche
+# aucun rang, donc les cotes et le sprint de l'etape 1 sont importables sans
+# risque — et le rescore les attend.
+EVENT_SLUGS = [STAGE_1_SLUG] + STAGE_SLUGS
 
 
 # --- Cible -----------------------------------------------------------------
@@ -311,9 +318,13 @@ async def step_reimport(sb, dates: dict[str, str]) -> None:
 async def step_import_events(sb, dates: dict[str, str]) -> None:
     """Ticket 04 — cotes et sprints intermediaires, depuis le meme cache.
 
-    `import_race_results` les importe deja au passage sur une etape de GT ;
-    cette etape existe pour pouvoir les (re)jouer seules, sans retoucher aux
-    rangs.
+    `import_race_results` les importe deja au passage sur une etape de GT, mais
+    seulement sur les etapes qu'il reimporte, donc 2 a 21. Cette etape existe
+    pour les rejouer seules, sans retoucher aux rangs, et surtout pour couvrir
+    **l'etape 1**, que le reimport laisse volontairement de cote.
+
+    `import_stage_events` est idempotente : elle supprime les lignes de l'etape
+    avant de reinserer, quand le parse a produit des evenements.
     """
     from procyclingstats import Stage
     from stage_events import import_stage_events
@@ -323,7 +334,7 @@ async def step_import_events(sb, dates: dict[str, str]) -> None:
     rider_map = {r["pcs_slug"]: r["id"] for r in riders}
 
     total = 0
-    for slug in STAGE_SLUGS:
+    for slug in EVENT_SLUGS:
         html = cached_html(slug)
         from pcs_deobfuscate import deobfuscate
 

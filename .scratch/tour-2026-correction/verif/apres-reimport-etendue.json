@@ -1,0 +1,129 @@
+{
+  "race": "race/tour-de-france/2026",
+  "par_slug": {
+    "stage-2": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-3": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-4": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-5": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-6": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-7": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-8": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-9": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-10": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-11": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-12": {
+      "profondeur": 20,
+      "compares": 19,
+      "ecarts": []
+    },
+    "stage-13": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-14": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-15": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-16": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-17": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-18": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-19": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-20": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "stage-21": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": []
+    },
+    "gc": {
+      "profondeur": 30,
+      "compares": 30,
+      "ecarts": []
+    },
+    "points": {
+      "profondeur": 10,
+      "compares": 10,
+      "ecarts": []
+    },
+    "kom": {
+      "profondeur": 10,
+      "compares": 10,
+      "ecarts": []
+    },
+    "youth": {
+      "profondeur": 10,
+      "compares": 10,
+      "ecarts": []
+    }
+  },
+  "total": {
+    "ecarts": 0,
+    "compares": 459
+  }
+}
