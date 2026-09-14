@@ -17,16 +17,38 @@ phases dans ce découpage, à fusionner en une seule entrée.
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Un helper partagé répond « course d'un jour ou course par étapes » à partir
+- [x] Un helper partagé répond « course d'un jour ou course par étapes » à partir
       du calendrier World Tour.
-- [ ] Le sélecteur de Ranking propose All races, Classics, Giro, Tour de France,
+- [x] Le sélecteur de Ranking propose All races, Classics, Giro, Tour de France,
       Vuelta, et rien d'autre.
-- [ ] Choisir Classics agrège les seules courses d'un jour de l'année.
-- [ ] Paris-Nice, Tirreno-Adriatico, le Dauphiné et les autres courses d'une
+- [x] Choisir Classics agrège les seules courses d'un jour de l'année.
+- [x] Paris-Nice, Tirreno-Adriatico, le Dauphiné et les autres courses d'une
       semaine n'apparaissent dans aucun des quatre groupes.
-- [ ] Les deux phases de classiques sont fusionnées en une entrée.
-- [ ] La page n'affiche que des totaux, aucun détail par coureur ni par catégorie.
-- [ ] Des tests couvrent le classement d'une course d'un jour et celui d'une
+- [x] Les deux phases de classiques sont fusionnées en une entrée.
+- [x] La page n'affiche que des totaux, aucun détail par coureur ni par catégorie.
+- [x] Des tests couvrent le classement d'une course d'un jour et celui d'une
       course par étapes.
+
+## Livré — 2026-09-14 (`d845e49`)
+
+Helper `apps/web/lib/race-groups.ts`, 15 tests. Source de vérité = le champ
+`type` du calendrier World Tour, clé year-agnostic (`race/<nom>/<année>` →
+`<nom>`) pour tenir sur l'archive historique.
+
+Le piège du ticket est verrouillé par un test : `race/paris-nice/2026/gc` arrive
+sans étape et serait compté comme une course d'un jour ; le helper répond
+`stage-race`.
+
+Effets de bord assumés :
+- La requête de métadonnées sur `race_results` disparaît de la page Ranking (les
+  groupes n'ont plus besoin de noms ni de dates de course). `lib/ranking-race-name.ts`
+  devenait mort, supprimé avec son test.
+- Les liens `?race=<slug>` déjà émis par le feed continuent de fonctionner via
+  `resolveRaceGroupParam`, qui accepte un slug comme un identifiant de groupe.
+- « Aucun détail par coureur » : la page n'affichait déjà que des totaux, et
+  l'onglet Riders reste en place (ticket 02 : « rien ne change sur l'onglet
+  coureurs »).
+
+**Débloque le ticket 04**, qui n'attendait que ce helper.

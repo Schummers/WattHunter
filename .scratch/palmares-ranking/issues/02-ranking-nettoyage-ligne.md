@@ -7,10 +7,18 @@ Restent le rang, l'emblème équipé, le nom d'équipe, le joueur et l'XP.
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] La ligne de classement n'affiche plus le niveau.
-- [ ] La ligne de classement n'affiche plus la trésorerie.
-- [ ] Le nom de l'achievement équipé, quand il y en a un, reste affiché.
-- [ ] Les tests existants de la page sont mis à jour, pas contournés.
-- [ ] Rien ne change sur l'onglet coureurs.
+- [x] La ligne de classement n'affiche plus le niveau.
+- [x] La ligne de classement n'affiche plus la trésorerie.
+- [x] Le nom de l'achievement équipé, quand il y en a un, reste affiché.
+- [x] Les tests existants de la page sont mis à jour, pas contournés.
+- [x] Rien ne change sur l'onglet coureurs.
+
+## Livré — 2026-09-14 (`26b0f75`)
+
+Level et trésorerie retirés de l'affichage **et** du payload sérialisé (la page
+ne les sélectionne plus en base). Le nom de l'achievement équipé reste, seul,
+sur la ligne de sous-titre. Onglet coureurs intact.
+
+Aucun test n'existait sur cette page : rien à mettre à jour, rien contourné.
