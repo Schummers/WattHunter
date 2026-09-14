@@ -364,8 +364,12 @@ async def step_rescore(sb, dates: dict[str, str]) -> None:
         out = await calculate_daily_scores(
             sb, race_slugs=[slug], role_cutoff=cutoff_for(day)
         )
+        # Deux formes de retour : le chemin complet rend `teams_processed`,
+        # les sorties anticipees rendent `processed`. Afficher les deux, sinon
+        # un slug sorti en « aucun resultat trouve » passe pour un succes.
         print(f"  {slug.rsplit('/', 1)[1]:9s} cutoff={day} 11:00 "
-              f"-> {out.get('status')} processed={out.get('processed')} "
+              f"-> {out.get('status')} teams_processed={out.get('teams_processed')} "
+              f"early_exit={out.get('message') or '-'} "
               f"errors={len(out.get('errors') or [])}")
 
 
