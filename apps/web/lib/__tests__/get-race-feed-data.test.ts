@@ -238,4 +238,153 @@ describe("getRaceFeedData", () => {
     expect(myTeam?.riders.map((r) => r.riderShortName)).toContain("T. Pogacar");
     expect(myTeam?.totalXp).toBe(176.5);
   });
+
+  it("emits a card per final jersey next to the GC, in classification order", async () => {
+    // The three jerseys have no race_results row (they live in gt_final_classifications),
+    // so the feed has to inject them or they never get a card at all.
+    const gt = "race/vuelta-a-espana/2026";
+    const supabase = buildSupabase({
+      race_results: [
+        { race_slug: `${gt}/stage-21`, race_name: "La Vuelta \u2014 Stage 21", race_date: "2026-09-13" },
+        {
+          race_slug: `${gt}/gc`,
+          race_name: "La Vuelta Ciclista a Espa\u00f1a \u2014 Stage 21 - GC",
+          race_date: "2026-09-13",
+        },
+      ],
+      race_startlists: [],
+      gt_final_classifications: [
+        { race_slug: `${gt}/points`, race_date: "2026-09-13" },
+        { race_slug: `${gt}/points`, race_date: "2026-09-13" },
+        { race_slug: `${gt}/kom`, race_date: "2026-09-13" },
+        { race_slug: `${gt}/youth`, race_date: "2026-09-13" },
+      ],
+      rider_xp_daily: [
+        { race_slug: `${gt}/stage-21`, team_id: "T1", rider_id: "r1", xp_gained: 100 },
+        { race_slug: `${gt}/gc`, team_id: "T1", rider_id: "r1", xp_gained: 400 },
+        { race_slug: `${gt}/points`, team_id: "T1", rider_id: "r2", xp_gained: 150 },
+        { race_slug: `${gt}/kom`, team_id: "T1", rider_id: "r1", xp_gained: 150 },
+        { race_slug: `${gt}/youth`, team_id: "T1", rider_id: "r3", xp_gained: 75 },
+      ],
+      teams: [{ id: "T1", name: "Mon \u00e9quipe" }],
+      riders: [
+        { id: "r1", full_name: "Santiago Buitrago" },
+        { id: "r2", full_name: "Wout Van Aert" },
+        { id: "r3", full_name: "Oscar Onley" },
+      ],
+      sponsor_bonuses: [],
+      gt_tactic_activations: [],
+      auctions: [],
+    });
+
+    const result = await getRaceFeedData(supabase, {
+      leagueId: "L1",
+      myTeamId: "T1",
+      referenceDate: new Date("2026-09-14T08:00:00Z"),
+    });
+
+    const group = result.groups.find((g) => g.date === "2026-09-13")!;
+    expect(group).toBeDefined();
+    const slugs = group.cards.map((c) =>
+      c.type === "past" || c.type === "today" ? c.race.raceSlug : ""
+    );
+    expect(slugs).toEqual([
+      `${gt}/stage-21`,
+      `${gt}/gc`,
+      `${gt}/points`,
+      `${gt}/kom`,
+      `${gt}/youth`,
+    ]);
+
+    const titles = group.cards.map((c) =>
+      c.type === "past" || c.type === "today" ? c.race.raceTitle : ""
+    );
+    expect(titles).toEqual([
+      "Vuelta \u00b7 Stage 21",
+      "Vuelta \u00b7 Final GC",
+      "Vuelta \u00b7 Points",
+      "Vuelta \u00b7 KOM",
+      "Vuelta \u00b7 Youth",
+    ]);
+
+    const komCard = group.cards.find(
+      (c) => (c.type === "past" || c.type === "today") && c.race.raceSlug === `${gt}/kom`
+    )!;
+    if (komCard.type !== "past" && komCard.type !== "today") return;
+    expect(komCard.race.teams[0]?.totalXp).toBe(150);
+    expect(komCard.race.teams[0]?.riders[0]?.riderShortName).toBe("S. Buitrago");
+  });
+
+  it("hides a jersey card when no rider of the league scored on it", async () => {
+    // Realistic for the KOM: a jersey nobody in the league held pays nothing, and an
+    // empty card would say nothing. A stage with no XP yet must still be shown.
+    const gt = "race/vuelta-a-espana/2026";
+    const supabase = buildSupabase({
+      race_results: [
+        { race_slug: `${gt}/stage-21`, race_name: "La Vuelta \u2014 Stage 21", race_date: "2026-09-13" },
+      ],
+      race_startlists: [],
+      gt_final_classifications: [
+        { race_slug: `${gt}/points`, race_date: "2026-09-13" },
+        { race_slug: `${gt}/kom`, race_date: "2026-09-13" },
+      ],
+      rider_xp_daily: [
+        { race_slug: `${gt}/points`, team_id: "T1", rider_id: "r1", xp_gained: 150 },
+      ],
+      teams: [{ id: "T1", name: "Mon \u00e9quipe" }],
+      riders: [{ id: "r1", full_name: "Wout Van Aert" }],
+      sponsor_bonuses: [],
+      gt_tactic_activations: [],
+      auctions: [],
+    });
+
+    const result = await getRaceFeedData(supabase, {
+      leagueId: "L1",
+      myTeamId: "T1",
+      referenceDate: new Date("2026-09-14T08:00:00Z"),
+    });
+
+    const group = result.groups.find((g) => g.date === "2026-09-13")!;
+    const slugs = group.cards.map((c) =>
+      c.type === "past" || c.type === "today" ? c.race.raceSlug : ""
+    );
+    expect(slugs).toContain(`${gt}/points`);
+    expect(slugs).not.toContain(`${gt}/kom`);
+    expect(slugs).toContain(`${gt}/stage-21`);
+  });
+
+  it("falls back to the GC card's date when race_date is null on the jersey rows", async () => {
+    const gt = "race/vuelta-a-espana/2026";
+    const supabase = buildSupabase({
+      race_results: [
+        {
+          race_slug: `${gt}/gc`,
+          race_name: "La Vuelta Ciclista a Espa\u00f1a \u2014 Stage 21 - GC",
+          race_date: "2026-09-13",
+        },
+      ],
+      race_startlists: [],
+      gt_final_classifications: [{ race_slug: `${gt}/points`, race_date: null }],
+      rider_xp_daily: [
+        { race_slug: `${gt}/points`, team_id: "T1", rider_id: "r1", xp_gained: 150 },
+      ],
+      teams: [{ id: "T1", name: "Mon \u00e9quipe" }],
+      riders: [{ id: "r1", full_name: "Wout Van Aert" }],
+      sponsor_bonuses: [],
+      gt_tactic_activations: [],
+      auctions: [],
+    });
+
+    const result = await getRaceFeedData(supabase, {
+      leagueId: "L1",
+      myTeamId: "T1",
+      referenceDate: new Date("2026-09-14T08:00:00Z"),
+    });
+
+    const group = result.groups.find((g) => g.date === "2026-09-13")!;
+    const slugs = group.cards.map((c) =>
+      c.type === "past" || c.type === "today" ? c.race.raceSlug : ""
+    );
+    expect(slugs).toContain(`${gt}/points`);
+  });
 });

@@ -547,13 +547,44 @@ Le visiteur ne peut rien muter — les RPCs rejettent via `auth.uid() IS NULL`. 
 
 ---
 
+## Race Feed — cartes de classement final (2026-09-14)
+
+`lib/get-race-feed-data.ts` construit sa liste de courses depuis `race_results` +
+`race_startlists`. La GC finale y figure (`sync_race.import_gc_results` écrit une
+ligne `race_results` avec `stage = 'gc'`), **les trois maillots non** : Points /
+KOM / Youth vivent dans `gt_final_classifications`, volontairement hors de
+`race_results`. Résultat historique : un joueur encaissait 150 XP de maillot vert
+sans jamais voir de carte, alors que son XP comptait bien au ranking.
+
+Le feed lit donc `gt_final_classifications` (`race_slug`, `race_date`) pour les
+slugs `<parent>/points|kom|youth` des courses déjà présentes, et injecte une
+entrée par maillot dans `racesBySlug`. Le reste du pipeline (XP, breakdown,
+statut) s'applique sans cas particulier. Trois détails qui comptent :
+
+- ces slugs sont ajoutés à `scoredSlugs` à la main — sans ça, la carte publiée le
+  jour même de l'arrivée serait lue comme « course en cours », faute de ligne
+  `race_results` ;
+- une carte maillot sans aucune équipe de la ligue dans les rangs payants est
+  masquée (cas réaliste du KOM). Une étape vide, elle, reste visible : c'est une
+  étape pas encore scorée ;
+- les cinq cartes du dernier jour partagent une date, donc chaque groupe est trié
+  étape → GC → Points → KOM → Youth (`finalCardSortRank` dans
+  `lib/race-feed-helpers.ts`).
+
+`formatRaceTitle` nomme les quatre finales `<Parent> · Final GC | Points | KOM |
+Youth`. Le titre de la GC change au passage : Python écrit son `race_name` à
+partir de la dernière étape importée, d'où l'ancien « La Vuelta Ciclista a
+España — Stage 21 - GC ».
+
+---
+
 ## Pagination PostgREST côté front (cap 1000 lignes)
 
 Le pendant front de `services/pcs-sync/db_utils._fetch_all` : `apps/web/lib/supabase-pagination.ts` → `fetchAllSupabasePages((from, to) => query.order("id").range(from, to))`. **Toute lecture league-wide ou saison-wide de `rider_xp_daily` / `race_results` doit passer par là** — sans quoi PostgREST tronque à 1000 lignes *sans erreur* et l'UI affiche des scores partiels.
 
 `.order("id")` est obligatoire : sans ordre stable la pagination duplique et perd des lignes.
 
-Surfaces paginées (2026-07-26, audit scores Tour) : `lib/get-race-feed-data.ts` (race_results, race_startlists, riders, rider_xp_daily, sponsor_bonuses, sponsor_goal_completions), `ranking/page.tsx` (rider_xp_daily + race_results métadonnées), `ranking/team/[teamId]/page.tsx`, `team/page.tsx`, `auction/page.tsx`, `achievements/page.tsx`, `team/gt/tactics/actions.ts`. Chaque page a un doublon démo (`DEMO_LEAGUE_ID`) : corriger les deux.
+Surfaces paginées (2026-07-26, audit scores Tour) : `lib/get-race-feed-data.ts` (race_results, race_startlists, riders, rider_xp_daily, sponsor_bonuses, sponsor_goal_completions, gt_final_classifications), `ranking/page.tsx` (rider_xp_daily + race_results métadonnées), `ranking/team/[teamId]/page.tsx`, `team/page.tsx`, `auction/page.tsx`, `achievements/page.tsx`, `team/gt/tactics/actions.ts`. Chaque page a un doublon démo (`DEMO_LEAGUE_ID`) : corriger les deux.
 
 Restent sous le cap mais non bornés (à surveiller) : lectures `riders` sans plafond `pcs_rank` dans `team/strategies/`, et les agrégats multi-saisons de `achievements/page.tsx` (aucun filtre d'année).
 

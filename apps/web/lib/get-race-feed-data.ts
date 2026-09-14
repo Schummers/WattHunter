@@ -11,6 +11,11 @@ import {
   formatRaceTitle,
   shortenRiderName,
   teamInitials,
+  baseRaceName,
+  finalCardSortRank,
+  getFinalClassificationLabel,
+  isSecondaryFinalSlug,
+  SECONDARY_FINAL_TYPES,
 } from "./race-feed-helpers";
 import { getAchievementBySlug } from "./achievements";
 import { getTourJerseyOverrides } from "./tour-jerseys";
@@ -129,6 +134,57 @@ export async function getRaceFeedData(
       const slug = `race/${gtSlug}/${year}/stage-${entry.number}`;
       if (racesBySlug.has(slug)) continue;
       racesBySlug.set(slug, { slug, name: `${gtName} - Stage ${entry.number}`, date: entry.date });
+    }
+  }
+
+  // 1b) Inject the final secondary jerseys (Points / KOM / Youth) as their own cards.
+  // Their XP sits in rider_xp_daily under `<parent>/points|kom|youth`, but unlike the
+  // final GC they have no race_results row (they are kept out of it on purpose, see
+  // gt_final_classifications) — so without this they would never produce a card and
+  // a player would bank 150 XP for a green jersey with nothing to show for it.
+  const parentSlugsInFeed = new Set<string>();
+  for (const r of racesBySlug.values()) {
+    const parent = getParentRaceSlug(r.slug);
+    if (parent) parentSlugsInFeed.add(parent);
+  }
+  if (parentSlugsInFeed.size > 0) {
+    const candidateSlugs = Array.from(parentSlugsInFeed).flatMap((parent) =>
+      SECONDARY_FINAL_TYPES.map((type) => `${parent}/${type}`)
+    );
+    const finalRows = await fetchAllSupabasePages<{
+      race_slug: string;
+      race_date: string | null;
+    }>((from, to) =>
+      supabase
+        .from("gt_final_classifications")
+        .select("race_slug, race_date")
+        .in("race_slug", candidateSlugs)
+        .order("race_slug")
+        .range(from, to)
+    );
+
+    for (const row of finalRows ?? []) {
+      if (racesBySlug.has(row.race_slug)) continue;
+      const parent = getParentRaceSlug(row.race_slug);
+      const type = row.race_slug.slice(row.race_slug.lastIndexOf("/") + 1);
+      if (!parent) continue;
+      // The jersey is awarded on the last stage; gt_final_classifications carries that
+      // date, and the GC card (same day) is the fallback when the column is null.
+      const gcRace = racesBySlug.get(`${parent}/gc`);
+      const date = row.race_date ?? gcRace?.date ?? null;
+      if (!date || date < phaseStartIso || date > todayIso) continue;
+      const parentLabel =
+        getParentRaceLabel(parent) ?? (gcRace ? baseRaceName(gcRace.name) : null);
+      if (!parentLabel) continue;
+      const label = getFinalClassificationLabel(type as "points" | "kom" | "youth");
+      racesBySlug.set(row.race_slug, {
+        slug: row.race_slug,
+        name: `${parentLabel} - ${label}`,
+        date,
+      });
+      // No race_results row exists for these, so mark them scored by hand — otherwise
+      // the card published on the closing day itself would be read as "in progress".
+      scoredSlugs.add(row.race_slug);
     }
   }
 
@@ -362,6 +418,10 @@ export async function getRaceFeedData(
       pushCard(r.date, { type: base.status, race: base });
     } else {
       const breakdown = buildBreakdown(r.slug);
+      // A jersey card with no league rider in the paying ranks says nothing — drop it.
+      // Only for the secondary finals: a stage with an empty breakdown is a stage that
+      // has not been scored yet, and must stay visible.
+      if (isSecondaryFinalSlug(r.slug) && breakdown.teams.length === 0) continue;
       const enriched: RaceDataWithBreakdown = { ...base, ...breakdown };
       pushCard(r.date, { type: base.status as "past" | "today", race: enriched });
     }
@@ -419,9 +479,20 @@ export async function getRaceFeedData(
   }
 
   // 9) Build sorted groups
+  // The last stage and the four final classifications all share one date. Sort each
+  // group so they read stage → GC → Points → KOM → Youth; every other card keeps its
+  // insertion order (Array#sort is stable).
+  const cardSortRank = (card: RaceFeedCard): number => {
+    if (card.type === "rest_day") return 0;
+    const slug = card.type === "nemesis" ? card.raceSlug : card.race.raceSlug;
+    return finalCardSortRank(slug);
+  };
   const groups: RaceFeedDateGroup[] = Array.from(byDate.keys())
     .sort()
-    .map((date) => ({ date, cards: byDate.get(date)! }));
+    .map((date) => ({
+      date,
+      cards: byDate.get(date)!.sort((a, b) => cardSortRank(a) - cardSortRank(b)),
+    }));
 
   // 10) Compute next phase Round 1 date
   const { nextPhaseRound1Date, nextPhaseLabel } = await computeNextPhase(

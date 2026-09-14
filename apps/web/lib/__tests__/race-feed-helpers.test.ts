@@ -4,6 +4,10 @@ import {
   getParentRaceSlug,
   getParentRaceLabel,
   formatRaceTitle,
+  getFinalClassificationType,
+  isSecondaryFinalSlug,
+  finalCardSortRank,
+  baseRaceName,
   shortenRiderName,
   formatBonusEur,
   formatRaceDateLabel,
@@ -96,6 +100,77 @@ describe("formatRaceTitle", () => {
         parentRaceLabel: null,
       })
     ).toBe("Paris-Roubaix");
+  });
+
+  it("names the four final classifications as a family", () => {
+    const title = (slug: string, raceName: string) =>
+      formatRaceTitle({
+        raceType: "classic",
+        raceName,
+        raceSlug: slug,
+        parentRaceLabel: "Vuelta",
+      });
+    // The GC row's race_name drags the last stage it was imported with — the title
+    // must not show "Stage 21".
+    expect(
+      title("race/vuelta-a-espana/2026/gc", "La Vuelta Ciclista a Espa\u00f1a \u2014 Stage 21 - GC")
+    ).toBe("Vuelta \u00b7 Final GC");
+    expect(title("race/vuelta-a-espana/2026/points", "Vuelta - Points")).toBe("Vuelta \u00b7 Points");
+    expect(title("race/vuelta-a-espana/2026/kom", "Vuelta - KOM")).toBe("Vuelta \u00b7 KOM");
+    expect(title("race/vuelta-a-espana/2026/youth", "Vuelta - Youth")).toBe("Vuelta \u00b7 Youth");
+  });
+
+  it("falls back to the base race name when the parent has no short label", () => {
+    expect(
+      formatRaceTitle({
+        raceType: "classic",
+        raceName: "Tour de Romandie \u2014 Stage 5 - GC",
+        raceSlug: "race/tour-de-romandie/2026/gc",
+        parentRaceLabel: null,
+      })
+    ).toBe("Tour de Romandie \u00b7 Final GC");
+  });
+});
+
+describe("final classification helpers", () => {
+  it("detects the four final suffixes and only those", () => {
+    expect(getFinalClassificationType("race/vuelta-a-espana/2026/gc")).toBe("gc");
+    expect(getFinalClassificationType("race/vuelta-a-espana/2026/points")).toBe("points");
+    expect(getFinalClassificationType("race/vuelta-a-espana/2026/kom")).toBe("kom");
+    expect(getFinalClassificationType("race/vuelta-a-espana/2026/youth")).toBe("youth");
+    expect(getFinalClassificationType("race/vuelta-a-espana/2026/stage-21")).toBeNull();
+    expect(getFinalClassificationType("race/paris-roubaix/2026")).toBeNull();
+  });
+
+  it("treats only the three jerseys as secondary finals (GC lives in race_results)", () => {
+    expect(isSecondaryFinalSlug("race/vuelta-a-espana/2026/gc")).toBe(false);
+    expect(isSecondaryFinalSlug("race/vuelta-a-espana/2026/points")).toBe(true);
+    expect(isSecondaryFinalSlug("race/vuelta-a-espana/2026/stage-21")).toBe(false);
+  });
+
+  it("ranks a date group as stage \u2192 GC \u2192 Points \u2192 KOM \u2192 Youth", () => {
+    const slugs = [
+      "race/vuelta-a-espana/2026/youth",
+      "race/vuelta-a-espana/2026/gc",
+      "race/vuelta-a-espana/2026/stage-21",
+      "race/vuelta-a-espana/2026/kom",
+      "race/vuelta-a-espana/2026/points",
+    ];
+    expect([...slugs].sort((a, b) => finalCardSortRank(a) - finalCardSortRank(b))).toEqual([
+      "race/vuelta-a-espana/2026/stage-21",
+      "race/vuelta-a-espana/2026/gc",
+      "race/vuelta-a-espana/2026/points",
+      "race/vuelta-a-espana/2026/kom",
+      "race/vuelta-a-espana/2026/youth",
+    ]);
+  });
+
+  it("strips the stage tail from a race name, em dash or hyphen", () => {
+    expect(baseRaceName("La Vuelta Ciclista a Espa\u00f1a \u2014 Stage 21 - GC")).toBe(
+      "La Vuelta Ciclista a Espa\u00f1a"
+    );
+    expect(baseRaceName("Giro d'Italia - Stage 2")).toBe("Giro d'Italia");
+    expect(baseRaceName("Paris-Roubaix")).toBe("Paris-Roubaix");
   });
 });
 
