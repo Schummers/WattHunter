@@ -320,3 +320,49 @@ une jointure de plus.
 
 Note : `gt_daily_classifications` ne contient pas `youth`, seulement `gc`, `points`
 et `kom`. Le maillot blanc n'existe qu'en classement final.
+
+---
+
+## 7. Règles de comptage verrouillées (2026-09-14, troisième passe)
+
+- **Une victoire** = gagner une phase : Classiques, Giro, Tour, Vuelta.
+- **Gagner la saison** au cumul est un titre d'une autre nature, compté à part.
+- **Un titre de maillot** = meilleur cumul d'une catégorie sur une épreuve, grands
+  tours seulement. Une course d'un jour ne distribue aucun maillot, donc pas de
+  maillot sur les Classiques, et aucun équivalent maison n'est créé.
+- **Aucun seuil de participation.** Tout le monde apparaît. La régularité se lit en
+  comptages de places (1res, 2es, 3es), jamais en moyenne lissée. La décision
+  d'août (seuil à 15 tours + lissage bayésien) est annulée.
+- **Une seule frise 2017-2026**, La Route du Tour et WattHunter à la suite.
+
+Conséquence : le script d'agrégats est reconstruit et **versionné** dans
+`research/laroutedutour/palmares_stats.py`, avec sa sortie
+`palmares_stats.json`. Il exclut les courses d'une semaine, fusionne les identités,
+et ne convertit jamais en XP. 24 épreuves retenues sur 30.
+
+Chiffres de référence produits : David Choncoutié 6 victoires, PeeJee 5,
+Marseillais 4, Klimax 3 mais **3 titres de saison** (le plus du groupe), PeeJee 15
+titres de maillot.
+
+## 8. Wireframes du découpage Palmarès / Ranking
+
+`research/laroutedutour/wireframes/palmares-ranking-split.html`
+(publié : https://claude.ai/code/artifact/92a31117-13f9-4317-ad5e-436c4fa2b54c)
+
+Quatre découpages maquettés, noir et blanc, sur données réelles :
+
+- **A, passé contre présent** : Ranking ne connaît que la saison en cours, Palmarès
+  que ce qui est terminé. Règle énonçable en une phrase, mais la saison en cours
+  apparaît dans les deux et bascule au 1er janvier.
+- **B, une seule page** : Palmarès disparaît, le sélecteur saison gagne une valeur
+  « tous temps ». L'onglet libéré revient aux badges. Défaut : le mot Ranking
+  désigne deux choses très différentes selon la valeur du sélecteur.
+- **C, Ranking classe et Palmarès compte** : coupe par nature de l'information, pas
+  par temporalité. La plus solide, et la seule qui ne demande rien de redéplacer
+  quand une saison s'ajoute.
+- **D, la frise partagée** : un composant unique à deux profondeurs, résumé en pied
+  de Ranking et dépliable dans Palmarès.
+
+**Retenu** : C pour la règle de découpage, D pour la frise, tableau détaillé partout.
+La fiche joueur (terrains de prédilection, comparaison au groupe, historique complet)
+est le troisième niveau, après la mise en prod des deux premiers.
