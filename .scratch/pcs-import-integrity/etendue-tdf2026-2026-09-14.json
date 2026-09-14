@@ -1,0 +1,547 @@
+{
+  "race": "race/tour-de-france/2026",
+  "par_slug": {
+    "stage-2": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 8,
+          "base": "rider/paul-seixas",
+          "pcs_repare": "rider/lenny-martinez"
+        },
+        {
+          "rank": 9,
+          "base": "rider/lenny-martinez",
+          "pcs_repare": "rider/paul-seixas"
+        },
+        {
+          "rank": 19,
+          "base": "rider/tobias-foss",
+          "pcs_repare": "rider/sergio-higuita"
+        },
+        {
+          "rank": 20,
+          "base": "rider/sergio-higuita",
+          "pcs_repare": "rider/tobias-foss"
+        }
+      ]
+    },
+    "stage-3": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 8,
+          "base": "rider/isaac-del-toro",
+          "pcs_repare": "rider/remco-evenepoel"
+        },
+        {
+          "rank": 9,
+          "base": "rider/remco-evenepoel",
+          "pcs_repare": "rider/isaac-del-toro"
+        },
+        {
+          "rank": 15,
+          "base": "rider/tom-pidcock",
+          "pcs_repare": "rider/sergio-higuita"
+        },
+        {
+          "rank": 16,
+          "base": "rider/sergio-higuita",
+          "pcs_repare": "rider/tom-pidcock"
+        }
+      ]
+    },
+    "stage-4": {
+      "profondeur": 20,
+      "compares": 19,
+      "ecarts": [
+        {
+          "rank": 7,
+          "base": "rider/kevin-vauquelin",
+          "pcs_repare": "rider/sean-quinn"
+        },
+        {
+          "rank": 15,
+          "base": "rider/frank-van-den-broek",
+          "pcs_repare": "rider/alex-molenaar"
+        },
+        {
+          "rank": 16,
+          "base": "rider/alex-molenaar",
+          "pcs_repare": "rider/frank-van-den-broek"
+        }
+      ]
+    },
+    "stage-5": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 6,
+          "base": "rider/mads-pedersen",
+          "pcs_repare": "rider/biniam-girmay"
+        },
+        {
+          "rank": 7,
+          "base": "rider/biniam-girmay",
+          "pcs_repare": "rider/mads-pedersen"
+        },
+        {
+          "rank": 15,
+          "base": "rider/pavel-bittner",
+          "pcs_repare": "rider/dorian-godon"
+        },
+        {
+          "rank": 16,
+          "base": "rider/dorian-godon",
+          "pcs_repare": "rider/pavel-bittner"
+        }
+      ]
+    },
+    "stage-6": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 8,
+          "base": "rider/lenny-martinez",
+          "pcs_repare": "rider/mattias-skjelmose-jensen"
+        },
+        {
+          "rank": 9,
+          "base": "rider/mattias-skjelmose-jensen",
+          "pcs_repare": "rider/lenny-martinez"
+        },
+        {
+          "rank": 19,
+          "base": "rider/brandon-mcnulty",
+          "pcs_repare": "rider/lennert-van-eetvelt"
+        },
+        {
+          "rank": 20,
+          "base": "rider/lennert-van-eetvelt",
+          "pcs_repare": "rider/brandon-mcnulty"
+        }
+      ]
+    },
+    "stage-7": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 8,
+          "base": "rider/mads-pedersen",
+          "pcs_repare": "rider/dorian-godon"
+        },
+        {
+          "rank": 9,
+          "base": "rider/dorian-godon",
+          "pcs_repare": "rider/mads-pedersen"
+        },
+        {
+          "rank": 19,
+          "base": "rider/aaron-gate",
+          "pcs_repare": "rider/alfred-wright"
+        },
+        {
+          "rank": 20,
+          "base": "rider/alfred-wright",
+          "pcs_repare": "rider/aaron-gate"
+        }
+      ]
+    },
+    "stage-8": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 6,
+          "base": "rider/pascal-ackermann",
+          "pcs_repare": "rider/rick-pluimers"
+        },
+        {
+          "rank": 7,
+          "base": "rider/rick-pluimers",
+          "pcs_repare": "rider/pascal-ackermann"
+        },
+        {
+          "rank": 15,
+          "base": "rider/mathieu-van-der-poel",
+          "pcs_repare": "rider/anthony-turgis"
+        },
+        {
+          "rank": 16,
+          "base": "rider/anthony-turgis",
+          "pcs_repare": "rider/mathieu-van-der-poel"
+        }
+      ]
+    },
+    "stage-9": {
+      "profondeur": 20,
+      "compares": 19,
+      "ecarts": [
+        {
+          "rank": 6,
+          "base": "rider/michael-matthews",
+          "pcs_repare": "rider/mads-pedersen"
+        },
+        {
+          "rank": 7,
+          "base": "rider/mads-pedersen",
+          "pcs_repare": "rider/michael-matthews"
+        },
+        {
+          "rank": 15,
+          "base": "rider/tiesj-benoot",
+          "pcs_repare": "rider/paul-seixas"
+        },
+        {
+          "rank": 16,
+          "base": "rider/paul-seixas",
+          "pcs_repare": "rider/tiesj-benoot"
+        }
+      ]
+    },
+    "stage-10": {
+      "profondeur": 20,
+      "compares": 19,
+      "ecarts": [
+        {
+          "rank": 6,
+          "base": "rider/jonas-vingegaard",
+          "pcs_repare": "rider/mattias-skjelmose-jensen"
+        },
+        {
+          "rank": 7,
+          "base": "rider/mattias-skjelmose-jensen",
+          "pcs_repare": "rider/jonas-vingegaard"
+        },
+        {
+          "rank": 15,
+          "base": "rider/yannis-voisard",
+          "pcs_repare": "rider/egan-bernal"
+        },
+        {
+          "rank": 16,
+          "base": "rider/egan-bernal",
+          "pcs_repare": "rider/yannis-voisard"
+        }
+      ]
+    },
+    "stage-11": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 8,
+          "base": "rider/fernando-gaviria",
+          "pcs_repare": "rider/clement-russo"
+        },
+        {
+          "rank": 9,
+          "base": "rider/clement-russo",
+          "pcs_repare": "rider/fernando-gaviria"
+        },
+        {
+          "rank": 19,
+          "base": "rider/kasper-asgreen",
+          "pcs_repare": "rider/magnus-cort-nielsen"
+        },
+        {
+          "rank": 20,
+          "base": "rider/magnus-cort-nielsen",
+          "pcs_repare": "rider/kasper-asgreen"
+        }
+      ]
+    },
+    "stage-12": {
+      "profondeur": 20,
+      "compares": 19,
+      "ecarts": []
+    },
+    "stage-13": {
+      "profondeur": 20,
+      "compares": 19,
+      "ecarts": [
+        {
+          "rank": 8,
+          "base": "rider/tim-wellens",
+          "pcs_repare": "rider/clement-braz-afonso"
+        },
+        {
+          "rank": 9,
+          "base": "rider/clement-braz-afonso",
+          "pcs_repare": "rider/tim-wellens"
+        },
+        {
+          "rank": 15,
+          "base": "rider/george-bennett",
+          "pcs_repare": "rider/marc-hirschi"
+        },
+        {
+          "rank": 16,
+          "base": "rider/marc-hirschi",
+          "pcs_repare": "rider/george-bennett"
+        }
+      ]
+    },
+    "stage-14": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 8,
+          "base": "rider/tobias-halland-johannessen",
+          "pcs_repare": "rider/richard-carapaz"
+        },
+        {
+          "rank": 9,
+          "base": "rider/richard-carapaz",
+          "pcs_repare": "rider/tobias-halland-johannessen"
+        },
+        {
+          "rank": 15,
+          "base": "rider/adam-yates",
+          "pcs_repare": "rider/derek-gee"
+        },
+        {
+          "rank": 16,
+          "base": "rider/derek-gee",
+          "pcs_repare": "rider/adam-yates"
+        }
+      ]
+    },
+    "stage-15": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 6,
+          "base": "rider/mattias-skjelmose-jensen",
+          "pcs_repare": "rider/lenny-martinez"
+        },
+        {
+          "rank": 7,
+          "base": "rider/lenny-martinez",
+          "pcs_repare": "rider/mattias-skjelmose-jensen"
+        },
+        {
+          "rank": 15,
+          "base": "rider/einer-rubio",
+          "pcs_repare": "rider/antonio-tiberi"
+        },
+        {
+          "rank": 16,
+          "base": "rider/antonio-tiberi",
+          "pcs_repare": "rider/einer-rubio"
+        }
+      ]
+    },
+    "stage-16": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 8,
+          "base": "rider/pablo-castrillo-zapater",
+          "pcs_repare": "rider/bruno-armirail"
+        },
+        {
+          "rank": 9,
+          "base": "rider/bruno-armirail",
+          "pcs_repare": "rider/pablo-castrillo-zapater"
+        },
+        {
+          "rank": 15,
+          "base": "rider/huub-artz",
+          "pcs_repare": "rider/juan-ayuso-pesquera"
+        },
+        {
+          "rank": 16,
+          "base": "rider/juan-ayuso-pesquera",
+          "pcs_repare": "rider/huub-artz"
+        }
+      ]
+    },
+    "stage-17": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 6,
+          "base": "rider/huub-artz",
+          "pcs_repare": "rider/clement-russo"
+        },
+        {
+          "rank": 7,
+          "base": "rider/clement-russo",
+          "pcs_repare": "rider/huub-artz"
+        },
+        {
+          "rank": 15,
+          "base": "rider/joris-delbove",
+          "pcs_repare": "rider/abel-balderstone-roumens"
+        },
+        {
+          "rank": 16,
+          "base": "rider/abel-balderstone-roumens",
+          "pcs_repare": "rider/joris-delbove"
+        }
+      ]
+    },
+    "stage-18": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 6,
+          "base": "rider/pablo-castrillo-zapater",
+          "pcs_repare": "rider/raul-garcia-pierna"
+        },
+        {
+          "rank": 7,
+          "base": "rider/raul-garcia-pierna",
+          "pcs_repare": "rider/pablo-castrillo-zapater"
+        },
+        {
+          "rank": 15,
+          "base": "rider/paul-seixas",
+          "pcs_repare": "rider/nicolas-prodhomme"
+        },
+        {
+          "rank": 16,
+          "base": "rider/nicolas-prodhomme",
+          "pcs_repare": "rider/paul-seixas"
+        }
+      ]
+    },
+    "stage-19": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 6,
+          "base": "rider/isaac-del-toro",
+          "pcs_repare": "rider/remco-evenepoel"
+        },
+        {
+          "rank": 7,
+          "base": "rider/remco-evenepoel",
+          "pcs_repare": "rider/isaac-del-toro"
+        },
+        {
+          "rank": 15,
+          "base": "rider/quinn-simmons",
+          "pcs_repare": "rider/clement-braz-afonso"
+        },
+        {
+          "rank": 16,
+          "base": "rider/clement-braz-afonso",
+          "pcs_repare": "rider/quinn-simmons"
+        }
+      ]
+    },
+    "stage-20": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 6,
+          "base": "rider/jai-hindley",
+          "pcs_repare": "rider/lenny-martinez"
+        },
+        {
+          "rank": 7,
+          "base": "rider/lenny-martinez",
+          "pcs_repare": "rider/jai-hindley"
+        }
+      ]
+    },
+    "stage-21": {
+      "profondeur": 20,
+      "compares": 20,
+      "ecarts": [
+        {
+          "rank": 9,
+          "base": "rider/clement-russo",
+          "pcs_repare": "rider/milan-fretin"
+        },
+        {
+          "rank": 10,
+          "base": "rider/milan-fretin",
+          "pcs_repare": "rider/clement-russo"
+        }
+      ]
+    },
+    "gc": {
+      "profondeur": 30,
+      "compares": 29,
+      "ecarts": [
+        {
+          "rank": 9,
+          "base": "rider/jordan-jegat",
+          "pcs_repare": "rider/tom-pidcock"
+        },
+        {
+          "rank": 10,
+          "base": "rider/tom-pidcock",
+          "pcs_repare": "rider/jordan-jegat"
+        }
+      ]
+    },
+    "points": {
+      "profondeur": 10,
+      "compares": 10,
+      "ecarts": [
+        {
+          "rank": 6,
+          "base": "rider/soren-waerenskjold",
+          "pcs_repare": "rider/tadej-pogacar"
+        },
+        {
+          "rank": 7,
+          "base": "rider/tadej-pogacar",
+          "pcs_repare": "rider/soren-waerenskjold"
+        }
+      ]
+    },
+    "kom": {
+      "profondeur": 10,
+      "compares": 10,
+      "ecarts": [
+        {
+          "rank": 6,
+          "base": "rider/isaac-del-toro",
+          "pcs_repare": "rider/lenny-martinez"
+        },
+        {
+          "rank": 7,
+          "base": "rider/lenny-martinez",
+          "pcs_repare": "rider/isaac-del-toro"
+        }
+      ]
+    },
+    "youth": {
+      "profondeur": 10,
+      "compares": 10,
+      "ecarts": [
+        {
+          "rank": 9,
+          "base": "rider/kevin-vauquelin",
+          "pcs_repare": "rider/raul-garcia-pierna"
+        },
+        {
+          "rank": 10,
+          "base": "rider/raul-garcia-pierna",
+          "pcs_repare": "rider/kevin-vauquelin"
+        }
+      ]
+    }
+  },
+  "total": {
+    "ecarts": 79,
+    "compares": 454
+  }
+}
