@@ -4,6 +4,7 @@ import { getUser } from "@/lib/supabase/get-user";
 import { getAchievementBySlug } from "@/lib/achievements";
 import { getTourJerseyHolders, mapJerseysToTeams, TOUR_JERSEY_SLUG } from "@/lib/tour-jerseys";
 import { buildRaceGroups, resolveRaceGroupParam } from "@/lib/race-groups";
+import { loadHistoricalPalmares } from "@/lib/palmares/historical";
 import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
 import { RankingClient } from "./ranking-client";
 import {
@@ -279,6 +280,10 @@ export default async function RankingPage({
     };
   }).sort((a, b) => b.xp - a.xp);
 
+  // Past seasons, for the year selector. They predate WattHunter, so they carry
+  // a standing per player and no rider data at all.
+  const { standings: archivedSeasons } = await loadHistoricalPalmares(supabase);
+
   return (
     <RankingClient
       leagueId={leagueId}
@@ -288,6 +293,15 @@ export default async function RankingPage({
       teamXpByRace={teamXpByRace}
       riderXpByRace={riderXpByRace}
       initialRace={resolveRaceGroupParam(initialRace)}
+      currentSeason={new Date().getFullYear()}
+      archivedSeasons={archivedSeasons.map((season) => ({
+        year: season.seasonYear,
+        ranking: season.ranking.map((player) => ({
+          key: player.key,
+          displayName: player.displayName,
+          isFormerPlayer: player.isFormerPlayer,
+        })),
+      }))}
     />
   );
 }
@@ -493,6 +507,8 @@ async function renderDemoRanking(initialRace?: string) {
       teamXpByRace={teamXpByRace}
       riderXpByRace={riderXpByRace}
       initialRace={resolveRaceGroupParam(initialRace)}
+      currentSeason={new Date().getFullYear()}
+      archivedSeasons={[]}
     />
   );
 }

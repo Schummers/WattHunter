@@ -28,20 +28,20 @@ places au classement.
 
 **Blocked by:** 09 — Page Palmares et onglet Seasons.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Un sélecteur de joueur en haut permet d'ouvrir la fiche de n'importe qui.
-- [ ] Les six chiffres de carrière sont affichés.
-- [ ] L'histogramme porte le rang en chiffre au-dessus de chaque barre et l'année
+- [x] Un sélecteur de joueur en haut permet d'ouvrir la fiche de n'importe qui.
+- [x] Les six chiffres de carrière sont affichés.
+- [x] L'histogramme porte le rang en chiffre au-dessus de chaque barre et l'année
       en dessous.
-- [ ] Le face à face est trié, coloré vert et rouge, avec un repère d'égalité.
-- [ ] Le face à face ne compte que les épreuves communes aux deux joueurs,
+- [x] Le face à face est trié, coloré vert et rouge, avec un repère d'égalité.
+- [x] Le face à face ne compte que les épreuves communes aux deux joueurs,
       vérifié : 24 épreuves communes contre Dixon Hormous, 22 contre David
       Choncoutié.
-- [ ] Deux notes de règle, sous l'histogramme et sous le face à face, avec un
+- [x] Deux notes de règle, sous l'histogramme et sous le face à face, avec un
       exemple chiffré pour le face à face.
-- [ ] Aucune valeur d'XP n'apparaît.
-- [ ] Tout le texte est en anglais.
+- [x] Aucune valeur d'XP n'apparaît.
+- [x] Tout le texte est en anglais.
 
 ## Comments
 
@@ -52,3 +52,25 @@ collection des quatre épreuves, et la liste des noms d'équipe portés au fil d
 ans. Recommandation retenue : terrains de prédilection et palmarès personnel en
 priorité si l'onglet doit s'étoffer, le reste sont des plaisirs plutôt que des
 informations. Détail dans les wireframes, section 06.
+
+## Livré — 2026-09-14
+
+Sélecteur de joueur, six chiffres de carrière, histogramme des rangs de saison,
+face à face. Aucune valeur d'XP nulle part.
+
+Histogramme : hauteur = `(nombre de joueurs − rang + 1) / nombre de joueurs`, et
+**le rang écrit en chiffres au-dessus de chaque barre**, l'année en dessous. Sans
+ce chiffre, une hauteur ne dit pas si « haut » vaut 2e sur 5 ou 2e sur 10.
+
+Face à face : ne compte que les épreuves disputées par les deux joueurs, trié du
+plus favorable au moins favorable, vert / rouge / neutre, avec un repère
+d'égalité à 50 % dans la jauge. Un test verrouille le fait qu'un 2-0 ne double
+jamais un 16-8 dans le tri.
+
+Vérifié sur les données réelles : contre Dixon Hormous, 24 épreuves communes ;
+contre David Choncoutié, 22 — les deux qu'il a manquées ne comptent pour personne.
+
+Écart avec le wireframe, assumé : la note sous le face à face ne cite pas les
+noms de deux joueurs en exemple. Un exemple nominatif se périme à chaque saison
+et devient faux sans prévenir ; la règle est illustrée avec des chiffres, sans
+nom.

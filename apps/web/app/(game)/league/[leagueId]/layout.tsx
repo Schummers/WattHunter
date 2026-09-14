@@ -66,10 +66,10 @@ export default async function LeagueLayout({
   });
 
   // Determine unlocked tabs based on league state
-  const unlockedTabs: ("home" | "auction" | "team" | "budget" | "ranking" | "achievements")[] = ["home"];
+  const unlockedTabs: ("home" | "auction" | "team" | "budget" | "ranking" | "palmares")[] = ["home"];
 
   if (auctions && auctions.length > 0) {
-    unlockedTabs.push("auction", "team", "budget", "ranking", "achievements");
+    unlockedTabs.push("auction", "team", "budget", "ranking", "palmares");
   }
 
   return (

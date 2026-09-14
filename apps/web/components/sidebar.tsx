@@ -9,6 +9,7 @@ import {
   Gavel,
   Users,
   Trophy,
+  Medal,
   Settings,
   ChevronDown,
   Check,
@@ -18,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { getGTSubTabLabel } from "@/lib/gt-phases";
 import { isClassic, type LeagueMode } from "@/lib/league-mode";
 
-type NavKey = "home" | "auction" | "team" | "budget" | "ranking" | "achievements";
+type NavKey = "home" | "auction" | "team" | "budget" | "ranking" | "palmares";
 
 interface NavItem {
   key: NavKey;
@@ -55,6 +56,7 @@ function buildNavItems(): NavItem[] {
       ],
     },
     { key: "ranking", label: "Ranking", icon: Trophy, href: (id) => `/league/${id}/ranking` },
+    { key: "palmares", label: "Palmares", icon: Medal, href: (id) => `/league/${id}/palmares` },
   ];
 }
 

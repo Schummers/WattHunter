@@ -18,15 +18,28 @@ le jaune et détient six blancs.
 **Blocked by:** 09 — Page Palmares et onglet Seasons ; 08 — Décomposition de l'XP
 par catégorie.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Un tableau joueur par maillot, quatre colonnes plus un total.
-- [ ] Seuls les grands tours sont comptés, les classiques n'apparaissent pas.
-- [ ] La règle de calcul est écrite sous le tableau, en une note.
-- [ ] Les valeurs concordent avec `research/laroutedutour/palmares_stats.py` pour
+- [x] Un tableau joueur par maillot, quatre colonnes plus un total.
+- [x] Seuls les grands tours sont comptés, les classiques n'apparaissent pas.
+- [x] La règle de calcul est écrite sous le tableau, en une note.
+- [x] Les valeurs concordent avec `research/laroutedutour/palmares_stats.py` pour
       la partie historique : 15 maillots pour Peejee, 14 pour Klimax, 6 blancs
       pour Marino Alex.
-- [ ] Les maillots des saisons WattHunter viennent des catégories séparées du
+- [x] Les maillots des saisons WattHunter viennent des catégories séparées du
       ticket 08, pas du champ fusionné.
-- [ ] Aucun commentaire éditorial.
-- [ ] Tout le texte est en anglais.
+- [x] Aucun commentaire éditorial.
+- [x] Tout le texte est en anglais.
+
+## Livré — 2026-09-14
+
+Tableau `YEL · GRN · POL · WHT · TOT`, règle de calcul **sous** le tableau. Les
+classiques n'attribuent aucun maillot : la règle tombe d'elle-même, puisqu'une
+course d'un jour ne marque aucun point de catégorie.
+
+Valeurs lues en base, conformes à `palmares_stats.py` : Peejee 15 (3/5/4/3),
+Klimax 14 (6/3/2/3), Marino Alex 6 blancs.
+
+Les maillots des saisons WattHunter viennent bien des **colonnes séparées du
+ticket 08** (`gc_classif_bonus`, `points_classif_bonus`, `kom_classif_bonus`,
+`youth_classif_bonus`), jamais du champ fusionné `gt_classif_bonus`.

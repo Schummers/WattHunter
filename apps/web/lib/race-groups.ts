@@ -129,3 +129,40 @@ export function oneDayRaceSlugPatterns(): string[] {
     .filter((race) => race.type === "one-day")
     .map((race) => `race/${raceKey(race.slug)}/%`);
 }
+
+interface CalendarRace {
+  slug: string;
+  type: WtRaceType;
+  date?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+/**
+ * The date window a race group spans in a given year: first start, last end.
+ * Used to tell an event that has not happened yet from one that was skipped.
+ *
+ * The calendar is written for one season, so the window is shifted to `year`.
+ * Good enough for the palmares, where the question is only "before or after
+ * today", never a precise date.
+ */
+export function getRaceGroupWindow(
+  groupId: RaceGroupId,
+  year: number,
+): { start: string; end: string } | null {
+  let start: string | null = null;
+  let end: string | null = null;
+
+  for (const race of calendarData as CalendarRace[]) {
+    if (getRaceGroupId(race.slug) !== groupId) continue;
+    const rawStart = race.start_date ?? race.date;
+    const rawEnd = race.end_date ?? race.date;
+    if (!rawStart || !rawEnd) continue;
+    const shiftedStart = `${year}${rawStart.slice(4)}`;
+    const shiftedEnd = `${year}${rawEnd.slice(4)}`;
+    if (start === null || shiftedStart < start) start = shiftedStart;
+    if (end === null || shiftedEnd > end) end = shiftedEnd;
+  }
+
+  return start && end ? { start, end } : null;
+}

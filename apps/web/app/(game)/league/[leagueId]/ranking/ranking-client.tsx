@@ -46,6 +46,18 @@ interface Race {
   childSlugs: string[];
 }
 
+interface ArchivedPlayer {
+  key: string;
+  displayName: string;
+  isFormerPlayer: boolean;
+}
+
+interface ArchivedSeason {
+  year: number;
+  /** Already sorted, rank 1 first. */
+  ranking: ArchivedPlayer[];
+}
+
 interface RankingClientProps {
   leagueId: string;
   teams: TeamRow[];
@@ -54,6 +66,8 @@ interface RankingClientProps {
   initialRace?: string | null;
   teamXpByRace: Record<string, Record<string, number>>;
   riderXpByRace: Record<string, Record<string, number>>;
+  currentSeason: number;
+  archivedSeasons: ArchivedSeason[];
 }
 
 function getInitials(name: string): string {
@@ -68,9 +82,20 @@ export function RankingClient({
   teamXpByRace,
   riderXpByRace,
   initialRace,
+  currentSeason,
+  archivedSeasons,
 }: RankingClientProps) {
   const [tabIndex, setTabIndex] = useState(0);
   const [selectedRace, setSelectedRace] = useState<string | null>(initialRace ?? null);
+  const [selectedSeason, setSelectedSeason] = useState<number>(currentSeason);
+
+  // A season played before WattHunter has a standing per player and no rider
+  // data at all: there were no riders to own.
+  const archived = archivedSeasons.find((season) => season.year === selectedSeason) ?? null;
+  const seasonOptions = [
+    currentSeason,
+    ...archivedSeasons.map((s) => s.year).filter((year) => year !== currentSeason),
+  ].sort((a, b) => b - a);
 
   const isAllRaces = selectedRace === null;
 
@@ -110,23 +135,65 @@ export function RankingClient({
 
   return (
     <div className="space-y-4 pb-24">
-      {/* Page title */}
-      <div className="px-4 pt-4">
+      {/* Page title + season selector */}
+      <div className="flex items-center justify-between gap-3 px-4 pt-4">
         <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)]">
           Ranking
         </h1>
+        {seasonOptions.length > 1 && (
+          <Select
+            value={String(selectedSeason)}
+            onValueChange={(v) => setSelectedSeason(Number(v))}
+          >
+            <SelectTrigger className="w-auto gap-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {seasonOptions.map((year) => (
+                <SelectItem key={year} value={String(year)}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
-      {/* Tabs: Teams / Riders */}
+      {/* Tabs: Teams / Riders — disabled, not hidden, on a season with no rider
+          data: hiding it would make the layout jump from one year to the next. */}
       <div className="px-4">
         <SegmentedControl
           segments={["Teams", "Riders"]}
           activeIndex={tabIndex}
           onChange={setTabIndex}
+          disabled={archived !== null}
         />
       </div>
 
+      {archived && (
+        <div>
+          <div className="divide-y divide-[var(--border-subtle)]">
+            {archived.ranking.map((player, i) => (
+              <div key={player.key} className="flex items-center gap-3 px-4 py-3">
+                {/* DS-EXCEPTION: w-[22px] — same rank column as the live ranking */}
+                <span className="w-[22px] shrink-0 text-center font-mono text-[length:var(--type-emphasis)] font-bold tabular-nums text-[var(--text-mid)]">
+                  {i + 1}
+                </span>
+                <span
+                  className={`flex-1 truncate text-[length:var(--type-emphasis)] text-[var(--text-high)] ${
+                    player.isFormerPlayer ? "italic font-normal" : "font-semibold"
+                  }`}
+                >
+                  {player.displayName}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Race filter */}
+      {!archived && (
       <div className="px-4">
         <Select
           value={selectedRace ?? "all"}
@@ -145,9 +212,10 @@ export function RankingClient({
           </SelectContent>
         </Select>
       </div>
+      )}
 
       {/* Teams tab */}
-      {tabIndex === 0 && (
+      {!archived && tabIndex === 0 && (
         <div>
           <div className="px-4 pb-2">
             <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
@@ -233,7 +301,7 @@ export function RankingClient({
       )}
 
       {/* Riders tab */}
-      {tabIndex === 1 && (
+      {!archived && tabIndex === 1 && (
         <div>
           <div className="px-4 pb-2">
             <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">

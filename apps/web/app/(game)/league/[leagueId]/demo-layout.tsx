@@ -34,8 +34,8 @@ export async function DemoLeagueLayout({
     | "team"
     | "budget"
     | "ranking"
-    | "achievements"
-  )[] = ["home", "auction", "team", "budget", "ranking", "achievements"];
+    | "palmares"
+  )[] = ["home", "auction", "team", "budget", "ranking", "palmares"];
 
   return (
     <DemoProvider visitorTeamId={DEMO_VISITOR_TEAM_ID}>

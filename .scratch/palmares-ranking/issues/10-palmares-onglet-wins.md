@@ -22,14 +22,26 @@ victoires listées pour dix Tours joués.
 
 **Blocked by:** 09 — Page Palmares et onglet Seasons.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Colonnes dans l'ordre joueur, 3rd, 2nd, 1st, la dernière en primaire.
-- [ ] Le nombre de départs est en sous-titre du nom.
-- [ ] Le tableau croisé couvre les quatre épreuves, avec un point pour zéro.
-- [ ] JibsEPAULE apparaît dans les deux tableaux, en italique.
-- [ ] Le total des victoires par épreuve égale le nombre d'épreuves jouées de ce
+- [x] Colonnes dans l'ordre joueur, 3rd, 2nd, 1st, la dernière en primaire.
+- [x] Le nombre de départs est en sous-titre du nom.
+- [x] Le tableau croisé couvre les quatre épreuves, avec un point pour zéro.
+- [x] JibsEPAULE apparaît dans les deux tableaux, en italique.
+- [x] Le total des victoires par épreuve égale le nombre d'épreuves jouées de ce
       type, vérifié sur les quatre colonnes.
-- [ ] Les titres de saison n'apparaissent pas sur cet onglet.
-- [ ] Une seule note de règle, sous les tableaux, aucun commentaire éditorial.
-- [ ] Tout le texte est en anglais.
+- [x] Les titres de saison n'apparaissent pas sur cet onglet.
+- [x] Une seule note de règle, sous les tableaux, aucun commentaire éditorial.
+- [x] Tout le texte est en anglais.
+
+## Livré — 2026-09-14
+
+Colonnes `Player · 3rd · 2nd · 1st`, les victoires à l'extrême droite en primaire.
+Départs en sous-titre du nom. Tableau croisé par épreuve avec `·` pour zéro.
+JibsEPAULE figure dans les deux tableaux, en italique, avec la mention
+`former player`.
+
+Le garde-fou est vérifié **au niveau des données**, pas seulement de l'écran :
+victoires par épreuve = épreuves jouées de ce type. classics 5/5, giro 6/6,
+tour-de-france 7/7, vuelta 6/6. C'est la victoire de JibsEPAULE sur le Tour 2019
+qui fait tomber la colonne TDF juste ; sans lui, 6 victoires pour 7 Tours.

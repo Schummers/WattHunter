@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Gavel, Users, Trophy, type LucideIcon } from "lucide-react";
+import { House, Gavel, Users, Medal, Trophy, type LucideIcon } from "lucide-react";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { isClassic, type LeagueMode } from "@/lib/league-mode";
 
-export type NavTabKey = "home" | "auction" | "team" | "budget" | "ranking" | "achievements";
+export type NavTabKey = "home" | "auction" | "team" | "budget" | "ranking" | "palmares";
 
 interface NavTab {
   key: NavTabKey;
@@ -20,6 +20,7 @@ const tabs: NavTab[] = [
   { key: "auction",      label: "Auction",      icon: Gavel,   href: (id) => `/league/${id}/auction` },
   { key: "team",         label: "Team",         icon: Users,   href: (id) => `/league/${id}/team` },
   { key: "ranking",      label: "Ranking",      icon: Trophy,  href: (id) => `/league/${id}/ranking` },
+  { key: "palmares",     label: "Palmares",     icon: Medal,   href: (id) => `/league/${id}/palmares` },
 ];
 
 interface BottomNavProps {
