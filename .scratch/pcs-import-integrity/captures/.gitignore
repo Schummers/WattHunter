@@ -1,0 +1,5 @@
+# Captures PCS de travail — hors git.
+# Supprimables une fois le ticket 04 clos ; les valeurs transcrites
+# vivent dans ../verif/expected.py et ../finals-kom-youth.json.
+*
+!.gitignore

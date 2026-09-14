@@ -1,0 +1,397 @@
+{
+  "_note": "XP credite a un coureur sur un rang qui n'etait pas le sien (ligue Classic V2). Exposition brute, pas un delta net.",
+  "vuelta_standings": [
+    {
+      "rank": 1,
+      "team": "Peejee",
+      "xp_vuelta": 3556.2,
+      "xp_exposed": 147.1
+    },
+    {
+      "rank": 2,
+      "team": "Las Chivas Pendejas",
+      "xp_vuelta": 2623.8,
+      "xp_exposed": 169.0
+    },
+    {
+      "rank": 3,
+      "team": "Leopard_Trek",
+      "xp_vuelta": 2408.01,
+      "xp_exposed": 328.5
+    },
+    {
+      "rank": 4,
+      "team": "Muskatel Muskadji",
+      "xp_vuelta": 2395.0,
+      "xp_exposed": 258.0
+    },
+    {
+      "rank": 5,
+      "team": "bigdaddy",
+      "xp_vuelta": 2322.0,
+      "xp_exposed": 33.0
+    },
+    {
+      "rank": 6,
+      "team": "GoudalEnergies",
+      "xp_vuelta": 2074.3,
+      "xp_exposed": 116.0
+    },
+    {
+      "rank": 7,
+      "team": "Klimax",
+      "xp_vuelta": 2008.0,
+      "xp_exposed": 303.0
+    }
+  ],
+  "season_standings": [
+    {
+      "team": "Leopard_Trek",
+      "cumulative_xp": 9885.1
+    },
+    {
+      "team": "Klimax",
+      "cumulative_xp": 7705.54
+    },
+    {
+      "team": "Peejee",
+      "cumulative_xp": 7615.95
+    },
+    {
+      "team": "GoudalEnergies",
+      "cumulative_xp": 7586.86
+    },
+    {
+      "team": "Muskatel Muskadji",
+      "cumulative_xp": 7371.88
+    },
+    {
+      "team": "Las Chivas Pendejas",
+      "cumulative_xp": 6755.73
+    },
+    {
+      "team": "bigdaddy",
+      "cumulative_xp": 4766.18
+    },
+    {
+      "team": "Dixon Hormous",
+      "cumulative_xp": 3742.63
+    },
+    {
+      "team": "TheAussieMate",
+      "cumulative_xp": 2102.61
+    }
+  ],
+  "diffs_touching_a_contract": [
+    {
+      "stage": 1,
+      "rank": 8,
+      "team": "Klimax",
+      "credited_to": "Finn Fisher-Black",
+      "xp_credited": 40.0,
+      "should_be": "Wout Van Aert",
+      "base_slug": "rider/finn-fisher-black",
+      "true_slug": "rider/wout-van-aert"
+    },
+    {
+      "stage": 1,
+      "rank": 9,
+      "team": "bigdaddy",
+      "credited_to": "Wout Van Aert",
+      "xp_credited": 33.0,
+      "should_be": "Finn Fisher-Black",
+      "base_slug": "rider/wout-van-aert",
+      "true_slug": "rider/finn-fisher-black"
+    },
+    {
+      "stage": 1,
+      "rank": 20,
+      "team": "Peejee",
+      "credited_to": "Iván Romeo",
+      "xp_credited": 4.0,
+      "should_be": "Rasmus Tiller",
+      "base_slug": "rider/ivan-romeo",
+      "true_slug": "rider/rasmus-tiller"
+    },
+    {
+      "stage": 2,
+      "rank": 9,
+      "team": "Las Chivas Pendejas",
+      "credited_to": "Orluis Aular",
+      "xp_credited": 30.0,
+      "should_be": "Oscar Onley",
+      "base_slug": "rider/orluis-aular",
+      "true_slug": "rider/oscar-onley"
+    },
+    {
+      "stage": 2,
+      "rank": 10,
+      "team": "GoudalEnergies",
+      "credited_to": "Oscar Onley",
+      "xp_credited": 37.5,
+      "should_be": "Orluis Aular",
+      "base_slug": "rider/oscar-onley",
+      "true_slug": "rider/orluis-aular"
+    },
+    {
+      "stage": 4,
+      "rank": 8,
+      "team": "Peejee",
+      "credited_to": "Mattias Skjelmose",
+      "xp_credited": 39.0,
+      "should_be": "Richard Carapaz",
+      "base_slug": "rider/mattias-skjelmose-jensen",
+      "true_slug": "rider/richard-carapaz"
+    },
+    {
+      "stage": 4,
+      "rank": 9,
+      "team": "Leopard_Trek",
+      "credited_to": "Richard Carapaz",
+      "xp_credited": 40.5,
+      "should_be": "Mattias Skjelmose",
+      "base_slug": "rider/richard-carapaz",
+      "true_slug": "rider/mattias-skjelmose-jensen"
+    },
+    {
+      "stage": 4,
+      "rank": 15,
+      "team": "Muskatel Muskadji",
+      "credited_to": "Clément Berthet",
+      "xp_credited": 12.0,
+      "should_be": "Marco Brenner",
+      "base_slug": "rider/clement-berthet",
+      "true_slug": "rider/marco-brenner"
+    },
+    {
+      "stage": 4,
+      "rank": 16,
+      "team": "GoudalEnergies",
+      "credited_to": "Marco Brenner",
+      "xp_credited": 11.0,
+      "should_be": "Clément Berthet",
+      "base_slug": "rider/marco-brenner",
+      "true_slug": "rider/clement-berthet"
+    },
+    {
+      "stage": 6,
+      "rank": 6,
+      "team": "Leopard_Trek",
+      "credited_to": "Primož Roglič",
+      "xp_credited": 91.0,
+      "should_be": "Felix Gall",
+      "base_slug": "rider/primoz-roglic",
+      "true_slug": "rider/felix-gall"
+    },
+    {
+      "stage": 6,
+      "rank": 7,
+      "team": "Klimax",
+      "credited_to": "Felix Gall",
+      "xp_credited": 58.0,
+      "should_be": "Primož Roglič",
+      "base_slug": "rider/felix-gall",
+      "true_slug": "rider/primoz-roglic"
+    },
+    {
+      "stage": 7,
+      "rank": 7,
+      "team": "Klimax",
+      "credited_to": "Iván Ramiro Sosa",
+      "xp_credited": 45.0,
+      "should_be": "Alexey Lutsenko",
+      "base_slug": "rider/ivan-ramiro-sosa",
+      "true_slug": "rider/aleksey-lutsenko"
+    },
+    {
+      "stage": 7,
+      "rank": 15,
+      "team": "Leopard_Trek",
+      "credited_to": "Finlay Pickering",
+      "xp_credited": 13.0,
+      "should_be": "(hors pool)",
+      "base_slug": "rider/finlay-pickering",
+      "true_slug": "rider/sergio-samitier"
+    },
+    {
+      "stage": 7,
+      "rank": 29,
+      "team": "Leopard_Trek",
+      "credited_to": "Richard Carapaz",
+      "xp_credited": 6.0,
+      "should_be": "Cristián Rodríguez",
+      "base_slug": "rider/richard-carapaz",
+      "true_slug": "rider/cristian-rodriguez"
+    },
+    {
+      "stage": 9,
+      "rank": 8,
+      "team": "Leopard_Trek",
+      "credited_to": "Richard Carapaz",
+      "xp_credited": 59.5,
+      "should_be": "Harold Tejada",
+      "base_slug": "rider/richard-carapaz",
+      "true_slug": "rider/harold-tejada"
+    },
+    {
+      "stage": 9,
+      "rank": 19,
+      "team": "Las Chivas Pendejas",
+      "credited_to": "Pavel Sivakov",
+      "xp_credited": 9.0,
+      "should_be": "(hors pool)",
+      "base_slug": "rider/pavel-sivakov",
+      "true_slug": "rider/gijs-leemreize"
+    },
+    {
+      "stage": 12,
+      "rank": 6,
+      "team": "Klimax",
+      "credited_to": "Felix Gall",
+      "xp_credited": 85.0,
+      "should_be": "Enric Mas",
+      "base_slug": "rider/felix-gall",
+      "true_slug": "rider/enric-mas"
+    },
+    {
+      "stage": 12,
+      "rank": 7,
+      "team": "Leopard_Trek",
+      "credited_to": "Enric Mas",
+      "xp_credited": 93.0,
+      "should_be": "Felix Gall",
+      "base_slug": "rider/enric-mas",
+      "true_slug": "rider/felix-gall"
+    },
+    {
+      "stage": 13,
+      "rank": 9,
+      "team": "Peejee",
+      "credited_to": "Léo Bisiaux",
+      "xp_credited": 33.0,
+      "should_be": "(hors pool)",
+      "base_slug": "rider/leo-bisiaux",
+      "true_slug": "rider/simon-dalby"
+    },
+    {
+      "stage": 13,
+      "rank": 20,
+      "team": "Muskatel Muskadji",
+      "credited_to": "Clément Berthet",
+      "xp_credited": 21.0,
+      "should_be": "Lars Craps",
+      "base_slug": "rider/clement-berthet",
+      "true_slug": "rider/lars-craps"
+    },
+    {
+      "stage": 15,
+      "rank": 7,
+      "team": "Muskatel Muskadji",
+      "credited_to": "Alessandro Covi",
+      "xp_credited": 180.0,
+      "should_be": "Bastien Tronchon",
+      "base_slug": "rider/alessandro-covi",
+      "true_slug": "rider/bastien-tronchon"
+    },
+    {
+      "stage": 15,
+      "rank": 16,
+      "team": "Muskatel Muskadji",
+      "credited_to": "Tobias Halland Johannessen",
+      "xp_credited": 10.0,
+      "should_be": "Urko Berrade",
+      "base_slug": "rider/tobias-halland-johannessen",
+      "true_slug": "rider/urko-berrade-fernandez"
+    },
+    {
+      "stage": 15,
+      "rank": 30,
+      "team": "Leopard_Trek",
+      "credited_to": "Enric Mas",
+      "xp_credited": 25.5,
+      "should_be": "Iván Romeo",
+      "base_slug": "rider/enric-mas",
+      "true_slug": "rider/ivan-romeo"
+    },
+    {
+      "stage": 16,
+      "rank": 9,
+      "team": "GoudalEnergies",
+      "credited_to": "César Macías",
+      "xp_credited": 30.0,
+      "should_be": "Alberto Dainese",
+      "base_slug": "rider/cesar-macias-estrada",
+      "true_slug": "rider/alberto-dainese"
+    },
+    {
+      "stage": 16,
+      "rank": 10,
+      "team": "Las Chivas Pendejas",
+      "credited_to": "Alberto Dainese",
+      "xp_credited": 100.0,
+      "should_be": "César Macías",
+      "base_slug": "rider/alberto-dainese",
+      "true_slug": "rider/cesar-macias-estrada"
+    },
+    {
+      "stage": 17,
+      "rank": 9,
+      "team": "Peejee",
+      "credited_to": "Bryan Coquard",
+      "xp_credited": 56.1,
+      "should_be": "Hugo Hofstetter",
+      "base_slug": "rider/bryan-coquard",
+      "true_slug": "rider/hugo-hofstetter"
+    },
+    {
+      "stage": 17,
+      "rank": 10,
+      "team": "GoudalEnergies",
+      "credited_to": "Hugo Hofstetter",
+      "xp_credited": 37.5,
+      "should_be": "Bryan Coquard",
+      "base_slug": "rider/hugo-hofstetter",
+      "true_slug": "rider/bryan-coquard"
+    },
+    {
+      "stage": 18,
+      "rank": 8,
+      "team": "Muskatel Muskadji",
+      "credited_to": "Ethan Hayter",
+      "xp_credited": 35.0,
+      "should_be": "Ivo Oliveira",
+      "base_slug": "rider/ethan-hayter",
+      "true_slug": "rider/ivo-emanuel-alves"
+    },
+    {
+      "stage": 18,
+      "rank": 9,
+      "team": "Las Chivas Pendejas",
+      "credited_to": "Ivo Oliveira",
+      "xp_credited": 30.0,
+      "should_be": "Ethan Hayter",
+      "base_slug": "rider/ivo-emanuel-alves",
+      "true_slug": "rider/ethan-hayter"
+    },
+    {
+      "stage": 21,
+      "rank": 6,
+      "team": "Klimax",
+      "credited_to": "Finn Fisher-Black",
+      "xp_credited": 75.0,
+      "should_be": "Pello Bilbao",
+      "base_slug": "rider/finn-fisher-black",
+      "true_slug": "rider/pello-bilbao"
+    },
+    {
+      "stage": 21,
+      "rank": 16,
+      "team": "Peejee",
+      "credited_to": "Léo Bisiaux",
+      "xp_credited": 15.0,
+      "should_be": "Fabio Van Den Bossche",
+      "base_slug": "rider/leo-bisiaux",
+      "true_slug": "rider/fabio-van-den-bossche"
+    }
+  ]
+}

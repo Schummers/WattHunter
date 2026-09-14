@@ -1,0 +1,496 @@
+{
+  "1": {
+    "rows_in_base": 136,
+    "compared": 136,
+    "diffs": [
+      {
+        "rank": 8,
+        "pcs_now": "rider/wout-van-aert",
+        "pcs_now_points": 10,
+        "base": "rider/finn-fisher-black",
+        "base_points": 10
+      },
+      {
+        "rank": 9,
+        "pcs_now": "rider/finn-fisher-black",
+        "pcs_now_points": 8,
+        "base": "rider/wout-van-aert",
+        "base_points": 8
+      },
+      {
+        "rank": 19,
+        "pcs_now": "rider/ivan-romeo",
+        "pcs_now_points": 0,
+        "base": "rider/rasmus-tiller",
+        "base_points": 0
+      },
+      {
+        "rank": 20,
+        "pcs_now": "rider/rasmus-tiller",
+        "pcs_now_points": 0,
+        "base": "rider/ivan-romeo",
+        "base_points": 0
+      },
+      {
+        "rank": 118,
+        "pcs_now": "rider/david-de-la-cruz",
+        "pcs_now_points": 0,
+        "base": "rider/guillaume-martin",
+        "base_points": 0
+      },
+      {
+        "rank": 128,
+        "pcs_now": "rider/jarno-widar",
+        "pcs_now_points": 0,
+        "base": "rider/gianni-moscon",
+        "base_points": 0
+      },
+      {
+        "rank": 128,
+        "pcs_now": "rider/jarno-widar",
+        "pcs_now_points": 0,
+        "base": "rider/vito-braet",
+        "base_points": 0
+      }
+    ]
+  },
+  "2": {
+    "rows_in_base": 136,
+    "compared": 135,
+    "diffs": [
+      {
+        "rank": 9,
+        "pcs_now": "rider/oscar-onley",
+        "pcs_now_points": 8,
+        "base": "rider/orluis-aular",
+        "base_points": 8
+      },
+      {
+        "rank": 10,
+        "pcs_now": "rider/orluis-aular",
+        "pcs_now_points": 6,
+        "base": "rider/oscar-onley",
+        "base_points": 6
+      }
+    ]
+  },
+  "4": {
+    "rows_in_base": 135,
+    "compared": 135,
+    "diffs": [
+      {
+        "rank": 8,
+        "pcs_now": "rider/richard-carapaz",
+        "pcs_now_points": 10,
+        "base": "rider/mattias-skjelmose-jensen",
+        "base_points": 10
+      },
+      {
+        "rank": 9,
+        "pcs_now": "rider/mattias-skjelmose-jensen",
+        "pcs_now_points": 8,
+        "base": "rider/richard-carapaz",
+        "base_points": 8
+      },
+      {
+        "rank": 15,
+        "pcs_now": "rider/marco-brenner",
+        "pcs_now_points": 1,
+        "base": "rider/clement-berthet",
+        "base_points": 1
+      },
+      {
+        "rank": 16,
+        "pcs_now": "rider/clement-berthet",
+        "pcs_now_points": 0,
+        "base": "rider/marco-brenner",
+        "base_points": 0
+      }
+    ]
+  },
+  "5": {
+    "rows_in_base": 135,
+    "compared": 134,
+    "diffs": []
+  },
+  "6": {
+    "rows_in_base": 134,
+    "compared": 132,
+    "diffs": [
+      {
+        "rank": 6,
+        "pcs_now": "rider/felix-gall",
+        "pcs_now_points": 15,
+        "base": "rider/primoz-roglic",
+        "base_points": 15
+      },
+      {
+        "rank": 7,
+        "pcs_now": "rider/primoz-roglic",
+        "pcs_now_points": 12,
+        "base": "rider/felix-gall",
+        "base_points": 12
+      },
+      {
+        "rank": 15,
+        "pcs_now": "rider/patrick-konrad",
+        "pcs_now_points": 1,
+        "base": "rider/jose-manuel-diaz-gallego",
+        "base_points": 1
+      },
+      {
+        "rank": 29,
+        "pcs_now": "rider/finlay-pickering",
+        "pcs_now_points": 0,
+        "base": "rider/leo-bisiaux",
+        "base_points": 0
+      },
+      {
+        "rank": 30,
+        "pcs_now": "rider/leo-bisiaux",
+        "pcs_now_points": 0,
+        "base": "rider/finlay-pickering",
+        "base_points": 0
+      }
+    ]
+  },
+  "7": {
+    "rows_in_base": 132,
+    "compared": 132,
+    "diffs": [
+      {
+        "rank": 6,
+        "pcs_now": "rider/ivan-ramiro-sosa",
+        "pcs_now_points": 15,
+        "base": "rider/aleksey-lutsenko",
+        "base_points": 15
+      },
+      {
+        "rank": 7,
+        "pcs_now": "rider/aleksey-lutsenko",
+        "pcs_now_points": 12,
+        "base": "rider/ivan-ramiro-sosa",
+        "base_points": 12
+      },
+      {
+        "rank": 15,
+        "pcs_now": "rider/sergio-samitier",
+        "pcs_now_points": 1,
+        "base": "rider/finlay-pickering",
+        "base_points": 1
+      },
+      {
+        "rank": 29,
+        "pcs_now": "rider/cristian-rodriguez",
+        "pcs_now_points": 0,
+        "base": "rider/richard-carapaz",
+        "base_points": 0
+      },
+      {
+        "rank": 30,
+        "pcs_now": "rider/richard-carapaz",
+        "pcs_now_points": 0,
+        "base": "rider/cristian-rodriguez",
+        "base_points": 0
+      }
+    ]
+  },
+  "8": {
+    "rows_in_base": 132,
+    "compared": 128,
+    "diffs": [
+      {
+        "rank": 6,
+        "pcs_now": "rider/alessandro-romele",
+        "pcs_now_points": 15,
+        "base": "rider/bastien-tronchon",
+        "base_points": 15
+      },
+      {
+        "rank": 7,
+        "pcs_now": "rider/bastien-tronchon",
+        "pcs_now_points": 12,
+        "base": "rider/alessandro-romele",
+        "base_points": 12
+      }
+    ]
+  },
+  "9": {
+    "rows_in_base": 128,
+    "compared": 126,
+    "diffs": [
+      {
+        "rank": 8,
+        "pcs_now": "rider/harold-tejada",
+        "pcs_now_points": 10,
+        "base": "rider/richard-carapaz",
+        "base_points": 10
+      },
+      {
+        "rank": 9,
+        "pcs_now": "rider/richard-carapaz",
+        "pcs_now_points": 8,
+        "base": "rider/harold-tejada",
+        "base_points": 8
+      },
+      {
+        "rank": 19,
+        "pcs_now": "rider/gijs-leemreize",
+        "pcs_now_points": 0,
+        "base": "rider/pavel-sivakov",
+        "base_points": 0
+      }
+    ]
+  },
+  "10": {
+    "rows_in_base": 126,
+    "compared": 124,
+    "diffs": []
+  },
+  "11": {
+    "rows_in_base": 124,
+    "compared": 123,
+    "diffs": [
+      {
+        "rank": 8,
+        "pcs_now": "rider/alessandro-romele",
+        "pcs_now_points": 10,
+        "base": "rider/matevz-govekar",
+        "base_points": 10
+      },
+      {
+        "rank": 9,
+        "pcs_now": "rider/matevz-govekar",
+        "pcs_now_points": 8,
+        "base": "rider/alessandro-romele",
+        "base_points": 8
+      },
+      {
+        "rank": 20,
+        "pcs_now": "rider/rudy-porter",
+        "pcs_now_points": 0,
+        "base": "rider/thibau-nys",
+        "base_points": 0
+      }
+    ]
+  },
+  "12": {
+    "rows_in_base": 123,
+    "compared": 120,
+    "diffs": [
+      {
+        "rank": 6,
+        "pcs_now": "rider/enric-mas",
+        "pcs_now_points": 15,
+        "base": "rider/felix-gall",
+        "base_points": 15
+      },
+      {
+        "rank": 7,
+        "pcs_now": "rider/felix-gall",
+        "pcs_now_points": 12,
+        "base": "rider/enric-mas",
+        "base_points": 12
+      }
+    ]
+  },
+  "13": {
+    "rows_in_base": 120,
+    "compared": 116,
+    "diffs": [
+      {
+        "rank": 9,
+        "pcs_now": "rider/simon-dalby",
+        "pcs_now_points": 8,
+        "base": "rider/leo-bisiaux",
+        "base_points": 8
+      },
+      {
+        "rank": 19,
+        "pcs_now": "rider/clement-berthet",
+        "pcs_now_points": 0,
+        "base": "rider/lars-craps",
+        "base_points": 0
+      },
+      {
+        "rank": 20,
+        "pcs_now": "rider/lars-craps",
+        "pcs_now_points": 0,
+        "base": "rider/clement-berthet",
+        "base_points": 0
+      }
+    ]
+  },
+  "14": {
+    "rows_in_base": 116,
+    "compared": 113,
+    "diffs": []
+  },
+  "15": {
+    "rows_in_base": 113,
+    "compared": 113,
+    "diffs": [
+      {
+        "rank": 6,
+        "pcs_now": "rider/alessandro-covi",
+        "pcs_now_points": 15,
+        "base": "rider/bastien-tronchon",
+        "base_points": 15
+      },
+      {
+        "rank": 7,
+        "pcs_now": "rider/bastien-tronchon",
+        "pcs_now_points": 12,
+        "base": "rider/alessandro-covi",
+        "base_points": 12
+      },
+      {
+        "rank": 15,
+        "pcs_now": "rider/tobias-halland-johannessen",
+        "pcs_now_points": 1,
+        "base": "rider/urko-berrade-fernandez",
+        "base_points": 1
+      },
+      {
+        "rank": 16,
+        "pcs_now": "rider/urko-berrade-fernandez",
+        "pcs_now_points": 0,
+        "base": "rider/tobias-halland-johannessen",
+        "base_points": 0
+      },
+      {
+        "rank": 29,
+        "pcs_now": "rider/enric-mas",
+        "pcs_now_points": 0,
+        "base": "rider/ivan-romeo",
+        "base_points": 0
+      },
+      {
+        "rank": 30,
+        "pcs_now": "rider/ivan-romeo",
+        "pcs_now_points": 0,
+        "base": "rider/enric-mas",
+        "base_points": 0
+      }
+    ]
+  },
+  "16": {
+    "rows_in_base": 113,
+    "compared": 113,
+    "diffs": [
+      {
+        "rank": 9,
+        "pcs_now": "rider/alberto-dainese",
+        "pcs_now_points": 8,
+        "base": "rider/cesar-macias-estrada",
+        "base_points": 8
+      },
+      {
+        "rank": 10,
+        "pcs_now": "rider/cesar-macias-estrada",
+        "pcs_now_points": 6,
+        "base": "rider/alberto-dainese",
+        "base_points": 6
+      }
+    ]
+  },
+  "17": {
+    "rows_in_base": 113,
+    "compared": 113,
+    "diffs": [
+      {
+        "rank": 9,
+        "pcs_now": "rider/hugo-hofstetter",
+        "pcs_now_points": 8,
+        "base": "rider/bryan-coquard",
+        "base_points": 8
+      },
+      {
+        "rank": 10,
+        "pcs_now": "rider/bryan-coquard",
+        "pcs_now_points": 6,
+        "base": "rider/hugo-hofstetter",
+        "base_points": 6
+      }
+    ]
+  },
+  "18": {
+    "rows_in_base": 113,
+    "compared": 112,
+    "diffs": [
+      {
+        "rank": 8,
+        "pcs_now": "rider/ivo-emanuel-alves",
+        "pcs_now_points": 10,
+        "base": "rider/ethan-hayter",
+        "base_points": 10
+      },
+      {
+        "rank": 9,
+        "pcs_now": "rider/ethan-hayter",
+        "pcs_now_points": 8,
+        "base": "rider/ivo-emanuel-alves",
+        "base_points": 8
+      }
+    ]
+  },
+  "19": {
+    "rows_in_base": 112,
+    "compared": 109,
+    "diffs": [
+      {
+        "rank": 10,
+        "pcs_now": "rider/sergio-samitier",
+        "pcs_now_points": 6,
+        "base": "rider/kevin-vermaerke",
+        "base_points": 6
+      }
+    ]
+  },
+  "20": {
+    "rows_in_base": 109,
+    "compared": 106,
+    "diffs": []
+  },
+  "21": {
+    "rows_in_base": 106,
+    "compared": 106,
+    "diffs": [
+      {
+        "rank": 6,
+        "pcs_now": "rider/pello-bilbao",
+        "pcs_now_points": 15,
+        "base": "rider/finn-fisher-black",
+        "base_points": 15
+      },
+      {
+        "rank": 7,
+        "pcs_now": "rider/finn-fisher-black",
+        "pcs_now_points": 12,
+        "base": "rider/pello-bilbao",
+        "base_points": 12
+      },
+      {
+        "rank": 15,
+        "pcs_now": "rider/leo-bisiaux",
+        "pcs_now_points": 1,
+        "base": "rider/fabio-van-den-bossche",
+        "base_points": 1
+      },
+      {
+        "rank": 16,
+        "pcs_now": "rider/fabio-van-den-bossche",
+        "pcs_now_points": 0,
+        "base": "rider/leo-bisiaux",
+        "base_points": 0
+      },
+      {
+        "rank": 30,
+        "pcs_now": "rider/fabian-weiss",
+        "pcs_now_points": 0,
+        "base": "rider/magnus-cort-nielsen",
+        "base_points": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+Règles extraites de https://www.procyclingstats.com/v3_site_v160.css le 2026-09-14
+(feuille de style principale du site, versionnée, servie à tout le monde).
+
+.results[data-id="IVNQIE"] tbody tr:nth-child(9) div.cont,
+.results[data-id="SEINSF"] tbody tr:nth-child(6) div.cont,
+.results[data-id="XSDNFL"] tbody tr:nth-child(6) div.cont,
+.results[data-id="ZCNQPO"] tbody tr:nth-child(8) div.cont,
+.results[data-id="POFEVN"] tbody tr:nth-child(8) div.cont,
+.results[data-id="SEINSF"] tbody tr:nth-child(15) div.cont,
+.results[data-id="ZCNQPO"] tbody tr:nth-child(19) div.cont,
+.results[data-id="POFEVN"] tbody tr:nth-child(15) div.cont,
+.results[data-id="SEINSF"] tbody tr:nth-child(29) div.cont
+  { display: block; position: absolute; top: 26px; }
+
+.results[data-id="IVNQIE"] tbody tr:nth-child(10) div.cont,
+.results[data-id="SEINSF"] tbody tr:nth-child(7) div.cont,
+.results[data-id="XSDNFL"] tbody tr:nth-child(7) div.cont,
+.results[data-id="ZCNQPO"] tbody tr:nth-child(9) div.cont,
+.results[data-id="POFEVN"] tbody tr:nth-child(9) div.cont,
+.results[data-id="SEINSF"] tbody tr:nth-child(16) div.cont,
+.results[data-id="ZCNQPO"] tbody tr:nth-child(20) div.cont,
+.results[data-id="POFEVN"] tbody tr:nth-child(16) div.cont,
+.results[data-id="SEINSF"] tbody tr:nth-child(30) div.cont
+  { display: block; position: absolute; top: -19px; }
+
+Lecture : les règles vont par paires (N avec top:26px, N+1 avec top:-19px), soit
+9 paires actives sur l'ensemble du site à cet instant, réparties sur 5 tables.
+Pas de haut de page : `top` est relatif au <td class="ridername"> qui est en
+position:relative. Pas d'interlignage : 26px et -19px valent un pas de ligne
+(~23px) dans un sens et dans l'autre.
+
+Géométrie mesurée sur l'étape 19 (viewport 1400px, pas de ligne 23-24px) :
+  rang 5  (normal)  ancre à +5px  du haut de sa ligne
+  rang 6  (decalee) ancre à +27px -> peinte dans la bande du rang 7
+  rang 7  (decalee) ancre à -18px -> peinte dans la bande du rang 6
+  rang 8  (normal)  ancre à +5px
