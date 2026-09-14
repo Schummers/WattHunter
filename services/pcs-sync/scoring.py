@@ -260,17 +260,29 @@ def _event_bonus(event_rows: list[dict], role: str) -> tuple[float, float]:
     return kom_total, sprint_total
 
 
-def _classif_bonus_gt(classif_rows: list[dict], role: str) -> float:
-    """Daily classification bonus on GT slugs (2026-07 refonte).
+# The four jersey classifications, in the order they are stored as traceability
+# columns on rider_xp_daily (issue 08). Yellow, green, polka dot, white.
+CLASSIF_TYPES = ("gc", "points", "kom", "youth")
+
+
+def _empty_breakdown() -> dict[str, float]:
+    return {ctype: 0.0 for ctype in CLASSIF_TYPES}
+
+
+def _classif_breakdown_gt(classif_rows: list[dict], role: str) -> dict[str, float]:
+    """Daily classification bonus on GT slugs (2026-07 refonte), PER JERSEY.
 
     Flat table for EVERY squad rider inside the zone (DAILY_CLASSIF_SCALES),
     multiplied when the rider's role matches the classification
     (gc_leader→gc ×1.5 / youth ×1.5, sprinter→points ×2, climber→kom ×2).
     Replaces the V2 matched-only mechanism (kept in _classif_bonus for
     1-week races until the post-Tour review).
+
+    Returns one entry per jersey instead of a single merged number: the merge is
+    what made the yellow, green and polka dot shares unreadable (issue 08).
     """
     matched = DAILY_CLASSIF_ROLE_MULT.get(role, {})
-    total = 0.0
+    breakdown = _empty_breakdown()
     for row in classif_rows or []:
         ctype = row.get("classification_type")
         scale = DAILY_CLASSIF_SCALES.get(ctype)
@@ -283,8 +295,14 @@ def _classif_bonus_gt(classif_rows: list[dict], role: str) -> float:
             continue
         if r < 1 or r > len(scale):
             continue
-        total += scale[r - 1] * matched.get(ctype, 1.0)
-    return total
+        breakdown[ctype] += scale[r - 1] * matched.get(ctype, 1.0)
+    return breakdown
+
+
+def _classif_bonus_gt(classif_rows: list[dict], role: str) -> float:
+    """Sum of _classif_breakdown_gt — the merged value still written to
+    gt_classif_bonus for every existing reader."""
+    return sum(_classif_breakdown_gt(classif_rows, role).values())
 
 
 def _classif_bonus(classif_rows: list[dict], role: str) -> float:
@@ -295,10 +313,15 @@ def _classif_bonus(classif_rows: list[dict], role: str) -> float:
     domestique / stage_hunter / tt_specialist match nothing → 0.
     Base bonus per classification = (top + 1) - rank, for ranks within the top zone.
     """
+    return sum(_classif_breakdown(classif_rows, role).values())
+
+
+def _classif_breakdown(classif_rows: list[dict], role: str) -> dict[str, float]:
+    """Per-jersey version of _classif_bonus (1-week races)."""
     matched = CLASSIF_ROLE_MATCH.get(role, {})
+    breakdown = _empty_breakdown()
     if not matched:
-        return 0.0
-    total = 0.0
+        return breakdown
     for row in classif_rows or []:
         ctype = row.get("classification_type")
         mult = matched.get(ctype)
@@ -317,8 +340,9 @@ def _classif_bonus(classif_rows: list[dict], role: str) -> float:
         if r < 1 or r > top:
             continue
         base = (top + 1) - r
-        total += base * mult
-    return total
+        if ctype in breakdown:
+            breakdown[ctype] += base * mult
+    return breakdown
 
 
 # --- Spec A A9: 1-week stage-race awareness ---------------------------------
@@ -917,6 +941,7 @@ async def calculate_daily_scores(
                 in_squad = (team_id, rider_id) in gt_squad_members
                 gt_role_mult = 1.0
                 gt_classif_bonus = 0.0
+                classif_breakdown = _empty_breakdown()
                 gt_distance_bonus = 0.0
                 assist_bonus = 0.0
                 kom_event_bonus = 0.0
@@ -938,15 +963,16 @@ async def calculate_daily_scores(
                     # 2026-07 refonte: GT dailies are flat-for-all + matched-role mult;
                     # 1-week races keep the V2 matched-only path (post-Tour review).
                     if _is_gt_slug(race_slug):
-                        gt_classif_bonus = _classif_bonus_gt(
+                        classif_breakdown = _classif_breakdown_gt(
                             classif_by_key.get((race_slug, rider_id), []),
                             role,
                         )
                     else:
-                        gt_classif_bonus = _classif_bonus(
+                        classif_breakdown = _classif_breakdown(
                             classif_by_key.get((race_slug, rider_id), []),
                             role,
                         )
+                    gt_classif_bonus = sum(classif_breakdown.values())
                     if role == "stage_hunter" and not race_slug.endswith("/gc"):
                         gt_distance_bonus = _breakaway_distance_bonus(breakaway_kms)
                     # 2026-08 (issue 03): in-race event terms — KOM crossings +
@@ -1095,6 +1121,12 @@ async def calculate_daily_scores(
                         "classif_bonus": gt_classif_bonus,
                         "gt_role_mult": gt_role_mult,
                         "gt_classif_bonus": gt_classif_bonus,
+                        # Issue 08: the same bonus, jersey by jersey. Their sum is
+                        # gt_classif_bonus, which stays written for existing readers.
+                        "gc_classif_bonus": classif_breakdown["gc"],
+                        "points_classif_bonus": classif_breakdown["points"],
+                        "kom_classif_bonus": classif_breakdown["kom"],
+                        "youth_classif_bonus": classif_breakdown["youth"],
                         "gt_distance_bonus": gt_distance_bonus,
                         "assist_bonus": assist_bonus,
                         "kom_event_bonus": kom_event_bonus,
@@ -1131,9 +1163,10 @@ async def calculate_daily_scores(
                 c_role = gt_roles.get((team_id, c_rider_id), "domestique")
                 # 2026-07 refonte: GT dailies flat-for-all; 1-week keeps V2 matched-only.
                 if _is_gt_slug(c_race_slug):
-                    c_classif_bonus = _classif_bonus_gt(classif_rows, c_role)
+                    c_breakdown = _classif_breakdown_gt(classif_rows, c_role)
                 else:
-                    c_classif_bonus = _classif_bonus(classif_rows, c_role)
+                    c_breakdown = _classif_breakdown(classif_rows, c_role)
+                c_classif_bonus = sum(c_breakdown.values())
                 if c_classif_bonus == 0:
                     continue
 
@@ -1152,6 +1185,10 @@ async def calculate_daily_scores(
                         "classif_bonus": c_classif_bonus,
                         "gt_role_mult": 1.0,
                         "gt_classif_bonus": c_classif_bonus,
+                        "gc_classif_bonus": c_breakdown["gc"],
+                        "points_classif_bonus": c_breakdown["points"],
+                        "kom_classif_bonus": c_breakdown["kom"],
+                        "youth_classif_bonus": c_breakdown["youth"],
                         "gt_distance_bonus": 0.0,
                         "assist_bonus": 0.0,
                         "kom_event_bonus": 0.0,
@@ -1203,6 +1240,11 @@ async def calculate_daily_scores(
                             "classif_bonus": f_bonus,
                             "gt_role_mult": 1.0,
                             "gt_classif_bonus": f_bonus,
+                            # A final classification row carries exactly one jersey.
+                            "gc_classif_bonus": f_bonus if f_ctype == "gc" else 0.0,
+                            "points_classif_bonus": f_bonus if f_ctype == "points" else 0.0,
+                            "kom_classif_bonus": f_bonus if f_ctype == "kom" else 0.0,
+                            "youth_classif_bonus": f_bonus if f_ctype == "youth" else 0.0,
                             "gt_distance_bonus": 0.0,
                             "assist_bonus": 0.0,
                             "kom_event_bonus": 0.0,

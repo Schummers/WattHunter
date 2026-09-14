@@ -12,28 +12,17 @@ import {
   GT_FINAL_STAGE,
 } from "@/lib/grand-tour-completion";
 import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
+import { oneDayRaceSlugPatterns } from "@/lib/race-groups";
 
 type TeamXpRow = {
   team_id: string;
   xp_gained: number | null;
 };
 
-// One-day WT races for Classic Man (monuments + other WT one-day classics)
-const ONE_DAY_WT_PATTERNS = [
-  "race/paris-roubaix/%",
-  "race/ronde-van-vlaanderen/%",
-  "race/liege-bastogne-liege/%",
-  "race/il-lombardia/%",
-  "race/milano-sanremo/%",
-  "race/amstel-gold-race/%",
-  "race/la-fleche-wallonne/%",
-  "race/strade-bianche/%",
-  "race/e3-saxo-bank-classic/%",
-  "race/gent-wevelgem/%",
-  "race/dwars-door-vlaanderen/%",
-  "race/paris-nice/%",
-  "race/tirreno-adriatico/%",
-]
+// One-day WT races for Classic Man. Derived from the World Tour calendar, never
+// hand-written: the hand-written list carried Paris-Nice and Tirreno-Adriatico,
+// two stage races, so the achievement did not reward what it announced (issue 04).
+const ONE_DAY_WT_PATTERNS = oneDayRaceSlugPatterns()
 
 // Monument race bases — used to match slugs across all years
 const MONUMENT_BASES = [
@@ -63,6 +52,14 @@ function yearFromSlug(slug: string): number | null {
 // three teams earned in Classic V1, minus the dynamic (league-relative) titles.
 // Ugly-but-works stopgap keyed by V2 team_id; revisit when achievements get a
 // real grant table. See MEMORY: classic_league_v2_seed / palmares V1→V2.
+// STOPGAP, REMOVABLE — see .scratch/palmares-ranking/issues/13-supprimer-hardcoded-grants.md
+//
+// The classic V2 seed never cloned `rider_xp_daily`, so the palmarès earned in
+// V1 (Classics, Giro) showed nowhere in V2 and three teams got their badges by
+// hand, keyed on their UUID. The season entity (migration 20260914000000) is the
+// real answer: V1 and V2 both point at season 2026, so the grid can be computed
+// per player across every league of that season. Ticket 13 does that and deletes
+// this table.
 const HARDCODED_GRANTS: Record<string, string[]> = {
   // Klimax
   "00000000-0000-4000-8000-c1a551c00001": [
@@ -304,7 +301,7 @@ export default async function AchievementsPage({
     if (classicRank === 1) unlockedSlugs.push("classic-man");
   }
 
-  // Hardcoded Classic V1→V2 palmarès transfer (stopgap, see HARDCODED_GRANTS).
+  // Hardcoded Classic V1→V2 palmarès transfer (stopgap, removed by ticket 13).
   unlockedSlugs.push(...(HARDCODED_GRANTS[myTeamId] ?? []));
 
   return (

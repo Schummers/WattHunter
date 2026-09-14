@@ -3,9 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/get-user";
 import { getAchievementBySlug } from "@/lib/achievements";
 import { getTourJerseyHolders, mapJerseysToTeams, TOUR_JERSEY_SLUG } from "@/lib/tour-jerseys";
-import { getParentRaceSlug } from "@/lib/race-feed-helpers";
+import { buildRaceGroups, resolveRaceGroupParam } from "@/lib/race-groups";
+import { loadHistoricalPalmares } from "@/lib/palmares/historical";
 import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
-import { getRankingRaceName } from "@/lib/ranking-race-name";
 import { RankingClient } from "./ranking-client";
 import {
   DEMO_LEAGUE_SLUG,
@@ -50,7 +50,7 @@ export default async function RankingPage({
   // All teams in league ordered by cumulative_xp DESC
   const { data: teamsRaw } = await supabase
     .from("teams")
-    .select("id, name, cumulative_xp, level, treasury, equipped_achievement_slug")
+    .select("id, name, cumulative_xp, equipped_achievement_slug")
     .eq("league_id", leagueId)
     .order("cumulative_xp", { ascending: false });
 
@@ -118,58 +118,14 @@ export default async function RankingPage({
     riderXpTotal[r.rider_id] = (riderXpTotal[r.rider_id] ?? 0) + (r.xp_gained ?? 0);
   }
 
-  // Build race list from rider_xp_daily race_slugs
-  // We also need race names/dates — fetch from race_results for metadata
+  // Build the race filter from rider_xp_daily race_slugs.
   const allRaceSlugs = [...new Set(xpData.map((x) => x.race_slug).filter(Boolean))];
-  const raceMetaRaw = await fetchAllSupabasePages<{
-    race_slug: string;
-    race_name: string;
-    race_date: string | null;
-  }>((from, to) =>
-    supabase
-      .from("race_results")
-      .select("race_slug, race_name, race_date")
-      .in("race_slug", allRaceSlugs.length > 0 ? allRaceSlugs : ["__none__"])
-      .order("id")
-      .range(from, to)
-  );
 
-  const raceMeta: Record<string, { name: string; date: string }> = {};
-  for (const r of raceMetaRaw ?? []) {
-    if (!raceMeta[r.race_slug]) {
-      raceMeta[r.race_slug] = { name: r.race_name, date: r.race_date ?? "" };
-    }
-  }
-
-  // Build race list — group stages AND GT secondary classifications (gc/points/kom/youth)
-  // under their parent race (e.g. "race/giro-d-italia/2026"). Otherwise the final-jersey
-  // XP credited via `gt_final_classifications` would surface as standalone "races" and
-  // be excluded from the Giro/Tour/Vuelta team ranking — see fix/ranking-parent-slug-finals.
-  const parentRaceMap = new Map<string, { slug: string; name: string; date: string; childSlugs: string[] }>();
-  for (const slug of allRaceSlugs) {
-    const meta = raceMeta[slug] || { name: slug, date: "" };
-    const detectedParent = getParentRaceSlug(slug);
-    const parentSlug = detectedParent ?? slug;
-    const parentName = getRankingRaceName({ raceSlug: slug, raceName: meta.name });
-
-    const existing = parentRaceMap.get(parentSlug);
-    if (existing) {
-      if (!existing.childSlugs.includes(slug)) {
-        existing.childSlugs.push(slug);
-      }
-      if ((meta.date ?? "") > existing.date) {
-        existing.date = meta.date ?? "";
-      }
-    } else {
-      parentRaceMap.set(parentSlug, {
-        slug: parentSlug,
-        name: parentName,
-        date: meta.date ?? "",
-        childSlugs: [slug],
-      });
-    }
-  }
-  const races = [...parentRaceMap.values()].sort((a, b) => b.date.localeCompare(a.date));
+  // Four groups only: Classics, Giro, Tour de France, Vuelta. One-week stage
+  // races are out of the perimeter, and every stage or final classification
+  // rolls up under its group — the final-jersey XP credited via
+  // `gt_final_classifications` included.
+  const races = buildRaceGroups(allRaceSlugs);
 
   // Per-race XP maps for client-side re-ranking (using game XP)
   const teamXpByRace: Record<string, Record<string, number>> = {};
@@ -279,8 +235,6 @@ export default async function RankingPage({
       id: t.id,
       name: t.name,
       xp: t.cumulative_xp,
-      level: t.level,
-      treasury: t.treasury,
       rank: i + 1,
       movement: teamMovement[t.id] ?? 0,
       isMe: t.id === myTeamId,
@@ -326,6 +280,10 @@ export default async function RankingPage({
     };
   }).sort((a, b) => b.xp - a.xp);
 
+  // Past seasons, for the year selector. They predate WattHunter, so they carry
+  // a standing per player and no rider data at all.
+  const { standings: archivedSeasons } = await loadHistoricalPalmares(supabase);
+
   return (
     <RankingClient
       leagueId={leagueId}
@@ -334,7 +292,16 @@ export default async function RankingPage({
       races={races}
       teamXpByRace={teamXpByRace}
       riderXpByRace={riderXpByRace}
-      initialRace={initialRace ?? null}
+      initialRace={resolveRaceGroupParam(initialRace)}
+      currentSeason={new Date().getFullYear()}
+      archivedSeasons={archivedSeasons.map((season) => ({
+        year: season.seasonYear,
+        ranking: season.ranking.map((player) => ({
+          key: player.key,
+          displayName: player.displayName,
+          isFormerPlayer: player.isFormerPlayer,
+        })),
+      }))}
     />
   );
 }
@@ -348,7 +315,7 @@ async function renderDemoRanking(initialRace?: string) {
 
   const { data: teamsRaw } = await supabase
     .from("teams")
-    .select("id, name, cumulative_xp, level, treasury, equipped_achievement_slug")
+    .select("id, name, cumulative_xp, equipped_achievement_slug")
     .eq("league_id", DEMO_LEAGUE_ID)
     .order("cumulative_xp", { ascending: false });
 
@@ -407,42 +374,9 @@ async function renderDemoRanking(initialRace?: string) {
   }
 
   const allRaceSlugs = [...new Set(xpData.map((x) => x.race_slug).filter(Boolean))];
-  const raceMetaRaw = await fetchAllSupabasePages<{
-    race_slug: string;
-    race_name: string;
-    race_date: string | null;
-  }>((from, to) =>
-    supabase
-      .from("race_results")
-      .select("race_slug, race_name, race_date")
-      .in("race_slug", allRaceSlugs.length > 0 ? allRaceSlugs : ["__none__"])
-      .order("id")
-      .range(from, to)
-  );
 
-  const raceMeta: Record<string, { name: string; date: string }> = {};
-  for (const r of raceMetaRaw ?? []) {
-    if (!raceMeta[r.race_slug]) {
-      raceMeta[r.race_slug] = { name: r.race_name, date: r.race_date ?? "" };
-    }
-  }
-
-  // Same parent-grouping logic as the live ranking (stages + GT finals roll up to parent).
-  const parentRaceMap = new Map<string, { slug: string; name: string; date: string; childSlugs: string[] }>();
-  for (const slug of allRaceSlugs) {
-    const meta = raceMeta[slug] || { name: slug, date: "" };
-    const detectedParent = getParentRaceSlug(slug);
-    const parentSlug = detectedParent ?? slug;
-    const parentName = getRankingRaceName({ raceSlug: slug, raceName: meta.name });
-    const existing = parentRaceMap.get(parentSlug);
-    if (existing) {
-      if (!existing.childSlugs.includes(slug)) existing.childSlugs.push(slug);
-      if ((meta.date ?? "") > existing.date) existing.date = meta.date ?? "";
-    } else {
-      parentRaceMap.set(parentSlug, { slug: parentSlug, name: parentName, date: meta.date ?? "", childSlugs: [slug] });
-    }
-  }
-  const races = [...parentRaceMap.values()].sort((a, b) => b.date.localeCompare(a.date));
+  // Same four groups as the live ranking.
+  const races = buildRaceGroups(allRaceSlugs);
 
   const teamXpByRace: Record<string, Record<string, number>> = {};
   const riderXpByRace: Record<string, Record<string, number>> = {};
@@ -520,8 +454,6 @@ async function renderDemoRanking(initialRace?: string) {
       id: t.id,
       name: t.name,
       xp: t.cumulative_xp,
-      level: t.level,
-      treasury: t.treasury,
       rank: i + 1,
       movement: teamMovement[t.id] ?? 0,
       isMe: t.id === myTeamId,
@@ -574,7 +506,9 @@ async function renderDemoRanking(initialRace?: string) {
       races={races}
       teamXpByRace={teamXpByRace}
       riderXpByRace={riderXpByRace}
-      initialRace={initialRace ?? null}
+      initialRace={resolveRaceGroupParam(initialRace)}
+      currentSeason={new Date().getFullYear()}
+      archivedSeasons={[]}
     />
   );
 }

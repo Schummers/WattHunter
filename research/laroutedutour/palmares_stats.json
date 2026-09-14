@@ -1,0 +1,500 @@
+{
+  "seasons": {
+    "2017": {
+      "tours": [
+        {
+          "type": "Vuelta",
+          "name": "Vuelta Gueule 2017",
+          "winner": "Klimax"
+        }
+      ],
+      "podium": [
+        {
+          "user": "Klimax",
+          "points": 1876
+        },
+        {
+          "user": "PeeJee",
+          "points": 1430
+        },
+        {
+          "user": "Alpaga",
+          "points": 1079
+        }
+      ]
+    },
+    "2018": {
+      "tours": [
+        {
+          "type": "Classiques",
+          "name": "L'Enfer des classiques",
+          "winner": "Alpaga"
+        },
+        {
+          "type": "Tour de France",
+          "name": "Le Tour de Chouffe",
+          "winner": "David Choncoutié"
+        },
+        {
+          "type": "Vuelta",
+          "name": "La Vuelta des Grandes Canettes",
+          "winner": "PeeJee"
+        }
+      ],
+      "podium": [
+        {
+          "user": "Alpaga",
+          "points": 2953
+        },
+        {
+          "user": "PeeJee",
+          "points": 2480
+        },
+        {
+          "user": "Marino",
+          "points": 2094
+        }
+      ]
+    },
+    "2019": {
+      "tours": [
+        {
+          "type": "Classiques",
+          "name": "Les Classiques de l'Individualisme",
+          "winner": "David Choncoutié"
+        },
+        {
+          "type": "Giro",
+          "name": "Giroti Girosé, Lève la roue et puis CHUTE",
+          "winner": "Marseillais"
+        },
+        {
+          "type": "Tour de France",
+          "name": "Le Chouffe Tour",
+          "winner": "JibsEPAULE"
+        },
+        {
+          "type": "Vuelta",
+          "name": "La Vuelta de las cervezas",
+          "winner": "David Choncoutié"
+        }
+      ],
+      "podium": [
+        {
+          "user": "Marino",
+          "points": 3887
+        },
+        {
+          "user": "David Choncoutié",
+          "points": 3650
+        },
+        {
+          "user": "Marseillais",
+          "points": 3630
+        }
+      ]
+    },
+    "2020": {
+      "tours": [
+        {
+          "type": "Giro",
+          "name": "Gir'Aulas d'Italia",
+          "winner": "Klimax"
+        },
+        {
+          "type": "Tour de France",
+          "name": "Le Tour des Anes Bâtes",
+          "winner": "PeeJee"
+        }
+      ],
+      "podium": [
+        {
+          "user": "Klimax",
+          "points": 2875
+        },
+        {
+          "user": "PeeJee",
+          "points": 2420
+        },
+        {
+          "user": "David Choncoutié",
+          "points": 2347
+        }
+      ]
+    },
+    "2021": {
+      "tours": [
+        {
+          "type": "Classiques",
+          "name": "C'est du classico classique",
+          "winner": "Marseillais"
+        },
+        {
+          "type": "Giro",
+          "name": "Olivier Giro d'Italia > Benzema",
+          "winner": "David Choncoutié"
+        },
+        {
+          "type": "Tour de France",
+          "name": "Le Tour de France Beckenbauer",
+          "winner": "PeeJee"
+        },
+        {
+          "type": "Vuelta",
+          "name": "La Vuelta ! Ta couleur et tes mots tout me va",
+          "winner": "Klimax"
+        }
+      ],
+      "podium": [
+        {
+          "user": "Klimax",
+          "points": 4591
+        },
+        {
+          "user": "David Choncoutié",
+          "points": 3960
+        },
+        {
+          "user": "PeeJee",
+          "points": 3649
+        }
+      ]
+    },
+    "2022": {
+      "tours": [
+        {
+          "type": "Classiques",
+          "name": "Classiques Haribo",
+          "winner": "Benny Lee"
+        },
+        {
+          "type": "Giro",
+          "name": "Le Giro de Gino",
+          "winner": "PeeJee"
+        },
+        {
+          "type": "Tour de France",
+          "name": "Le Tour de LA France",
+          "winner": "PeeJee"
+        }
+      ],
+      "podium": [
+        {
+          "user": "PeeJee",
+          "points": 3946
+        },
+        {
+          "user": "Klimax",
+          "points": 3731
+        },
+        {
+          "user": "Marseillais",
+          "points": 3117
+        }
+      ]
+    },
+    "2023": {
+      "tours": [
+        {
+          "type": "Classiques",
+          "name": "Les Classiques de l'individualisme",
+          "winner": "Marseillais"
+        },
+        {
+          "type": "Giro",
+          "name": "Giro de P***",
+          "winner": "David Choncoutié"
+        },
+        {
+          "type": "Tour de France",
+          "name": "TdF 2023 - La vengeance de Pogi ?",
+          "winner": "Marino"
+        },
+        {
+          "type": "Vuelta",
+          "name": "Vuelta 2023",
+          "winner": "Patron"
+        }
+      ],
+      "podium": [
+        {
+          "user": "Patron",
+          "points": 4812
+        },
+        {
+          "user": "David Choncoutié",
+          "points": 4803
+        },
+        {
+          "user": "Marseillais",
+          "points": 4147
+        }
+      ]
+    },
+    "2024": {
+      "tours": [
+        {
+          "type": "Giro",
+          "name": "Le Giro de Pogi",
+          "winner": "Marseillais"
+        },
+        {
+          "type": "Tour de France",
+          "name": "Euro TDF JO Routes du Champ",
+          "winner": "David Choncoutié"
+        }
+      ],
+      "podium": [
+        {
+          "user": "David Choncoutié",
+          "points": 3484
+        },
+        {
+          "user": "Patron",
+          "points": 3254
+        },
+        {
+          "user": "PeeJee",
+          "points": 2995
+        }
+      ]
+    },
+    "2025": {
+      "tours": [
+        {
+          "type": "Vuelta",
+          "name": "Vuelta 2k25",
+          "winner": "Alpaga"
+        }
+      ],
+      "podium": [
+        {
+          "user": "Alpaga",
+          "points": 1803
+        },
+        {
+          "user": "David Choncoutié",
+          "points": 1783
+        },
+        {
+          "user": "PeeJee",
+          "points": 1738
+        }
+      ]
+    }
+  },
+  "players": {
+    "David Choncoutié": {
+      "starts": 22,
+      "wins": {
+        "Tour de France": 2,
+        "Giro": 2,
+        "Vuelta": 1,
+        "Classiques": 1
+      },
+      "wins_total": 6,
+      "podium": [
+        6,
+        4,
+        2
+      ],
+      "jerseys": {
+        "Général": 3,
+        "Jeune": 5,
+        "Sprinteur": 1,
+        "Grimpeur": 2
+      },
+      "season_titles": 1
+    },
+    "PeeJee": {
+      "starts": 24,
+      "wins": {
+        "Tour de France": 3,
+        "Giro": 1,
+        "Vuelta": 1
+      },
+      "wins_total": 5,
+      "podium": [
+        5,
+        2,
+        3
+      ],
+      "jerseys": {
+        "Sprinteur": 5,
+        "Grimpeur": 4,
+        "Général": 3,
+        "Jeune": 3
+      },
+      "season_titles": 1
+    },
+    "Marseillais": {
+      "starts": 24,
+      "wins": {
+        "Giro": 2,
+        "Classiques": 2
+      },
+      "wins_total": 4,
+      "podium": [
+        4,
+        2,
+        5
+      ],
+      "jerseys": {
+        "Général": 1,
+        "Jeune": 1,
+        "Sprinteur": 2
+      },
+      "season_titles": 0
+    },
+    "Klimax": {
+      "starts": 23,
+      "wins": {
+        "Vuelta": 2,
+        "Giro": 1
+      },
+      "wins_total": 3,
+      "podium": [
+        3,
+        6,
+        2
+      ],
+      "jerseys": {
+        "Sprinteur": 3,
+        "Général": 6,
+        "Jeune": 3,
+        "Grimpeur": 2
+      },
+      "season_titles": 3
+    },
+    "Alpaga": {
+      "starts": 24,
+      "wins": {
+        "Vuelta": 1,
+        "Classiques": 1
+      },
+      "wins_total": 2,
+      "podium": [
+        2,
+        3,
+        4
+      ],
+      "jerseys": {
+        "Grimpeur": 1,
+        "Sprinteur": 3,
+        "Général": 2,
+        "Jeune": 1
+      },
+      "season_titles": 2
+    },
+    "Benny Lee": {
+      "starts": 24,
+      "wins": {
+        "Classiques": 1
+      },
+      "wins_total": 1,
+      "podium": [
+        1,
+        1,
+        1
+      ],
+      "jerseys": {
+        "Sprinteur": 2,
+        "Général": 1,
+        "Grimpeur": 2
+      },
+      "season_titles": 0
+    },
+    "Patron": {
+      "starts": 7,
+      "wins": {
+        "Vuelta": 1
+      },
+      "wins_total": 1,
+      "podium": [
+        1,
+        1,
+        1
+      ],
+      "jerseys": {
+        "Général": 1,
+        "Grimpeur": 1
+      },
+      "season_titles": 1
+    },
+    "Marino": {
+      "starts": 20,
+      "wins": {
+        "Tour de France": 1
+      },
+      "wins_total": 1,
+      "podium": [
+        1,
+        3,
+        6
+      ],
+      "jerseys": {
+        "Jeune": 6,
+        "Sprinteur": 1,
+        "Grimpeur": 3
+      },
+      "season_titles": 1
+    },
+    "JibsEPAULE": {
+      "starts": 2,
+      "wins": {
+        "Tour de France": 1
+      },
+      "wins_total": 1,
+      "podium": [
+        1,
+        1,
+        0
+      ],
+      "jerseys": {
+        "Général": 1,
+        "Grimpeur": 1
+      },
+      "season_titles": 0
+    },
+    "bigdaddy": {
+      "starts": 13,
+      "wins": {},
+      "wins_total": 0,
+      "podium": [
+        0,
+        1,
+        0
+      ],
+      "jerseys": {
+        "Général": 1,
+        "Grimpeur": 3,
+        "Sprinteur": 2
+      },
+      "season_titles": 0
+    },
+    "Fangio": {
+      "starts": 2,
+      "wins": {},
+      "wins_total": 0,
+      "podium": [
+        0,
+        0,
+        0
+      ],
+      "jerseys": {},
+      "season_titles": 0
+    },
+    "JoeDills": {
+      "starts": 2,
+      "wins": {},
+      "wins_total": 0,
+      "podium": [
+        0,
+        0,
+        0
+      ],
+      "jerseys": {},
+      "season_titles": 0
+    }
+  }
+}
