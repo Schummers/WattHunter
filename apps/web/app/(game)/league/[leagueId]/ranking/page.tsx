@@ -50,7 +50,7 @@ export default async function RankingPage({
   // All teams in league ordered by cumulative_xp DESC
   const { data: teamsRaw } = await supabase
     .from("teams")
-    .select("id, name, cumulative_xp, level, treasury, equipped_achievement_slug")
+    .select("id, name, cumulative_xp, equipped_achievement_slug")
     .eq("league_id", leagueId)
     .order("cumulative_xp", { ascending: false });
 
@@ -279,8 +279,6 @@ export default async function RankingPage({
       id: t.id,
       name: t.name,
       xp: t.cumulative_xp,
-      level: t.level,
-      treasury: t.treasury,
       rank: i + 1,
       movement: teamMovement[t.id] ?? 0,
       isMe: t.id === myTeamId,
@@ -348,7 +346,7 @@ async function renderDemoRanking(initialRace?: string) {
 
   const { data: teamsRaw } = await supabase
     .from("teams")
-    .select("id, name, cumulative_xp, level, treasury, equipped_achievement_slug")
+    .select("id, name, cumulative_xp, equipped_achievement_slug")
     .eq("league_id", DEMO_LEAGUE_ID)
     .order("cumulative_xp", { ascending: false });
 
@@ -520,8 +518,6 @@ async function renderDemoRanking(initialRace?: string) {
       id: t.id,
       name: t.name,
       xp: t.cumulative_xp,
-      level: t.level,
-      treasury: t.treasury,
       rank: i + 1,
       movement: teamMovement[t.id] ?? 0,
       isMe: t.id === myTeamId,

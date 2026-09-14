@@ -8,7 +8,7 @@ import { MovementTag } from "@/components/movement-tag";
 import { AchievementBadge } from "@/components/achievement-badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatThousands, formatMoney, countryCodeToFlag } from "@/lib/format";
+import { formatThousands, countryCodeToFlag } from "@/lib/format";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 import type { AchievementTier } from "@/lib/achievements";
 
@@ -16,8 +16,6 @@ interface TeamRow {
   id: string;
   name: string;
   xp: number;
-  level: number;
-  treasury: number;
   rank: number;
   movement: number;
   isMe: boolean;
@@ -196,7 +194,7 @@ export function RankingClient({
                   </div>
                 ) : null}
 
-                {/* Name/XP + Level/Treasury */}
+                {/* Name/XP + equipped achievement */}
                 <div className="relative flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
@@ -212,18 +210,13 @@ export function RankingClient({
                       <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">XP</span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-                      {team.equippedAchievementName
-                        ? `${team.equippedAchievementName} · Lv.${team.level}`
-                        : `Lv.${team.level}`}
-                    </span>
-                    {isAllRaces && (
-                      <span className="font-mono text-[length:var(--type-caption)] text-[var(--text-mid)]">
-                        {formatMoney(team.treasury)}
+                  {team.equippedAchievementName && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[length:var(--type-caption)] text-[var(--text-low)]">
+                        {team.equippedAchievementName}
                       </span>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Chevron */}
