@@ -423,6 +423,8 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
                 stage_url=stage_url,
             )
             print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
+            for _sw in result.get("deobfuscated") or []:
+                print(f"  ⚠ Brouillage PCS repare : {_sw}")
             imported_slugs.append(result.get("race_slug", stage_url))
             stage_imported = result.get("imported", 0) > 0
         except Exception as exc:
@@ -484,6 +486,8 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
                         stage_url=stage_url,
                     )
                     print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
+                    for _sw in result.get("deobfuscated") or []:
+                        print(f"  ⚠ Brouillage PCS repare : {_sw}")
                     if result.get("race_slug"):
                         imported_slugs.append(result["race_slug"])
                     else:
@@ -513,6 +517,8 @@ async def _import_single_race(supabase, browser, race_slug: str, race_name: str,
                         stage_url=stage_url,
                     )
                     print(f"  Imported: {result['imported']}, skipped: {result['skipped']}")
+                    for _sw in result.get("deobfuscated") or []:
+                        print(f"  ⚠ Brouillage PCS repare : {_sw}")
                     if result.get("race_slug"):
                         imported_slugs.append(result["race_slug"])
                     else:

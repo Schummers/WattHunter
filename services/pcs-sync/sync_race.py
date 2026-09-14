@@ -15,6 +15,7 @@ from procyclingstats import Stage, Race, Ranking, RaceStartlist
 from supabase import Client
 
 from sync import fetch_html, calculate_monthly_salary, get_supabase, format_rider_name
+from pcs_deobfuscate import deobfuscate
 from db_utils import _fetch_all
 from datetime import datetime
 
@@ -132,6 +133,9 @@ async def import_race_results(
     stage_label = stage_url.split("/")[-1] if stage_url else None
 
     html = await fetch_html(page, fetch_url)
+    # Refuses the page rather than importing a scrambled one. No-op when
+    # fetch_html already repaired it.
+    html, deob = deobfuscate(html, source=fetch_url)
     stage = Stage(fetch_url, html=html, update_html=False)
     profile_icon = _stage_profile_icon(stage)
     results = stage.results()
@@ -207,6 +211,7 @@ async def import_race_results(
         "skipped": skipped,
         "total_in_race": len(results),
         "events": events_result,
+        "deobfuscated": [str(sw) for sw in deob.swaps],
         "errors": errors,
     }
 
@@ -226,6 +231,7 @@ async def import_gc_results(
     gc_url = f"{race_slug}/gc"
 
     html = await fetch_html(page, gc_url)
+    html, deob = deobfuscate(html, source=gc_url)
     stage = Stage(gc_url, html=html, update_html=False)
     gc_entries = stage.gc()
 
@@ -286,6 +292,7 @@ async def import_gc_results(
         "total_in_race": len(gc_entries),
         "errors": errors,
         "has_points": has_points,
+        "deobfuscated": [str(sw) for sw in deob.swaps],
     }
 
 

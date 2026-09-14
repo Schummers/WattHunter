@@ -87,6 +87,22 @@ cd services/pcs-sync
 
 **Photos coureurs self-hostées** : `riders.photo_url` du top 300 (`pcs_rank <= 300`, constante `TOP_PHOTO_RANK`) pointe vers le bucket public Supabase `rider-photos` (pas vers PCS — Cloudflare 403 sur tout `<img>` direct). Rangs 301-600 = `photo_url NULL` → fallback initiales. Le scraper télécharge l'image via un `fetch` in-page same-origin depuis l'onglet nodriver (cookie `cf_clearance`). Helper : `services/pcs-sync/photo_storage.py`. Front : `apps/web/lib/photo-url.ts` (URL absolue → telle quelle, sinon `undefined`).
 
+### Brouillage anti-scraping de PCS (depuis 2026-09-14)
+
+PCS **brouille l'ordre DOM des noms de coureurs** dans ses tables de résultats et
+rétablit l'ordre visuel en CSS. L'écran dit vrai, le markup ment. C'est ce qui a
+mis 13 rangs faux en base sur la Vuelta 2026, sans aucun signal.
+
+`pcs_deobfuscate.py` répare et, s'il ne sait pas réparer, **fait échouer
+l'import**. Il tourne dans `fetch_html`, donc sur tous les scrapes.
+
+- NEVER ré-importer une course en aveugle pour « corriger » : le brouillage
+  tourne dans le temps, un ré-import répare une étape et en casse une autre.
+- NEVER désactiver `PCS_DEOBFUSCATE` pour débloquer un import qui refuse : le
+  refus est le garde-fou, pas le bug. Comprendre d'abord.
+- Un « 0 écart » obtenu en recalculant l'XP depuis le rang stocké ne prouve rien
+  sur l'import, seulement sur le barème.
+
 ### Variables d'environnement scraper
 - `SCRAPER_BACKEND` : `nodriver` (default) | `playwright` (rollback)
 - `SCRAPER_HEADLESS` : `0` (default — fenêtre visible) | `1` (tente headless, auto-fallback en visible si CF bloque)

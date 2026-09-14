@@ -1,0 +1,4 @@
+# HTML brut PCS : lourd, et deja conserve gzippe comme fixture de test
+# (services/pcs-sync/tests/fixtures/). On garde ici les releves CSS seulement.
+*.html
+probe/

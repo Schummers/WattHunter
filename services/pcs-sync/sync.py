@@ -106,6 +106,13 @@ async def fetch_html(page, url: str, delay: float = 4.0) -> str:
             f"Cloudflare blocked request to {full_url} "
             f"(challenge unresolved after {elapsed:.0f}s)"
         )
+
+    # PCS scrambles the DOM order of rider cells on some result tables and puts
+    # the names back visually with CSS. Undo it here, at the single point every
+    # scrape goes through, or refuse the page. See pcs_deobfuscate.
+    from pcs_deobfuscate import deobfuscate
+
+    html, _report = deobfuscate(html, source=url)
     return html
 
 
