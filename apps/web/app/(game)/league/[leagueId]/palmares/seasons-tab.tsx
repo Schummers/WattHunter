@@ -37,10 +37,11 @@ function PlayerName({ player, short }: { player: Player; short?: boolean }) {
  * The champion is presented as a Ranking row: the same emblem component, at the
  * same size, so the two screens read as one product.
  *
- * An archived season has no emblem — nobody had a badge equipped in 2019, and
- * showing today's badge on a 2019 card would say something false. Those fall
- * back on the player's initials, the same reserve the rider avatar already uses
- * when a photo is missing.
+ * The badge is the player's current one on every season, archived ones
+ * included: name and badge are identity markers of who that player is today,
+ * not claims about what they had equipped in 2019. A player with nothing
+ * equipped falls back on their initials, the same reserve the rider avatar
+ * already uses when a photo is missing.
  */
 function ChampionRow({
   season,
@@ -164,10 +165,7 @@ export function SeasonsTab({ data }: { data: PalmaresData }) {
     <div className="space-y-2 px-4">
       {standings.map((season) => {
         const champion = season.ranking[0];
-        const emblem =
-          season.source === "watthunter" && champion
-            ? emblemByPlayer[champion.key]
-            : undefined;
+        const emblem = champion ? emblemByPlayer[champion.key] : undefined;
 
         return (
           <div

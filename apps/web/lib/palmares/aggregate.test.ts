@@ -6,11 +6,16 @@ import {
   computeSeasonRanks,
   computeWins,
 } from "./aggregate";
-import type { PalmaresEvent, Player, SeasonStanding } from "./types";
+import type { PalmaresEvent, Player, SeasonRankingEntry, SeasonStanding } from "./types";
 
 const anna: Player = { key: "Anna", displayName: "Anna", isFormerPlayer: false };
 const ben: Player = { key: "Ben", displayName: "Ben", isFormerPlayer: false };
 const gone: Player = { key: "Gone", displayName: "Gone", isFormerPlayer: true };
+
+/** A season standing in finishing order. The scores only have to decrease. */
+function ranked(...order: Player[]): SeasonRankingEntry[] {
+  return order.map((player, i) => ({ ...player, score: (order.length - i) * 100 }));
+}
 
 function event(
   seasonYear: number,
@@ -128,8 +133,8 @@ describe("computeHeadToHead", () => {
 
 describe("computeSeasonRanks", () => {
   const standings: SeasonStanding[] = [
-    { seasonYear: 2020, source: "archive", isCurrent: false, note: null, ranking: [ben, anna] },
-    { seasonYear: 2019, source: "archive", isCurrent: false, note: null, ranking: [anna, ben, gone] },
+    { seasonYear: 2020, source: "archive", isCurrent: false, note: null, ranking: ranked(ben, anna) },
+    { seasonYear: 2019, source: "archive", isCurrent: false, note: null, ranking: ranked(anna, ben, gone) },
   ];
 
   it("returns the rank and the size of the field, oldest first", () => {
@@ -153,8 +158,8 @@ describe("computeCareer", () => {
       event(2020, "giro", [ben, anna]),
     ];
     const standings: SeasonStanding[] = [
-      { seasonYear: 2020, source: "archive", isCurrent: false, note: null, ranking: [ben, anna] },
-      { seasonYear: 2019, source: "archive", isCurrent: false, note: null, ranking: [anna, ben] },
+      { seasonYear: 2020, source: "archive", isCurrent: false, note: null, ranking: ranked(ben, anna) },
+      { seasonYear: 2019, source: "archive", isCurrent: false, note: null, ranking: ranked(anna, ben) },
     ];
     const career = computeCareer(events, standings, "Anna")!;
     expect(career.starts).toBe(2);
@@ -176,7 +181,7 @@ describe("computeCareer — season titles", () => {
 
   it("never credits a title for a season still being played", () => {
     const standings: SeasonStanding[] = [
-      { seasonYear: 2026, source: "watthunter", isCurrent: true, note: null, ranking: [anna, ben] },
+      { seasonYear: 2026, source: "watthunter", isCurrent: true, note: null, ranking: ranked(anna, ben) },
     ];
     // Anna leads 2026. Leading is not winning.
     expect(computeCareer(events, standings, "Anna")!.seasonTitles).toBe(0);
@@ -184,7 +189,7 @@ describe("computeCareer — season titles", () => {
 
   it("credits it once the season is over", () => {
     const standings: SeasonStanding[] = [
-      { seasonYear: 2026, source: "watthunter", isCurrent: false, note: null, ranking: [anna, ben] },
+      { seasonYear: 2026, source: "watthunter", isCurrent: false, note: null, ranking: ranked(anna, ben) },
     ];
     expect(computeCareer(events, standings, "Anna")!.seasonTitles).toBe(1);
   });

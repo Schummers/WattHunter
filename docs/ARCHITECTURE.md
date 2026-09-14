@@ -222,6 +222,16 @@ Le modèle est dans `lib/palmares/` et c'est lui qui porte la logique :
 - `aggregate.ts` — victoires, maillots, carrière, rangs de saison, face à face.
   Pures fonctions, testées (`aggregate.test.ts`).
 - `format.ts` — abréviation des noms par règle explicite, jamais par ellipse CSS.
+- `identity.ts` — **identité joueur, source unique**. Clé = nom de compte (seul
+  pont entre les deux ères), libellé = **nom d'équipe courant**, badge = celui
+  équipé aujourd'hui, saisons archivées comprises. Sur une page de ligue, la
+  ligue consultée l'emporte (`preferLeagueId`), sinon la ligue la plus récente
+  de la saison. Consommé par `load.ts` (palmarès) et par le Ranking pour ses
+  saisons archivées. ADR : `docs/adr/2026-09-identite-joueur-affichee-est-celle-d-aujourdhui.md`.
+
+La ligne d'une saison archivée du Ranking reprend le design 2026 (rang, badge
+36px, valeur à droite) avec deux différences voulues : pas de bannière, et une
+valeur en `PTS` (points bruts La Route du Tour) et non en `XP`.
 
 Clé de joueur = le **nom du compte WattHunter**, jamais l'équipe. Fragilité connue :
 renommer un compte scinderait l'historique du joueur en deux.
