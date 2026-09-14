@@ -1,6 +1,6 @@
 # 09 — Diagnostic du Tour de France 2026 (aucune écriture)
 
-Status: `ready-for-human`
+Status: `done` — corrigé en prod le 2026-09-14
 Created: 2026-09-14
 Dépend de : `01` (cause), `03` (correctif), `08` (état Vuelta)
 Suite du handoff `docs/handoffs/2026-09-14-integrite-import-tour-giro-handoff.md`
@@ -310,5 +310,26 @@ SCRAPER_BACKEND=playwright .venv/bin/python \
 4. **`teams.cumulative_xp` est pris comme classement général**, pas la somme de
    `rider_xp_daily` — qui ne contient que Tour et Vuelta pour cette ligue, le
    Giro ayant été cloné au seed de la V2.
+
+## Suite
+
+Corrigé en prod le **2026-09-14**, option A + événements : les 79 rangs faux
+sont réparés et les événements importés, **aucun XP n'a été modifié**.
+
+Chantier : `.scratch/tour-2026-correction/`, ticket 06.
+Runbook : `docs/runbooks/tdf2026-correction-2026-09-14.md`.
+
+Deux choses que ce diagnostic ne pouvait pas voir, parce qu'il n'a jamais fait
+tourner le moteur de scoring :
+
+1. **Le rescore d'un Grand Tour terminé est impossible.**
+   `calculate_daily_scores` lit les contrats `active` d'aujourd'hui ; ceux du
+   Tour ont été libérés au reset de phase de la Vuelta. Les scénarios B et C de
+   ce diagnostic ne sont donc pas exécutables, pour une raison technique et non
+   d'arbitrage produit. Voir ticket `tour-2026-correction/05`.
+2. **Les 51 lignes d'XP mal attribuée restent en base**, écart de −13,5 à
+   +29,0 XP par équipe. Aucun classement affecté. Table complète dans le
+   runbook, détail dans
+   `.scratch/tour-2026-correction/verif/xp-mal-attribuee-51-lignes.json`.
 
 ## Comments
