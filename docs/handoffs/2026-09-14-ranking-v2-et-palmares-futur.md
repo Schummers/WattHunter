@@ -366,3 +366,69 @@ Quatre découpages maquettés, noir et blanc, sur données réelles :
 **Retenu** : C pour la règle de découpage, D pour la frise, tableau détaillé partout.
 La fiche joueur (terrains de prédilection, comparaison au groupe, historique complet)
 est le troisième niveau, après la mise en prod des deux premiers.
+
+---
+
+## 9. Spécification arrêtée (2026-09-14, quatrième passe)
+
+Wireframes annotés : `research/laroutedutour/wireframes/palmares-quatre-onglets.html`
+(publié : https://claude.ai/code/artifact/7e1a0ec3-a196-4705-9ac7-22b4a19464a8)
+
+Le découpage C de la passe précédente est retenu et resserré : **Ranking ne bouge
+presque pas**, tout le travail neuf est dans Palmarès.
+
+### 9.1 Ranking — la liste exacte des changements
+
+1. Retirer le level et la trésorerie des lignes.
+2. Retirer le segmented control Teams / Riders. **Décider où va le classement des
+   coureurs avant de le supprimer**, c'est le seul endroit qui existe pour ça.
+3. Ajouter le sélecteur d'année à droite du titre, année en cours par défaut,
+   remontant jusqu'à 2017.
+4. Réduire le sélecteur de course à quatre entrées groupées (Classiques, Giro, Tour
+   de France, Vuelta) plus « All races » par défaut. Les Classiques regroupent toutes
+   les courses d'un jour de l'année en une seule entrée.
+5. Ne montrer que des totaux. Pas de détail par coureur, pas de répartition par
+   catégorie sur cette page.
+
+Le tableau détaillé façon Route du Tour **n'est plus un livrable front**. La donnée
+doit exister en base, l'écran viendra plus tard ou jamais.
+
+### 9.2 Palmarès — quatre onglets, aucune valeur d'XP
+
+La page actuelle (emblèmes, badges, bannières) **part dans les réglages**, derrière un
+bouton. Rien n'est jeté, l'interface change d'adresse.
+
+| Onglet | Contenu |
+|---|---|
+| **Frise** | Une ligne par saison, 2017 à 2026. Première ligne le champion au cumul, seconde ligne les quatre vainqueurs d'épreuve. Une épreuve non jouée garde sa case, en pointillé. Un tap ouvre le détail de la saison, avec les noms d'origine des tours. |
+| **Victoires** | Compteur général (victoires, départs, triplet de podiums) puis tableau croisé joueur × épreuve. Le titre de saison n'y figure pas, il vit dans la frise. |
+| **Maillots** | Tableau joueur × maillot (jaune, vert, pois, blanc) plus total. Grands tours seuls, 19 sur les 24 épreuves. |
+| **Joueurs** | Fiche relative : carrière en six chiffres, puis les **duels** (combien de fois devant chaque autre joueur, sur les seules épreuves jouées par les deux). |
+
+**Le triplet de podiums remplace le rang moyen.** Sans seuil de participation une
+moyenne est inexploitable, les trois comptages restent lisibles à tout volume.
+
+**Les duels sont la trouvaille de cette passe.** Ils ne comptent que les épreuves
+jouées par les deux joueurs, donc l'assiduité n'y donne aucun avantage, et ils ne
+manipulent que des rangs, donc ils traversent les deux ères sans conversion.
+
+### 9.3 Pistes supplémentaires, toutes fondées sur des rangs
+
+L'éternel second (Klimax, 6 deuxièmes pour 3 victoires) ; l'assiduité (4 joueurs à
+9 saisons sur 9) ; les séries et disettes (Alpaga, 7 ans entre ses deux victoires) ;
+les terrains de prédilection (rang moyen par type d'épreuve, légitime à l'échelle
+d'une carrière puisqu'on ne compare plus les joueurs entre eux) ; le doublé (PeeJee
+2022, Giro, Tour et le titre) ; les quatre épreuves (David Choncoutié est le seul à
+avoir gagné les quatre au moins une fois).
+
+### 9.4 Chantiers de données
+
+- Créer le mécanisme de saison (une saison = une année), agrégation par joueur.
+- Rattacher la ligue Classic V1 à la saison 2026.
+- Stocker la répartition par catégorie de chaque résultat, **même sans écran** :
+  arrivée, sommets, sprints, échappée, puis jaune, vert, pois, blanc. Presque tout
+  existe déjà, sauf la séparation des trois premiers maillots.
+- Importer l'historique La Route du Tour dans une table dédiée, jamais sous forme de
+  fausses ligues ou de fausses équipes.
+- Corriger l'achievement Classic Man, qui compte Paris-Nice et Tirreno-Adriatico
+  comme des classiques.

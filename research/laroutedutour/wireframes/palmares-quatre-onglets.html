@@ -1,0 +1,716 @@
+<title>Palmarès en quatre onglets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root{
+  --paper:#FBFAF8; --ink:#141210; --mid:#6C6763; --faint:#A29C96;
+  --line:#DBD6D0; --wash:#EFECE7; --solid:#141210; --onsolid:#FBFAF8;
+  --grid:#E7E3DD;
+  --display:"Bricolage Grotesque","Helvetica Neue",sans-serif;
+  --body:"Public Sans",-apple-system,sans-serif;
+  --data:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#131211; --ink:#F1EDE7; --mid:#A09A93; --faint:#6E6862;
+    --line:#322F2B; --wash:#1D1B19; --solid:#F1EDE7; --onsolid:#131211;
+    --grid:#282522;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131211; --ink:#F1EDE7; --mid:#A09A93; --faint:#6E6862;
+  --line:#322F2B; --wash:#1D1B19; --solid:#F1EDE7; --onsolid:#131211;
+  --grid:#282522;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px 96px}
+h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0}
+a{color:inherit}
+.eyebrow{font-family:var(--data);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--faint)}
+.prose{max-width:64ch}
+hr.rule{border:0;border-top:1px solid var(--line);margin:0}
+
+/* ── masthead ─────────────────────────────── */
+header.mast{padding:72px 0 36px;display:flex;flex-direction:column;gap:20px}
+header.mast h1{font-size:clamp(40px,7vw,76px);line-height:.96;font-weight:800;
+  letter-spacing:-.03em}
+header.mast .sub{font-size:18px;color:var(--mid);max-width:56ch}
+.meta{display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);margin-top:12px}
+.meta div{flex:1 1 130px;padding:12px 16px 12px 0;border-right:1px solid var(--line)}
+.meta div:last-child{border-right:0}
+.meta b{display:block;font-family:var(--data);font-size:20px;font-weight:600}
+.meta span{font-size:12px;color:var(--mid)}
+
+/* ── generic section ──────────────────────── */
+section{padding:56px 0;border-top:1px solid var(--line)}
+.shead{display:flex;gap:20px;align-items:baseline;margin-bottom:8px}
+.shead h2{font-size:clamp(24px,3.4vw,34px);font-weight:700;letter-spacing:-.02em}
+.lede{color:var(--mid);max-width:62ch;margin:10px 0 32px}
+
+/* ── locked rules ─────────────────────────── */
+ul.rules{list-style:none;padding:0;margin:0;display:grid;gap:0;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+ul.rules li{padding:16px 20px 16px 0;border-top:1px solid var(--line);
+  display:flex;gap:12px;align-items:flex-start}
+ul.rules li .n{font-family:var(--data);font-size:11px;color:var(--faint);
+  padding-top:3px}
+ul.rules li p{margin:0;font-size:14px}
+
+/* ── counters ─────────────────────────────── */
+.counters{display:grid;gap:1px;background:var(--line);
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));border:1px solid var(--line)}
+.counter{background:var(--paper);padding:20px}
+.counter h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.counter .rule{font-size:13px;color:var(--mid);margin:0 0 14px}
+.counter ol{list-style:none;margin:0;padding:0;font-family:var(--data);font-size:13px}
+.counter ol li{display:flex;justify-content:space-between;gap:10px;
+  padding:4px 0;border-bottom:1px dotted var(--grid)}
+.counter ol li:last-child{border-bottom:0}
+.counter ol b{font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ── phone frames ─────────────────────────── */
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:28px;align-items:start;margin:28px 0 0}
+.phone{border:1.5px solid var(--ink);background:var(--paper);
+  display:flex;flex-direction:column;min-height:520px}
+.phone .cap{font-family:var(--data);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;padding:7px 10px;border-bottom:1px solid var(--ink);
+  background:var(--solid);color:var(--onsolid);display:flex;justify-content:space-between}
+.phone .body{flex:1;padding:12px 12px 0;display:flex;flex-direction:column;gap:12px}
+.phone .nav{display:flex;border-top:1.5px solid var(--ink);margin-top:12px}
+.phone .nav span{flex:1;text-align:center;padding:8px 2px;font-size:10px;
+  font-family:var(--data);color:var(--faint);border-right:1px solid var(--grid)}
+.phone .nav span:last-child{border-right:0}
+.phone .nav span.on{color:var(--ink);font-weight:600;background:var(--wash)}
+.ptitle{font-family:var(--display);font-size:19px;font-weight:700;
+  display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ctrl{display:flex;gap:6px;flex-wrap:wrap}
+.ctrl .sel{border:1px solid var(--ink);padding:4px 9px;font-size:11px;
+  font-family:var(--data);display:flex;gap:6px;align-items:center}
+.ctrl .sel.ghost{border-style:dashed;color:var(--mid)}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);padding:3px 8px;font-size:10px;
+  font-family:var(--data);color:var(--mid)}
+.chip.on{border-color:var(--ink);color:var(--onsolid);background:var(--solid)}
+.lbl{font-family:var(--data);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--faint)}
+
+/* list rows inside a phone */
+.rows{display:flex;flex-direction:column}
+.rw{display:grid;grid-template-columns:16px 1fr auto;gap:8px;align-items:center;
+  padding:6px 0;border-bottom:1px solid var(--grid);font-size:12px}
+.rw:last-child{border-bottom:0}
+.rw .pos{font-family:var(--data);font-size:11px;color:var(--mid);text-align:right}
+.rw .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rw .nm small{display:block;font-weight:400;font-size:10px;color:var(--faint)}
+.rw .val{font-family:var(--data);font-size:12px;font-variant-numeric:tabular-nums}
+.rw.lead{background:var(--wash);margin:0 -12px;padding:6px 12px}
+.more{border:1px dashed var(--line);text-align:center;padding:6px;
+  font-family:var(--data);font-size:10px;color:var(--mid)}
+
+/* podium block */
+.pod{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:end}
+.pod div{border:1px solid var(--line);padding:8px 6px;text-align:center}
+.pod div .p{font-family:var(--data);font-size:10px;color:var(--faint)}
+.pod div .u{font-size:11px;font-weight:600;line-height:1.25;margin-top:2px}
+.pod div.first{border-color:var(--ink);border-width:1.5px;padding-top:16px}
+
+/* frise */
+.frise{display:flex;flex-direction:column}
+.fr{display:grid;grid-template-columns:34px 1fr;gap:8px;padding:5px 0;
+  border-bottom:1px solid var(--grid);align-items:center}
+.fr:last-child{border-bottom:0}
+.fr .yr{font-family:var(--data);font-size:11px;color:var(--mid)}
+.fr .win{font-size:11.5px;font-weight:600}
+.fr .win em{font-style:normal;font-weight:400;color:var(--faint);font-size:10px}
+.fr.era{border-bottom:1.5px solid var(--ink);padding-bottom:8px}
+.eratag{font-family:var(--data);font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--faint);padding:8px 0 3px}
+
+/* vitrine grid */
+.vit{display:grid;grid-template-columns:1fr repeat(4,26px);gap:2px;
+  font-family:var(--data);font-size:11px}
+.vit div{padding:3px 2px;text-align:center;border-bottom:1px solid var(--grid)}
+.vit div.who{text-align:left;font-family:var(--body);font-size:11.5px;
+  font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vit div.hd{color:var(--faint);font-size:9px;letter-spacing:.06em;
+  border-bottom:1px solid var(--ink)}
+.vit div.z{color:var(--faint)}
+.vit div.hi{background:var(--solid);color:var(--onsolid)}
+
+/* verdict */
+.verdict{margin-top:20px;padding:14px 0 0;border-top:1px solid var(--line);
+  display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start}
+.verdict .tag{font-family:var(--data);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--onsolid);background:var(--solid);
+  padding:3px 8px;white-space:nowrap}
+.verdict p{margin:0;font-size:14px;max-width:62ch}
+.verdict p + p{margin-top:8px;color:var(--mid)}
+
+/* dense table */
+.dense{overflow-x:auto;border:1px solid var(--line);margin-top:24px}
+table{border-collapse:collapse;width:100%;min-width:720px;font-family:var(--data);
+  font-size:12.5px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--grid);
+  white-space:nowrap}
+th{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
+  border-bottom:1px solid var(--ink);font-weight:500}
+th.grp{border-bottom:0;color:var(--ink);text-align:center;
+  border-left:1px solid var(--line)}
+td.who,th.who{text-align:left;font-family:var(--body);font-weight:600;
+  position:sticky;left:0;background:var(--paper)}
+td.who small{display:block;font-weight:400;font-size:10.5px;color:var(--faint)}
+td.tot{font-weight:600;border-left:1px solid var(--line)}
+td.sep,th.sep{border-left:1px solid var(--line)}
+tbody tr:hover{background:var(--wash)}
+.note{font-size:13px;color:var(--mid);margin-top:12px;max-width:62ch}
+
+/* pick list */
+.picks{display:grid;gap:0;margin-top:8px}
+.pick{display:grid;grid-template-columns:112px 1fr;gap:18px;padding:16px 0;
+  border-top:1px solid var(--line);align-items:start}
+.pick .where{font-family:var(--data);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--faint);padding-top:3px}
+.pick p{margin:0;font-size:14.5px}
+.pick p b{font-weight:600}
+
+footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
+  color:var(--faint);font-family:var(--data)}
+@media (max-width:600px){
+  header.mast{padding:48px 0 28px}
+  .pick{grid-template-columns:1fr;gap:4px}
+}
+</style>
+
+<style>
+/* spec-specific additions */
+.spec{display:grid;grid-template-columns:340px 1fr;gap:36px;align-items:start;margin-top:26px}
+@media (max-width:760px){.spec{grid-template-columns:1fr}}
+.annot{display:flex;flex-direction:column;gap:0}
+.an{display:grid;grid-template-columns:20px 1fr;gap:12px;padding:12px 0;
+  border-top:1px solid var(--line);align-items:start}
+.an .k{font-family:var(--data);font-size:10px;color:var(--onsolid);background:var(--solid);
+  width:18px;height:18px;display:grid;place-items:center;margin-top:2px}
+.an p{margin:0;font-size:14px}
+.an p b{font-weight:600}
+.an p em{font-style:normal;color:var(--mid)}
+.tabs{display:flex;border-bottom:1px solid var(--line);gap:0}
+.tabs span{font-family:var(--data);font-size:10px;padding:5px 8px;color:var(--faint);
+  border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs span.on{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+.yr4{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:3px}
+.yr4 div{border:1px solid var(--grid);padding:3px 4px;text-align:center}
+.yr4 div .e{display:block;font-family:var(--data);font-size:8px;color:var(--faint);
+  letter-spacing:.08em}
+.yr4 div .w{display:block;font-size:9.5px;font-weight:600;line-height:1.2;margin-top:1px}
+.yr4 div.none{border-style:dashed}
+.yr4 div.none .w{color:var(--faint);font-weight:400}
+.season{border-bottom:1px solid var(--line);padding:8px 0}
+.season .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.season .top .y{font-family:var(--display);font-size:15px;font-weight:700}
+.season .top .champ{font-size:11.5px;font-weight:600}
+.season .top .champ em{font-style:normal;font-weight:400;color:var(--faint);font-size:9.5px;
+  letter-spacing:.1em;text-transform:uppercase;margin-right:5px}
+.bar{display:flex;height:7px;gap:2px;margin-top:3px}
+.bar i{display:block;background:var(--wash);border:1px solid var(--line);flex:1}
+.bar i.f{background:var(--solid);border-color:var(--solid)}
+.duel{display:flex;flex-direction:column;gap:4px}
+.duel .d{display:grid;grid-template-columns:1fr 58px;gap:8px;align-items:center;font-size:11.5px}
+.duel .d .track{height:9px;display:flex;border:1px solid var(--line)}
+.duel .d .track b{display:block;background:var(--solid)}
+.duel .d .sc{font-family:var(--data);font-size:10.5px;text-align:right;
+  font-variant-numeric:tabular-nums}
+.duel .d .who2{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ideas{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.idea{background:var(--paper);padding:18px}
+.idea h3{font-size:15px;font-weight:700;margin-bottom:5px}
+.idea p{margin:0 0 10px;font-size:13.5px;color:var(--mid)}
+.idea .ex{font-family:var(--data);font-size:11.5px;border-top:1px dotted var(--grid);
+  padding-top:8px;color:var(--ink)}
+.todo{display:grid;gap:0}
+.td{display:grid;grid-template-columns:78px 1fr;gap:16px;padding:13px 0;
+  border-top:1px solid var(--line);align-items:start}
+.td .scope{font-family:var(--data);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--faint);padding-top:3px}
+.td p{margin:0;font-size:14px}
+.td p em{font-style:normal;color:var(--mid);display:block;font-size:12.5px;margin-top:2px}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <span class="eyebrow">WattHunter · wireframes · noir et blanc</span>
+  <h1>Palmarès<br>en quatre<br>onglets</h1>
+  <p class="sub">Ranking bouge à peine. Palmarès devient une page de rangs, sans une
+  seule valeur d'XP, découpée en quatre écrans. Données réelles du groupe, 2017 à 2026.</p>
+  <div class="meta">
+    <div><b>6</b><span>changements dans Ranking</span></div>
+    <div><b>4</b><span>onglets de Palmarès</span></div>
+    <div><b>0</b><span>XP dans Palmarès</span></div>
+    <div><b>24</b><span>épreuves d'historique</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="shead"><span class="eyebrow">01</span><h2>Ranking · six changements, rien d'autre</h2></div>
+  <p class="lede">La page reste celle d'aujourd'hui. On enlève deux colonnes et un
+  contrôle, on ajoute un sélecteur d'année, et on regroupe les courses en quatre
+  épreuves au lieu de les lister une à une.</p>
+
+  <div class="spec">
+    <div class="phone">
+      <div class="cap"><span>Ranking</span><span>All races · 2026</span></div>
+      <div class="body">
+        <div class="ptitle"><span>Ranking</span>
+          <span class="sel" style="font-size:10px;padding:2px 6px">2026 ▾</span></div>
+        <div class="ctrl"><span class="sel">All races ▾</span></div>
+        <div class="rows">
+          <div class="rw lead"><span class="pos">1</span><span class="nm">GoudalEnergies<small>David Choncoutié</small></span><span class="val">4 803</span></div>
+          <div class="rw"><span class="pos">2</span><span class="nm">Vinaboy<small>Alpaga</small></span><span class="val">4 147</span></div>
+          <div class="rw"><span class="pos">3</span><span class="nm">Meunier Tudor<small>PeeJee</small></span><span class="val">3 946</span></div>
+          <div class="rw"><span class="pos">4</span><span class="nm">Muskatel Muskadji<small>Marseillais</small></span><span class="val">3 731</span></div>
+          <div class="rw"><span class="pos">5</span><span class="nm">Deceptive Education<small>Benny Lee</small></span><span class="val">3 402</span></div>
+          <div class="rw"><span class="pos">6</span><span class="nm">Pat' Pat' rouillé<small>Patron</small></span><span class="val">3 117</span></div>
+          <div class="rw"><span class="pos">7</span><span class="nm">LuxTeam<small>Marino</small></span><span class="val">2 995</span></div>
+          <div class="rw"><span class="pos">8</span><span class="nm">Leopard_Trek<small>Klimax</small></span><span class="val">2 880</span></div>
+          <div class="rw"><span class="pos">9</span><span class="nm">Jon<small>bigdaddy</small></span><span class="val">2 347</span></div>
+        </div>
+      </div>
+      <div class="nav"><span>Home</span><span>Auction</span><span class="on">Ranking</span><span>Palmarès</span></div>
+    </div>
+
+    <div class="annot">
+      <div class="an"><span class="k">1</span><p><b>Le level et la trésorerie sortent
+        de la ligne.</b> <em>Le level est constant à 8 en classic, la trésorerie n'a
+        rien à faire dans un classement. Reste le rang, le badge équipé, l'équipe,
+        le joueur, l'XP.</em></p></div>
+      <div class="an"><span class="k">2</span><p><b>Le segmented control Teams / Riders
+        disparaît.</b> <em>À trancher avant de coder : le classement des coureurs est
+        aujourd'hui le seul endroit qui existe pour ça. Le déplacer, pas le jeter.</em></p></div>
+      <div class="an"><span class="k">3</span><p><b>Sélecteur d'année à droite du titre</b>,
+        année en cours par défaut, et on peut remonter jusqu'à 2017.</p></div>
+      <div class="an"><span class="k">4</span><p><b>Sélecteur de course à gauche</b>,
+        « All races » par défaut, puis quatre entrées seulement : Classiques, Giro,
+        Tour de France, Vuelta.</p></div>
+      <div class="an"><span class="k">5</span><p><b>« Classiques » regroupe toutes les
+        courses d'un jour de l'année</b> en une seule entrée. <em>Source de vérité :
+        le champ type du calendrier WT, 21 courses d'un jour sur 36 en 2026. Paris-Nice
+        et le Dauphiné n'y sont pas.</em></p></div>
+      <div class="an"><span class="k">6</span><p><b>Seulement des totaux.</b> Aucun
+        détail par coureur, aucune répartition par catégorie sur cette page.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><span class="eyebrow">02</span><h2>Palmarès · onglet Frise</h2></div>
+  <p class="lede">L'écran d'ouverture. Une ligne par saison : le champion au cumul sur
+  la première, les quatre vainqueurs d'épreuve sur la seconde. Une épreuve non jouée
+  garde sa case, en pointillé, parce que l'absence est une information.</p>
+
+  <div class="spec">
+    <div class="phone">
+      <div class="cap"><span>Palmarès</span><span>Frise</span></div>
+      <div class="body">
+        <div class="ptitle"><span>Palmarès</span></div>
+        <div class="tabs"><span class="on">Frise</span><span>Victoires</span><span>Maillots</span><span>Joueurs</span></div>
+        <div style="display:flex;flex-direction:column">
+          <div class="season">
+            <div class="top"><span class="y">2026</span><span class="champ"><em>en cours</em>2 / 4 phases</span></div>
+            <div class="yr4">
+              <div><span class="e">CLA</span><span class="w">Marseillais</span></div>
+              <div><span class="e">GIR</span><span class="w">D. Chonc.</span></div>
+              <div class="none"><span class="e">TDF</span><span class="w">en cours</span></div>
+              <div class="none"><span class="e">VUE</span><span class="w">à venir</span></div>
+            </div>
+          </div>
+          <div class="season">
+            <div class="top"><span class="y">2025</span><span class="champ"><em>champion</em>Alpaga</span></div>
+            <div class="yr4">
+              <div class="none"><span class="e">CLA</span><span class="w">—</span></div>
+              <div class="none"><span class="e">GIR</span><span class="w">—</span></div>
+              <div class="none"><span class="e">TDF</span><span class="w">—</span></div>
+              <div><span class="e">VUE</span><span class="w">Alpaga</span></div>
+            </div>
+          </div>
+          <div class="season">
+            <div class="top"><span class="y">2024</span><span class="champ"><em>champion</em>D. Choncoutié</span></div>
+            <div class="yr4">
+              <div class="none"><span class="e">CLA</span><span class="w">—</span></div>
+              <div><span class="e">GIR</span><span class="w">Marseillais</span></div>
+              <div><span class="e">TDF</span><span class="w">D. Chonc.</span></div>
+              <div class="none"><span class="e">VUE</span><span class="w">—</span></div>
+            </div>
+          </div>
+          <div class="season">
+            <div class="top"><span class="y">2023</span><span class="champ"><em>champion</em>Patron</span></div>
+            <div class="yr4">
+              <div><span class="e">CLA</span><span class="w">Marseillais</span></div>
+              <div><span class="e">GIR</span><span class="w">D. Chonc.</span></div>
+              <div><span class="e">TDF</span><span class="w">Marino</span></div>
+              <div><span class="e">VUE</span><span class="w">Patron</span></div>
+            </div>
+          </div>
+          <div class="season">
+            <div class="top"><span class="y">2022</span><span class="champ"><em>champion</em>PeeJee</span></div>
+            <div class="yr4">
+              <div><span class="e">CLA</span><span class="w">Benny Lee</span></div>
+              <div><span class="e">GIR</span><span class="w">PeeJee</span></div>
+              <div><span class="e">TDF</span><span class="w">PeeJee</span></div>
+              <div class="none"><span class="e">VUE</span><span class="w">—</span></div>
+            </div>
+          </div>
+          <div class="season">
+            <div class="top"><span class="y">2021</span><span class="champ"><em>champion</em>Klimax</span></div>
+            <div class="yr4">
+              <div><span class="e">CLA</span><span class="w">Marseillais</span></div>
+              <div><span class="e">GIR</span><span class="w">D. Chonc.</span></div>
+              <div><span class="e">TDF</span><span class="w">PeeJee</span></div>
+              <div><span class="e">VUE</span><span class="w">Klimax</span></div>
+            </div>
+          </div>
+          <div class="season">
+            <div class="top"><span class="y">2020</span><span class="champ"><em>champion</em>Klimax</span></div>
+            <div class="yr4">
+              <div class="none"><span class="e">CLA</span><span class="w">—</span></div>
+              <div><span class="e">GIR</span><span class="w">Klimax</span></div>
+              <div><span class="e">TDF</span><span class="w">PeeJee</span></div>
+              <div class="none"><span class="e">VUE</span><span class="w">—</span></div>
+            </div>
+          </div>
+          <div class="season">
+            <div class="top"><span class="y">2019</span><span class="champ"><em>champion</em>Marino</span></div>
+            <div class="yr4">
+              <div><span class="e">CLA</span><span class="w">D. Chonc.</span></div>
+              <div><span class="e">GIR</span><span class="w">Marseillais</span></div>
+              <div><span class="e">TDF</span><span class="w">JibsEPAULE</span></div>
+              <div><span class="e">VUE</span><span class="w">D. Chonc.</span></div>
+            </div>
+          </div>
+          <div class="season">
+            <div class="top"><span class="y">2018</span><span class="champ"><em>champion</em>Alpaga</span></div>
+            <div class="yr4">
+              <div><span class="e">CLA</span><span class="w">Alpaga</span></div>
+              <div class="none"><span class="e">GIR</span><span class="w">—</span></div>
+              <div><span class="e">TDF</span><span class="w">D. Chonc.</span></div>
+              <div><span class="e">VUE</span><span class="w">PeeJee</span></div>
+            </div>
+          </div>
+          <div class="season">
+            <div class="top"><span class="y">2017</span><span class="champ"><em>champion</em>Klimax</span></div>
+            <div class="yr4">
+              <div class="none"><span class="e">CLA</span><span class="w">—</span></div>
+              <div class="none"><span class="e">GIR</span><span class="w">—</span></div>
+              <div class="none"><span class="e">TDF</span><span class="w">—</span></div>
+              <div><span class="e">VUE</span><span class="w">Klimax</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="nav"><span>Home</span><span>Auction</span><span>Ranking</span><span class="on">Palmarès</span></div>
+    </div>
+
+    <div class="annot">
+      <div class="an"><span class="k">1</span><p><b>Le champion de saison est la seule
+        valeur calculée depuis l'XP</b>, et elle n'est jamais affichée en points.
+        <em>Un cumul ne se compare qu'à l'intérieur de son année, jamais d'une saison
+        à l'autre ni d'une ère à l'autre.</em></p></div>
+      <div class="an"><span class="k">2</span><p><b>La case en pointillé dit « pas
+        joué ».</b> <em>Neuf saisons sur dix sont incomplètes côté Route du Tour.
+        Masquer ces cases donnerait l'illusion d'un championnat régulier qui n'a
+        jamais existé.</em></p></div>
+      <div class="an"><span class="k">3</span><p><b>2026 est en haut, en cours.</b>
+        <em>Les deux ères se suivent sans rupture visuelle. Le changement de jeu est
+        une ligne dans la chronologie, pas une seconde page.</em></p></div>
+      <div class="an"><span class="k">4</span><p><b>Un tap sur une saison</b> ouvre son
+        détail : les noms d'origine des tours, « La vengeance de Pogi ? », et le
+        classement complet de l'année.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><span class="eyebrow">03</span><h2>Palmarès · onglet Victoires</h2></div>
+  <p class="lede">Deux blocs sur le même écran : le compteur général en haut, le tableau
+  croisé en dessous. Aucun seuil, aucune moyenne. Le nombre de départs est en
+  sous-titre, ce qui rend l'absence de seuil honnête sans avoir à l'expliquer.</p>
+
+  <div class="spec">
+    <div class="phone">
+      <div class="cap"><span>Palmarès</span><span>Victoires</span></div>
+      <div class="body">
+        <div class="ptitle"><span>Palmarès</span></div>
+        <div class="tabs"><span>Frise</span><span class="on">Victoires</span><span>Maillots</span><span>Joueurs</span></div>
+        <div class="rows">
+          <div class="rw lead"><span class="pos">1</span><span class="nm">David Choncoutié<small>22 départs · podiums 6·4·2</small></span><span class="val">6</span></div>
+          <div class="rw"><span class="pos">2</span><span class="nm">PeeJee<small>24 départs · podiums 5·2·3</small></span><span class="val">5</span></div>
+          <div class="rw"><span class="pos">3</span><span class="nm">Marseillais<small>24 départs · podiums 4·2·5</small></span><span class="val">4</span></div>
+          <div class="rw"><span class="pos">4</span><span class="nm">Klimax<small>23 départs · podiums 3·6·2</small></span><span class="val">3</span></div>
+          <div class="rw"><span class="pos">5</span><span class="nm">Alpaga<small>24 départs · podiums 2·3·4</small></span><span class="val">2</span></div>
+          <div class="rw"><span class="pos">6</span><span class="nm">Benny Lee<small>24 départs · podiums 1·1·1</small></span><span class="val">1</span></div>
+          <div class="rw"><span class="pos">7</span><span class="nm">Marino<small>20 départs · podiums 1·3·6</small></span><span class="val">1</span></div>
+          <div class="rw"><span class="pos">8</span><span class="nm">Patron<small>7 départs · podiums 1·1·1</small></span><span class="val">1</span></div>
+          <div class="rw"><span class="pos">9</span><span class="nm">JibsEPAULE<small>2 départs · podiums 1·1·0</small></span><span class="val">1</span></div>
+          <div class="rw"><span class="pos">10</span><span class="nm">bigdaddy<small>13 départs · podiums 0·1·0</small></span><span class="val">0</span></div>
+        </div>
+        <div>
+          <div class="lbl" style="margin-bottom:6px">Par épreuve</div>
+          <div class="vit">
+            <div class="hd"></div><div class="hd">CLA</div><div class="hd">GIR</div><div class="hd">TDF</div><div class="hd">VUE</div>
+            <div class="who">D. Choncoutié</div><div>1</div><div>2</div><div>2</div><div>1</div>
+            <div class="who">PeeJee</div><div class="z">·</div><div>1</div><div class="hi">3</div><div>1</div>
+            <div class="who">Marseillais</div><div>2</div><div>2</div><div class="z">·</div><div class="z">·</div>
+            <div class="who">Klimax</div><div class="z">·</div><div>1</div><div class="z">·</div><div>2</div>
+            <div class="who">Alpaga</div><div>1</div><div class="z">·</div><div class="z">·</div><div>1</div>
+            <div class="who">Benny Lee</div><div>1</div><div class="z">·</div><div class="z">·</div><div class="z">·</div>
+            <div class="who">Marino</div><div class="z">·</div><div class="z">·</div><div>1</div><div class="z">·</div>
+            <div class="who">Patron</div><div class="z">·</div><div class="z">·</div><div class="z">·</div><div>1</div>
+            <div class="who">JibsEPAULE</div><div class="z">·</div><div class="z">·</div><div>1</div><div class="z">·</div>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--mid);margin:0">PeeJee est le seul à avoir
+        gagné trois Tours. Personne n'a gagné les quatre épreuves.</p>
+      </div>
+      <div class="nav"><span>Home</span><span>Auction</span><span>Ranking</span><span class="on">Palmarès</span></div>
+    </div>
+
+    <div class="annot">
+      <div class="an"><span class="k">1</span><p><b>Le triplet remplace le rang moyen.</b>
+        <em>Sans seuil de participation, une moyenne devient inexploitable : le joueur
+        à deux départs la gagne. Les trois comptages, eux, restent lisibles à
+        n'importe quel volume.</em></p></div>
+      <div class="an"><span class="k">2</span><p><b>Le tableau croisé est la vue la plus
+        parlante du lot.</b> <em>C'est la seule immunisée contre la participation
+        inégale, puisqu'elle n'agrège rien. Les cases vides travaillent autant que
+        les pleines.</em></p></div>
+      <div class="an"><span class="k">3</span><p><b>Le titre de saison n'apparaît pas
+        ici.</b> <em>C'est un trophée d'une autre nature, il vit dans la frise. Les
+        additionner ferait de Klimax, triple champion et trois victoires, un joueur
+        à six titres, ce qui ne veut rien dire.</em></p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><span class="eyebrow">04</span><h2>Palmarès · onglet Maillots</h2></div>
+  <p class="lede">Le seul palmarès où Marino et bigdaddy existent. Quatre colonnes,
+  une par maillot, plus un total. Les Classiques n'apparaissent pas : une course d'un
+  jour ne distribue aucun maillot.</p>
+
+  <div class="spec">
+    <div class="phone">
+      <div class="cap"><span>Palmarès</span><span>Maillots</span></div>
+      <div class="body">
+        <div class="ptitle"><span>Palmarès</span></div>
+        <div class="tabs"><span>Frise</span><span>Victoires</span><span class="on">Maillots</span><span>Joueurs</span></div>
+        <div>
+          <div class="vit" style="grid-template-columns:1fr repeat(5,24px)">
+            <div class="hd"></div><div class="hd">JAU</div><div class="hd">VER</div><div class="hd">POI</div><div class="hd">BLA</div><div class="hd">TOT</div>
+            <div class="who">PeeJee</div><div>3</div><div class="hi">5</div><div>4</div><div>3</div><div><b>15</b></div>
+            <div class="who">Klimax</div><div class="hi">6</div><div>3</div><div>2</div><div>3</div><div><b>14</b></div>
+            <div class="who">D. Choncoutié</div><div>3</div><div>1</div><div>2</div><div>5</div><div><b>11</b></div>
+            <div class="who">Marino</div><div class="z">·</div><div>1</div><div>3</div><div class="hi">6</div><div><b>10</b></div>
+            <div class="who">Alpaga</div><div>2</div><div>3</div><div>1</div><div>1</div><div><b>7</b></div>
+            <div class="who">bigdaddy</div><div>1</div><div>2</div><div>3</div><div class="z">·</div><div><b>6</b></div>
+            <div class="who">Benny Lee</div><div>1</div><div>2</div><div>2</div><div class="z">·</div><div><b>5</b></div>
+            <div class="who">Marseillais</div><div>1</div><div>2</div><div class="z">·</div><div>1</div><div><b>4</b></div>
+            <div class="who">Patron</div><div>1</div><div class="z">·</div><div>1</div><div class="z">·</div><div><b>2</b></div>
+            <div class="who">JibsEPAULE</div><div>1</div><div class="z">·</div><div>1</div><div class="z">·</div><div><b>2</b></div>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--mid);margin:0">Marino n'a jamais pris le
+        jaune et détient six maillots blancs, le record du groupe. bigdaddy n'a aucune
+        victoire d'épreuve et six maillots.</p>
+        <div>
+          <div class="lbl" style="margin-bottom:6px">Sur 19 grands tours</div>
+          <div class="rows">
+            <div class="rw"><span class="pos">—</span><span class="nm">Jaune<small>le plus disputé</small></span><span class="val">9 joueurs</span></div>
+            <div class="rw"><span class="pos">—</span><span class="nm">Blanc<small>le plus concentré</small></span><span class="val">6 joueurs</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav"><span>Home</span><span>Auction</span><span>Ranking</span><span class="on">Palmarès</span></div>
+    </div>
+
+    <div class="annot">
+      <div class="an"><span class="k">1</span><p><b>Un titre va au meilleur cumul de la
+        catégorie sur une épreuve</b>, pas au propriétaire du coureur classé premier.
+        <em>C'est bien ton équipe qui gagne le vert, pas ton sprinteur.</em></p></div>
+      <div class="an"><span class="k">2</span><p><b>Cet onglet a besoin d'une donnée
+        qui n'existe pas encore côté WattHunter.</b> <em>Jaune, vert et pois sont
+        fusionnés dans un seul champ de bonus de classement. Il faut les séparer,
+        soit en trois colonnes de traçabilité, soit par recalcul depuis les
+        classements quotidiens, qui portent bien le type.</em></p></div>
+      <div class="an"><span class="k">3</span><p><b>Le maillot blanc n'existe qu'en
+        classement final.</b> <em>La table des classements quotidiens ne connaît que
+        jaune, vert et pois.</em></p></div>
+      <div class="an"><span class="k">4</span><p><b>C'est l'onglet de la seconde chance.</b>
+        <em>Deux joueurs sans victoire d'épreuve y ont une ligne fournie. Sans cet
+        écran, ils n'apparaissent nulle part dans le palmarès.</em></p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><span class="eyebrow">05</span><h2>Palmarès · onglet Joueurs</h2></div>
+  <p class="lede">La fiche d'un joueur, mais relative plutôt qu'absolue. Les duels sont
+  la vraie trouvaille : dans un groupe d'amis, savoir qu'on a fini devant quelqu'un
+  quatorze fois sur vingt-quatre vaut tous les rangs moyens du monde.</p>
+
+  <div class="spec">
+    <div class="phone">
+      <div class="cap"><span>Palmarès</span><span>Joueurs · Alpaga</span></div>
+      <div class="body">
+        <div class="ptitle"><span>Palmarès</span></div>
+        <div class="tabs"><span>Frise</span><span>Victoires</span><span>Maillots</span><span class="on">Joueurs</span></div>
+        <div class="ctrl"><span class="sel">Alpaga ▾</span></div>
+        <div>
+          <div class="lbl" style="margin-bottom:6px">Carrière</div>
+          <div class="vit" style="grid-template-columns:1fr 1fr">
+            <div class="who">Départs</div><div style="text-align:right">24 / 24</div>
+            <div class="who">Saisons jouées</div><div style="text-align:right">9 / 9</div>
+            <div class="who">Victoires</div><div style="text-align:right">2</div>
+            <div class="who">Titres de saison</div><div style="text-align:right">2</div>
+            <div class="who">Podiums</div><div style="text-align:right">2 · 3 · 4</div>
+            <div class="who">Maillots</div><div style="text-align:right">7</div>
+          </div>
+        </div>
+        <div>
+          <div class="lbl" style="margin-bottom:6px">Face à face</div>
+          <div class="duel">
+            <div class="d"><span class="who2">Benny Lee</span><span class="sc">16‑8</span></div>
+            <div class="d"><span class="track"><b style="width:67%"></b></span><span class="sc"></span></div>
+            <div class="d"><span class="who2">bigdaddy</span><span class="sc">9‑4</span></div>
+            <div class="d"><span class="track"><b style="width:69%"></b></span><span class="sc"></span></div>
+            <div class="d"><span class="who2">Marino</span><span class="sc">10‑10</span></div>
+            <div class="d"><span class="track"><b style="width:50%"></b></span><span class="sc"></span></div>
+            <div class="d"><span class="who2">Klimax</span><span class="sc">10‑13</span></div>
+            <div class="d"><span class="track"><b style="width:43%"></b></span><span class="sc"></span></div>
+            <div class="d"><span class="who2">David Choncoutié</span><span class="sc">9‑13</span></div>
+            <div class="d"><span class="track"><b style="width:41%"></b></span><span class="sc"></span></div>
+            <div class="d"><span class="who2">PeeJee</span><span class="sc">10‑14</span></div>
+            <div class="d"><span class="track"><b style="width:42%"></b></span><span class="sc"></span></div>
+            <div class="d"><span class="who2">Marseillais</span><span class="sc">10‑14</span></div>
+            <div class="d"><span class="track"><b style="width:42%"></b></span><span class="sc"></span></div>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--mid);margin:0">Bête noire : Marseillais et
+        PeeJee, quatorze fois devant. Marino est le duel parfaitement équilibré du
+        groupe, dix partout.</p>
+      </div>
+      <div class="nav"><span>Home</span><span>Auction</span><span>Ranking</span><span class="on">Palmarès</span></div>
+    </div>
+
+    <div class="annot">
+      <div class="an"><span class="k">1</span><p><b>Le duel ne compte que les épreuves
+        jouées par les deux.</b> <em>C'est ce qui le rend juste : l'assiduité n'y donne
+        aucun avantage, contrairement au compteur de victoires.</em></p></div>
+      <div class="an"><span class="k">2</span><p><b>Rien d'autre que des rangs.</b>
+        <em>Un duel est une comparaison de deux positions dans un même classement,
+        donc valide entre les deux ères sans la moindre conversion.</em></p></div>
+      <div class="an"><span class="k">3</span><p><b>Le sélecteur de joueur en haut</b>
+        rend l'écran utilisable pour regarder la fiche de quelqu'un d'autre, ce qui
+        est la moitié de l'intérêt dans un groupe d'amis.</p></div>
+      <div class="an"><span class="k">4</span><p><b>Terrains de prédilection et
+        historique complet</b> viennent plus tard sur cet écran. <em>Le rang moyen par
+        type d'épreuve reste la vue la plus actionnable pour le joueur lui-même.</em></p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><span class="eyebrow">06</span><h2>Ce qu'on pourrait ajouter</h2></div>
+  <p class="lede">Cinq autres classements possibles, tous fondés sur des rangs, donc
+  tous valides entre les deux ères. Les chiffres sont réels.</p>
+  <div class="ideas">
+    <div class="idea">
+      <h3>L'éternel second</h3>
+      <p>Le plus de deuxièmes places. Un titre affectueux, et une vraie histoire dans
+      un groupe qui joue ensemble depuis neuf ans.</p>
+      <p class="ex">Klimax · 6 deuxièmes pour 3 victoires</p>
+    </div>
+    <div class="idea">
+      <h3>Assiduité</h3>
+      <p>Nombre de saisons où le joueur a pris au moins un départ. La seule statistique
+      que le compteur de victoires ignore complètement.</p>
+      <p class="ex">4 joueurs à 9 saisons sur 9</p>
+    </div>
+    <div class="idea">
+      <h3>Séries</h3>
+      <p>La plus longue suite de podiums consécutifs, et la plus longue disette entre
+      deux victoires. Se calcule sur les rangs seuls.</p>
+      <p class="ex">Alpaga · 7 ans entre 2018 et 2025</p>
+    </div>
+    <div class="idea">
+      <h3>Terrains de prédilection</h3>
+      <p>Rang moyen par type d'épreuve, pour un joueur. À l'échelle d'une carrière la
+      moyenne redevient légitime, puisqu'on ne compare plus des joueurs entre eux.</p>
+      <p class="ex">Alpaga · meilleur sur la Vuelta</p>
+    </div>
+    <div class="idea">
+      <h3>Le doublé</h3>
+      <p>Gagner deux épreuves la même saison, ou gagner une épreuve et le titre de
+      saison. Personne ne l'a fait, sauf une fois.</p>
+      <p class="ex">PeeJee 2022 · Giro, Tour et le titre</p>
+    </div>
+    <div class="idea">
+      <h3>Les quatre épreuves</h3>
+      <p>Un compteur de collection plutôt qu'un classement : combien des quatre épreuves
+      un joueur a déjà gagnées au moins une fois.</p>
+      <p class="ex">D. Choncoutié · 4 sur 4, seul du groupe</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><span class="eyebrow">07</span><h2>Toutes les modifications à faire</h2></div>
+  <p class="lede">Y compris celles qui ne se voient sur aucun écran.</p>
+  <div class="todo">
+    <div class="td"><span class="scope">Ranking</span><p>Retirer le level et la trésorerie
+      des lignes du classement.</p></div>
+    <div class="td"><span class="scope">Ranking</span><p>Retirer le segmented control
+      Teams / Riders.<em>Décider où va le classement des coureurs avant de le supprimer,
+      c'est aujourd'hui le seul endroit qui existe pour ça.</em></p></div>
+    <div class="td"><span class="scope">Ranking</span><p>Ajouter le sélecteur d'année à
+      droite du titre, année en cours par défaut.</p></div>
+    <div class="td"><span class="scope">Ranking</span><p>Réduire le sélecteur de course à
+      quatre entrées groupées, « All races » par défaut.<em>Les Classiques regroupent
+      toutes les courses d'un jour de l'année.</em></p></div>
+    <div class="td"><span class="scope">Palmarès</span><p>Déplacer la page actuelle,
+      emblèmes, badges et bannières, derrière un bouton dans les réglages.<em>Ne rien
+      jeter : l'interface existe et fonctionne, elle change juste d'adresse.</em></p></div>
+    <div class="td"><span class="scope">Palmarès</span><p>Construire la nouvelle page en
+      quatre onglets, sans aucune valeur d'XP affichée.</p></div>
+    <div class="td"><span class="scope">Données</span><p>Créer le mécanisme de saison.
+      Une saison est une année, et les classements entre saisons agrègent par joueur,
+      pas par équipe.<em>Un nom d'équipe change chaque année, comme sur La Route du Tour.</em></p></div>
+    <div class="td"><span class="scope">Données</span><p>Rattacher la ligue Classic V1 à
+      la saison 2026, pour que les Classiques et le Giro comptent avec le reste de
+      l'année.<em>Rattacher plutôt que recopier : rien n'est réécrit, donc rien n'est
+      perdu. Le contournement écrit en dur dans la page actuelle disparaît alors.</em></p></div>
+    <div class="td"><span class="scope">Données</span><p>Stocker la répartition par
+      catégorie de chaque résultat, même sans écran pour l'afficher.<em>Arrivée,
+      sommets, sprints, échappée, puis jaune, vert, pois, blanc. Presque tout existe
+      déjà, sauf la séparation des trois premiers maillots.</em></p></div>
+    <div class="td"><span class="scope">Données</span><p>Importer l'historique de La Route
+      du Tour dans une table dédiée, jamais sous forme de fausses ligues ou de fausses
+      équipes.</p></div>
+    <div class="td"><span class="scope">Bug</span><p>Deux courses par étapes sont
+      déclarées comme des courses d'un jour dans l'achievement Classic Man.<em>Paris-Nice
+      et Tirreno-Adriatico comptent aujourd'hui comme des classiques.</em></p></div>
+  </div>
+</section>
+
+<footer>
+  Source : research/laroutedutour/rankings.csv, 24 épreuves après exclusion des courses
+  d'une semaine · agrégats et duels recalculés le 14 septembre 2026 · aucune écriture
+  en base.
+</footer>
+
+</div>
