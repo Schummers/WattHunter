@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildRaceGroups,
   getRaceGroupId,
+  getRaceGroupWindow,
   getWtRaceType,
   isOneDayRace,
   isStageRace,
@@ -147,5 +148,34 @@ describe("oneDayRaceSlugPatterns", () => {
       const slug = pattern.replace("%", "2026");
       expect(isStageRace(slug)).toBe(false);
     }
+  });
+});
+
+describe("getRaceGroupWindow", () => {
+  it("closes the Classics on the auction phases, not on Il Lombardia", () => {
+    // The bug this replaces: the window ran to 2026-10-10, the last one-day race
+    // of the calendar, so a group finished in May stayed "ongoing" until autumn
+    // and never reached the head-to-head, the wins or the jerseys.
+    expect(getRaceGroupWindow("classics", 2026)).toEqual({
+      start: "2026-02-01",
+      end: "2026-05-01",
+    });
+  });
+
+  it("leaves each grand tour on its calendar window", () => {
+    expect(getRaceGroupWindow("giro", 2026)).toEqual({ start: "2026-05-08", end: "2026-05-31" });
+    expect(getRaceGroupWindow("tour-de-france", 2026)).toEqual({
+      start: "2026-07-04",
+      end: "2026-07-26",
+    });
+    expect(getRaceGroupWindow("vuelta", 2026)).toEqual({ start: "2026-08-22", end: "2026-09-13" });
+  });
+
+  it("shifts both bounds to the season asked for", () => {
+    expect(getRaceGroupWindow("classics", 2019)).toEqual({
+      start: "2019-02-01",
+      end: "2019-05-01",
+    });
+    expect(getRaceGroupWindow("giro", 2019)).toEqual({ start: "2019-05-08", end: "2019-05-31" });
   });
 });

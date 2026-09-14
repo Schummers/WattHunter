@@ -35,6 +35,15 @@ export const AUCTION_PHASES: AuctionPhase[] = [
   { id: 9, label: "End of Season",    startMonth: 9,  startDay: 16, endMonth: 10, endDay: 18, auctionDates: [{ month: 9, day: 16 }, { month: 9, day: 17 }, { month: 9, day: 18 }] },
 ];
 
+/**
+ * The auction phases the Classics are made of.
+ *
+ * The palmares reads them to date the close of its `classics` group: the game
+ * says when the Classics are over, not the World Tour calendar. See
+ * `getRaceGroupWindow` in `lib/race-groups.ts`.
+ */
+export const CLASSICS_PHASE_IDS = [2, 3] as const;
+
 export function getCurrentPhase(date: Date = new Date()): AuctionPhase {
   const year = date.getFullYear();
   for (let i = 0; i < AUCTION_PHASES.length; i++) {

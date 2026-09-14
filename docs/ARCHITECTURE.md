@@ -220,7 +220,15 @@ Le modèle est dans `lib/palmares/` et c'est lui qui porte la logique :
   colonnes séparées du ticket 08, plus les lignes de classement final attribuées
   par leur slug.
 - `aggregate.ts` — victoires, maillots, carrière, rangs de saison, face à face.
-  Pures fonctions, testées (`aggregate.test.ts`).
+  Pures fonctions, testées (`aggregate.test.ts`). **Ne lisent que les événements
+  `played`** : un groupe encore ouvert n'entre ni dans le face à face, ni dans les
+  victoires, ni dans les maillots.
+- La fenêtre d'un groupe (`getRaceGroupWindow`, `lib/race-groups.ts`) vient du
+  calendrier WT, **sauf les Classiques, fermées par les phases d'enchères**
+  (`CLASSICS_PHASE_IDS` dans `lib/phases.ts`, fin au 1er mai). Le calendrier
+  contient des courses d'un jour que le jeu ne joue pas (Québec, Montréal,
+  Lombardia) et repoussait la clôture du groupe à octobre. ADR :
+  `docs/adr/2026-09-fenetre-des-classiques-vient-des-phases.md`.
 - `format.ts` — abréviation des noms par règle explicite, jamais par ellipse CSS.
 - `identity.ts` — **identité joueur, source unique**. Clé = nom de compte (seul
   pont entre les deux ères), libellé = **nom d'équipe courant**, badge = celui

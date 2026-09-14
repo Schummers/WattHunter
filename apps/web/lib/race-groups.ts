@@ -1,5 +1,6 @@
 import calendarData from "../../../services/pcs-sync/wt_calendar_2026.json";
 import { getParentRaceSlug } from "./race-feed-helpers";
+import { AUCTION_PHASES, CLASSICS_PHASE_IDS } from "./phases";
 
 export type WtRaceType = "one-day" | "stage-race";
 
@@ -139,12 +140,36 @@ interface CalendarRace {
 }
 
 /**
+ * The day the Classics close, from the auction phases rather than the calendar.
+ *
+ * Built from the integers of `AUCTION_PHASES`, never from `getPhaseRange`: that
+ * one returns local `Date`s, and this string is compared to a `YYYY-MM-DD` day,
+ * where a timezone would shift the boundary by one day.
+ */
+function classicsPhasesEnd(year: number): string {
+  const ends = AUCTION_PHASES.filter((phase) =>
+    (CLASSICS_PHASE_IDS as readonly number[]).includes(phase.id),
+  ).map(
+    (phase) =>
+      `${year}-${String(phase.endMonth).padStart(2, "0")}-${String(phase.endDay).padStart(2, "0")}`,
+  );
+  return ends.sort().at(-1) as string;
+}
+
+/**
  * The date window a race group spans in a given year: first start, last end.
  * Used to tell an event that has not happened yet from one that was skipped.
  *
  * The calendar is written for one season, so the window is shifted to `year`.
  * Good enough for the palmares, where the question is only "before or after
  * today", never a precise date.
+ *
+ * The Classics are the exception, and close on the phases of the game instead.
+ * The calendar carries one-day races the game never plays (Quebec, Montreal, Il
+ * Lombardia), which pushed the close of the group to October and kept an event
+ * the group finished in May out of the head-to-head, the wins and the jerseys
+ * for five months. A Grand Tour needs no such cap: its calendar window and its
+ * phase say the same thing.
  */
 export function getRaceGroupWindow(
   groupId: RaceGroupId,
@@ -164,5 +189,14 @@ export function getRaceGroupWindow(
     if (end === null || shiftedEnd > end) end = shiftedEnd;
   }
 
-  return start && end ? { start, end } : null;
+  if (!start || !end) return null;
+
+  // Only ever shortens the window: the phases close the group, they never keep
+  // it open past a race the calendar already ended.
+  if (groupId === "classics") {
+    const phasesEnd = classicsPhasesEnd(year);
+    if (phasesEnd < end) end = phasesEnd;
+  }
+
+  return { start, end };
 }
