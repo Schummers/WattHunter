@@ -527,3 +527,25 @@ n'intervient qu'une seule fois**, pour désigner le champion d'une saison (plus 
 cumul de l'année). Le face à face compare deux rangs d'arrivée. Le graphique de rang
 de saison compare des places. Les podiums d'épreuve sont les classements d'origine.
 C'est ce qui rend l'ensemble valide entre les deux jeux.
+
+### 9.8 Amendements (v5 des wireframes, même URL) — onglet Saisons validé
+
+- **Le champion reprend le bloc de ligne de Ranking** : emblème équipé à gauche
+  (34 px, même composant `AchievementBadge`), nom en gras, bannière en fond atténuée.
+  Rien de neuf à dessiner.
+- **Les 2e et 3e de la saison passent en sous-titre** du champion
+  (« champion · devant D. Choncoutié et Peejee »). **La ligne Saison disparaît de la
+  grille**, qui ne garde que les quatre épreuves. Une information, une seule place.
+- **L'année reste l'entrée de la carte**, en haut à gauche, avec une mention à droite
+  quand il y a quelque chose à dire (« 2 phases sur 4 »).
+- **Une saison en cours affiche le joueur en tête**, même bloc, seul le mot change.
+  Pas d'état vide en attendant la fin de saison.
+
+**Point à trancher** : les emblèmes n'existent pas pour les saisons La Route du Tour,
+un joueur n'avait pas de badge équipé en 2019. Afficher son badge actuel, ou une
+initiale en réserve comme le fait déjà l'avatar coureur quand la photo manque.
+
+**État de la spec** : Ranking validé, onglet Saisons validé, onglets Victoires,
+Maillots et Joueurs validés en v3/v4. Restent les quatre questions de la section 06
+des wireframes, dont la plus structurante est le sort de JibsEPAULE dans les
+compteurs.

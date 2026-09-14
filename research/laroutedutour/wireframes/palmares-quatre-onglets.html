@@ -342,13 +342,30 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
 .h2h .r.eq .s3{color:var(--mid);font-weight:600}
 </style>
 
+<style>
+.champ2{display:flex;gap:10px;align-items:center;position:relative;
+  padding:7px 0;overflow:hidden}
+.champ2::before{content:"";position:absolute;inset:0;background:var(--wash);
+  opacity:.55}
+.champ2 .bdg{position:relative;width:34px;height:34px;flex:0 0 34px;
+  border:1px solid var(--ink);display:grid;place-items:center;font-size:15px;
+  color:var(--mid);background:var(--paper)}
+.champ2 .cinfo{position:relative;min-width:0;display:flex;flex-direction:column;gap:1px}
+.champ2 .cinfo b{font-size:14px;font-weight:700;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.champ2 .cinfo small{font-size:10px;color:var(--mid);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.champ2.live2 .cinfo b{font-weight:600;color:var(--mid)}
+.champ2.live2 .bdg{border-style:dashed;color:var(--faint)}
+</style>
+
 <div class="wrap">
 
 <header class="mast">
   <span class="eyebrow">WattHunter · wireframes v3 · noir et blanc</span>
   <h1>Palmarès<br>en quatre<br>onglets</h1>
-  <p class="sub">Ranking est validé. L'onglet Saisons passe en cartes à trois colonnes, le face
-  à face gagne ses couleurs, et le rang de saison affiche enfin son chiffre.
+  <p class="sub">Ranking est validé. L'onglet Saisons met le champion en avant avec son emblème,
+  le face à face gagne ses couleurs, et le rang de saison affiche enfin son chiffre.
   Données réelles du groupe, 2017 à 2026.</p>
   <div class="meta">
     <div><b>5</b><span>changements dans Ranking</span></div>
@@ -407,9 +424,9 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
 
 <section>
   <div class="shead"><span class="eyebrow">02</span><h2>Palmarès · onglet Saisons</h2></div>
-  <p class="lede">Une carte par saison, non dépliable. Cinq lignes, trois colonnes :
-  le podium de la saison en tête, puis celui de chaque épreuve. Seul le vainqueur est
-  en primaire, les deuxième et troisième sont en secondaire.</p>
+  <p class="lede">L'année en tête de carte, puis le champion présenté comme dans
+  Ranking, avec son emblème équipé et sa bannière en fond. Le détail de la saison
+  s'aligne dessous, quatre lignes et trois colonnes.</p>
 
   <div class="spec">
     <div class="phone">
@@ -421,9 +438,13 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
 
           <div class="card">
             <div class="chd"><span class="cy">2026</span><span class="cn">2 phases sur 4</span></div>
+            <div class="champ2 live2">
+              <span class="bdg">▨</span>
+              <span class="cinfo"><b>David Choncoutié</b>
+                <small>en tête · devant Klimax et Muscat R.</small></span>
+            </div>
             <div class="g3">
               <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
-              <span class="gl big">Saison</span><span class="g1">—</span><span class="g2">—</span><span class="g2">—</span>
               <span class="gl">Cla</span><span class="g1">Muscat R.</span><span class="g2">D. Chonc.</span><span class="g2">Peejee</span>
               <span class="gl">Gir</span><span class="g1">D. Chonc.</span><span class="g2">Klimax</span><span class="g2">J. Schum.</span>
               <span class="gl">Tdf</span><span class="g0" style="grid-column:2/5">en cours</span>
@@ -433,9 +454,13 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
 
           <div class="card">
             <div class="chd"><span class="cy">2025</span></div>
+            <div class="champ2">
+              <span class="bdg">▨</span>
+              <span class="cinfo"><b>Jonathan Schummers</b>
+                <small>champion · devant D. Choncoutié et Peejee</small></span>
+            </div>
             <div class="g3">
               <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
-              <span class="gl big">Saison</span><span class="g1">J. Schum.</span><span class="g2">D. Chonc.</span><span class="g2">Peejee</span>
               <span class="gl">Cla</span><span class="g0" style="grid-column:2/5">non jouée</span>
               <span class="gl">Gir</span><span class="g0" style="grid-column:2/5">non jouée</span>
               <span class="gl">Tdf</span><span class="g0" style="grid-column:2/5">non jouée</span>
@@ -445,9 +470,13 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
 
           <div class="card">
             <div class="chd"><span class="cy">2024</span></div>
+            <div class="champ2">
+              <span class="bdg">▨</span>
+              <span class="cinfo"><b>David Choncoutié</b>
+                <small>champion · devant TheAussieMate et Peejee</small></span>
+            </div>
             <div class="g3">
               <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
-              <span class="gl big">Saison</span><span class="g1">D. Chonc.</span><span class="g2">TheAussie</span><span class="g2">Peejee</span>
               <span class="gl">Cla</span><span class="g0" style="grid-column:2/5">non jouée</span>
               <span class="gl">Gir</span><span class="g1">Muscat R.</span><span class="g2">Peejee</span><span class="g2">TheAussie</span>
               <span class="gl">Tdf</span><span class="g1">D. Chonc.</span><span class="g2">bigdaddy</span><span class="g2">M. Alex</span>
@@ -457,9 +486,13 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
 
           <div class="card">
             <div class="chd"><span class="cy">2023</span><span class="cn">saison la plus dense</span></div>
+            <div class="champ2">
+              <span class="bdg">▨</span>
+              <span class="cinfo"><b>TheAussieMate</b>
+                <small>champion · devant D. Choncoutié et Muscat R.</small></span>
+            </div>
             <div class="g3">
               <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
-              <span class="gl big">Saison</span><span class="g1">TheAussie</span><span class="g2">D. Chonc.</span><span class="g2">Muscat R.</span>
               <span class="gl">Cla</span><span class="g1">Muscat R.</span><span class="g2">TheAussie</span><span class="g2">J. Schum.</span>
               <span class="gl">Gir</span><span class="g1">D. Chonc.</span><span class="g2">Muscat R.</span><span class="g2">J. Schum.</span>
               <span class="gl">Tdf</span><span class="g1">M. Alex</span><span class="g2">D. Chonc.</span><span class="g2">Klimax</span>
@@ -469,9 +502,13 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
 
           <div class="card">
             <div class="chd"><span class="cy">2022</span></div>
+            <div class="champ2">
+              <span class="bdg">▨</span>
+              <span class="cinfo"><b>Peejee</b>
+                <small>champion · devant Klimax et Muscat R.</small></span>
+            </div>
             <div class="g3">
               <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
-              <span class="gl big">Saison</span><span class="g1">Peejee</span><span class="g2">Klimax</span><span class="g2">Muscat R.</span>
               <span class="gl">Cla</span><span class="g1">D. Hormous</span><span class="g2">Klimax</span><span class="g2">Muscat R.</span>
               <span class="gl">Gir</span><span class="g1">Peejee</span><span class="g2">M. Alex</span><span class="g2">Muscat R.</span>
               <span class="gl">Tdf</span><span class="g1">Peejee</span><span class="g2">Klimax</span><span class="g2">D. Chonc.</span>
@@ -481,9 +518,13 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
 
           <div class="card">
             <div class="chd"><span class="cy">2019</span></div>
+            <div class="champ2">
+              <span class="bdg">▨</span>
+              <span class="cinfo"><b>Marino Alex</b>
+                <small>champion · devant D. Choncoutié et Muscat R.</small></span>
+            </div>
             <div class="g3">
               <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
-              <span class="gl big">Saison</span><span class="g1">M. Alex</span><span class="g2">D. Chonc.</span><span class="g2">Muscat R.</span>
               <span class="gl">Cla</span><span class="g1">D. Chonc.</span><span class="g2">Muscat R.</span><span class="g2">Klimax</span>
               <span class="gl">Gir</span><span class="g1">Muscat R.</span><span class="g2">Klimax</span><span class="g2">M. Alex</span>
               <span class="gl">Tdf</span><span class="g1 gone">JibsEPAULE</span><span class="g2">M. Alex</span><span class="g2">Peejee</span>
@@ -501,31 +542,33 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
     </div>
 
     <div class="annot">
-      <div class="an"><span class="k">1</span><p><b>« Frise » devient « Saisons ».</b>
-        <em>Frise décrit une forme graphique qui n'existe plus depuis qu'on est passé
-        en cartes. Saisons dit ce qu'il y a dedans. Autres candidats si celui-là ne te
-        plaît pas : Archives, Historique, Années.</em></p></div>
-      <div class="an"><span class="k">2</span><p><b>Le champion n'est plus répété en
-        gros titre.</b> <em>Il est dans la ligne Saison, colonne 1er, où il est déjà
-        le seul nom en primaire de sa ligne. Le répéter au-dessus de la carte doublait
-        l'information sur quatre lignes d'écran.</em></p></div>
-      <div class="an"><span class="k">3</span><p><b>La ligne Saison est détachée des
-        quatre autres</b> par son libellé plus appuyé et un filet plus marqué.
-        <em>Elle ne se lit pas comme une cinquième épreuve : c'est le classement de
-        l'année, calculé, là où les quatre autres sont des résultats bruts.</em></p></div>
-      <div class="an"><span class="k">4</span><p><b>Les noms sont raccourcis, pas
-        tronqués au hasard.</b> <em>« D. Choncoutié » et « Muscat R. » plutôt qu'une
-        coupe à l'ellipse qui donnerait « David Chon… ». À écrire dans une règle
-        d'abréviation, pas laissé au CSS.</em></p></div>
-      <div class="an"><span class="k">5</span><p><b>2026 n'a pas besoin du mot « en
-        cours ».</b> <em>« 2 phases sur 4 » le dit, et restera vrai une fois la saison
-        finie si elle s'arrête là.</em></p></div>
-      <div class="an"><span class="k">6</span><p><b>Une épreuve non jouée occupe toute
-        la largeur</b> au lieu de laisser trois cases vides. <em>Neuf saisons sur dix
-        sont incomplètes : ces lignes doivent rester calmes.</em></p></div>
+      <div class="an"><span class="k">1</span><p><b>Le champion reprend le bloc de
+        Ranking</b> : emblème équipé à gauche, nom en gras, bannière en fond très
+        atténuée. <em>Même composant, même taille de badge, même traitement de la
+        bannière. Rien de neuf à dessiner.</em></p></div>
+      <div class="an"><span class="k">2</span><p><b>Les 2e et 3e de la saison passent
+        en sous-titre</b>, sous le nom du champion. <em>« champion · devant
+        D. Choncoutié et Peejee ». La ligne Saison disparaît donc de la grille, qui
+        ne garde que les quatre épreuves : une seule façon de lire chaque
+        information.</em></p></div>
+      <div class="an"><span class="k">3</span><p><b>L'année reste l'entrée de la carte</b>,
+        en haut à gauche, avec une mention à droite quand la saison a quelque chose de
+        particulier à dire. <em>« 2 phases sur 4 » pour une saison incomplète.</em></p></div>
+      <div class="an"><span class="k">4</span><p><b>2026 affiche le joueur en tête, pas
+        un champion.</b> <em>Le bloc est identique, seul le mot change. La carte n'a
+        pas besoin d'un état vide en attendant la fin de la saison.</em></p></div>
+      <div class="an"><span class="k">5</span><p><b>Les emblèmes n'existent pas pour les
+        saisons La Route du Tour.</b> <em>Un joueur n'avait pas de badge équipé en
+        2019. À trancher : afficher son badge actuel, ou l'initiale en réserve comme
+        le fait déjà l'avatar coureur quand la photo manque.</em></p></div>
+      <div class="an"><span class="k">6</span><p><b>Les noms sont abrégés selon une
+        règle</b>, pas tronqués à l'ellipse par le CSS. <em>« D. Choncoutié » et
+        « Muscat R. » plutôt que « David Chon… ». Le sous-titre du champion, lui, a la
+        place pour le nom complet.</em></p></div>
     </div>
   </div>
 </section>
+
 
 
 <section>
