@@ -36,6 +36,59 @@ export function getStageNumber(raceSlug: string): number | null {
   return m ? parseInt(m[1], 10) : null;
 }
 
+// Final classifications of a stage race. `gc` lives in race_results (PCS gives it
+// real points); the three jersey finals live in gt_final_classifications.
+export const SECONDARY_FINAL_TYPES = ["points", "kom", "youth"] as const;
+export type SecondaryFinalType = (typeof SECONDARY_FINAL_TYPES)[number];
+export type FinalClassificationType = "gc" | SecondaryFinalType;
+
+const FINAL_SUFFIX_RE = /\/(gc|points|kom|youth)$/;
+
+export function getFinalClassificationType(raceSlug: string): FinalClassificationType | null {
+  const m = raceSlug.match(FINAL_SUFFIX_RE);
+  return m ? (m[1] as FinalClassificationType) : null;
+}
+
+export function isSecondaryFinalSlug(raceSlug: string): boolean {
+  const t = getFinalClassificationType(raceSlug);
+  return t !== null && t !== "gc";
+}
+
+const FINAL_LABELS: Record<FinalClassificationType, string> = {
+  gc: "Final GC",
+  points: "Points",
+  kom: "KOM",
+  youth: "Youth",
+};
+
+export function getFinalClassificationLabel(type: FinalClassificationType): string {
+  return FINAL_LABELS[type];
+}
+
+// Order of the four final cards inside a date group — they all share the last
+// stage's date, so without this they would land in whatever order the feed
+// happened to build them.
+const FINAL_SORT_RANK: Record<FinalClassificationType, number> = {
+  gc: 1,
+  points: 2,
+  kom: 3,
+  youth: 4,
+};
+
+export function finalCardSortRank(raceSlug: string): number {
+  const type = getFinalClassificationType(raceSlug);
+  return type ? FINAL_SORT_RANK[type] : 0;
+}
+
+// "La Vuelta Ciclista a España — Stage 21 - GC" → "La Vuelta Ciclista a España".
+// Python writes the GC row's race_name from the last stage it was imported with
+// (sync_race.py), so the raw name drags a stage number we never want to show.
+const RACE_NAME_SEPARATOR_RE = /\s[\u2014\u2013-]\s/;
+
+export function baseRaceName(raceName: string): string {
+  return raceName.split(RACE_NAME_SEPARATOR_RE)[0]!.trim();
+}
+
 export function formatRaceTitle(input: {
   raceType: RaceType;
   raceName: string;
@@ -44,8 +97,13 @@ export function formatRaceTitle(input: {
 }): string {
   if (input.raceType === "stage") {
     const stage = getStageNumber(input.raceSlug);
-    const parent = input.parentRaceLabel ?? input.raceName.split(" - ")[0];
+    const parent = input.parentRaceLabel ?? baseRaceName(input.raceName);
     return `${parent} · Stage ${stage ?? "?"}`;
+  }
+  const finalType = getFinalClassificationType(input.raceSlug);
+  if (finalType) {
+    const parent = input.parentRaceLabel ?? baseRaceName(input.raceName);
+    return `${parent} · ${getFinalClassificationLabel(finalType)}`;
   }
   return input.raceName;
 }
