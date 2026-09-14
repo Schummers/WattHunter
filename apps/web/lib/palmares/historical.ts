@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
 import type { RaceGroupId } from "@/lib/race-groups";
+import { HIDDEN_PLAYERS } from "./hidden-players";
 import { JERSEYS, type JerseyId, type PalmaresEvent, type Player, type SeasonStanding } from "./types";
 
 interface HistoricalTourRow {
@@ -20,17 +22,6 @@ interface HistoricalResultRow {
   climber: number;
   young_rider: number;
 }
-
-/**
- * Played before WattHunter, never opened an account, and never won anything:
- * no win, no podium, no jersey. They stay in the database — the archive is the
- * truth, and dropping rows would distort everyone else's starts — but no screen
- * shows them.
- *
- * JibsEPAULE is NOT in this list on purpose: he won the 2019 Tour de France and
- * two jerseys, so hiding him would leave nine wins listed for ten Tours played.
- */
-const HIDDEN_PLAYERS = new Set(["Fangio", "JoeDills"]);
 
 /** Which raw points column decides each jersey. */
 const JERSEY_COLUMN: Record<JerseyId, keyof HistoricalResultRow> = {
@@ -62,19 +53,32 @@ export interface HistoricalPalmares {
 export async function loadHistoricalPalmares(
   supabase: SupabaseClient,
 ): Promise<HistoricalPalmares> {
-  const [{ data: tourRows }, { data: resultRows }] = await Promise.all([
-    supabase.from("historical_tours").select("tour_id, season_year, event_type"),
-    supabase
-      .from("historical_results")
-      .select(
-        "tour_id, player_key, display_name, is_former_player, rank, total, gc_points, sprinter, climber, young_rider",
-      ),
+  // Paginated even though the archive is 24 tours and 187 rows and will never
+  // grow: PostgREST truncates at 1000 rows without saying so, and an unpaginated
+  // read is how Pogačar vanished from the ranking (see the 2026-07 pagination
+  // fix). A closed table is not a reason to write the query that fails silently.
+  const [tourRows, resultRows] = await Promise.all([
+    fetchAllSupabasePages<HistoricalTourRow>((from, to) =>
+      supabase
+        .from("historical_tours")
+        .select("tour_id, season_year, event_type")
+        .order("tour_id")
+        .range(from, to),
+    ),
+    fetchAllSupabasePages<HistoricalResultRow>((from, to) =>
+      supabase
+        .from("historical_results")
+        .select(
+          "tour_id, player_key, display_name, is_former_player, rank, total, gc_points, sprinter, climber, young_rider",
+        )
+        .order("tour_id")
+        .order("rank")
+        .range(from, to),
+    ),
   ]);
 
-  const tours = (tourRows ?? []) as HistoricalTourRow[];
-  const results = ((resultRows ?? []) as HistoricalResultRow[]).filter(
-    (row) => !HIDDEN_PLAYERS.has(row.display_name),
-  );
+  const tours = tourRows;
+  const results = resultRows.filter((row) => !HIDDEN_PLAYERS.has(row.display_name));
 
   const resultsByTour = new Map<number, HistoricalResultRow[]>();
   for (const row of results) {

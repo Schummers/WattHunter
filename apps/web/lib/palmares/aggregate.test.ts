@@ -170,3 +170,22 @@ describe("computeCareer", () => {
     expect(computeCareer([event(2019, "giro", [anna])], [], "Ben")).toBeNull();
   });
 });
+
+describe("computeCareer — season titles", () => {
+  const events = [event(2026, "giro", [anna, ben])];
+
+  it("never credits a title for a season still being played", () => {
+    const standings: SeasonStanding[] = [
+      { seasonYear: 2026, source: "watthunter", isCurrent: true, note: null, ranking: [anna, ben] },
+    ];
+    // Anna leads 2026. Leading is not winning.
+    expect(computeCareer(events, standings, "Anna")!.seasonTitles).toBe(0);
+  });
+
+  it("credits it once the season is over", () => {
+    const standings: SeasonStanding[] = [
+      { seasonYear: 2026, source: "watthunter", isCurrent: false, note: null, ranking: [anna, ben] },
+    ];
+    expect(computeCareer(events, standings, "Anna")!.seasonTitles).toBe(1);
+  });
+});

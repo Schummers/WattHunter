@@ -58,11 +58,14 @@ export function JerseysTab({ events }: JerseysTabProps) {
                 {JERSEYS.map((jersey) => {
                   const count = row.byJersey[jersey];
                   const isMax = count > 0 && count === maxByJersey[jersey];
+                  // Weight, not colour: green and red are the only two colours
+                  // of the palmares and they belong to head to head, where they
+                  // mean something.
                   const tone = count === 0
                     ? "text-[var(--text-ghost)]"
                     : isMax
-                      ? "text-[var(--accent-highlight)] font-semibold"
-                      : "text-[var(--text-high)]";
+                      ? "text-[var(--text-high)] font-bold"
+                      : "text-[var(--text-mid)]";
                   return (
                     <td
                       key={jersey}

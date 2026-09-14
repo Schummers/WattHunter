@@ -110,15 +110,18 @@ export function PlayersTab({ data }: { data: PalmaresData }) {
                 >
                   {season.rank}
                 </span>
+                {/* Filled rather than coloured: green and red are the only two
+                    colours of the whole palmares, and they belong to head to
+                    head, where they carry a meaning. */}
                 <div
                   className={`w-full rounded-sm border ${
                     isWin
-                      ? "border-[var(--accent-default)] bg-[var(--accent-default)]"
+                      ? "border-[var(--text-high)] bg-[var(--text-high)]"
                       : "border-[var(--border-default)] bg-[var(--bg-surface-hover)]"
                   }`}
                   style={{ height: `${barHeight(season.rank, season.fieldSize)}%` }}
                 />
-                <span className="text-center font-mono text-[length:var(--type-micro)] tabular-nums text-[var(--text-ghost)]">
+                <span className="text-center font-mono text-[length:var(--type-micro)] tabular-nums text-[var(--text-low)]">
                   {season.seasonYear}
                 </span>
               </div>

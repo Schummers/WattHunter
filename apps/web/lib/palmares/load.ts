@@ -1,11 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAchievementBySlug, type AchievementTier } from "@/lib/achievements";
+import { HIDDEN_PLAYERS } from "./hidden-players";
 import { loadHistoricalPalmares } from "./historical";
 import { loadCurrentSeason } from "./current";
 import type { PalmaresEvent, SeasonStanding } from "./types";
-
-/** Mirrors the archive reader's own rule, for the current season's rows. */
-const HIDDEN_PLAYERS = new Set(["Fangio", "JoeDills"]);
 
 export interface EquippedEmblem {
   badgeUrl: string;

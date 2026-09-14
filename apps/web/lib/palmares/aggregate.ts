@@ -198,8 +198,10 @@ export function computeCareer(
       .filter((event) => event.standings.some((s) => s.key === playerKey))
       .map((event) => event.seasonYear),
   );
+  // A season still being played has a leader, not a champion: crediting its
+  // leader with a title would award a trophy nobody has won yet.
   const seasonTitles = standings.filter(
-    (season) => season.ranking[0]?.key === playerKey,
+    (season) => !season.isCurrent && season.ranking[0]?.key === playerKey,
   ).length;
 
   return {

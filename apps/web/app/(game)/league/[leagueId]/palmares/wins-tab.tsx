@@ -24,7 +24,6 @@ function FormerPlayerMark() {
 export function WinsTab({ events }: WinsTabProps) {
   const rows = computeWins(events);
   const eventTypes = playedEventTypes(events);
-  const winnersOnly = rows.filter((row) => row.wins > 0);
 
   return (
     <div className="space-y-6 px-4">
@@ -102,7 +101,7 @@ export function WinsTab({ events }: WinsTabProps) {
               </tr>
             </thead>
             <tbody>
-              {winnersOnly.map((row) => (
+              {rows.map((row) => (
                 <tr key={row.key} className="border-b border-[var(--border-subtle)]">
                   <td
                     className={`px-2 py-2 text-left text-[length:var(--type-emphasis)] font-semibold text-[var(--text-high)] ${

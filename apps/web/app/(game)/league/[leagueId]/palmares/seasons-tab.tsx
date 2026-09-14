@@ -6,6 +6,9 @@ import { abbreviateName, abbreviateNameShort } from "@/lib/palmares/format";
 import { EVENT_CODE, type PalmaresEvent, type Player, type SeasonStanding } from "@/lib/palmares/types";
 import type { EquippedEmblem, PalmaresData } from "@/lib/palmares/load";
 
+// DS-EXCEPTION: 36 — AchievementBadge takes a numeric size, and 36 is the size
+// the Ranking row uses. Matching it is the point: the champion must read as a
+// Ranking line, not as a smaller cousin of one.
 const EMBLEM_SIZE = 36;
 
 const EMPTY_LABEL: Record<Exclude<PalmaresEvent["status"], "played">, string> = {
@@ -116,6 +119,9 @@ function EventGrid({ events }: { events: PalmaresEvent[] }) {
         const event = events.find((e) => e.eventType === eventType);
         const status = event?.status ?? "not-played";
         const podium = event?.standings.slice(0, 3) ?? [];
+        // An event with a status but no result still has nothing to show.
+        const emptyLabel =
+          status === "played" ? (podium.length === 0 ? EMPTY_LABEL["not-played"] : null) : EMPTY_LABEL[status];
 
         return (
           <div key={eventType} className="contents">
@@ -123,9 +129,9 @@ function EventGrid({ events }: { events: PalmaresEvent[] }) {
               {EVENT_CODE[eventType]}
             </span>
 
-            {status !== "played" || podium.length === 0 ? (
-              <span className="col-span-3 border-t border-[var(--border-subtle)] pt-1.5 text-[length:var(--type-caption)] italic text-[var(--text-ghost)]">
-                {EMPTY_LABEL[status === "played" ? "not-played" : status]}
+            {emptyLabel !== null ? (
+              <span className="col-span-3 border-t border-[var(--border-subtle)] pt-1.5 text-[length:var(--type-caption)] italic text-[var(--text-low)]">
+                {emptyLabel}
               </span>
             ) : (
               [0, 1, 2].map((index) => {
@@ -196,8 +202,9 @@ export function SeasonsTab({ data }: { data: PalmaresData }) {
 
       <p className="pt-2 text-[length:var(--type-caption)] text-[var(--text-low)]">
         <span className="font-semibold text-[var(--text-mid)]">The season champion</span> is
-        the player with the highest total XP across every race of the year. Race podiums are
-        the original finishing orders. A name in italics is a player who has left the group.
+        the player with the highest total across every race of the year, counted in whichever
+        scale that season used. Race podiums are the original finishing orders. A name in
+        italics is a player who has left the group.
       </p>
     </div>
   );

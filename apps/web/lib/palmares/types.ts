@@ -29,8 +29,11 @@ export const EVENT_LABEL: Record<RaceGroupId, string> = {
 /** A player, keyed on the account and not on the team: a team name changed at
  *  every single event of the archive. */
 export interface Player {
-  /** Stable key across both games. The La Route du Tour canonical pseudonym for
-   *  archived seasons, the WattHunter user id for played ones. */
+  /** Stable key across both games: the WattHunter account display name.
+   *
+   *  It is the only bridge available — a closed archive has no user id — which
+   *  is why it is the name and not the id. Renaming an account would split that
+   *  player's history in two. */
   key: string;
   /** Always the WattHunter account name, never the La Route du Tour pseudonym. */
   displayName: string;
