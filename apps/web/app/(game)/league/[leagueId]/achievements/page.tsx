@@ -7,10 +7,7 @@ import {
   DEMO_LEAGUE_ID,
   DEMO_VISITOR_TEAM_ID,
 } from "@/lib/demo-constants";
-import {
-  completedGrandTourYears,
-  GT_FINAL_STAGE,
-} from "@/lib/grand-tour-completion";
+import { completedGrandTourYears } from "@/lib/grand-tour-completion";
 import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
 import { oneDayRaceSlugPatterns } from "@/lib/race-groups";
 
@@ -46,39 +43,6 @@ function yearFromSlug(slug: string): number | null {
   return m ? parseInt(m[1]) : null
 }
 
-// ── Hardcoded palmarès transfer: Classic V2 (…c1a551c2026e) ──────────────────
-// The V2 seed cloned only cumulative XP, not race history, so the achievements
-// grid computes empty for V2 teams. We manually carry over the badges these
-// three teams earned in Classic V1, minus the dynamic (league-relative) titles.
-// Ugly-but-works stopgap keyed by V2 team_id; revisit when achievements get a
-// real grant table. See MEMORY: classic_league_v2_seed / palmares V1→V2.
-// STOPGAP, REMOVABLE — see .scratch/palmares-ranking/issues/13-supprimer-hardcoded-grants.md
-//
-// The classic V2 seed never cloned `rider_xp_daily`, so the palmarès earned in
-// V1 (Classics, Giro) showed nowhere in V2 and three teams got their badges by
-// hand, keyed on their UUID. The season entity (migration 20260914000000) is the
-// real answer: V1 and V2 both point at season 2026, so the grid can be computed
-// per player across every league of that season. Ticket 13 does that and deletes
-// this table.
-const HARDCODED_GRANTS: Record<string, string[]> = {
-  // Klimax
-  "00000000-0000-4000-8000-c1a551c00001": [
-    "flandres-top10",
-    "lbl-top10",
-    "paris-roubaix-top10",
-    "giro-gc-podium",
-  ],
-  // Leopard_Trek
-  "00000000-0000-4000-8000-c1a551c00002": [
-    "paris-roubaix-podium",
-    "paris-roubaix-top10",
-    "flandres-top10",
-    "giro-gc-podium",
-  ],
-  // Dixon Hormous
-  "00000000-0000-4000-8000-c1a551c00005": ["giro-kom-victory"],
-}
-
 export default async function AchievementsPage({
   params,
 }: {
@@ -91,21 +55,67 @@ export default async function AchievementsPage({
   const user = await getUser();
   if (!user) redirect("/login");
 
+  // Captured once: the narrowing from the guard above does not survive into the
+  // closures declared further down.
+  const myUserId = user.id;
+
   const supabase = await createClient();
 
   // Team membership + equipped slug
-  const { data: membership } = await supabase
-    .from("league_members")
-    .select("team_id, teams:team_id(equipped_achievement_slug)")
-    .eq("league_id", leagueId)
-    .eq("user_id", user.id)
-    .single();
+  const [{ data: membership }, { data: viewedLeague }] = await Promise.all([
+    supabase
+      .from("league_members")
+      .select("team_id, teams:team_id(equipped_achievement_slug)")
+      .eq("league_id", leagueId)
+      .eq("user_id", myUserId)
+      .single(),
+    supabase.from("leagues").select("season_year").eq("id", leagueId).single(),
+  ]);
 
   const team = membership?.teams as { equipped_achievement_slug: string | null } | null;
   const equippedSlug = team?.equipped_achievement_slug ?? null;
   const myTeamId = membership?.team_id ?? null;
 
   const unlockedSlugs: string[] = [];
+
+  // A palmarès belongs to the player, not to one team. The 2026 season alone is
+  // two classic leagues (V1 carried the Classics and the Giro, V2 the Tour and
+  // the Vuelta): reading a single team hides half of what was won, which is why
+  // three teams used to receive their badges by hand, keyed on their UUID.
+  //
+  // The season is the one of the league being viewed, never the current year: a
+  // page opened on 1 January would otherwise find no league at all and drop the
+  // badges — the exact failure the hardcoded table was papering over.
+  //
+  // RLS keeps this to the leagues the caller belongs to, which is what we want:
+  // these are the player's own teams.
+  const seasonYear = viewedLeague?.season_year ?? new Date().getFullYear();
+  const { data: seasonLeagues } = await supabase
+    .from("leagues")
+    .select("id")
+    .eq("season_year", seasonYear)
+    .eq("is_demo", false)
+    .neq("status", "pending");
+
+  const seasonLeagueIds = (seasonLeagues ?? []).map((l) => l.id as string);
+
+  // No `["__none__"]` sentinel: `league_id` is a uuid column, so a non-uuid
+  // value raises 22P02 and the error would be swallowed by `?? []`.
+  const { data: myMemberships } = seasonLeagueIds.length > 0
+    ? await supabase
+        .from("league_members")
+        .select("team_id")
+        .eq("user_id", myUserId)
+        .in("league_id", seasonLeagueIds)
+    : { data: [] };
+
+  const myTeamIds = [
+    ...new Set(
+      [myTeamId, ...(myMemberships ?? []).map((m) => m.team_id)].filter(
+        (id): id is string => id !== null,
+      ),
+    ),
+  ];
 
   if (!myTeamId) {
     return (
@@ -119,14 +129,19 @@ export default async function AchievementsPage({
 
   // ── Block 1 & 2: Monument Individual + Combined ──────────────────────────
   // Single query across ALL years (fix year-lock)
-  const { data: monumentXpRows } = await supabase
-    .from("rider_xp_daily")
-    .select("race_slug, rider_id")
-    .eq("team_id", myTeamId)
-    .or(MONUMENT_BASES.map(({ ilike }) => `race_slug.ilike.${ilike}`).join(","))
+  const monumentXpRows = await fetchAllSupabasePages<{ race_slug: string; rider_id: string }>(
+    (rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("race_slug, rider_id")
+        .in("team_id", myTeamIds)
+        .or(MONUMENT_BASES.map(({ ilike }) => `race_slug.ilike.${ilike}`).join(","))
+        .order("id")
+        .range(rangeFrom, rangeTo),
+  );
 
   const teamRiderByRace = new Map<string, string[]>();
-  for (const row of monumentXpRows ?? []) {
+  for (const row of monumentXpRows) {
     const list = teamRiderByRace.get(row.race_slug) ?? [];
     list.push(row.rider_id);
     teamRiderByRace.set(row.race_slug, list);
@@ -183,13 +198,18 @@ export default async function AchievementsPage({
 
   // ── Block 3: Giro GC ────────────────────────────────────────────────────
   // Find riders who scored XP for this team on any Giro stage (ownership proof)
-  const { data: giroXpRows } = await supabase
-    .from("rider_xp_daily")
-    .select("race_slug, rider_id")
-    .eq("team_id", myTeamId)
-    .ilike("race_slug", "race/giro-d-italia/%/stage-%")
+  const giroXpRows = await fetchAllSupabasePages<{ race_slug: string; rider_id: string }>(
+    (rangeFrom, rangeTo) =>
+      supabase
+        .from("rider_xp_daily")
+        .select("race_slug, rider_id")
+        .in("team_id", myTeamIds)
+        .ilike("race_slug", "race/giro-d-italia/%/stage-%")
+        .order("id")
+        .range(rangeFrom, rangeTo),
+  );
 
-  const giroRiderIds = [...new Set((giroXpRows ?? []).map((r) => r.rider_id))];
+  const giroRiderIds = [...new Set(giroXpRows.map((r) => r.rider_id))];
 
   if (giroRiderIds.length > 0) {
     // ── Giro completion gate (shared by Blocks 3 & 4) ─────────────────────
@@ -197,10 +217,22 @@ export default async function AchievementsPage({
     // Without this gate the *current* jersey holder on the latest synced stage
     // is wrongly awarded. Both signals are computed globally (across every
     // rider), not scoped to this team. See lib/grand-tour-completion.ts.
-    const { data: allGiroStages } = await supabase
-      .from("gt_daily_classifications")
-      .select("race_slug, stage")
-      .ilike("race_slug", "race/giro-d-italia/%/stage-%");
+    // Paginated: a single Giro carries ~1400 daily classification rows, so an
+    // unpaginated read stops at 1000 in an arbitrary order and the "highest
+    // synced stage" signal reports whatever the cut happened to leave — stage 14
+    // instead of 20, measured in production. This table has no `id` column, so
+    // the order is its natural key.
+    const allGiroStages = await fetchAllSupabasePages<{ race_slug: string; stage: string | null }>(
+      (rangeFrom, rangeTo) =>
+        supabase
+          .from("gt_daily_classifications")
+          .select("race_slug, stage")
+          .ilike("race_slug", "race/giro-d-italia/%/stage-%")
+          .order("race_slug")
+          .order("rider_id")
+          .order("classification_type")
+          .range(rangeFrom, rangeTo),
+    );
 
     const { data: scoredGiroGc } = await supabase
       .from("race_results")
@@ -208,10 +240,19 @@ export default async function AchievementsPage({
       .ilike("race_slug", "race/giro-d-italia/%/gc")
       .gt("pcs_points", 0);
 
+    // Spec C moved the final jerseys into `gt_final_classifications`. Their
+    // presence is the other half of signal A — and the only half that holds for
+    // the Giro 2026, whose daily classifications stop at stage 20.
+    const { data: giroFinals } = await supabase
+      .from("gt_final_classifications")
+      .select("race_slug")
+      .ilike("race_slug", "race/giro-d-italia/%");
+
     const completedYears = completedGrandTourYears(
       "giro-d-italia",
-      allGiroStages ?? [],
+      allGiroStages,
       scoredGiroGc ?? [],
+      giroFinals ?? [],
     );
 
     // ── Block 3: Giro GC (final classification, completed years only) ─────
@@ -230,13 +271,15 @@ export default async function AchievementsPage({
       if (r.rank <= 3)  unlockedSlugs.push("giro-gc-podium");
     }
 
-    // ── Block 4: Giro KOM + Points (final-stage jersey, completed years) ──
+    // ── Block 4: Giro KOM + Points (final classification, completed years) ──
+    // Read from `gt_final_classifications`, not from the last stage's daily
+    // classification: Spec C moved the finals there, so the old query hit an
+    // empty table and no Giro jersey could ever unlock.
     for (const year of completedYears) {
-      const finalSlug = `race/giro-d-italia/${year}/stage-${GT_FINAL_STAGE}`;
       const { data: jerseyRows } = await supabase
-        .from("gt_daily_classifications")
-        .select("rider_id, classification_type, rank")
-        .eq("race_slug", finalSlug)
+        .from("gt_final_classifications")
+        .select("rider_id, classification_type, rank, race_slug")
+        .ilike("race_slug", `race/giro-d-italia/${year}/%`)
         .in("rider_id", giroRiderIds)
         .eq("rank", 1)
         .in("classification_type", ["kom", "points"]);
@@ -251,13 +294,32 @@ export default async function AchievementsPage({
   // ── Block 5: Dynamic leaderboards (Monument Man / Classic Man) ────────────
   const dynamicRanks: Record<string, number> = {};
 
-  // All teams in this league
-  const { data: leagueMembers } = await supabase
-    .from("league_members")
-    .select("team_id")
-    .eq("league_id", leagueId);
+  // Every team of the season, with the player who owns it: the leaderboards rank
+  // players, not teams. Someone holding a team in each league of the season would
+  // otherwise compete against himself, his XP split across two rows.
+  const { data: seasonMembers } = seasonLeagueIds.length > 0
+    ? await supabase
+        .from("league_members")
+        .select("team_id, user_id")
+        .in("league_id", seasonLeagueIds)
+    : { data: [] };
 
-  const leagueTeamIds = (leagueMembers ?? []).map((m) => m.team_id).filter((id): id is string => id !== null);
+  const userByTeam = new Map<string, string>();
+  for (const member of seasonMembers ?? []) {
+    if (member.team_id) userByTeam.set(member.team_id, member.user_id);
+  }
+  const leagueTeamIds = [...userByTeam.keys()];
+
+  function rankPlayers(rows: TeamXpRow[]): number {
+    const xpByUser = new Map<string, number>();
+    for (const row of rows) {
+      const owner = userByTeam.get(row.team_id);
+      if (!owner) continue;
+      xpByUser.set(owner, (xpByUser.get(owner) ?? 0) + (row.xp_gained ?? 0));
+    }
+    const ranking = [...xpByUser.entries()].sort((a, b) => b[1] - a[1]);
+    return ranking.findIndex(([uid]) => uid === myUserId) + 1;
+  }
 
   if (leagueTeamIds.length > 0) {
     // Monument Man: cumulative XP on monument races per team
@@ -271,12 +333,7 @@ export default async function AchievementsPage({
         .range(rangeFrom, rangeTo),
     );
 
-    const monumentXpByTeam = new Map<string, number>();
-    for (const row of monumentXpAll) {
-      monumentXpByTeam.set(row.team_id, (monumentXpByTeam.get(row.team_id) ?? 0) + (row.xp_gained ?? 0));
-    }
-    const monumentRanking = [...monumentXpByTeam.entries()].sort((a, b) => b[1] - a[1]);
-    const monumentRank = monumentRanking.findIndex(([tid]) => tid === myTeamId) + 1;
+    const monumentRank = rankPlayers(monumentXpAll);
     if (monumentRank > 0) dynamicRanks["monument-man"] = monumentRank;
     if (monumentRank === 1) unlockedSlugs.push("monument-man");
 
@@ -291,18 +348,10 @@ export default async function AchievementsPage({
         .range(rangeFrom, rangeTo),
     );
 
-    const classicXpByTeam = new Map<string, number>();
-    for (const row of classicXpAll) {
-      classicXpByTeam.set(row.team_id, (classicXpByTeam.get(row.team_id) ?? 0) + (row.xp_gained ?? 0));
-    }
-    const classicRanking = [...classicXpByTeam.entries()].sort((a, b) => b[1] - a[1]);
-    const classicRank = classicRanking.findIndex(([tid]) => tid === myTeamId) + 1;
+    const classicRank = rankPlayers(classicXpAll);
     if (classicRank > 0) dynamicRanks["classic-man"] = classicRank;
     if (classicRank === 1) unlockedSlugs.push("classic-man");
   }
-
-  // Hardcoded Classic V1→V2 palmarès transfer (stopgap, removed by ticket 13).
-  unlockedSlugs.push(...(HARDCODED_GRANTS[myTeamId] ?? []));
 
   return (
     <AchievementsClient

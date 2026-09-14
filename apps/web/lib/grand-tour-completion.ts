@@ -6,7 +6,13 @@
 // holder on the latest synced stage is wrongly treated as the final winner.
 //
 // Two independent completion signals, BOTH required (defense in depth):
-//   A) the final stage (GT_FINAL_STAGE) daily classification is in the DB
+//   A) the race has reached its end — either the final stage (GT_FINAL_STAGE)
+//      daily classification is in the DB, OR a final classification row exists.
+//      A final classification only ever exists once the race is over, so it is
+//      as strong a signal as the last stage, and it survives a stage that never
+//      got imported. The Giro 2026 is exactly that case: its daily
+//      classifications stop at stage 20, so signal A alone locked every Giro
+//      jersey achievement out (and a hardcoded UUID table papered over it).
 //   B) the final GC has been scored — PCS only assigns GC pcs_points after the
 //      last stage, so any `/gc` race_results row with pcs_points > 0 proves the
 //      race is over and the GC has been synced.
@@ -16,6 +22,7 @@ export const GT_FINAL_STAGE = 21;
 
 type StageRow = { race_slug: string; stage: string | null };
 type ScoredGcRow = { race_slug: string };
+type FinalClassificationRow = { race_slug: string };
 
 /**
  * Returns the set of years (as strings) for which the given Grand Tour is
@@ -25,15 +32,19 @@ type ScoredGcRow = { race_slug: string };
  * @param stageRows     all `gt_daily_classifications` stage rows for the GT
  *                      across every rider (NOT scoped to one team)
  * @param scoredGcRows  `race_results` `/gc` rows for the GT with pcs_points > 0
+ * @param finalRows     `gt_final_classifications` rows for the GT — the other
+ *                      half of signal A, since Spec C moved the final jerseys
+ *                      out of `gt_daily_classifications` into this table
  */
 export function completedGrandTourYears(
   base: string,
   stageRows: StageRow[],
   scoredGcRows: ScoredGcRow[],
+  finalRows: FinalClassificationRow[] = [],
 ): Set<string> {
   const yearRe = new RegExp(`${base}\\/(\\d{4})\\/`);
 
-  // Signal A — highest synced stage number per year.
+  // Signal A, first half — highest synced stage number per year.
   const maxStageByYear = new Map<string, number>();
   for (const row of stageRows) {
     const stageMatch = row.stage?.match(/stage-(\d+)/);
@@ -51,9 +62,20 @@ export function completedGrandTourYears(
     if (yearMatch) scoredYears.add(yearMatch[1]);
   }
 
-  const completed = new Set<string>();
+  // Signal A, second half — a final classification exists, which only happens
+  // once the race is over.
+  const finishedYears = new Set<string>();
+  for (const row of finalRows) {
+    const yearMatch = row.race_slug.match(yearRe);
+    if (yearMatch) finishedYears.add(yearMatch[1]);
+  }
   for (const [year, maxStage] of maxStageByYear) {
-    if (maxStage >= GT_FINAL_STAGE && scoredYears.has(year)) completed.add(year);
+    if (maxStage >= GT_FINAL_STAGE) finishedYears.add(year);
+  }
+
+  const completed = new Set<string>();
+  for (const year of finishedYears) {
+    if (scoredYears.has(year)) completed.add(year);
   }
   return completed;
 }
