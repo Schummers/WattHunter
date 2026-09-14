@@ -63,6 +63,14 @@ function yearFromSlug(slug: string): number | null {
 // three teams earned in Classic V1, minus the dynamic (league-relative) titles.
 // Ugly-but-works stopgap keyed by V2 team_id; revisit when achievements get a
 // real grant table. See MEMORY: classic_league_v2_seed / palmares V1→V2.
+// STOPGAP, REMOVABLE — see .scratch/palmares-ranking/issues/13-supprimer-hardcoded-grants.md
+//
+// The classic V2 seed never cloned `rider_xp_daily`, so the palmarès earned in
+// V1 (Classics, Giro) showed nowhere in V2 and three teams got their badges by
+// hand, keyed on their UUID. The season entity (migration 20260914000000) is the
+// real answer: V1 and V2 both point at season 2026, so the grid can be computed
+// per player across every league of that season. Ticket 13 does that and deletes
+// this table.
 const HARDCODED_GRANTS: Record<string, string[]> = {
   // Klimax
   "00000000-0000-4000-8000-c1a551c00001": [
@@ -304,7 +312,7 @@ export default async function AchievementsPage({
     if (classicRank === 1) unlockedSlugs.push("classic-man");
   }
 
-  // Hardcoded Classic V1→V2 palmarès transfer (stopgap, see HARDCODED_GRANTS).
+  // Hardcoded Classic V1→V2 palmarès transfer (stopgap, removed by ticket 13).
   unlockedSlugs.push(...(HARDCODED_GRANTS[myTeamId] ?? []));
 
   return (
