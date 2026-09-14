@@ -58,3 +58,36 @@ describe("completedGrandTourYears", () => {
     expect(result.size).toBe(0);
   });
 });
+
+describe("completedGrandTourYears — final classifications as signal A", () => {
+  const finalRow = (year: number, type: string) => ({
+    race_slug: `race/giro-d-italia/${year}/${type}`,
+  });
+
+  it("completes a race whose last stage never got imported but whose finals exist", () => {
+    // The Giro 2026 in production: daily classifications stop at stage 20, yet
+    // the race is over and its final jerseys are in gt_final_classifications.
+    const stages = Array.from({ length: 20 }, (_, i) => stage(2026, i + 1));
+    const result = completedGrandTourYears(
+      "giro-d-italia",
+      stages,
+      [scoredGc(2026)],
+      [finalRow(2026, "kom"), finalRow(2026, "points")],
+    );
+    expect(result.has("2026")).toBe(true);
+  });
+
+  it("still refuses a race in progress, finals absent", () => {
+    const stages = Array.from({ length: 20 }, (_, i) => stage(2026, i + 1));
+    expect(
+      completedGrandTourYears("giro-d-italia", stages, [scoredGc(2026)], []).has("2026"),
+    ).toBe(false);
+  });
+
+  it("still requires signal B, whatever signal A says", () => {
+    // Finals present but GC never scored: not complete.
+    expect(
+      completedGrandTourYears("giro-d-italia", [], [], [finalRow(2026, "kom")]).has("2026"),
+    ).toBe(false);
+  });
+});
