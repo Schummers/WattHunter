@@ -318,8 +318,11 @@ on conflict (tour_id, player_key) do update set
 alter table public.historical_tours enable row level security;
 alter table public.historical_results enable row level security;
 
--- A closed archive of a game everyone in the group played: readable by all,
--- written by migrations only.
+-- Written by migrations only. NOTE: the `anon` grant below is narrowed to
+-- `authenticated` by migration 20260914000300 — this is the private history
+-- of one group under their real account names, and the demo league is the
+-- public shop window. This file is left as it was applied in production
+-- rather than rewritten, so local and remote never drift.
 drop policy if exists historical_tours_select_all on public.historical_tours;
 create policy historical_tours_select_all on public.historical_tours
   for select to anon, authenticated using (true);

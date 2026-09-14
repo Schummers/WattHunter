@@ -11,6 +11,18 @@ const JERSEY_COLUMN: Record<JerseyId, string> = {
   wht: "youth_classif_bonus",
 };
 
+/** A final classification row carries exactly one jersey, readable off its slug. */
+const FINAL_SLUG_JERSEY: Record<string, JerseyId> = {
+  gc: "yel",
+  points: "grn",
+  kom: "pol",
+  youth: "wht",
+};
+
+function finalJerseyOf(raceSlug: string): JerseyId | null {
+  return FINAL_SLUG_JERSEY[raceSlug.split("/").pop() ?? ""] ?? null;
+}
+
 interface XpRow {
   team_id: string;
   race_slug: string | null;
@@ -115,9 +127,8 @@ export async function loadCurrentSeason(
       byJersey = new Map();
       jerseyPoints.set(groupId, byJersey);
     }
-    for (const jersey of JERSEYS) {
-      const points = Number((row as unknown as Record<string, number | null>)[JERSEY_COLUMN[jersey]] ?? 0);
-      if (points === 0) continue;
+    const addJerseyPoints = (jersey: JerseyId, points: number) => {
+      if (points === 0) return;
       let byPlayer = byJersey.get(jersey);
       if (!byPlayer) {
         byPlayer = new Map();
@@ -126,6 +137,22 @@ export async function loadCurrentSeason(
       const entry = byPlayer.get(player.key);
       if (entry) entry.points += points;
       else byPlayer.set(player.key, { player, points });
+    };
+
+    // A final classification row belongs whole to its jersey — separated by its
+    // slug, so it needs no traceability column and stays right even on a Grand
+    // Tour scored under a scale that no longer exists (the Giro 2026).
+    const finalJersey = row.race_slug ? finalJerseyOf(row.race_slug) : null;
+    if (finalJersey) {
+      addJerseyPoints(finalJersey, xp);
+      continue;
+    }
+
+    for (const jersey of JERSEYS) {
+      addJerseyPoints(
+        jersey,
+        Number((row as unknown as Record<string, number | null>)[JERSEY_COLUMN[jersey]] ?? 0),
+      );
     }
   }
 

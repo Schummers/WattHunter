@@ -10,6 +10,8 @@
  */
 const SHORT_TAIL = 6;
 const SHORT_MONONYM = 9;
+/** Clipping only earns its ugliness when it actually saves room. */
+const MIN_CLIP_GAIN = 3;
 
 export function abbreviateName(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -22,7 +24,7 @@ export function abbreviateName(name: string): string {
 export function abbreviateNameShort(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length < 2) {
-    return name.length > SHORT_MONONYM ? name.slice(0, SHORT_MONONYM) : name;
+    return name.length - SHORT_MONONYM >= MIN_CLIP_GAIN ? name.slice(0, SHORT_MONONYM) : name;
   }
   const [first, ...rest] = parts;
   const tail = rest.join(" ");

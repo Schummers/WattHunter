@@ -4,14 +4,7 @@ import { loadHistoricalPalmares } from "./historical";
 import { loadCurrentSeason } from "./current";
 import type { PalmaresEvent, SeasonStanding } from "./types";
 
-/**
- * Played before WattHunter, never opened an account, and never won anything:
- * no win, no podium, no jersey. They are imported (the archive is the truth and
- * removing rows would distort everyone else's starts) but not displayed.
- *
- * JibsEPAULE is NOT in this list on purpose: he won the 2019 Tour de France and
- * two jerseys, so hiding him would leave nine wins listed for ten Tours played.
- */
+/** Mirrors the archive reader's own rule, for the current season's rows. */
 const HIDDEN_PLAYERS = new Set(["Fangio", "JoeDills"]);
 
 export interface EquippedEmblem {

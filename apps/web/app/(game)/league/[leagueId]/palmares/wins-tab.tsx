@@ -60,7 +60,8 @@ export function WinsTab({ events }: WinsTabProps) {
                     {row.isFormerPlayer ? <FormerPlayerMark /> : null}
                   </div>
                   <div className="text-[length:var(--type-caption)] text-[var(--text-low)]">
-                    <span className="font-mono tabular-nums">{row.starts}</span> starts
+                    <span className="font-mono tabular-nums">{row.starts}</span>{" "}
+                    {row.starts === 1 ? "start" : "starts"}
                   </div>
                 </td>
                 <td className="px-2 py-2 text-right font-mono tabular-nums text-[length:var(--type-body)] text-[var(--text-low)]">

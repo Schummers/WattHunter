@@ -21,6 +21,17 @@ interface HistoricalResultRow {
   young_rider: number;
 }
 
+/**
+ * Played before WattHunter, never opened an account, and never won anything:
+ * no win, no podium, no jersey. They stay in the database — the archive is the
+ * truth, and dropping rows would distort everyone else's starts — but no screen
+ * shows them.
+ *
+ * JibsEPAULE is NOT in this list on purpose: he won the 2019 Tour de France and
+ * two jerseys, so hiding him would leave nine wins listed for ten Tours played.
+ */
+const HIDDEN_PLAYERS = new Set(["Fangio", "JoeDills"]);
+
 /** Which raw points column decides each jersey. */
 const JERSEY_COLUMN: Record<JerseyId, keyof HistoricalResultRow> = {
   yel: "gc_points",
@@ -61,7 +72,9 @@ export async function loadHistoricalPalmares(
   ]);
 
   const tours = (tourRows ?? []) as HistoricalTourRow[];
-  const results = (resultRows ?? []) as HistoricalResultRow[];
+  const results = ((resultRows ?? []) as HistoricalResultRow[]).filter(
+    (row) => !HIDDEN_PLAYERS.has(row.display_name),
+  );
 
   const resultsByTour = new Map<number, HistoricalResultRow[]>();
   for (const row of results) {

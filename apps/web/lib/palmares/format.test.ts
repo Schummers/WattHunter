@@ -26,6 +26,11 @@ describe("abbreviateNameShort", () => {
     expect(abbreviateNameShort("TheAussieMate")).toBe("TheAussie");
     expect(abbreviateNameShort("Peejee")).toBe("Peejee");
   });
+
+  it("leaves a mononym alone when clipping would save one character", () => {
+    // "JibsEPAUL" is uglier than "JibsEPAULE" and one character narrower.
+    expect(abbreviateNameShort("JibsEPAULE")).toBe("JibsEPAULE");
+  });
 });
 
 describe("formatHeadToHeadScore", () => {
