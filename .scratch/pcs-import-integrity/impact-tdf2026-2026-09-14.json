@@ -1,0 +1,582 @@
+{
+  "race": "race/tour-de-france/2026",
+  "league": "00000000-0000-4000-8000-c1a551c2026e",
+  "bareme": "juillet 2026 (avant 3583af0 / 92dbf19)",
+  "classement_tour": [
+    {
+      "equipe": "Leopard_Trek",
+      "xp": 3743.0
+    },
+    {
+      "equipe": "Muskatel Muskadji",
+      "xp": 3555.0
+    },
+    {
+      "equipe": "GoudalEnergies",
+      "xp": 3382.72
+    },
+    {
+      "equipe": "Klimax",
+      "xp": 2698.38
+    },
+    {
+      "equipe": "Las Chivas Pendejas",
+      "xp": 2287.74
+    },
+    {
+      "equipe": "Dixon Hormous",
+      "xp": 2087.0
+    },
+    {
+      "equipe": "Peejee",
+      "xp": 1915.7
+    },
+    {
+      "equipe": "bigdaddy",
+      "xp": 1257.92
+    }
+  ],
+  "delta_bug_par_equipe": {
+    "Klimax": 11.439999999999998,
+    "Peejee": 1.0,
+    "bigdaddy": -9.32,
+    "GoudalEnergies": -13.5,
+    "Leopard_Trek": 29.0,
+    "Muskatel Muskadji": 13.5,
+    "Las Chivas Pendejas": -10.5,
+    "Dixon Hormous": 14.5
+  },
+  "exposition_par_equipe": {
+    "Klimax": 481.44,
+    "Peejee": 124.5,
+    "bigdaddy": 89.92,
+    "GoudalEnergies": 305.5,
+    "Leopard_Trek": 240.0,
+    "Muskatel Muskadji": 139.5,
+    "Las Chivas Pendejas": 237.0,
+    "Dixon Hormous": 253.5
+  },
+  "delta_drift_par_equipe": {
+    "bigdaddy": 2.0,
+    "Peejee": 82.0,
+    "Muskatel Muskadji": 255.0,
+    "GoudalEnergies": 175.0,
+    "Dixon Hormous": 99.0,
+    "Las Chivas Pendejas": 143.0,
+    "Klimax": 148.0,
+    "Leopard_Trek": 258.0
+  },
+  "lignes": [
+    {
+      "slug": "stage-18",
+      "coureur": "Pablo Castrillo",
+      "equipe": "GoudalEnergies",
+      "rang_en_base": 6,
+      "rang_reel": 7,
+      "rank_points_joues": 50.0,
+      "rank_points_reels": 45.0,
+      "delta_xp": -10.0
+    },
+    {
+      "slug": "stage-16",
+      "coureur": "Bruno Armirail",
+      "equipe": "Dixon Hormous",
+      "rang_en_base": 9,
+      "rang_reel": 8,
+      "rank_points_joues": 30.0,
+      "rank_points_reels": 35.0,
+      "delta_xp": 10.0
+    },
+    {
+      "slug": "points",
+      "coureur": "Tadej Pogačar",
+      "equipe": "Muskatel Muskadji",
+      "rang_en_base": 7,
+      "rang_reel": 6,
+      "rank_points_joues": 22.0,
+      "rank_points_reels": 30.0,
+      "delta_xp": 8.0
+    },
+    {
+      "slug": "kom",
+      "coureur": "Lenny Martinez",
+      "equipe": "Klimax",
+      "rang_en_base": 7,
+      "rang_reel": 6,
+      "rank_points_joues": 22.0,
+      "rank_points_reels": 30.0,
+      "delta_xp": 8.0
+    },
+    {
+      "slug": "kom",
+      "coureur": "Isaac Del Toro",
+      "equipe": "Las Chivas Pendejas",
+      "rang_en_base": 6,
+      "rang_reel": 7,
+      "rank_points_joues": 30.0,
+      "rank_points_reels": 22.0,
+      "delta_xp": -8.0
+    },
+    {
+      "slug": "stage-11",
+      "coureur": "Magnus Cort",
+      "equipe": "Klimax",
+      "rang_en_base": 20,
+      "rang_reel": 19,
+      "rank_points_joues": 2.0,
+      "rank_points_reels": 4.0,
+      "delta_xp": 7.94
+    },
+    {
+      "slug": "stage-20",
+      "coureur": "Lenny Martinez",
+      "equipe": "Klimax",
+      "rang_en_base": 7,
+      "rang_reel": 6,
+      "rank_points_joues": 45.0,
+      "rank_points_reels": 50.0,
+      "delta_xp": 7.5
+    },
+    {
+      "slug": "stage-14",
+      "coureur": "Tobias Halland Johannessen",
+      "equipe": "Peejee",
+      "rang_en_base": 8,
+      "rang_reel": 9,
+      "rank_points_joues": 35.0,
+      "rank_points_reels": 30.0,
+      "delta_xp": -7.5
+    },
+    {
+      "slug": "stage-9",
+      "coureur": "Mads Pedersen",
+      "equipe": "Klimax",
+      "rang_en_base": 7,
+      "rang_reel": 6,
+      "rank_points_joues": 45.0,
+      "rank_points_reels": 50.0,
+      "delta_xp": 7.5
+    },
+    {
+      "slug": "stage-2",
+      "coureur": "Paul Seixas",
+      "equipe": "GoudalEnergies",
+      "rang_en_base": 8,
+      "rang_reel": 9,
+      "rank_points_joues": 35.0,
+      "rank_points_reels": 30.0,
+      "delta_xp": -7.5
+    },
+    {
+      "slug": "stage-14",
+      "coureur": "Richard Carapaz",
+      "equipe": "Leopard_Trek",
+      "rang_en_base": 9,
+      "rang_reel": 8,
+      "rank_points_joues": 30.0,
+      "rank_points_reels": 35.0,
+      "delta_xp": 7.5
+    },
+    {
+      "slug": "stage-3",
+      "coureur": "Remco Evenepoel",
+      "equipe": "Leopard_Trek",
+      "rang_en_base": 9,
+      "rang_reel": 8,
+      "rank_points_joues": 30.0,
+      "rank_points_reels": 35.0,
+      "delta_xp": 7.5
+    },
+    {
+      "slug": "stage-19",
+      "coureur": "Remco Evenepoel",
+      "equipe": "Leopard_Trek",
+      "rang_en_base": 7,
+      "rang_reel": 6,
+      "rank_points_joues": 45.0,
+      "rank_points_reels": 50.0,
+      "delta_xp": 7.5
+    },
+    {
+      "slug": "stage-21",
+      "coureur": "Milan Fretin",
+      "equipe": "Las Chivas Pendejas",
+      "rang_en_base": 10,
+      "rang_reel": 9,
+      "rank_points_joues": 25.0,
+      "rank_points_reels": 30.0,
+      "delta_xp": 7.5
+    },
+    {
+      "slug": "stage-7",
+      "coureur": "Dorian Godon",
+      "equipe": "Peejee",
+      "rang_en_base": 9,
+      "rang_reel": 8,
+      "rank_points_joues": 30.0,
+      "rank_points_reels": 35.0,
+      "delta_xp": 7.5
+    },
+    {
+      "slug": "stage-10",
+      "coureur": "Jonas Vingegaard",
+      "equipe": "Klimax",
+      "rang_en_base": 6,
+      "rang_reel": 7,
+      "rank_points_joues": 50.0,
+      "rank_points_reels": 45.0,
+      "delta_xp": -7.5
+    },
+    {
+      "slug": "stage-7",
+      "coureur": "Mads Pedersen",
+      "equipe": "Klimax",
+      "rang_en_base": 8,
+      "rang_reel": 9,
+      "rank_points_joues": 35.0,
+      "rank_points_reels": 30.0,
+      "delta_xp": -7.5
+    },
+    {
+      "slug": "stage-10",
+      "coureur": "Mattias Skjelmose",
+      "equipe": "Dixon Hormous",
+      "rang_en_base": 7,
+      "rang_reel": 6,
+      "rank_points_joues": 45.0,
+      "rank_points_reels": 50.0,
+      "delta_xp": 7.5
+    },
+    {
+      "slug": "stage-19",
+      "coureur": "Isaac Del Toro",
+      "equipe": "Las Chivas Pendejas",
+      "rang_en_base": 6,
+      "rang_reel": 7,
+      "rank_points_joues": 50.0,
+      "rank_points_reels": 45.0,
+      "delta_xp": -7.5
+    },
+    {
+      "slug": "stage-5",
+      "coureur": "Biniam Girmay",
+      "equipe": "Muskatel Muskadji",
+      "rang_en_base": 7,
+      "rang_reel": 6,
+      "rank_points_joues": 45.0,
+      "rank_points_reels": 50.0,
+      "delta_xp": 7.5
+    },
+    {
+      "slug": "stage-4",
+      "coureur": "Kévin Vauquelin",
+      "equipe": "Leopard_Trek",
+      "rang_en_base": 7,
+      "rang_reel": 6,
+      "rank_points_joues": 45.0,
+      "rank_points_reels": 50.0,
+      "delta_xp": 7.5
+    },
+    {
+      "slug": "stage-15",
+      "coureur": "Mattias Skjelmose",
+      "equipe": "Dixon Hormous",
+      "rang_en_base": 6,
+      "rang_reel": 7,
+      "rank_points_joues": 50.0,
+      "rank_points_reels": 45.0,
+      "delta_xp": -7.5
+    },
+    {
+      "slug": "stage-3",
+      "coureur": "Isaac Del Toro",
+      "equipe": "Las Chivas Pendejas",
+      "rang_en_base": 8,
+      "rang_reel": 9,
+      "rank_points_joues": 35.0,
+      "rank_points_reels": 30.0,
+      "delta_xp": -7.5
+    },
+    {
+      "slug": "stage-6",
+      "coureur": "Mattias Skjelmose",
+      "equipe": "Dixon Hormous",
+      "rang_en_base": 9,
+      "rang_reel": 8,
+      "rank_points_joues": 30.0,
+      "rank_points_reels": 35.0,
+      "delta_xp": 7.5
+    },
+    {
+      "slug": "stage-5",
+      "coureur": "Mads Pedersen",
+      "equipe": "Klimax",
+      "rang_en_base": 6,
+      "rang_reel": 7,
+      "rank_points_joues": 50.0,
+      "rank_points_reels": 45.0,
+      "delta_xp": -7.5
+    },
+    {
+      "slug": "stage-13",
+      "coureur": "George Bennett",
+      "equipe": "bigdaddy",
+      "rang_en_base": 15,
+      "rang_reel": 16,
+      "rank_points_joues": 12.0,
+      "rank_points_reels": 10.0,
+      "delta_xp": -6.32
+    },
+    {
+      "slug": "stage-9",
+      "coureur": "Michael Matthews",
+      "equipe": "bigdaddy",
+      "rang_en_base": 6,
+      "rang_reel": 7,
+      "rank_points_joues": 50.0,
+      "rank_points_reels": 45.0,
+      "delta_xp": -5.0
+    },
+    {
+      "slug": "stage-16",
+      "coureur": "Pablo Castrillo",
+      "equipe": "GoudalEnergies",
+      "rang_en_base": 8,
+      "rang_reel": 9,
+      "rank_points_joues": 35.0,
+      "rank_points_reels": 30.0,
+      "delta_xp": -5.0
+    },
+    {
+      "slug": "stage-2",
+      "coureur": "Lenny Martinez",
+      "equipe": "Klimax",
+      "rang_en_base": 9,
+      "rang_reel": 8,
+      "rank_points_joues": 30.0,
+      "rank_points_reels": 35.0,
+      "delta_xp": 5.0
+    },
+    {
+      "slug": "stage-15",
+      "coureur": "Lenny Martinez",
+      "equipe": "Klimax",
+      "rang_en_base": 7,
+      "rang_reel": 6,
+      "rank_points_joues": 45.0,
+      "rank_points_reels": 50.0,
+      "delta_xp": 5.0
+    },
+    {
+      "slug": "stage-11",
+      "coureur": "Fernando Gaviria",
+      "equipe": "Muskatel Muskadji",
+      "rang_en_base": 8,
+      "rang_reel": 9,
+      "rank_points_joues": 35.0,
+      "rank_points_reels": 30.0,
+      "delta_xp": -5.0
+    },
+    {
+      "slug": "stage-18",
+      "coureur": "Raúl García Pierna",
+      "equipe": "GoudalEnergies",
+      "rang_en_base": 7,
+      "rang_reel": 6,
+      "rank_points_joues": 45.0,
+      "rank_points_reels": 50.0,
+      "delta_xp": 5.0
+    },
+    {
+      "slug": "stage-6",
+      "coureur": "Lenny Martinez",
+      "equipe": "Klimax",
+      "rang_en_base": 8,
+      "rang_reel": 9,
+      "rank_points_joues": 35.0,
+      "rank_points_reels": 30.0,
+      "delta_xp": -5.0
+    },
+    {
+      "slug": "stage-16",
+      "coureur": "Juan Ayuso",
+      "equipe": "GoudalEnergies",
+      "rang_en_base": 16,
+      "rang_reel": 15,
+      "rank_points_joues": 10.0,
+      "rank_points_reels": 12.0,
+      "delta_xp": 4.0
+    },
+    {
+      "slug": "stage-18",
+      "coureur": "Paul Seixas",
+      "equipe": "GoudalEnergies",
+      "rang_en_base": 15,
+      "rang_reel": 16,
+      "rank_points_joues": 12.0,
+      "rank_points_reels": 10.0,
+      "delta_xp": -3.0
+    },
+    {
+      "slug": "youth",
+      "coureur": "Kévin Vauquelin",
+      "equipe": "Leopard_Trek",
+      "rang_en_base": 9,
+      "rang_reel": 10,
+      "rank_points_joues": 5.0,
+      "rank_points_reels": 2.0,
+      "delta_xp": -3.0
+    },
+    {
+      "slug": "stage-15",
+      "coureur": "Antonio Tiberi",
+      "equipe": "Muskatel Muskadji",
+      "rang_en_base": 16,
+      "rang_reel": 15,
+      "rank_points_joues": 10.0,
+      "rank_points_reels": 12.0,
+      "delta_xp": 3.0
+    },
+    {
+      "slug": "stage-5",
+      "coureur": "Dorian Godon",
+      "equipe": "Peejee",
+      "rang_en_base": 16,
+      "rang_reel": 15,
+      "rank_points_joues": 10.0,
+      "rank_points_reels": 12.0,
+      "delta_xp": 3.0
+    },
+    {
+      "slug": "stage-9",
+      "coureur": "Paul Seixas",
+      "equipe": "GoudalEnergies",
+      "rang_en_base": 16,
+      "rang_reel": 15,
+      "rank_points_joues": 10.0,
+      "rank_points_reels": 12.0,
+      "delta_xp": 3.0
+    },
+    {
+      "slug": "stage-5",
+      "coureur": "Pavel Bittner",
+      "equipe": "Las Chivas Pendejas",
+      "rang_en_base": 15,
+      "rang_reel": 16,
+      "rank_points_joues": 12.0,
+      "rank_points_reels": 10.0,
+      "delta_xp": -3.0
+    },
+    {
+      "slug": "stage-15",
+      "coureur": "Einer Rubio",
+      "equipe": "GoudalEnergies",
+      "rang_en_base": 15,
+      "rang_reel": 16,
+      "rank_points_joues": 12.0,
+      "rank_points_reels": 10.0,
+      "delta_xp": -3.0
+    },
+    {
+      "slug": "youth",
+      "coureur": "Raúl García Pierna",
+      "equipe": "GoudalEnergies",
+      "rang_en_base": 10,
+      "rang_reel": 9,
+      "rank_points_joues": 2.0,
+      "rank_points_reels": 5.0,
+      "delta_xp": 3.0
+    },
+    {
+      "slug": "stage-2",
+      "coureur": "Tobias Foss",
+      "equipe": "Dixon Hormous",
+      "rang_en_base": 19,
+      "rang_reel": 20,
+      "rank_points_joues": 4.0,
+      "rank_points_reels": 2.0,
+      "delta_xp": -3.0
+    },
+    {
+      "slug": "stage-11",
+      "coureur": "Kasper Asgreen",
+      "equipe": "Klimax",
+      "rang_en_base": 19,
+      "rang_reel": 20,
+      "rank_points_joues": 4.0,
+      "rank_points_reels": 2.0,
+      "delta_xp": -2.0
+    },
+    {
+      "slug": "stage-8",
+      "coureur": "Anthony Turgis",
+      "equipe": "Las Chivas Pendejas",
+      "rang_en_base": 16,
+      "rang_reel": 15,
+      "rank_points_joues": 10.0,
+      "rank_points_reels": 12.0,
+      "delta_xp": 2.0
+    },
+    {
+      "slug": "stage-7",
+      "coureur": "Fred Wright",
+      "equipe": "Las Chivas Pendejas",
+      "rang_en_base": 20,
+      "rang_reel": 19,
+      "rank_points_joues": 2.0,
+      "rank_points_reels": 4.0,
+      "delta_xp": 2.0
+    },
+    {
+      "slug": "stage-14",
+      "coureur": "Derek Gee-West",
+      "equipe": "Leopard_Trek",
+      "rang_en_base": 16,
+      "rang_reel": 15,
+      "rank_points_joues": 10.0,
+      "rank_points_reels": 12.0,
+      "delta_xp": 2.0
+    },
+    {
+      "slug": "stage-19",
+      "coureur": "Quinn Simmons",
+      "equipe": "Peejee",
+      "rang_en_base": 15,
+      "rang_reel": 16,
+      "rank_points_joues": 12.0,
+      "rank_points_reels": 10.0,
+      "delta_xp": -2.0
+    },
+    {
+      "slug": "stage-6",
+      "coureur": "Lennert Van Eetvelt",
+      "equipe": "bigdaddy",
+      "rang_en_base": 20,
+      "rang_reel": 19,
+      "rank_points_joues": 2.0,
+      "rank_points_reels": 4.0,
+      "delta_xp": 2.0
+    },
+    {
+      "slug": "stage-2",
+      "coureur": "Sergio Higuita",
+      "equipe": "Las Chivas Pendejas",
+      "rang_en_base": 20,
+      "rang_reel": 19,
+      "rank_points_joues": 2.0,
+      "rank_points_reels": 4.0,
+      "delta_xp": 2.0
+    },
+    {
+      "slug": "stage-3",
+      "coureur": "Sergio Higuita",
+      "equipe": "Las Chivas Pendejas",
+      "rang_en_base": 16,
+      "rang_reel": 15,
+      "rank_points_joues": 10.0,
+      "rank_points_reels": 12.0,
+      "delta_xp": 2.0
+    }
+  ],
+  "lignes_nemesis": 0
+}

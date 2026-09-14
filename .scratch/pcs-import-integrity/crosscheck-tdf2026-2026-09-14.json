@@ -1,0 +1,925 @@
+{
+  "race": "race/tour-de-france/2026",
+  "per_target": {
+    "stage-2": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 8,
+          "wikipedia": "Lenny Martinez",
+          "base": "Paul Seixas",
+          "base_slug": "rider/paul-seixas"
+        },
+        {
+          "rank": 9,
+          "wikipedia": "Paul Seixas",
+          "base": "Lenny Martinez",
+          "base_slug": "rider/lenny-martinez"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 8,
+          "pcs_repare": "rider/lenny-martinez",
+          "base": "Paul Seixas",
+          "base_slug": "rider/paul-seixas",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 9,
+          "pcs_repare": "rider/paul-seixas",
+          "base": "Lenny Martinez",
+          "base_slug": "rider/lenny-martinez",
+          "valide_par_wikipedia": true
+        }
+      ]
+    },
+    "stage-3": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 8,
+          "wikipedia": "Remco Evenepoel",
+          "base": "Isaac Del Toro",
+          "base_slug": "rider/isaac-del-toro"
+        },
+        {
+          "rank": 9,
+          "wikipedia": "Isaac del Toro",
+          "base": "Remco Evenepoel",
+          "base_slug": "rider/remco-evenepoel"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 8,
+          "pcs_repare": "rider/remco-evenepoel",
+          "base": "Isaac Del Toro",
+          "base_slug": "rider/isaac-del-toro",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 9,
+          "pcs_repare": "rider/isaac-del-toro",
+          "base": "Remco Evenepoel",
+          "base_slug": "rider/remco-evenepoel",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/sergio-higuita",
+          "base": "Tom Pidcock",
+          "base_slug": "rider/tom-pidcock",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-4": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 9,
+      "base_vs_wiki": [
+        {
+          "rank": 7,
+          "wikipedia": "Sean Quinn",
+          "base": "Kévin Vauquelin",
+          "base_slug": "rider/kevin-vauquelin"
+        }
+      ],
+      "base_pcs_compared": 14,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 7,
+          "pcs_repare": "rider/sean-quinn",
+          "base": "Kévin Vauquelin",
+          "base_slug": "rider/kevin-vauquelin",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/alex-molenaar",
+          "base": "Frank Van Den Broek",
+          "base_slug": "rider/frank-van-den-broek",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-5": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 6,
+          "wikipedia": "Biniam Girmay",
+          "base": "Mads Pedersen",
+          "base_slug": "rider/mads-pedersen"
+        },
+        {
+          "rank": 7,
+          "wikipedia": "Mads Pedersen",
+          "base": "Biniam Girmay",
+          "base_slug": "rider/biniam-girmay"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 6,
+          "pcs_repare": "rider/biniam-girmay",
+          "base": "Mads Pedersen",
+          "base_slug": "rider/mads-pedersen",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 7,
+          "pcs_repare": "rider/mads-pedersen",
+          "base": "Biniam Girmay",
+          "base_slug": "rider/biniam-girmay",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/dorian-godon",
+          "base": "Pavel Bittner",
+          "base_slug": "rider/pavel-bittner",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-6": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 8,
+          "wikipedia": "Mattias Skjelmose",
+          "base": "Lenny Martinez",
+          "base_slug": "rider/lenny-martinez"
+        },
+        {
+          "rank": 9,
+          "wikipedia": "Lenny Martinez",
+          "base": "Mattias Skjelmose",
+          "base_slug": "rider/mattias-skjelmose-jensen"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 8,
+          "pcs_repare": "rider/mattias-skjelmose-jensen",
+          "base": "Lenny Martinez",
+          "base_slug": "rider/lenny-martinez",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 9,
+          "pcs_repare": "rider/lenny-martinez",
+          "base": "Mattias Skjelmose",
+          "base_slug": "rider/mattias-skjelmose-jensen",
+          "valide_par_wikipedia": true
+        }
+      ]
+    },
+    "stage-7": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 8,
+          "wikipedia": "Dorian Godon",
+          "base": "Mads Pedersen",
+          "base_slug": "rider/mads-pedersen"
+        },
+        {
+          "rank": 9,
+          "wikipedia": "Mads Pedersen",
+          "base": "Dorian Godon",
+          "base_slug": "rider/dorian-godon"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 8,
+          "pcs_repare": "rider/dorian-godon",
+          "base": "Mads Pedersen",
+          "base_slug": "rider/mads-pedersen",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 9,
+          "pcs_repare": "rider/mads-pedersen",
+          "base": "Dorian Godon",
+          "base_slug": "rider/dorian-godon",
+          "valide_par_wikipedia": true
+        }
+      ]
+    },
+    "stage-8": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 6,
+          "wikipedia": "Rick Pluimers",
+          "base": "Pascal Ackermann",
+          "base_slug": "rider/pascal-ackermann"
+        },
+        {
+          "rank": 7,
+          "wikipedia": "Pascal Ackermann",
+          "base": "Rick Pluimers",
+          "base_slug": "rider/rick-pluimers"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 6,
+          "pcs_repare": "rider/rick-pluimers",
+          "base": "Pascal Ackermann",
+          "base_slug": "rider/pascal-ackermann",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 7,
+          "pcs_repare": "rider/pascal-ackermann",
+          "base": "Rick Pluimers",
+          "base_slug": "rider/rick-pluimers",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/anthony-turgis",
+          "base": "Mathieu Van Der Poel",
+          "base_slug": "rider/mathieu-van-der-poel",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-9": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 9,
+      "base_vs_wiki": [
+        {
+          "rank": 6,
+          "wikipedia": "Mads Pedersen",
+          "base": "Michael Matthews",
+          "base_slug": "rider/michael-matthews"
+        },
+        {
+          "rank": 7,
+          "wikipedia": "Michael Matthews",
+          "base": "Mads Pedersen",
+          "base_slug": "rider/mads-pedersen"
+        }
+      ],
+      "base_pcs_compared": 14,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 6,
+          "pcs_repare": "rider/mads-pedersen",
+          "base": "Michael Matthews",
+          "base_slug": "rider/michael-matthews",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 7,
+          "pcs_repare": "rider/michael-matthews",
+          "base": "Mads Pedersen",
+          "base_slug": "rider/mads-pedersen",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/paul-seixas",
+          "base": "Tiesj Benoot",
+          "base_slug": "rider/tiesj-benoot",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-10": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 6,
+          "wikipedia": "Mattias Skjelmose",
+          "base": "Jonas Vingegaard",
+          "base_slug": "rider/jonas-vingegaard"
+        },
+        {
+          "rank": 7,
+          "wikipedia": "Jonas Vingegaard",
+          "base": "Mattias Skjelmose",
+          "base_slug": "rider/mattias-skjelmose-jensen"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 6,
+          "pcs_repare": "rider/mattias-skjelmose-jensen",
+          "base": "Jonas Vingegaard",
+          "base_slug": "rider/jonas-vingegaard",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 7,
+          "pcs_repare": "rider/jonas-vingegaard",
+          "base": "Mattias Skjelmose",
+          "base_slug": "rider/mattias-skjelmose-jensen",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/egan-bernal",
+          "base": "Yannis Voisard",
+          "base_slug": "rider/yannis-voisard",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-11": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 8,
+          "wikipedia": "Clément Russo",
+          "base": "Fernando Gaviria",
+          "base_slug": "rider/fernando-gaviria"
+        },
+        {
+          "rank": 9,
+          "wikipedia": "Fernando Gaviria",
+          "base": "Clément Russo",
+          "base_slug": "rider/clement-russo"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 8,
+          "pcs_repare": "rider/clement-russo",
+          "base": "Fernando Gaviria",
+          "base_slug": "rider/fernando-gaviria",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 9,
+          "pcs_repare": "rider/fernando-gaviria",
+          "base": "Clément Russo",
+          "base_slug": "rider/clement-russo",
+          "valide_par_wikipedia": true
+        }
+      ]
+    },
+    "stage-12": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": []
+    },
+    "stage-13": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 8,
+          "wikipedia": "Clément Braz Afonso",
+          "base": "Tim Wellens",
+          "base_slug": "rider/tim-wellens"
+        },
+        {
+          "rank": 9,
+          "wikipedia": "Tim Wellens",
+          "base": "Clément Braz Afonso",
+          "base_slug": "rider/clement-braz-afonso"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 8,
+          "pcs_repare": "rider/clement-braz-afonso",
+          "base": "Tim Wellens",
+          "base_slug": "rider/tim-wellens",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 9,
+          "pcs_repare": "rider/tim-wellens",
+          "base": "Clément Braz Afonso",
+          "base_slug": "rider/clement-braz-afonso",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/marc-hirschi",
+          "base": "George Bennett",
+          "base_slug": "rider/george-bennett",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-14": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 8,
+          "wikipedia": "Richard Carapaz",
+          "base": "Tobias Halland Johannessen",
+          "base_slug": "rider/tobias-halland-johannessen"
+        },
+        {
+          "rank": 9,
+          "wikipedia": "Tobias Halland Johannessen",
+          "base": "Richard Carapaz",
+          "base_slug": "rider/richard-carapaz"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 8,
+          "pcs_repare": "rider/richard-carapaz",
+          "base": "Tobias Halland Johannessen",
+          "base_slug": "rider/tobias-halland-johannessen",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 9,
+          "pcs_repare": "rider/tobias-halland-johannessen",
+          "base": "Richard Carapaz",
+          "base_slug": "rider/richard-carapaz",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/derek-gee",
+          "base": "Adam Yates",
+          "base_slug": "rider/adam-yates",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-15": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 6,
+          "wikipedia": "Lenny Martinez",
+          "base": "Mattias Skjelmose",
+          "base_slug": "rider/mattias-skjelmose-jensen"
+        },
+        {
+          "rank": 7,
+          "wikipedia": "Mattias Skjelmose",
+          "base": "Lenny Martinez",
+          "base_slug": "rider/lenny-martinez"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 6,
+          "pcs_repare": "rider/lenny-martinez",
+          "base": "Mattias Skjelmose",
+          "base_slug": "rider/mattias-skjelmose-jensen",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 7,
+          "pcs_repare": "rider/mattias-skjelmose-jensen",
+          "base": "Lenny Martinez",
+          "base_slug": "rider/lenny-martinez",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/antonio-tiberi",
+          "base": "Einer Rubio",
+          "base_slug": "rider/einer-rubio",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-16": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 8,
+          "wikipedia": "Bruno Armirail",
+          "base": "Pablo Castrillo",
+          "base_slug": "rider/pablo-castrillo-zapater"
+        },
+        {
+          "rank": 9,
+          "wikipedia": "Pablo Castrillo",
+          "base": "Bruno Armirail",
+          "base_slug": "rider/bruno-armirail"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 8,
+          "pcs_repare": "rider/bruno-armirail",
+          "base": "Pablo Castrillo",
+          "base_slug": "rider/pablo-castrillo-zapater",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 9,
+          "pcs_repare": "rider/pablo-castrillo-zapater",
+          "base": "Bruno Armirail",
+          "base_slug": "rider/bruno-armirail",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/juan-ayuso-pesquera",
+          "base": "Huub Artz",
+          "base_slug": "rider/huub-artz",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-17": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 6,
+          "wikipedia": "Clément Russo",
+          "base": "Huub Artz",
+          "base_slug": "rider/huub-artz"
+        },
+        {
+          "rank": 7,
+          "wikipedia": "Huub Artz",
+          "base": "Clément Russo",
+          "base_slug": "rider/clement-russo"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 6,
+          "pcs_repare": "rider/clement-russo",
+          "base": "Huub Artz",
+          "base_slug": "rider/huub-artz",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 7,
+          "pcs_repare": "rider/huub-artz",
+          "base": "Clément Russo",
+          "base_slug": "rider/clement-russo",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/abel-balderstone-roumens",
+          "base": "Joris Delbove",
+          "base_slug": "rider/joris-delbove",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-18": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 6,
+          "wikipedia": "Raúl García Pierna",
+          "base": "Pablo Castrillo",
+          "base_slug": "rider/pablo-castrillo-zapater"
+        },
+        {
+          "rank": 7,
+          "wikipedia": "Pablo Castrillo",
+          "base": "Raúl García Pierna",
+          "base_slug": "rider/raul-garcia-pierna"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 6,
+          "pcs_repare": "rider/raul-garcia-pierna",
+          "base": "Pablo Castrillo",
+          "base_slug": "rider/pablo-castrillo-zapater",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 7,
+          "pcs_repare": "rider/pablo-castrillo-zapater",
+          "base": "Raúl García Pierna",
+          "base_slug": "rider/raul-garcia-pierna",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/nicolas-prodhomme",
+          "base": "Paul Seixas",
+          "base_slug": "rider/paul-seixas",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-19": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 6,
+          "wikipedia": "Remco Evenepoel",
+          "base": "Isaac Del Toro",
+          "base_slug": "rider/isaac-del-toro"
+        },
+        {
+          "rank": 7,
+          "wikipedia": "Isaac del Toro",
+          "base": "Remco Evenepoel",
+          "base_slug": "rider/remco-evenepoel"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 6,
+          "pcs_repare": "rider/remco-evenepoel",
+          "base": "Isaac Del Toro",
+          "base_slug": "rider/isaac-del-toro",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 7,
+          "pcs_repare": "rider/isaac-del-toro",
+          "base": "Remco Evenepoel",
+          "base_slug": "rider/remco-evenepoel",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/clement-braz-afonso",
+          "base": "Quinn Simmons",
+          "base_slug": "rider/quinn-simmons",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "stage-20": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 6,
+          "wikipedia": "Lenny Martinez",
+          "base": "Jai Hindley",
+          "base_slug": "rider/jai-hindley"
+        },
+        {
+          "rank": 7,
+          "wikipedia": "Jai Hindley",
+          "base": "Lenny Martinez",
+          "base_slug": "rider/lenny-martinez"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 6,
+          "pcs_repare": "rider/lenny-martinez",
+          "base": "Jai Hindley",
+          "base_slug": "rider/jai-hindley",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 7,
+          "pcs_repare": "rider/jai-hindley",
+          "base": "Lenny Martinez",
+          "base_slug": "rider/lenny-martinez",
+          "valide_par_wikipedia": true
+        }
+      ]
+    },
+    "stage-21": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 9,
+          "wikipedia": "Milan Fretin",
+          "base": "Clément Russo",
+          "base_slug": "rider/clement-russo"
+        },
+        {
+          "rank": 10,
+          "wikipedia": "Clément Russo",
+          "base": "Milan Fretin",
+          "base_slug": "rider/milan-fretin"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 9,
+          "pcs_repare": "rider/milan-fretin",
+          "base": "Clément Russo",
+          "base_slug": "rider/clement-russo",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 10,
+          "pcs_repare": "rider/clement-russo",
+          "base": "Milan Fretin",
+          "base_slug": "rider/milan-fretin",
+          "valide_par_wikipedia": true
+        }
+      ]
+    },
+    "gc": {
+      "wiki_ranks": 10,
+      "pcs_compared": 10,
+      "pcs_vs_wiki": [],
+      "base_compared": 10,
+      "base_vs_wiki": [
+        {
+          "rank": 9,
+          "wikipedia": "Tom Pidcock",
+          "base": "Jordan Jegat",
+          "base_slug": "rider/jordan-jegat"
+        },
+        {
+          "rank": 10,
+          "wikipedia": "Jordan Jegat",
+          "base": "Tom Pidcock",
+          "base_slug": "rider/tom-pidcock"
+        }
+      ],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 9,
+          "pcs_repare": "rider/tom-pidcock",
+          "base": "Jordan Jegat",
+          "base_slug": "rider/jordan-jegat",
+          "valide_par_wikipedia": true
+        },
+        {
+          "rank": 10,
+          "pcs_repare": "rider/jordan-jegat",
+          "base": "Tom Pidcock",
+          "base_slug": "rider/tom-pidcock",
+          "valide_par_wikipedia": true
+        }
+      ]
+    },
+    "points": {
+      "wiki_ranks": 0,
+      "pcs_compared": 0,
+      "pcs_vs_wiki": [],
+      "base_compared": 0,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 6,
+          "pcs_repare": "rider/tadej-pogacar",
+          "base": "Søren Wærenskjold",
+          "base_slug": "rider/soren-waerenskjold",
+          "valide_par_wikipedia": false
+        },
+        {
+          "rank": 7,
+          "pcs_repare": "rider/soren-waerenskjold",
+          "base": "Tadej Pogačar",
+          "base_slug": "rider/tadej-pogacar",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "kom": {
+      "wiki_ranks": 0,
+      "pcs_compared": 0,
+      "pcs_vs_wiki": [],
+      "base_compared": 0,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 6,
+          "pcs_repare": "rider/lenny-martinez",
+          "base": "Isaac Del Toro",
+          "base_slug": "rider/isaac-del-toro",
+          "valide_par_wikipedia": false
+        },
+        {
+          "rank": 7,
+          "pcs_repare": "rider/isaac-del-toro",
+          "base": "Lenny Martinez",
+          "base_slug": "rider/lenny-martinez",
+          "valide_par_wikipedia": false
+        },
+        {
+          "rank": 15,
+          "pcs_repare": "rider/matthew-riccitello",
+          "base": "Quinn Simmons",
+          "base_slug": "rider/quinn-simmons",
+          "valide_par_wikipedia": false
+        }
+      ]
+    },
+    "youth": {
+      "wiki_ranks": 0,
+      "pcs_compared": 0,
+      "pcs_vs_wiki": [],
+      "base_compared": 0,
+      "base_vs_wiki": [],
+      "base_pcs_compared": 15,
+      "base_vs_pcs_top15": [
+        {
+          "rank": 9,
+          "pcs_repare": "rider/raul-garcia-pierna",
+          "base": "Kévin Vauquelin",
+          "base_slug": "rider/kevin-vauquelin",
+          "valide_par_wikipedia": false
+        },
+        {
+          "rank": 10,
+          "pcs_repare": "rider/kevin-vauquelin",
+          "base": "Raúl García Pierna",
+          "base_slug": "rider/raul-garcia-pierna",
+          "valide_par_wikipedia": false
+        }
+      ]
+    }
+  },
+  "totaux_etapes": {
+    "pcs_repare_vs_wikipedia": {
+      "compares": 200,
+      "ecarts": 0
+    },
+    "base_vs_wikipedia": {
+      "compares": 198,
+      "ecarts": 37
+    },
+    "base_vs_pcs_top15": {
+      "compares": 298,
+      "ecarts": 50
+    }
+  }
+}
