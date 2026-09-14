@@ -54,7 +54,9 @@ export async function loadPalmares(
   const { data: leagueRows } = await supabase
     .from("leagues")
     .select("id")
-    .eq("season_year", options.seasonYear);
+    .eq("season_year", options.seasonYear)
+    .eq("is_demo", false)
+    .neq("status", "pending");
   const leagueIds = (leagueRows ?? []).map((l) => l.id as string);
 
   if (leagueIds.length > 0) {

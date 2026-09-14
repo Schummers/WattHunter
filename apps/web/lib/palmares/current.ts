@@ -57,7 +57,13 @@ export async function loadCurrentSeason(
   const { data: leagueRows } = await supabase
     .from("leagues")
     .select("id")
-    .eq("season_year", seasonYear);
+    .eq("season_year", seasonYear)
+    // A season is made of the leagues the group actually played. Not the demo,
+    // which is the public shop window and would inject eight fictional players
+    // into the group's own standing, and not a league still pending, which has
+    // never been launched.
+    .eq("is_demo", false)
+    .neq("status", "pending");
 
   const leagueIds = (leagueRows ?? []).map((l) => l.id as string);
   if (leagueIds.length === 0) return { events: [], standing: null };
