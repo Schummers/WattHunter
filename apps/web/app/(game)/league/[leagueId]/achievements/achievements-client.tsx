@@ -78,7 +78,7 @@ export function AchievementsClient({
       {/* Header */}
       <div className="px-4 pt-4 pb-3">
         <h1 className="text-[length:var(--type-page-title)] font-bold text-[var(--text-high)] mb-3">
-          Palmares
+          Emblems
         </h1>
         <FilterChips
           options={FILTER_OPTIONS.map(({ label, disabled }) => ({

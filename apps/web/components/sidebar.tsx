@@ -9,7 +9,6 @@ import {
   Gavel,
   Users,
   Trophy,
-  Medal,
   Settings,
   ChevronDown,
   Check,
@@ -55,7 +54,6 @@ function buildNavItems(): NavItem[] {
         { label: "Budget", href: (id) => `/league/${id}/team/budget` },
       ],
     },
-    { key: "achievements", label: "Palmares", icon: Medal, href: (id) => `/league/${id}/achievements` },
     { key: "ranking", label: "Ranking", icon: Trophy, href: (id) => `/league/${id}/ranking` },
   ];
 }

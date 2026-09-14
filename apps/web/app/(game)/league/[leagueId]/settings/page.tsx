@@ -208,6 +208,19 @@ export default async function SettingsPage({
               }}
             />
 
+            {/* Emblems, badges and banners — used to live in the Palmares nav slot */}
+            <div className="space-y-1">
+              <label className="text-[length:var(--type-caption)] font-medium text-[var(--text-low)]">
+                Emblems
+              </label>
+              <Link
+                href={`/league/${leagueId}/achievements`}
+                className="flex h-9 items-center rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-[length:var(--type-body)] text-[var(--accent-default)]"
+              >
+                Emblems, badges &amp; banners →
+              </Link>
+            </div>
+
             {/* Invite URL */}
             <InviteUrlField inviteCode={league?.invite_code ?? ""} />
 
