@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildRaceGroups,
+  getLastFinishedRaceKey,
   getRaceGroupId,
   getWtRaceType,
   isOneDayRace,
@@ -147,5 +148,34 @@ describe("oneDayRaceSlugPatterns", () => {
       const slug = pattern.replace("%", "2026");
       expect(isStageRace(slug)).toBe(false);
     }
+  });
+});
+
+describe("getLastFinishedRaceKey", () => {
+  it("names the last one-day race already run, even one the league never played", () => {
+    // 2026-09-15: the calendar has run to the GP de Montréal (09-13), which this
+    // league did not play. That gap is what closes the classics season.
+    expect(getLastFinishedRaceKey("classics", 2026, "2026-09-15")).toBe("gp-montreal");
+  });
+
+  it("follows the season as it goes", () => {
+    // The day after the Ronde, before Paris-Roubaix.
+    expect(getLastFinishedRaceKey("classics", 2026, "2026-04-06")).toBe("ronde-van-vlaanderen");
+  });
+
+  it("returns null while the group's only race is still running", () => {
+    // Vuelta 2026 runs 08-22 to 09-13; mid-race nothing of the group is over.
+    expect(getLastFinishedRaceKey("vuelta", 2026, "2026-09-01")).toBeNull();
+    expect(getLastFinishedRaceKey("vuelta", 2026, "2026-09-14")).toBe("vuelta-a-espana");
+  });
+
+  it("does not count a race that ends today as finished", () => {
+    // Same boundary the window rule uses: `today <= end` is still ongoing.
+    expect(getLastFinishedRaceKey("vuelta", 2026, "2026-09-13")).toBeNull();
+  });
+
+  it("shifts the calendar to the asked year", () => {
+    expect(getLastFinishedRaceKey("classics", 2027, "2027-04-06")).toBe("ronde-van-vlaanderen");
+    expect(getLastFinishedRaceKey("classics", 2027, "2026-12-31")).toBeNull();
   });
 });

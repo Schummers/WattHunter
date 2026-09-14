@@ -1,6 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
-import { RACE_GROUP_IDS, getRaceGroupId, getRaceGroupWindow, type RaceGroupId } from "@/lib/race-groups";
+import {
+  RACE_GROUP_IDS,
+  getLastFinishedRaceKey,
+  getRaceGroupId,
+  getRaceGroupWindow,
+  raceKey,
+  type RaceGroupId,
+} from "@/lib/race-groups";
+import { resolveEventStatus } from "./status";
 import { JERSEYS, type JerseyId, type PalmaresEvent, type Player, type SeasonStanding } from "./types";
 
 /** Which traceability column decides each jersey (migration 20260914000100). */
@@ -104,6 +112,9 @@ export async function loadCurrentSeason(
   const seasonXp = new Map<string, { player: Player; xp: number }>();
   const xpByGroup = new Map<RaceGroupId, Map<string, { player: Player; xp: number }>>();
   const jerseyPoints = new Map<RaceGroupId, Map<JerseyId, Map<string, { player: Player; points: number }>>>();
+  // Which races of each group actually produced XP — what tells a group the
+  // league has finished playing from one still running.
+  const playedRaceKeys = new Map<RaceGroupId, Set<string>>();
 
   for (const row of xpRows) {
     const player = playerByTeam.get(row.team_id);
@@ -125,6 +136,17 @@ export async function loadCurrentSeason(
     const groupEntry = groupXp.get(player.key);
     if (groupEntry) groupEntry.xp += xp;
     else groupXp.set(player.key, { player, xp });
+
+    // `raceKey`, not `getParentRaceSlug`: a one-day race is stored as
+    // `race/<name>/2026/result`, a suffix the parent helper does not know.
+    if (row.race_slug) {
+      let keys = playedRaceKeys.get(groupId);
+      if (!keys) {
+        keys = new Set();
+        playedRaceKeys.set(groupId, keys);
+      }
+      keys.add(raceKey(row.race_slug));
+    }
 
     // Classics award no jersey: a one-day race has none.
     if (groupId === "classics") continue;
@@ -167,14 +189,13 @@ export async function loadCurrentSeason(
     const window = getRaceGroupWindow(eventType, seasonYear);
     const hasResults = groupXp !== undefined && groupXp.size > 0;
 
-    let status: PalmaresEvent["status"];
-    if (hasResults) {
-      status = window && today <= window.end ? "ongoing" : "played";
-    } else if (window && today < window.start) {
-      status = "upcoming";
-    } else {
-      status = "not-played";
-    }
+    const status = resolveEventStatus({
+      hasResults,
+      window,
+      lastFinishedRaceKey: getLastFinishedRaceKey(eventType, seasonYear, today),
+      playedRaceKeys: playedRaceKeys.get(eventType) ?? new Set<string>(),
+      today,
+    });
 
     const standings = hasResults
       ? [...groupXp.values()]
