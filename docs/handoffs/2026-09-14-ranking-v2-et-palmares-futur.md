@@ -231,3 +231,92 @@ Contexte qui explique les choix ci-dessus, à ne pas reperdre.
 
 Ces trois points ne sont pas dans le lot 1 et n'ont pas encore été confrontés au
 code existant.
+
+---
+
+## 6. Décisions du 2026-09-14 (deuxième passe)
+
+### 6.1 Mécanisme de saison : à construire
+
+Tranché : **une saison est une année**. Ce n'est plus un lot différé, c'est la
+condition d'existence du sélecteur saison et de toutes les vues cross-saisons.
+
+Ce qu'il faut :
+
+- Une entité saison (année) et un rattachement des ligues à une saison.
+- Les classements cross-saisons agrègent par **joueur** (`public.users.id`), pas par
+  équipe : un nom d'équipe change chaque saison, comme sur LRDT.
+- À charger avant toute migration : `supabase:supabase-postgres-best-practices`.
+
+### 6.2 Rapatrier la saison 2026 dans une seule ligue
+
+La saison 2026 est éclatée sur deux ligues classic. Il faut que les **Classiques
+(phases 2 et 3) et le Giro**, joués dans la ligue Classic V1, comptent dans la
+saison 2026 de Classic V2.
+
+C'est une opération de données, à instruire avant de coder : mêmes joueurs des deux
+côtés, mais équipes et contrats différents. Deux approches possibles, à trancher :
+
+- **rattachement** : les deux ligues pointent vers la même saison 2026, et
+  l'agrégation se fait par joueur au moment de la lecture. Rien n'est réécrit, donc
+  rien n'est perdu ;
+- **import** : recopier les lignes d'XP de V1 dans V2. Plus simple à lire, mais
+  destructif et non rejouable.
+
+Le rattachement est préférable. Note : un précédent existe déjà, le
+`HARDCODED_GRANTS` de la page achievements, qui transfère à la main le palmarès V1
+vers V2. Ce hack devra disparaître quand le mécanisme propre existera.
+
+### 6.3 Les Classiques = uniquement des courses d'un jour
+
+Tranché : le classement Classiques ne compte que les courses d'un jour. Paris-Nice,
+Tirreno-Adriatico, le Dauphiné et les autres courses d'une semaine en sont exclus.
+
+**Source de vérité** : `services/pcs-sync/wt_calendar_2026.json`, champ `type`
+(`one-day` / `stage-race`), déjà typé côté front dans `apps/web/lib/calendar.ts`.
+21 courses d'un jour sur 36 au calendrier WT 2026.
+
+**Bug existant à corriger au passage** : la constante `ONE_DAY_WT_PATTERNS` de
+`app/(game)/league/[leagueId]/achievements/page.tsx` inclut `race/paris-nice/%` et
+`race/tirreno-adriatico/%`, qui sont des courses par étapes. L'achievement
+« Classic Man » compte donc aujourd'hui deux courses d'une semaine comme des
+classiques.
+
+Ne pas se rabattre sur `race_results.stage IS NULL` : le classement général d'une
+course d'une semaine peut arriver avec un `stage` nul et serait compté comme une
+course d'un jour.
+
+### 6.4 Ce qu'on abandonne
+
+- **Le détail par coureur dans les classements** : on ne veut pas savoir quel
+  coureur a marqué le plus dans une course. Le classement est un classement de
+  joueurs.
+
+### 6.5 Le tableau dense, au clic sur le podium
+
+Nouvelle direction : le podium reste la vue par défaut, avec les visualisations.
+Au clic, il ouvre un **tableau dense** à la manière de La Route du Tour, avec le
+détail par catégorie et pas seulement le total.
+
+**Ce que la base permet déjà.** `rider_xp_daily` stocke une décomposition complète
+de l'XP, agrégeable par équipe :
+
+| Colonne LRDT | Équivalent WattHunter | État |
+|---|---|---|
+| Arrivée d'étape | `raw_pcs_points` | disponible |
+| Sommets | `kom_event_bonus` | disponible depuis le lot 08/2026 |
+| Sprints intermédiaires | `sprint_event_bonus` | disponible depuis le lot 08/2026 |
+| Combatif | `gt_distance_bonus` (échappée) | équivalent d'intention, pas identique |
+| (sans équivalent LRDT) | `assist_bonus` (équipiers) | propre à WattHunter |
+| Maillot jaune, vert, pois | `gt_classif_bonus` | **fusionnés dans une seule colonne** |
+| Maillot blanc | `gt_final_classifications` (`youth`) | seulement en final, pas en quotidien |
+
+**Le seul vrai manque** : `gt_classif_bonus` agrège général, points et montagne. Pour
+afficher une colonne par maillot il faut soit les séparer en trois colonnes de
+traçabilité dans `rider_xp_daily`, soit recalculer depuis
+`gt_daily_classifications` (qui porte bien `classification_type`) et
+`gt_final_classifications`. La deuxième voie ne demande aucune migration mais coûte
+une jointure de plus.
+
+Note : `gt_daily_classifications` ne contient pas `youth`, seulement `gc`, `points`
+et `kom`. Le maillot blanc n'existe qu'en classement final.
