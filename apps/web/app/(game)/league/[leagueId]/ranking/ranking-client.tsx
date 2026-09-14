@@ -43,7 +43,6 @@ interface RiderRow {
 interface Race {
   slug: string;
   name: string;
-  date: string;
   childSlugs: string[];
 }
 
