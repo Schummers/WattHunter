@@ -200,6 +200,34 @@ watthunter/
 
 ---
 
+### Page Palmares (`.scratch/palmares-ranking/`, 2026-09)
+
+`app/(game)/league/[leagueId]/palmares/` — quatre onglets (Seasons, Wins, Jerseys,
+Players) en underline tabs. **Cross-ligue et cross-saison** : la page vit sous une
+route de ligue pour garder le layout du jeu et sa place dans la navigation, mais
+rien de son contenu n'est scopé à `leagueId`. **Aucun chemin démo** : l'archive
+porte les vrais noms de comptes du groupe.
+
+Le modèle est dans `lib/palmares/` et c'est lui qui porte la logique :
+
+- `types.ts` — `PalmaresEvent` et `SeasonStanding`, **la forme unique que les deux
+  ères produisent**. Les onglets ne savent rien de la frontière entre La Route du
+  Tour et WattHunter.
+- `historical.ts` — lit `historical_tours` / `historical_results`, attribue les
+  maillots au plus gros cumul de la catégorie, masque Fangio et JoeDills.
+- `current.ts` — lit les ligues de la saison via `rider_xp_daily`, agrège **par
+  joueur** (deux ligues classic en 2026, un seul groupe de personnes). Maillots :
+  colonnes séparées du ticket 08, plus les lignes de classement final attribuées
+  par leur slug.
+- `aggregate.ts` — victoires, maillots, carrière, rangs de saison, face à face.
+  Pures fonctions, testées (`aggregate.test.ts`).
+- `format.ts` — abréviation des noms par règle explicite, jamais par ellipse CSS.
+
+Clé de joueur = le **nom du compte WattHunter**, jamais l'équipe. Fragilité connue :
+renommer un compte scinderait l'historique du joueur en deux.
+
+---
+
 ## Design System v3.0
 
 > **Source de verite :** `docs/watthunter-design-system-v3.md`
@@ -411,7 +439,7 @@ Jalons majeurs (par date) :
 - **2026-06** : `20260602100000_spec_a_level_curve_l7_l8.sql` — L7 1800→2600, L8 2400→5000 ; `20260602100100_race_results_breakaway_profile.sql` — ajout `breakaway_kms`, `profile_icon` sur `race_results` ; `20260602100200_daily_classif_allow_youth.sql` — classification_type accepte 'youth' ; `20260602120000_drop_remontada.sql` — suppression définitive remontada ; `20260602130000_rider_xp_daily_distance_bonus.sql` — ajout `gt_distance_bonus` NUMERIC(5,1) sur `rider_xp_daily` (Spec A A3) ; `20260602130100_gt_final_classifications.sql` — nouvelle table `gt_final_classifications` pour classements finaux Points/KOM/Youth (Spec A A2) ; `20260603000100_place_tactic_profile_gating.sql` — RPC `place_tactic` v2 (Spec A A7) : Nemesis Sprint requiert profile p1/p2/p3, Nemesis GC requiert p3/p4/p5 (lookup dans `stage_profiles`) ; **Spec A A9 P3b — Race Team 1-week** : `20260604000000` ajoute `race_slug TEXT` nullable sur `gt_squad` / `gt_role_assignments` / `gt_tactic_activations` (+ partial unique indexes par rôle et `idx_gt_tactic_activations_by_slug`, backfill deterministe Tour+Vuelta, Giro 2026 reste NULL forward-only) ; `20260604000100` crée la table `tactic_usage_limits` + seed 10 rows + trigger `enforce_tactic_usage_limit` ; `20260604000200` ajoute RPC `place_tactic` v3 — 8 args avec `p_race_slug TEXT DEFAULT NULL` trailing, dérive `race_kind` via `infer_race_kind(slug)`, accepte 1-week stage races (`^race/[^/]+/\d{4}/stage-\d+$`), remplace le hard `phase_id IN (4,6,8)` ; le bloc de profile-gating Nemesis P3a est préservé verbatim ; `20260604000300` ajoute RPCs `gt_add_to_squad` / `gt_remove_from_squad` / `gt_swap_slot` / `gt_assign_role` v2 — trailing `p_race_slug text DEFAULT NULL` ; scope race_slug quand fourni, fallback `(phase_id, year)` quand NULL. **Spec B Underdog (2026-06-05)** : `20260605000000_underdog_eligibility` — table `underdog_eligibility` + colonne `teams.underdog_eligible` + RPC `recompute_underdog_eligibility(phase_id, year)` SECURITY DEFINER ; `20260605000100_underdog_role_and_squad_cap` — relaxation des CHECK sur `gt_squad`/`gt_role_assignments` (ajout `'underdog'`), `enforce_gt_squad_cap` race_slug-aware + cap dynamique 8/10 selon `underdog_eligible`, v2 `gt_add_to_squad`/`gt_assign_role` avec gate éligibilité + cap rôle 2 ; `20260605000200_underdog_salary_flag` — colonne `contracts.underdog_discount` + trigger BEFORE INSERT `trg_flag_underdog_contract` ; `20260605000250_rider_xp_daily_underdog_mult` — colonne `rider_xp_daily.underdog_mult NUMERIC(3,2)` (boost audit séparé de `gt_role_mult`) ; `20260605000300_underdog_payday_discount` — `confirm_phase_setup` v3 avec remise −50 % réversible sur contrats `underdog_discount = true` quand `underdog_eligible = true` (arrondi 1 000 €).
 - **2026-07** : `20260703100000_rider_xp_daily_assist_bonus.sql` — colonne `rider_xp_daily.assist_bonus NUMERIC(4,1)` (défaut 0), traçabilité des assists domestiques (refonte barème GT rank-based, voir `docs/adr/2026-07-rank-based-gt-barème.md`). Refonte purement applicative côté `scoring.py` (pas d'autre migration : la base rank-based réutilise `race_results.rank`, déjà présent).
 - **2026-08 (refonte scoring Vuelta, `.scratch/scoring-vuelta-refonte/`)** : `20260828000000_stage_event_results.sql` — nouvelle table `stage_event_results` (passages de cols + sprints intermédiaires des étapes GT, PK (race_slug, event_type, event_name, rider_id), CHECKs event_type/category/rank, RLS SELECT public, écrite par le pipeline Python uniquement) ; `20260828000100_rider_xp_daily_event_bonus_columns.sql` — colonnes `kom_event_bonus` / `sprint_event_bonus` numeric (défaut 0) sur `rider_xp_daily`, traçabilité des nouveaux termes additifs (même pattern que `assist_bonus`). Le reste du lot est applicatif : scope du boost Underdog restreint aux rank_points (fix 291.6), barèmes finaux GT rehaussés (GC 450, Points/KOM 150, Youth 75), parseur `services/pcs-sync/stage_events.py`, garde anti-silence KOM p4/p5. ADR : `docs/adr/2026-08-finals-baremes-rehausses.md`.
-- **2026-09 (palmarès & ranking, `.scratch/palmares-ranking/`)** : `20260914000000_seasons.sql` — table `seasons` (clé naturelle `year`), FK `leagues.season_year → seasons.year` + index, trigger `leagues_ensure_season` (ouvre la saison à la demande, sinon la première ligue d'une nouvelle année heurterait la FK), fonction `season_player_xp(year)` (cumul d'XP d'une saison **par joueur**, toutes ligues de l'année confondues) ; `20260914000100_xp_category_breakdown.sql` — colonnes `gc_classif_bonus` / `points_classif_bonus` / `kom_classif_bonus` / `youth_classif_bonus` sur `rider_xp_daily` (le maillot jaune, vert, à pois et blanc étaient fusionnés dans `gt_classif_bonus`, qui reste écrit comme leur somme) + fonction `team_race_xp_breakdown(team_id, race_prefix)` (répartition de l'XP d'une équipe sur une épreuve, le terme d'arrivée d'étape étant le résidu, donc la somme des catégories égale l'XP stocké par construction). Backfill des lignes antérieures : `services/pcs-sync/scripts/backfill_classif_breakdown.py` (dry-run par défaut, n'écrit qu'un split qui reproduit le total stocké).
+- **2026-09 (palmarès & ranking, `.scratch/palmares-ranking/`)** : `20260914000000_seasons.sql` — table `seasons` (clé naturelle `year`), FK `leagues.season_year → seasons.year` + index, trigger `leagues_ensure_season` (ouvre la saison à la demande, sinon la première ligue d'une nouvelle année heurterait la FK), fonction `season_player_xp(year)` (cumul d'XP d'une saison **par joueur**, toutes ligues de l'année confondues) ; `20260914000100_xp_category_breakdown.sql` — colonnes `gc_classif_bonus` / `points_classif_bonus` / `kom_classif_bonus` / `youth_classif_bonus` sur `rider_xp_daily` (le maillot jaune, vert, à pois et blanc étaient fusionnés dans `gt_classif_bonus`, qui reste écrit comme leur somme) + fonction `team_race_xp_breakdown(team_id, race_prefix)` (répartition de l'XP d'une équipe sur une épreuve, le terme d'arrivée d'étape étant le résidu, donc la somme des catégories égale l'XP stocké par construction). Backfill des lignes antérieures : `services/pcs-sync/scripts/backfill_classif_breakdown.py` (dry-run par défaut, essaie les deux barèmes historiques et n'écrit qu'un split qui reproduit le total stocké) ; `20260914000200_historical_palmares.sql` — tables `historical_tours` (24 épreuves La Route du Tour 2017-2025) et `historical_results` (187 lignes : rang d'origine, nom d'équipe de l'époque, points bruts par catégorie, aucune conversion en XP). **Migration générée** par `research/laroutedutour/generate_import_migration.py` depuis `rankings.csv` : l'archive est close, `db reset` la reconstruit à l'identique, rien ne tourne en prod. `20260914000300_historical_palmares_authenticated_only.sql` — lecture de l'archive réservée à `authenticated` (la ligue démo est publique, l'archive porte les vrais noms de comptes).
 
 ### Classic League Mode (PR #52, `056ade4`, 2026-06-25)
 
