@@ -13,7 +13,12 @@ import { PalmaresClient } from "./palmares-client";
  * real account names, and the demo league is the public shop window. The RLS on
  * the archive says the same thing (migration 20260914000300).
  */
-export default async function PalmaresPage() {
+export default async function PalmaresPage({
+  params,
+}: {
+  params: Promise<{ leagueId: string }>;
+}) {
+  const { leagueId } = await params;
   const supabase = await createClient();
   const seasonYear = new Date().getFullYear();
 
@@ -29,6 +34,10 @@ export default async function PalmaresPage() {
   const data = await loadPalmares(supabase, {
     seasonYear,
     viewerKey: profile?.display_name ?? null,
+    // The one thing here that is scoped to the route: a player who renamed
+    // their team between two leagues must read the same on this page as on the
+    // Ranking of the league it was opened from.
+    preferLeagueId: leagueId,
   });
 
   return <PalmaresClient data={data} />;

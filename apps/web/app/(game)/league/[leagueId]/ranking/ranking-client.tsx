@@ -6,11 +6,13 @@ import { ChevronRight } from "lucide-react";
 import { SegmentedControl } from "@/components/segmented-control";
 import { MovementTag } from "@/components/movement-tag";
 import { AchievementBadge } from "@/components/achievement-badge";
+import { PlayerEmblem } from "@/components/player-emblem";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatThousands, countryCodeToFlag } from "@/lib/format";
 import { resolvePhotoUrl } from "@/lib/photo-url";
 import type { AchievementTier } from "@/lib/achievements";
+import type { EquippedEmblem } from "@/lib/palmares/identity";
 
 interface TeamRow {
   id: string;
@@ -48,8 +50,13 @@ interface Race {
 
 interface ArchivedPlayer {
   key: string;
+  /** The player's current team name, resolved server-side. */
   displayName: string;
   isFormerPlayer: boolean;
+  /** Raw points of that season. Not XP, and never compared to one. */
+  score: number;
+  /** The badge equipped today, or null. Same shape the Palmares uses. */
+  emblem: EquippedEmblem | null;
 }
 
 interface ArchivedSeason {
@@ -72,6 +79,54 @@ interface RankingClientProps {
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
+// DS-EXCEPTION: 36 — AchievementBadge takes a numeric size, and 36 is the size
+// the live ranking row uses. Matching it is the point.
+const ARCHIVED_BADGE_SIZE = 36;
+
+/**
+ * One line of an archived season, built to read as a line of the live ranking:
+ * same rank column, same badge at the same size, same value on the right.
+ *
+ * Two deliberate differences. No banner behind the row, which stays a marker of
+ * the season being played. And the unit is PTS, not XP: La Route du Tour points
+ * are a different scale, shown so one can see how close a season was, never to
+ * be compared to an XP total.
+ */
+function ArchivedRow({ player, rank }: { player: ArchivedPlayer; rank: number }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      {/* DS-EXCEPTION: w-[22px] — same rank column as the live ranking */}
+      <span className="w-[22px] shrink-0 text-center font-mono text-[length:var(--type-emphasis)] font-bold tabular-nums text-[var(--text-mid)]">
+        {rank}
+      </span>
+
+      <div className="shrink-0">
+        <PlayerEmblem
+          emblem={player.emblem}
+          name={player.displayName}
+          size={ARCHIVED_BADGE_SIZE}
+        />
+      </div>
+
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+        <span
+          className={`truncate text-[length:var(--type-emphasis)] text-[var(--text-high)] ${
+            player.isFormerPlayer ? "italic font-normal" : "font-semibold"
+          }`}
+        >
+          {player.displayName}
+        </span>
+        <div className="flex shrink-0 items-baseline gap-1">
+          <span className="font-mono text-[length:var(--type-emphasis)] font-bold text-[var(--text-high)]">
+            {formatThousands(player.score)}
+          </span>
+          <span className="text-[length:var(--type-micro)] text-[var(--text-low)]">PTS</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function RankingClient({
@@ -172,21 +227,15 @@ export function RankingClient({
 
       {archived && (
         <div>
+          <div className="px-4 pb-2">
+            <span className="text-[length:var(--type-label)] font-bold uppercase tracking-wide text-[var(--text-low)]">
+              {archived.ranking.length} PLAYER{archived.ranking.length !== 1 ? "S" : ""}
+            </span>
+          </div>
+
           <div className="divide-y divide-[var(--border-subtle)]">
             {archived.ranking.map((player, i) => (
-              <div key={player.key} className="flex items-center gap-3 px-4 py-3">
-                {/* DS-EXCEPTION: w-[22px] — same rank column as the live ranking */}
-                <span className="w-[22px] shrink-0 text-center font-mono text-[length:var(--type-emphasis)] font-bold tabular-nums text-[var(--text-mid)]">
-                  {i + 1}
-                </span>
-                <span
-                  className={`flex-1 truncate text-[length:var(--type-emphasis)] text-[var(--text-high)] ${
-                    player.isFormerPlayer ? "italic font-normal" : "font-semibold"
-                  }`}
-                >
-                  {player.displayName}
-                </span>
-              </div>
+              <ArchivedRow key={player.key} player={player} rank={i + 1} />
             ))}
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { AchievementBadge } from "@/components/achievement-badge";
+import { PlayerEmblem } from "@/components/player-emblem";
 import { RACE_GROUP_IDS } from "@/lib/race-groups";
 import { abbreviateName, abbreviateNameShort } from "@/lib/palmares/format";
 import { EVENT_CODE, type PalmaresEvent, type Player, type SeasonStanding } from "@/lib/palmares/types";
@@ -17,15 +17,6 @@ const EMPTY_LABEL: Record<Exclude<PalmaresEvent["status"], "played">, string> = 
   "not-played": "not played",
 };
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
 function PlayerName({ player, short }: { player: Player; short?: boolean }) {
   const label = short ? abbreviateNameShort(player.displayName) : player.displayName;
   return (
@@ -37,10 +28,11 @@ function PlayerName({ player, short }: { player: Player; short?: boolean }) {
  * The champion is presented as a Ranking row: the same emblem component, at the
  * same size, so the two screens read as one product.
  *
- * An archived season has no emblem — nobody had a badge equipped in 2019, and
- * showing today's badge on a 2019 card would say something false. Those fall
- * back on the player's initials, the same reserve the rider avatar already uses
- * when a photo is missing.
+ * The badge is the player's current one on every season, archived ones
+ * included: name and badge are identity markers of who that player is today,
+ * not claims about what they had equipped in 2019. A player with nothing
+ * equipped falls back on their initials, the same reserve the rider avatar
+ * already uses when a photo is missing.
  */
 function ChampionRow({
   season,
@@ -70,18 +62,12 @@ function ChampionRow({
       )}
 
       <div className="relative shrink-0">
-        {emblem ? (
-          <AchievementBadge badgeUrl={emblem.badgeUrl} tier={emblem.tier} size={EMBLEM_SIZE} locked={false} />
-        ) : (
-          <div
-            className={`flex items-center justify-center rounded-md border text-[length:var(--type-micro)] text-[var(--text-low)] ${
-              season.isCurrent ? "border-dashed" : ""
-            } border-[var(--border-default)] bg-[var(--bg-surface)]`}
-            style={{ width: EMBLEM_SIZE, height: EMBLEM_SIZE }}
-          >
-            {initials(champion.displayName)}
-          </div>
-        )}
+        <PlayerEmblem
+          emblem={emblem}
+          name={champion.displayName}
+          size={EMBLEM_SIZE}
+          dashed={season.isCurrent}
+        />
       </div>
 
       <div className="relative min-w-0 flex-1">
@@ -164,10 +150,7 @@ export function SeasonsTab({ data }: { data: PalmaresData }) {
     <div className="space-y-2 px-4">
       {standings.map((season) => {
         const champion = season.ranking[0];
-        const emblem =
-          season.source === "watthunter" && champion
-            ? emblemByPlayer[champion.key]
-            : undefined;
+        const emblem = champion ? emblemByPlayer[champion.key] : undefined;
 
         return (
           <div

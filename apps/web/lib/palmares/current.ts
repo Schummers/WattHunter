@@ -198,7 +198,7 @@ export async function loadCurrentSeason(
 
   const ranking = [...seasonXp.values()]
     .sort((a, b) => b.xp - a.xp)
-    .map((entry) => entry.player);
+    .map((entry) => ({ ...entry.player, score: entry.xp }));
 
   const playedCount = events.filter((e) => e.status === "played" || e.status === "ongoing").length;
   const isCurrent = events.some((e) => e.status === "ongoing" || e.status === "upcoming");

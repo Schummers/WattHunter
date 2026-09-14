@@ -5,6 +5,7 @@ import { getAchievementBySlug } from "@/lib/achievements";
 import { getTourJerseyHolders, mapJerseysToTeams, TOUR_JERSEY_SLUG } from "@/lib/tour-jerseys";
 import { buildRaceGroups, resolveRaceGroupParam } from "@/lib/race-groups";
 import { loadHistoricalPalmares } from "@/lib/palmares/historical";
+import { loadPlayerIdentities } from "@/lib/palmares/identity";
 import { fetchAllSupabasePages } from "@/lib/supabase-pagination";
 import { RankingClient } from "./ranking-client";
 import {
@@ -281,8 +282,16 @@ export default async function RankingPage({
   }).sort((a, b) => b.xp - a.xp);
 
   // Past seasons, for the year selector. They predate WattHunter, so they carry
-  // a standing per player and no rider data at all.
-  const { standings: archivedSeasons } = await loadHistoricalPalmares(supabase);
+  // a standing per player and no rider data at all. Names and badges are the
+  // current ones (lib/palmares/identity): one player reads the same on 2019 as
+  // on the live ranking, which is the whole point of resolving an identity.
+  const [{ standings: archivedSeasons }, identities] = await Promise.all([
+    loadHistoricalPalmares(supabase),
+    loadPlayerIdentities(supabase, {
+      seasonYear: new Date().getFullYear(),
+      preferLeagueId: leagueId,
+    }),
+  ]);
 
   return (
     <RankingClient
@@ -296,11 +305,16 @@ export default async function RankingPage({
       currentSeason={new Date().getFullYear()}
       archivedSeasons={archivedSeasons.map((season) => ({
         year: season.seasonYear,
-        ranking: season.ranking.map((player) => ({
-          key: player.key,
-          displayName: player.displayName,
-          isFormerPlayer: player.isFormerPlayer,
-        })),
+        ranking: season.ranking.map((player) => {
+          const identity = identities.get(player.key);
+          return {
+            key: player.key,
+            displayName: identity?.label ?? player.displayName,
+            isFormerPlayer: player.isFormerPlayer,
+            score: player.score,
+            emblem: identity?.emblem ?? null,
+          };
+        }),
       }))}
     />
   );

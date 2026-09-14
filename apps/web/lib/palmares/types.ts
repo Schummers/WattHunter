@@ -45,6 +45,14 @@ export interface EventStanding extends Player {
   rank: number;
 }
 
+/** A player in a season standing, with the score that put them there. */
+export interface SeasonRankingEntry extends Player {
+  /** Season XP on a WattHunter season, raw La Route du Tour points on an
+   *  archived one. Two scales that never mix: the unit is displayed next to it,
+   *  and nothing ever adds or compares them across eras. */
+  score: number;
+}
+
 export type EventStatus = "played" | "ongoing" | "upcoming" | "not-played";
 
 /**
@@ -64,14 +72,14 @@ export interface PalmaresEvent {
 /** The ranking of a season, all leagues of that year merged, by player. */
 export interface SeasonStanding {
   seasonYear: number;
-  /** Which game the season was played on. An archived season has no emblem:
-   *  nobody had a badge equipped in 2019, and inventing one retroactively would
-   *  say something false. */
+  /** Which game the season was played on. It decides the unit of `score`
+   *  (XP or archive points), never the identity shown: name and badge are the
+   *  player's current ones on every season. */
   source: "watthunter" | "archive";
   /** True while the season is still being played. */
   isCurrent: boolean;
   /** Free text shown next to the year when there is something to say. */
   note: string | null;
   /** Sorted, rank 1 first. */
-  ranking: Player[];
+  ranking: SeasonRankingEntry[];
 }

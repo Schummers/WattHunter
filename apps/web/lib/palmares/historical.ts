@@ -141,7 +141,7 @@ export async function loadHistoricalPalmares(
       note: null,
       ranking: [...byPlayer.values()]
         .sort((a, b) => b.points - a.points)
-        .map((entry) => entry.player),
+        .map((entry) => ({ ...entry.player, score: entry.points })),
     }))
     .sort((a, b) => b.seasonYear - a.seasonYear);
 
