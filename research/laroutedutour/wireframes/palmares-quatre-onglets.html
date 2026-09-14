@@ -292,13 +292,63 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
 .q p + p{margin-top:8px;color:var(--mid)}
 </style>
 
+<style>
+:root{--pos:#1E7A4B; --neg:#B23A2B; --posbg:#1E7A4B; --negbg:#B23A2B}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --pos:#5BC98B; --neg:#E8776A; --posbg:#5BC98B; --negbg:#E8776A}}
+:root[data-theme="dark"]{--pos:#5BC98B; --neg:#E8776A; --posbg:#5BC98B; --negbg:#E8776A}
+
+/* carte saison : grille 3 colonnes */
+.card .chd{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.card .chd .cy{font-family:var(--display);font-size:16px;font-weight:700;
+  letter-spacing:-.01em}
+.card .chd .cn{font-family:var(--data);font-size:9px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--faint)}
+.g3{display:grid;grid-template-columns:30px 1fr 1fr 1fr;gap:0 6px;
+  font-size:10.5px;align-items:baseline}
+.g3 .gh{font-family:var(--data);font-size:8px;letter-spacing:.1em;color:var(--faint);
+  padding-bottom:2px;border-bottom:1px solid var(--line)}
+.g3 .gl{font-family:var(--data);font-size:8px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--faint);padding:4px 0;
+  border-top:1px solid var(--grid)}
+.g3 .gl.big{color:var(--ink);font-weight:600;border-top:1px solid var(--ink)}
+.g3 .g1,.g3 .g2,.g3 .g0{padding:4px 0;border-top:1px solid var(--grid);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g3 .gl.big + .g1,.g3 .gl.big + .g1 + .g2,.g3 .gl.big + .g1 + .g2 + .g2{border-top:1px solid var(--ink)}
+.g3 .g1{font-weight:600;color:var(--ink)}
+.g3 .g2{color:var(--mid);font-weight:400}
+.g3 .g0{color:var(--faint);font-style:italic}
+.g3 .g1.gone{font-style:italic;font-weight:400}
+
+/* histogramme rang de saison */
+.spark{display:flex;align-items:flex-end;gap:4px;height:74px}
+.spark div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;
+  align-items:center;gap:3px;height:100%}
+.spark div em{font-family:var(--data);font-style:normal;font-size:10px;
+  font-weight:600;color:var(--mid);line-height:1}
+.spark div em.win1{color:var(--ink)}
+.spark div i{display:block;width:100%;background:var(--wash);
+  border:1px solid var(--line)}
+.spark div i.top{background:var(--solid);border-color:var(--solid)}
+.spark div u{font-family:var(--data);font-size:7px;color:var(--faint);
+  text-decoration:none;letter-spacing:-.02em}
+
+/* face à face coloré */
+.h2h .r.up .t3 b{background:var(--posbg)}
+.h2h .r.dn .t3 b{background:var(--negbg)}
+.h2h .r.eq .t3 b{background:var(--faint)}
+.h2h .r.up .s3{color:var(--pos);font-weight:600}
+.h2h .r.dn .s3{color:var(--neg);font-weight:600}
+.h2h .r.eq .s3{color:var(--mid);font-weight:600}
+</style>
+
 <div class="wrap">
 
 <header class="mast">
   <span class="eyebrow">WattHunter · wireframes v3 · noir et blanc</span>
   <h1>Palmarès<br>en quatre<br>onglets</h1>
-  <p class="sub">Ranking et la frise sont validés. Les trois autres onglets passent en
-  cartes, colonnes inversées et règles écrites sous les tableaux plutôt qu'au-dessus.
+  <p class="sub">Ranking est validé. L'onglet Saisons passe en cartes à trois colonnes, le face
+  à face gagne ses couleurs, et le rang de saison affiche enfin son chiffre.
   Données réelles du groupe, 2017 à 2026.</p>
   <div class="meta">
     <div><b>5</b><span>changements dans Ranking</span></div>
@@ -356,109 +406,127 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
 </section>
 
 <section>
-  <div class="shead"><span class="eyebrow">02</span><h2>Palmarès · onglet Frise<span class="ok">validé</span></h2></div>
-  <p class="lede">Une carte par saison, non dépliable. L'année et le mot « champion »
-  forment l'intitulé, le nom du champion suit, puis les quatre vainqueurs d'épreuve.
-  La règle de calcul est écrite une fois, sous la liste.</p>
+  <div class="shead"><span class="eyebrow">02</span><h2>Palmarès · onglet Saisons</h2></div>
+  <p class="lede">Une carte par saison, non dépliable. Cinq lignes, trois colonnes :
+  le podium de la saison en tête, puis celui de chaque épreuve. Seul le vainqueur est
+  en primaire, les deuxième et troisième sont en secondaire.</p>
 
   <div class="spec">
     <div class="phone">
-      <div class="cap"><span>Palmarès</span><span>Frise</span></div>
+      <div class="cap"><span>Palmarès</span><span>Saisons</span></div>
       <div class="body">
         <div class="ptitle"><span>Palmarès</span></div>
-        <div class="tabs"><span class="on">Frise</span><span>Victoires</span><span>Maillots</span><span>Joueurs</span></div>
+        <div class="tabs"><span class="on">Saisons</span><span>Victoires</span><span>Maillots</span><span>Joueurs</span></div>
         <div class="cards">
-          <div class="card live">
-            <span class="ttl">2026 · en cours</span>
-            <span class="who3">2 phases sur 4</span>
-            <div class="lst">
-              <div class="li"><i>CLA</i><b>Muscat Romain</b></div>
-              <div class="li"><i>GIR</i><b>David Choncoutié</b></div>
-              <div class="li dnp"><i>TDF</i><b>en cours</b></div>
-              <div class="li dnp"><i>VUE</i><b>à venir</b></div>
-            </div>
-          </div>
+
           <div class="card">
-            <span class="ttl">2025 · champion</span>
-            <span class="who3">Jonathan Schummers</span>
-            <div class="lst">
-              <div class="li dnp"><i>CLA</i><b>non jouée</b></div>
-              <div class="li dnp"><i>GIR</i><b>non jouée</b></div>
-              <div class="li dnp"><i>TDF</i><b>non jouée</b></div>
-              <div class="li"><i>VUE</i><b class="self">Jonathan Schummers</b></div>
+            <div class="chd"><span class="cy">2026</span><span class="cn">2 phases sur 4</span></div>
+            <div class="g3">
+              <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
+              <span class="gl big">Saison</span><span class="g1">—</span><span class="g2">—</span><span class="g2">—</span>
+              <span class="gl">Cla</span><span class="g1">Muscat R.</span><span class="g2">D. Chonc.</span><span class="g2">Peejee</span>
+              <span class="gl">Gir</span><span class="g1">D. Chonc.</span><span class="g2">Klimax</span><span class="g2">J. Schum.</span>
+              <span class="gl">Tdf</span><span class="g0" style="grid-column:2/5">en cours</span>
+              <span class="gl">Vue</span><span class="g0" style="grid-column:2/5">à venir</span>
             </div>
           </div>
+
           <div class="card">
-            <span class="ttl">2024 · champion</span>
-            <span class="who3">David Choncoutié</span>
-            <div class="lst">
-              <div class="li dnp"><i>CLA</i><b>non jouée</b></div>
-              <div class="li"><i>GIR</i><b>Muscat Romain</b></div>
-              <div class="li"><i>TDF</i><b class="self">David Choncoutié</b></div>
-              <div class="li dnp"><i>VUE</i><b>non jouée</b></div>
+            <div class="chd"><span class="cy">2025</span></div>
+            <div class="g3">
+              <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
+              <span class="gl big">Saison</span><span class="g1">J. Schum.</span><span class="g2">D. Chonc.</span><span class="g2">Peejee</span>
+              <span class="gl">Cla</span><span class="g0" style="grid-column:2/5">non jouée</span>
+              <span class="gl">Gir</span><span class="g0" style="grid-column:2/5">non jouée</span>
+              <span class="gl">Tdf</span><span class="g0" style="grid-column:2/5">non jouée</span>
+              <span class="gl">Vue</span><span class="g1">J. Schum.</span><span class="g2">D. Chonc.</span><span class="g2">Peejee</span>
             </div>
           </div>
+
           <div class="card">
-            <span class="ttl">2023 · champion</span>
-            <span class="who3">TheAussieMate</span>
-            <div class="lst">
-              <div class="li"><i>CLA</i><b>Muscat Romain</b></div>
-              <div class="li"><i>GIR</i><b>David Choncoutié</b></div>
-              <div class="li"><i>TDF</i><b>Marino Alex</b></div>
-              <div class="li"><i>VUE</i><b class="self">TheAussieMate</b></div>
+            <div class="chd"><span class="cy">2024</span></div>
+            <div class="g3">
+              <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
+              <span class="gl big">Saison</span><span class="g1">D. Chonc.</span><span class="g2">TheAussie</span><span class="g2">Peejee</span>
+              <span class="gl">Cla</span><span class="g0" style="grid-column:2/5">non jouée</span>
+              <span class="gl">Gir</span><span class="g1">Muscat R.</span><span class="g2">Peejee</span><span class="g2">TheAussie</span>
+              <span class="gl">Tdf</span><span class="g1">D. Chonc.</span><span class="g2">bigdaddy</span><span class="g2">M. Alex</span>
+              <span class="gl">Vue</span><span class="g0" style="grid-column:2/5">non jouée</span>
             </div>
           </div>
+
           <div class="card">
-            <span class="ttl">2022 · champion</span>
-            <span class="who3">Peejee</span>
-            <div class="lst">
-              <div class="li"><i>CLA</i><b>Dixon Hormous</b></div>
-              <div class="li"><i>GIR</i><b class="self">Peejee</b></div>
-              <div class="li"><i>TDF</i><b class="self">Peejee</b></div>
-              <div class="li dnp"><i>VUE</i><b>non jouée</b></div>
+            <div class="chd"><span class="cy">2023</span><span class="cn">saison la plus dense</span></div>
+            <div class="g3">
+              <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
+              <span class="gl big">Saison</span><span class="g1">TheAussie</span><span class="g2">D. Chonc.</span><span class="g2">Muscat R.</span>
+              <span class="gl">Cla</span><span class="g1">Muscat R.</span><span class="g2">TheAussie</span><span class="g2">J. Schum.</span>
+              <span class="gl">Gir</span><span class="g1">D. Chonc.</span><span class="g2">Muscat R.</span><span class="g2">J. Schum.</span>
+              <span class="gl">Tdf</span><span class="g1">M. Alex</span><span class="g2">D. Chonc.</span><span class="g2">Klimax</span>
+              <span class="gl">Vue</span><span class="g1">TheAussie</span><span class="g2">D. Chonc.</span><span class="g2">J. Schum.</span>
             </div>
           </div>
+
           <div class="card">
-            <span class="ttl">2019 · champion</span>
-            <span class="who3">Marino Alex</span>
-            <div class="lst">
-              <div class="li"><i>CLA</i><b>David Choncoutié</b></div>
-              <div class="li"><i>GIR</i><b>Muscat Romain</b></div>
-              <div class="li"><i>TDF</i><b class="gone">JibsEPAULE</b></div>
-              <div class="li"><i>VUE</i><b>David Choncoutié</b></div>
+            <div class="chd"><span class="cy">2022</span></div>
+            <div class="g3">
+              <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
+              <span class="gl big">Saison</span><span class="g1">Peejee</span><span class="g2">Klimax</span><span class="g2">Muscat R.</span>
+              <span class="gl">Cla</span><span class="g1">D. Hormous</span><span class="g2">Klimax</span><span class="g2">Muscat R.</span>
+              <span class="gl">Gir</span><span class="g1">Peejee</span><span class="g2">M. Alex</span><span class="g2">Muscat R.</span>
+              <span class="gl">Tdf</span><span class="g1">Peejee</span><span class="g2">Klimax</span><span class="g2">D. Chonc.</span>
+              <span class="gl">Vue</span><span class="g0" style="grid-column:2/5">non jouée</span>
             </div>
           </div>
+
+          <div class="card">
+            <div class="chd"><span class="cy">2019</span></div>
+            <div class="g3">
+              <span class="gh"></span><span class="gh">1er</span><span class="gh">2e</span><span class="gh">3e</span>
+              <span class="gl big">Saison</span><span class="g1">M. Alex</span><span class="g2">D. Chonc.</span><span class="g2">Muscat R.</span>
+              <span class="gl">Cla</span><span class="g1">D. Chonc.</span><span class="g2">Muscat R.</span><span class="g2">Klimax</span>
+              <span class="gl">Gir</span><span class="g1">Muscat R.</span><span class="g2">Klimax</span><span class="g2">M. Alex</span>
+              <span class="gl">Tdf</span><span class="g1 gone">JibsEPAULE</span><span class="g2">M. Alex</span><span class="g2">Peejee</span>
+              <span class="gl">Vue</span><span class="g1">D. Chonc.</span><span class="g2">J. Schum.</span><span class="g2">M. Alex</span>
+            </div>
+          </div>
+
         </div>
-        <p class="undernote"><b>Champion de saison</b> : le joueur qui cumule le plus
-        d'XP sur l'ensemble des épreuves de l'année. Un nom souligné a gagné l'épreuve
-        et le titre la même année. Un nom en italique est un joueur qui a quitté le
-        groupe : il apparaît ici, mais pas dans les compteurs des autres onglets.</p>
+        <p class="undernote"><b>Le champion d'une saison</b> est le joueur qui cumule
+        le plus d'XP sur l'ensemble des épreuves de l'année. Les podiums d'épreuve,
+        eux, sont les classements d'arrivée d'origine. Un nom en italique est un joueur
+        qui a quitté le groupe.</p>
       </div>
       <div class="nav"><span>Home</span><span>Auction</span><span>Ranking</span><span class="on">Palmarès</span></div>
     </div>
 
     <div class="annot">
-      <div class="an"><span class="k">1</span><p><b>L'année est dans l'intitulé de la
-        carte</b>, pas dans une gouttière séparée. <em>« 2023 · CHAMPION » puis le nom.
-        Une seule hiérarchie à lire, de haut en bas.</em></p></div>
-      <div class="an"><span class="k">2</span><p><b>Le nom du champion est descendu à
-        16 px</b>, la taille d'un titre de section du design system, au lieu des 24 px
-        de la version précédente. <em>Il reste le plus gros élément de la carte sans
-        écraser le reste.</em></p></div>
-      <div class="an"><span class="k">3</span><p><b>Les cartes ne se déplient pas.</b>
-        <em>La frise montre les champions et les vainqueurs, rien d'autre. Les noms
-        d'origine des tours et les classements complets iront ailleurs, ou nulle part.</em></p></div>
-      <div class="an"><span class="k">4</span><p><b>Le soulignement marque le doublé</b>
-        épreuve plus titre. <em>Peejee 2022 prend le Giro, le Tour et le titre.
-        TheAussieMate 2023 prend le titre en ne gagnant que la dernière épreuve. Deux
-        récits opposés, lisibles sans une ligne de commentaire.</em></p></div>
-      <div class="an"><span class="k">5</span><p><b>2019 est montrée exprès</b> :
-        c'est la seule saison dont un vainqueur, JibsEPAULE, n'a pas de compte
-        WattHunter. <em>Voir la question 1 plus bas, cette carte est le seul endroit
-        où il apparaîtra.</em></p></div>
+      <div class="an"><span class="k">1</span><p><b>« Frise » devient « Saisons ».</b>
+        <em>Frise décrit une forme graphique qui n'existe plus depuis qu'on est passé
+        en cartes. Saisons dit ce qu'il y a dedans. Autres candidats si celui-là ne te
+        plaît pas : Archives, Historique, Années.</em></p></div>
+      <div class="an"><span class="k">2</span><p><b>Le champion n'est plus répété en
+        gros titre.</b> <em>Il est dans la ligne Saison, colonne 1er, où il est déjà
+        le seul nom en primaire de sa ligne. Le répéter au-dessus de la carte doublait
+        l'information sur quatre lignes d'écran.</em></p></div>
+      <div class="an"><span class="k">3</span><p><b>La ligne Saison est détachée des
+        quatre autres</b> par son libellé plus appuyé et un filet plus marqué.
+        <em>Elle ne se lit pas comme une cinquième épreuve : c'est le classement de
+        l'année, calculé, là où les quatre autres sont des résultats bruts.</em></p></div>
+      <div class="an"><span class="k">4</span><p><b>Les noms sont raccourcis, pas
+        tronqués au hasard.</b> <em>« D. Choncoutié » et « Muscat R. » plutôt qu'une
+        coupe à l'ellipse qui donnerait « David Chon… ». À écrire dans une règle
+        d'abréviation, pas laissé au CSS.</em></p></div>
+      <div class="an"><span class="k">5</span><p><b>2026 n'a pas besoin du mot « en
+        cours ».</b> <em>« 2 phases sur 4 » le dit, et restera vrai une fois la saison
+        finie si elle s'arrête là.</em></p></div>
+      <div class="an"><span class="k">6</span><p><b>Une épreuve non jouée occupe toute
+        la largeur</b> au lieu de laisser trois cases vides. <em>Neuf saisons sur dix
+        sont incomplètes : ces lignes doivent rester calmes.</em></p></div>
     </div>
   </div>
 </section>
+
 
 <section>
   <div class="shead"><span class="eyebrow">03</span><h2>Palmarès · onglet Victoires</h2></div>
@@ -471,7 +539,7 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
       <div class="cap"><span>Palmarès</span><span>Victoires</span></div>
       <div class="body">
         <div class="ptitle"><span>Palmarès</span></div>
-        <div class="tabs"><span>Frise</span><span class="on">Victoires</span><span>Maillots</span><span>Joueurs</span></div>
+        <div class="tabs"><span>Saisons</span><span class="on">Victoires</span><span>Maillots</span><span>Joueurs</span></div>
         <div class="tbl">
           <div class="hr"><span>Joueur</span><span>3e</span><span>2e</span><span>1er</span></div>
           <div class="tr"><span class="p1">David Choncoutié<small>22 départs</small></span><s>2</s><s>4</s><b>6</b></div>
@@ -500,7 +568,7 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
         </div>
         <p class="undernote"><b>Une victoire</b> est un rang 1 sur une épreuve :
         Classiques, Giro, Tour de France ou Vuelta. Les courses d'une semaine ne
-        comptent pas. Le titre de saison n'est pas une victoire, il est dans la frise.</p>
+        comptent pas. Le titre de saison n'est pas une victoire, il est dans l'onglet Saisons.</p>
       </div>
       <div class="nav"><span>Home</span><span>Auction</span><span>Ranking</span><span class="on">Palmarès</span></div>
     </div>
@@ -518,7 +586,7 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
         à chaque nouvelle saison, une règle non.</em></p></div>
       <div class="an"><span class="k">4</span><p><b>JibsEPAULE n'est plus dans le
         tableau.</b> <em>Conséquence : le Tour de France 2019 a un vainqueur dans la
-        frise et aucun dans la colonne TDF. Neuf victoires listées ici pour dix
+        onglet Saisons et aucun dans la colonne TDF. Neuf victoires listées ici pour dix
         épreuves gagnées. Voir la question 1.</em></p></div>
       <div class="an"><span class="k">5</span><p><b>Tous les noms sont ceux des comptes
         WattHunter.</b> <em>Muscat Romain et non Marseillais, TheAussieMate et non
@@ -537,7 +605,7 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
       <div class="cap"><span>Palmarès</span><span>Maillots</span></div>
       <div class="body">
         <div class="ptitle"><span>Palmarès</span></div>
-        <div class="tabs"><span>Frise</span><span>Victoires</span><span class="on">Maillots</span><span>Joueurs</span></div>
+        <div class="tabs"><span>Saisons</span><span>Victoires</span><span class="on">Maillots</span><span>Joueurs</span></div>
         <div>
           <div class="vit" style="grid-template-columns:1fr repeat(5,24px)">
             <div class="hd"></div><div class="hd">JAU</div><div class="hd">VER</div><div class="hd">POI</div><div class="hd">BLA</div><div class="hd">TOT</div>
@@ -582,16 +650,16 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
 
 <section>
   <div class="shead"><span class="eyebrow">05</span><h2>Palmarès · onglet Joueurs</h2></div>
-  <p class="lede">Le face à face retrouve un vrai visuel : une barre par adversaire,
-  remplie jusqu'à la part d'épreuves où tu as fini devant, avec un repère au milieu qui
-  marque l'égalité. Au-dessus, ta place au classement de chaque saison.</p>
+  <p class="lede">Deux blocs relatifs : ta place au classement de chaque saison, avec
+  le chiffre au-dessus de chaque barre, et le face à face contre chaque joueur, vert
+  quand tu domines, rouge quand tu subis.</p>
 
   <div class="spec">
     <div class="phone">
       <div class="cap"><span>Palmarès</span><span>Joueurs</span></div>
       <div class="body">
         <div class="ptitle"><span>Palmarès</span></div>
-        <div class="tabs"><span>Frise</span><span>Victoires</span><span>Maillots</span><span class="on">Joueurs</span></div>
+        <div class="tabs"><span>Saisons</span><span>Victoires</span><span>Maillots</span><span class="on">Joueurs</span></div>
         <div class="ctrl"><span class="sel">Jonathan Schummers ▾</span></div>
         <div>
           <div class="vit" style="grid-template-columns:1fr 1fr">
@@ -604,62 +672,64 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
           </div>
         </div>
         <div>
-          <div class="lbl" style="margin-bottom:7px">Ta place au classement de chaque saison</div>
+          <div class="lbl" style="margin-bottom:9px">Ma place au classement de chaque saison</div>
           <div class="spark">
-            <div><i style="height:36%"></i><u>17</u></div>
-            <div><i class="top" style="height:100%"></i><u>18</u></div>
-            <div><i style="height:33%"></i><u>19</u></div>
-            <div><i style="height:17%"></i><u>20</u></div>
-            <div><i style="height:25%"></i><u>21</u></div>
-            <div><i style="height:11%"></i><u>22</u></div>
-            <div><i style="height:55%"></i><u>23</u></div>
-            <div><i style="height:11%"></i><u>24</u></div>
-            <div><i class="top" style="height:100%"></i><u>25</u></div>
+            <div><em class="top1">3</em><i style="height:60%"></i><u>2017</u></div>
+            <div><em class="win1">1</em><i class="top" style="height:100%"></i><u>2018</u></div>
+            <div><em>6</em><i style="height:44%"></i><u>2019</u></div>
+            <div><em>6</em><i style="height:29%"></i><u>2020</u></div>
+            <div><em>6</em><i style="height:38%"></i><u>2021</u></div>
+            <div><em>8</em><i style="height:22%"></i><u>2022</u></div>
+            <div><em>5</em><i style="height:60%"></i><u>2023</u></div>
+            <div><em>8</em><i style="height:22%"></i><u>2024</u></div>
+            <div><em class="win1">1</em><i class="top" style="height:100%"></i><u>2025</u></div>
           </div>
-          <p class="undernote"><b>Une barre par saison</b>, du 1er en haut au dernier
-          en bas. La hauteur est un rang, jamais un score : c'est la seule mesure
-          comparable d'une année à l'autre, puisque le barème a changé. Barre pleine,
-          champion de l'année.</p>
+          <p class="undernote"><b>Le chiffre est ta place</b> au classement cumulé de
+          l'année, la barre en donne la hauteur relative au nombre de joueurs. 1er sur
+          6 en 2025, 8e sur 9 en 2024. Jamais un score : le barème a changé plusieurs
+          fois, seules les places se comparent d'une année à l'autre.</p>
         </div>
         <div>
           <div class="lbl" style="margin-bottom:8px">Face à face</div>
           <div class="h2h">
             <div class="r up"><span class="n3">bigdaddy</span><span class="t3"><b style="width:69%"></b></span><span class="s3">9‑4</span></div>
             <div class="r up"><span class="n3">Dixon Hormous</span><span class="t3"><b style="width:67%"></b></span><span class="s3">16‑8</span></div>
-            <div class="r"><span class="n3">Marino Alex</span><span class="t3"><b style="width:50%"></b></span><span class="s3">10‑10</span></div>
-            <div class="mid"><i></i></div>
-            <div class="r"><span class="n3">Klimax</span><span class="t3"><b style="width:43%"></b></span><span class="s3">10‑13</span></div>
-            <div class="r"><span class="n3">Peejee</span><span class="t3"><b style="width:42%"></b></span><span class="s3">10‑14</span></div>
-            <div class="r"><span class="n3">Muscat Romain</span><span class="t3"><b style="width:42%"></b></span><span class="s3">10‑14</span></div>
-            <div class="r"><span class="n3">David Choncoutié</span><span class="t3"><b style="width:41%"></b></span><span class="s3">9‑13</span></div>
+            <div class="r eq"><span class="n3">Marino Alex</span><span class="t3"><b style="width:50%"></b></span><span class="s3">10‑10</span></div>
+            <div class="r dn"><span class="n3">Klimax</span><span class="t3"><b style="width:43%"></b></span><span class="s3">10‑13</span></div>
+            <div class="r dn"><span class="n3">Peejee</span><span class="t3"><b style="width:42%"></b></span><span class="s3">10‑14</span></div>
+            <div class="r dn"><span class="n3">Muscat Romain</span><span class="t3"><b style="width:42%"></b></span><span class="s3">10‑14</span></div>
+            <div class="r dn"><span class="n3">David Choncoutié</span><span class="t3"><b style="width:41%"></b></span><span class="s3">9‑13</span></div>
           </div>
           <p class="undernote"><b>Face à face</b> : sur les seules épreuves que vous
-          avez disputées toutes les deux, combien de fois tu as fini devant lui. Contre
+          avez disputées tous les deux, combien de fois tu as fini devant lui. Contre
           Dixon Hormous, 24 épreuves communes et 16 fois devant. Contre David
-          Choncoutié, 22 seulement : les deux épreuves qu'il a manquées ne comptent
-          pas. C'est la seule statistique où jouer plus ne donne aucun avantage.</p>
+          Choncoutié, 22 seulement, les deux épreuves qu'il a manquées ne comptent pas.
+          <b>Comparaison de rangs, jamais de points</b> : c'est ce qui la rend valide
+          entre les deux jeux.</p>
         </div>
       </div>
       <div class="nav"><span>Home</span><span>Auction</span><span>Ranking</span><span class="on">Palmarès</span></div>
     </div>
 
     <div class="annot">
-      <div class="an"><span class="k">1</span><p><b>La barre était cassée dans la version
-        précédente</b>, le remplissage et le score vivaient sur deux lignes séparées.
-        <em>Ici tout tient sur une ligne : nom, barre, score.</em></p></div>
-      <div class="an"><span class="k">2</span><p><b>La liste est triée du plus favorable
-        au moins favorable</b>, avec un repère d'égalité au milieu. <em>On voit d'un
-        coup où bascule le rapport de force, et combien de joueurs sont au-dessus de
-        toi.</em></p></div>
-      <div class="an"><span class="k">3</span><p><b>Le rang de saison répond à « ma place
-        cumulée chaque année ».</b> <em>Deux titres, 2018 et 2025, encadrent sept
-        saisons dans le ventre mou. Aucun score n'apparaît, seulement des places.</em></p></div>
+      <div class="an"><span class="k">1</span><p><b>Le rang est écrit au-dessus de
+        chaque barre.</b> <em>Une hauteur seule ne se lit pas : on ne sait pas si
+        « haut » veut dire 2e sur 5 ou 2e sur 10. Le chiffre tranche, la barre donne
+        l'allure.</em></p></div>
+      <div class="an"><span class="k">2</span><p><b>Vert quand tu es devant, rouge quand
+        tu es derrière</b>, et neutre à égalité. <em>Ce sont les deux seules couleurs
+        de tout le palmarès, et elles portent un sens, pas une décoration.</em></p></div>
+      <div class="an"><span class="k">3</span><p><b>Rien ici n'est calculé sur l'XP.</b>
+        <em>Le face à face compare deux rangs d'arrivée, le graphique compare des
+        places au classement de l'année. L'XP n'intervient qu'une fois dans tout le
+        palmarès, pour désigner le champion d'une saison.</em></p></div>
       <div class="an"><span class="k">4</span><p><b>Le sélecteur de joueur en haut</b>
         rend l'écran utilisable pour regarder la fiche de quelqu'un d'autre, ce qui est
         la moitié de l'intérêt dans un groupe d'amis.</p></div>
     </div>
   </div>
 </section>
+
 
 <section>
   <div class="shead"><span class="eyebrow">06</span><h2>Quatre questions</h2></div>
@@ -668,11 +738,11 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
       <h3>Les trois joueurs sans compte</h3>
       <p>Exclure Fangio et JoeDills ne coûte rien, ils n'ont jamais rien gagné.
       <b>JibsEPAULE, si : il a gagné le Tour de France 2019 et deux maillots.</b>
-      L'exclure des compteurs tout en le montrant dans la frise casse l'arithmétique.
+      L'exclure des compteurs tout en le montrant dans l'onglet Saisons casse l'arithmétique.
       La colonne TDF de l'onglet Victoires totalisera 9 victoires pour 10 Tours joués,
       et quelqu'un finira par recompter.</p>
       <p>Ma préférence : le garder partout, en italique, avec la même mention
-      d'ancien joueur que dans la frise. Le palmarès reste juste, et sa ligne à
+      d'ancien joueur que dans l'onglet Saisons. Le palmarès reste juste, et sa ligne à
       1 victoire en 2 départs est une bonne histoire plutôt qu'un problème. Tu
       confirmes l'exclusion, ou on le garde en italique ?</p></div></div>
     <div class="q"><span class="qn">2</span><div>
@@ -681,12 +751,12 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
       Giro 2026 ont été joués dans la ligue Classic V1 et le reste dans V2. Sans le
       rattachement des deux ligues à la saison 2026, le champion 2026 sera calculé
       sur la moitié de l'année.</p>
-      <p>C'est le seul chantier de données qui bloque la frise. Il passe avant les
+      <p>C'est le seul chantier de données qui bloque l'onglet Saisons. Il passe avant les
       trois autres onglets ?</p></div></div>
     <div class="q"><span class="qn">3</span><div>
       <h3>L'onglet par défaut</h3>
-      <p>Frise à l'ouverture, ou Victoires ? La frise raconte, Victoires classe.
-      Mon avis : la frise, parce que c'est le seul écran qui a une nouvelle ligne
+      <p>Saisons à l'ouverture, ou Victoires ? Saisons raconte, Victoires classe.
+      Mon avis : Saisons, parce que c'est le seul écran qui a une nouvelle ligne
       chaque année et donc une raison d'être rouvert.</p></div></div>
     <div class="q"><span class="qn">4</span><div>
       <h3>Les six pistes de la fiche joueur</h3>
@@ -723,7 +793,7 @@ footer{padding:40px 0 0;border-top:1px solid var(--line);font-size:12.5px;
       Une saison est une année, et les classements entre saisons agrègent par joueur,
       pas par équipe.</p></div>
     <div class="td"><span class="scope">Données</span><p>Rattacher la ligue Classic V1 à
-      la saison 2026.<em>Bloque le champion 2026 de la frise, voir question 2.</em></p></div>
+      la saison 2026.<em>Bloque le champion 2026 de l'onglet Saisons, voir question 2.</em></p></div>
     <div class="td"><span class="scope">Données</span><p>Stocker la répartition par
       catégorie de chaque résultat, même sans écran pour l'afficher.<em>Arrivée,
       sommets, sprints, échappée, puis jaune, vert, pois, blanc. Presque tout existe

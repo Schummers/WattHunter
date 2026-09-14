@@ -498,3 +498,32 @@ Trois autres questions ouvertes : le rattachement Classic V1 → saison 2026 blo
 champion 2026 de la frise ; l'onglet par défaut (recommandation : Frise) ; et
 lesquelles des six pistes de la fiche joueur entrent en V1 (recommandation : terrains
 de prédilection et palmarès personnel).
+
+### 9.7 Amendements (v4 des wireframes, même URL)
+
+- **L'onglet « Frise » est renommé « Saisons ».** Frise décrivait une forme graphique
+  abandonnée au passage en cartes. Autres candidats écartés : Archives, Historique,
+  Années.
+- **Carte de saison en grille trois colonnes.** Cinq lignes : Saison, Classiques,
+  Giro, Tour, Vuelta. Trois colonnes : 1er, 2e, 3e. Seul le vainqueur est en
+  primaire, les deux autres en secondaire. La ligne Saison est détachée par un filet
+  plus marqué, parce qu'elle est un classement calculé là où les quatre autres sont
+  des résultats bruts.
+- **Le champion n'est plus répété en gros titre de carte.** Il est dans la ligne
+  Saison, colonne 1er. La carte porte seulement l'année. 2026 porte « 2 phases sur
+  4 » au lieu de « en cours ».
+- **Noms abrégés selon une règle** (« D. Choncoutié », « Muscat R. »), pas tronqués
+  à l'ellipse par le CSS.
+- **Une épreuve non jouée occupe les trois colonnes** au lieu de laisser trois cases
+  vides.
+- **Rang de saison** : le chiffre du rang est affiché au-dessus de chaque barre. Une
+  hauteur seule ne dit pas si « haut » vaut 2e sur 5 ou 2e sur 10.
+- **Face à face en couleur** : vert quand le joueur domine, rouge quand il subit,
+  neutre à égalité. Ce sont les deux seules couleurs de tout le palmarès et elles
+  portent un sens.
+
+**Clarification importante, souvent reposée** : dans tout le palmarès, **l'XP
+n'intervient qu'une seule fois**, pour désigner le champion d'une saison (plus gros
+cumul de l'année). Le face à face compare deux rangs d'arrivée. Le graphique de rang
+de saison compare des places. Les podiums d'épreuve sont les classements d'origine.
+C'est ce qui rend l'ensemble valide entre les deux jeux.
