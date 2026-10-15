@@ -192,7 +192,7 @@ Détails complets, plans et migrations dans MEMORY.md.
 
 ### Issue tracker
 
-Issues locales en markdown sous `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`.
+Tout le pilotage vit dans les GitHub Issues de `Schummers/WattHunter` (map Wayfinder et milestone par destination, modèle commun aux produits) ; les anciens tickets `.scratch/` restent en lecture. See `docs/agents/issue-tracker.md` ; boucle de dev : `docs/agents/boucle-de-dev.md`.
 
 ### Triage labels
 
