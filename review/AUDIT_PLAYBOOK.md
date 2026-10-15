@@ -2,7 +2,7 @@
 
 > Mode d'emploi pour le prochain audit orchestré. Basé sur les données réelles du premier run complet
 > (run `wf_c9612001-650`, REPORT dans `review/runs/2026-06-11/`, verdicts dans `FIX_LOG.md`).
-> Le script : `.claude/workflows/wh-audit.js`. Le contexte injecté : `review/WH_CONTEXT.md`.
+> Le script : `.claude/workflows/wh-audit.js`. Le contexte injecté : `review/WH_GLOSSARY.md`.
 
 ---
 

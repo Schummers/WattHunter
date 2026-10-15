@@ -18,7 +18,7 @@
 
 | File | Responsibility |
 |------|----------------|
-| `review/WH_CONTEXT.md` | Single source of domain context injected into every reviewer prompt: stack conventions + known failure modes. |
+| `review/WH_GLOSSARY.md` | Single source of domain context injected into every reviewer prompt: stack conventions + known failure modes. |
 | `.claude/workflows/wh-audit.js` | The orchestration script. Owns the matrix, the 5 phases, the schemas. |
 | `.claude/commands/audit.md` | Slash-command `/audit` that launches the workflow with today's date as `args`. |
 | `.claude/agents/*-reviewer.md` | The 7 read-only reviewers. **Already installed.** Not modified here. |
@@ -29,11 +29,11 @@
 ## Task 1: Write the WattHunter context block
 
 **Files:**
-- Create: `review/WH_CONTEXT.md`
+- Create: `review/WH_GLOSSARY.md`
 
 - [ ] **Step 1: Create the context file**
 
-Create `review/WH_CONTEXT.md` with exactly this content:
+Create `review/WH_GLOSSARY.md` with exactly this content:
 
 ```markdown
 # WattHunter — Audit Context (injected into every reviewer)
@@ -65,13 +65,13 @@ Create `review/WH_CONTEXT.md` with exactly this content:
 
 - [ ] **Step 2: Verify the file exists and is non-empty**
 
-Run: `test -s review/WH_CONTEXT.md && echo OK`
+Run: `test -s review/WH_GLOSSARY.md && echo OK`
 Expected: `OK`
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add review/WH_CONTEXT.md
+git add review/WH_GLOSSARY.md
 git commit -m "feat(audit): add WattHunter domain context block for reviewers"
 ```
 
@@ -102,7 +102,7 @@ export const meta = {
 const DATE = (args && args.date) || 'undated'
 const OUT = `review/runs/${DATE}`
 
-const WH = `WattHunter audit. First READ review/WH_CONTEXT.md for stack conventions and known
+const WH = `WattHunter audit. First READ review/WH_GLOSSARY.md for stack conventions and known
 failure modes — apply them. Every finding MUST cite real file:line (never invent). Assign each
 finding a Lane (A=provable/low-risk, B=correctness/scoring/treasury/RLS). Output English.`
 
@@ -316,7 +316,7 @@ Expected: the three files listed + `OK`.
 
 - [ ] **Step 3: Quality spot-check (manual)**
 
-Read `review/runs/<date>/REPORT.md`. Confirm: findings cite real `file:line` in `scoring.py`/`tactics.py`, severities/lanes are assigned, and at least one finding reflects a known failure-mode class (idempotency, pagination, drift). If findings are generic or hallucinated → tune `review/WH_CONTEXT.md` and the cell prompt in `wh-audit.js`, re-run, do not proceed.
+Read `review/runs/<date>/REPORT.md`. Confirm: findings cite real `file:line` in `scoring.py`/`tactics.py`, severities/lanes are assigned, and at least one finding reflects a known failure-mode class (idempotency, pagination, drift). If findings are generic or hallucinated → tune `review/WH_GLOSSARY.md` and the cell prompt in `wh-audit.js`, re-run, do not proceed.
 
 - [ ] **Step 4: Commit the smoke-run output**
 
