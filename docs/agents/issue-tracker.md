@@ -15,7 +15,7 @@ clone (`{owner}/{repo}` est rempli par `gh api`).
 | GitHub, map Wayfinder | Ce qui reste à décider pour atteindre une destination |
 | GitHub, milestone du même nom | Ce qui reste à exécuter pour cette destination |
 | GitHub, hors carte | Les tickets rédigés mais non planifiés : `parking`, `horizon:v2`, sans milestone |
-| Repo, `docs/` | Research (`docs/research/`), specs, ADR (`docs/adr/`), glossaire (`CONTEXT.md`) |
+| Repo, `docs/` | Research (`docs/research/`), specs, ADR (`docs/adr/`), glossaire (`GLOSSARY.md`) |
 
 La research propre à ce produit vit ici, jamais dans le vault. La research
 générique (un marché, une méthode qui sert plusieurs goals) vit dans le vault.

@@ -14,7 +14,7 @@ export const meta = {
 const DATE = (args && typeof args === 'object' && args.date) ? String(args.date) : '2026-06-11'
 const OUT = `review/runs/${DATE}`
 
-const WH = `WattHunter audit. First READ review/WH_CONTEXT.md for stack conventions and known
+const WH = `WattHunter audit. First READ review/WH_GLOSSARY.md for stack conventions and known
 failure modes — apply them. Every finding MUST cite real file:line (never invent). Assign each
 finding a Lane (A=provable/low-risk, B=correctness/scoring/treasury/RLS). Output English.`
 
@@ -153,7 +153,7 @@ log(`Writing ${surfaceIds.length} surface annex files…`)
 await parallel(surfaceIds.map(surface => () => {
   const sf = confirmed.filter(f => f.surface === surface)
   return agent(`${WH}
-Read review/WH_CONTEXT.md. Then using the Write tool, write ${OUT}/findings/${surface}__all.md.
+Read review/WH_GLOSSARY.md. Then using the Write tool, write ${OUT}/findings/${surface}__all.md.
 Content must be a markdown table with columns: ID | Severity | Effort | Lane | Axis | file:line | Issue | Fix.
 Include these ${sf.length} findings:
 ${JSON.stringify(sf)}
