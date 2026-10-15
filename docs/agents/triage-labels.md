@@ -1,15 +1,25 @@
 # Triage Labels
 
-The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker.
+<!-- produit:generique:debut (copié de ~/AI OS/templates/produit/triage-labels.md, ne pas modifier ici) -->
 
-| Label in mattpocock/skills | Label in our tracker | Meaning                                  |
-| -------------------------- | -------------------- | ---------------------------------------- |
-| `needs-triage`             | `needs-triage`       | Maintainer needs to evaluate this issue  |
-| `needs-info`               | `needs-info`         | Waiting on reporter for more information |
-| `ready-for-agent`          | `ready-for-agent`    | Fully specified, ready for an AFK agent  |
-| `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
-| `wontfix`                  | `wontfix`            | Will not be actioned                     |
+Les skills mattpocock parlent de cinq rôles de triage. Dans un produit, ce sont
+des labels GitHub Issues au nom identique au rôle.
 
-When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
+| Rôle (skills) | Label | Sens |
+|---|---|---|
+| `needs-triage` | `needs-triage` | Le propriétaire doit évaluer le ticket |
+| `needs-info` | `needs-info` | En attente d'information |
+| `ready-for-agent` | `ready-for-agent` | Spécifié, aucun grill ouvert : la boucle de dev peut le prendre |
+| `ready-for-human` | `ready-for-human` | Le propriétaire le fait ou le tranche lui-même |
+| `wontfix` | `wontfix` | Ne sera pas fait |
 
-Edit the right-hand column to match whatever vocabulary you actually use.
+Quand un skill nomme un rôle, poser le label correspondant :
+`gh issue edit <n> --add-label "<label>"` (retirer avec `--remove-label`). Les
+autres labels du modèle (wayfinder, `discovery`, hors carte) sont dans
+`docs/agents/issue-tracker.md`.
+
+<!-- produit:generique:fin -->
+
+## Spécifique à ce repo
+
+Aucun écart avec les rôles canoniques.
